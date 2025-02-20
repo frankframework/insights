@@ -13,7 +13,13 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>InsightsBackend</name>
 	<description>Insights application for the Frank!Framework</description>
-	<url/>
+	<url>https://frankframework.org</url>
+
+	<organization>
+		<name>Frank!Framework</name>
+		<url>https://frankframework.org</url>
+	</organization>
+
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
@@ -21,38 +27,47 @@
 			<distribution>manual</distribution>
 		</license>
 	</licenses>
+
 	<developers>
-		<developer/>
+		<developer />
 	</developers>
+
 	<scm>
 		<connection/>
 		<developerConnection/>
 		<tag/>
 		<url/>
 	</scm>
+
 	<properties>
 		<java.version>21</java.version>
+		<spring.boot.version>3.4.2</spring.boot.version>
+		<postgresql.version>42.7.5</postgresql.version>
+		<lombok.version>1.18.36</lombok.version>
 	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+			<version>${spring.boot.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+			<version>${spring.boot.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -68,6 +83,14 @@
 							<artifactId>lombok</artifactId>
 						</path>
 					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>21</source>
+					<target>21</target>
 				</configuration>
 			</plugin>
 			<plugin>
