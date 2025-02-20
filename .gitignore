@@ -38,19 +38,12 @@ yarn-error.log
 testem.log
 /typings
 
-# Angular
-/.angular/
-
-# Vite
-/vite/
-
 # System files
 .DS_Store
 Thumbs.db
 
 # Java project
 */target/
-*/.env
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
