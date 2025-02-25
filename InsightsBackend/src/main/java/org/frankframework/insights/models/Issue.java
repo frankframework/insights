@@ -2,14 +2,10 @@ package org.frankframework.insights.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import jakarta.persistence.*;
-
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.Set;
 import java.util.UUID;
+import lombok.Setter;
 
 @Entity
 @Table(name = "issue")
@@ -19,16 +15,16 @@ public class Issue {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-	@JsonProperty("number")
+    @JsonProperty("number")
     @Column(name = "github_id", nullable = false, unique = true)
     private int githubId;
 
-	@JsonProperty("title")
-	@Column(nullable = false)
+    @JsonProperty("title")
+    @Column(nullable = false)
     private String title;
 
-	@JsonProperty("url")
-	@Column(nullable = false)
+    @JsonProperty("url")
+    @Column(nullable = false)
     private String url;
 
     @ManyToOne
@@ -39,8 +35,7 @@ public class Issue {
     @JoinColumn(name = "type_id")
     private Type type;
 
-	@Getter
-	@Setter
+    @Setter
     @ManyToMany
     @JoinTable(
             name = "issue_label",
