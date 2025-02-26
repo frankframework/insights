@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import java.util.HashSet;
 import java.util.Set;
 import org.frankframework.insights.clients.GitHubClient;
+import org.frankframework.insights.exceptions.GitHubDataInjectionException;
 import org.frankframework.insights.mapper.LabelMapper;
 import org.frankframework.insights.models.Label;
 import org.frankframework.insights.repository.LabelRepository;
@@ -27,7 +28,7 @@ public class LabelService {
         this.labelRepository = labelRepository;
     }
 
-    public void injectLabels() throws RuntimeException {
+    public void injectLabels()  {
         if (!labelRepository.findAll().isEmpty()) {
             return;
         }
@@ -38,8 +39,8 @@ public class LabelService {
             Set<Label> labels = labelMapper.jsonToLabels(jsonLabels);
 
             saveLabels(labels);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (RuntimeException e) {
+            throw new GitHubDataInjectionException();
         }
     }
 

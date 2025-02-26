@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.transaction.Transactional;
 import java.util.Set;
 import org.frankframework.insights.clients.GitHubClient;
+import org.frankframework.insights.exceptions.GitHubDataInjectionException;
 import org.frankframework.insights.mapper.IssueMapper;
 import org.frankframework.insights.models.Issue;
 import org.frankframework.insights.repository.IssueRepository;
@@ -26,7 +27,7 @@ public class IssueService {
         this.issueRepository = issueRepository;
     }
 
-    public void injectIssues() throws RuntimeException {
+    public void injectIssues() {
         if (!issueRepository.findAll().isEmpty()) {
             return;
         }
@@ -37,8 +38,8 @@ public class IssueService {
             Set<Issue> issues = issueMapper.jsonToIssues(jsonIssues);
 
             saveIssues(issues);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (RuntimeException e) {
+            throw new GitHubDataInjectionException();
         }
     }
 

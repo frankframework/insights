@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.util.Map;
+import org.frankframework.insights.exceptions.clients.GraphQLRequestException;
+import org.frankframework.insights.exceptions.clients.RestApiRequestException;
+import org.frankframework.insights.exceptions.clients.UnexpectedClientException;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -35,9 +38,9 @@ public abstract class ApiClient {
 
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            throw new ApiClientException("API request failed with status: " + e.getStatusCode(), e);
+            throw new GraphQLRequestException();
         } catch (Exception e) {
-            throw new ApiClientException("Unexpected error occurred during API request", e);
+            throw new UnexpectedClientException();
         }
     }
 
@@ -51,9 +54,9 @@ public abstract class ApiClient {
 
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException e) {
-            throw new ApiClientException("API request failed with status: " + e.getStatusCode(), e);
+            throw new RestApiRequestException();
         } catch (Exception e) {
-            throw new ApiClientException("Unexpected error occurred during API request", e);
+            throw new UnexpectedClientException();
         }
     }
 
@@ -70,12 +73,5 @@ public abstract class ApiClient {
 
     private String buildQuery(String query) throws JsonProcessingException {
         return objectMapper.writeValueAsString(Map.of("query", query));
-    }
-
-    // todo add global exception handler to catch exceptions like above
-    public static class ApiClientException extends RuntimeException {
-        public ApiClientException(String message, Throwable cause) {
-            super(message, cause);
-        }
     }
 }

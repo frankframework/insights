@@ -19,7 +19,7 @@ public class SystemDataInitializer {
     }
 
     @PostConstruct
-    public void InitializeSystemData() throws RuntimeException {
+    public void InitializeSystemData(){
         labelService.injectLabels();
         issueService.injectIssues();
     }
