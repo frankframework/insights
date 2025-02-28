@@ -1,13 +1,18 @@
 package org.frankframework.insights.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.transaction.Transactional;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.MissingResourceException;
 import java.util.Set;
 import org.frankframework.insights.clients.GitHubClient;
+import org.frankframework.insights.dto.IssueDTO;
+import org.frankframework.insights.dto.LabelDTO;
 import org.frankframework.insights.mapper.IssueMapper;
+import org.frankframework.insights.mapper.Mapper;
 import org.frankframework.insights.models.Issue;
+import org.frankframework.insights.models.Label;
 import org.frankframework.insights.repository.IssueRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,7 +24,6 @@ public class IssueService {
 
     private final IssueRepository issueRepository;
 
-    @Autowired
     public IssueService(GitHubClient gitHubClient, IssueMapper issueMapper, IssueRepository issueRepository) {
         this.gitHubClient = gitHubClient;
         this.issueMapper = issueMapper;

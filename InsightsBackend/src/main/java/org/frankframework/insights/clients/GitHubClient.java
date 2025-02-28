@@ -12,14 +12,18 @@ public class GitHubClient extends ApiClient {
 
     private final String issueQuery;
 
-    public GitHubClient(
-            @Value("${github.api.url}") String gitHubBaseUrl,
-            @Value("${github.api.secret}") String secretGitHub,
-            @Value("${graphql.query.issues}") String issueQuery,
-            ObjectMapper objectMapper) {
-        super(gitHubBaseUrl, secretGitHub, objectMapper);
-        this.issueQuery = issueQuery;
-    }
+	public GitHubClient(
+			GitHubProperties gitHubProperties,
+			GraphQLQueryProperties graphQLQueryProperties,
+			ObjectMapper objectMapper) {
+		super(gitHubProperties.getUrl(), gitHubProperties.getSecret(), objectMapper);
+		this.issueQuery = graphQLQueryProperties.getIssues();
+	}
+
+	public Set<LabelDTO> getLabels() {
+		return request("/repos/frankframework/frankframework/labels",
+				HttpMethod.GET, new ParameterizedTypeReference<Set<LabelDTO>>() {}, null);
+	}
 
     public JsonNode getLabels() {
         return request("/repos/frankframework/frankframework/labels");
