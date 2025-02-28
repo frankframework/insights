@@ -1,9 +1,9 @@
 package org.frankframework.insights.configuration;
 
-import jakarta.annotation.PostConstruct;
 import org.frankframework.insights.service.IssueService;
 import org.frankframework.insights.service.LabelService;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 public class SystemDataInitializer {
@@ -16,7 +16,7 @@ public class SystemDataInitializer {
         this.issueService = issueService;
     }
 
-    @PostConstruct
+	@Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
     public void InitializeSystemData() throws RuntimeException {
         labelService.injectLabels();
         issueService.injectIssues();
