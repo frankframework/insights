@@ -16,7 +16,7 @@
         }
     },
     {
-        "query": "query($owner: String!, $repo: String!, $after: String) { repository(owner: $owner, name: $repo) { releases(first: 100, after: $after) { edges { node { id tagName name publishedAt url } } pageInfo { hasNextPage endCursor } } } }",
+        "query": "query($owner: String!, $repo: String!, $after: String) { repository(owner: $owner, name: $repo) { releases(first: 100, after: $after) { edges { node { id tagName name publishedAt } } pageInfo { hasNextPage endCursor } } } }",
         "variables": {
             "owner": "frankframework",
             "repo": "frankframework",
@@ -24,11 +24,11 @@
         }
     },
     {
-        "query": "query($owner: String!, $repo: String!, $tagName: String!, $after: String) { repository(owner: $owner, name: $repo) { ref(qualifiedName: $tagName) { target { ... on Commit { history(first: 100, after: $after) { edges { node { id oid message } } pageInfo { hasNextPage endCursor } } } } } } } }",
+        "query": "query($owner: String!, $repo: String!, $qualifiedName: String!, $after: String) { repository(owner: $owner, name: $repo) { ref(qualifiedName: $qualifiedName) { target { ... on Commit { history(first: 100, after: $after) { edges { node { id oid message } } pageInfo { hasNextPage endCursor } } } } } } } }",
         "variables": {
             "owner": "frankframework",
             "repo": "frankframework",
-            "tagName": "v7.7.7",
+            "qualifiedName": null,
             "after": null
         }
     },
@@ -37,7 +37,7 @@
         "variables": {
             "owner": "frankframework",
             "repo": "frankframework",
-            "commitSHA": "c4b8ee94a6f4154049086f80f6f01f64b8373210",
+            "commitSHA": null,
             "after": null
         }
     },
