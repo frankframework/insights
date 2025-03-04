@@ -1,9 +1,7 @@
 package org.frankframework.insights.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import jakarta.persistence.*;
-
 import lombok.Getter;
 
 @Entity
@@ -11,16 +9,16 @@ import lombok.Getter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 public class Commit {
-	@Id
-	private String id;
+    @Id
+    private String id;
 
-	@Column(nullable = false, unique = true)
-	private String sha;
+    @Column(nullable = false, unique = true)
+    private String sha;
 
-	@Column(nullable = false)
-	private String message;
+    @Column(nullable = false)
+    private String message;
 
-	@ManyToOne
-	@JoinColumn(name = "pull_request_id")
-	private PullRequest pullRequest;
+    @ManyToOne
+    @JoinColumn(name = "pull_request_id")
+    private PullRequest pullRequest;
 }

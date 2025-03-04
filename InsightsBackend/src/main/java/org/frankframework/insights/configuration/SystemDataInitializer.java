@@ -1,7 +1,7 @@
 package org.frankframework.insights.configuration;
 
-import org.frankframework.insights.service.MilestoneService;
 import org.frankframework.insights.service.LabelService;
+import org.frankframework.insights.service.MilestoneService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -16,7 +16,7 @@ public class SystemDataInitializer {
         this.milestoneService = milestoneService;
     }
 
-	@Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
+    @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
     public void InitializeSystemData() throws RuntimeException {
         labelService.injectLabels();
         milestoneService.injectMilestones();
