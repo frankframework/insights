@@ -34,18 +34,7 @@ public class LabelService {
 		try {
 			Set<LabelDTO> labelDTOs = gitHubClient.getLabels();
 
-			// Create an ObjectMapper instance
-			ObjectMapper objectMapper = new ObjectMapper();
-
-			// Convert labelDTOs to JSON string
-			System.out.println("Received LabelDTOs:");
-			System.out.println(objectMapper.writeValueAsString(labelDTOs));
-
 			Set<Label> labels = labelMapper.toEntity(labelDTOs);
-
-			// Convert labels to JSON string
-			System.out.println("Mapped Labels:");
-			System.out.println(objectMapper.writeValueAsString(labels));
 
 			saveLabels(labels);
 		} catch (Exception e) {

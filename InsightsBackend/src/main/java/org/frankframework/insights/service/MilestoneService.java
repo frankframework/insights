@@ -32,8 +32,6 @@ public class MilestoneService {
         try {
             Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
 
-			System.out.println(milestoneDTOS);
-
 			Set<Milestone> milestones = milestoneMapper.toEntity(milestoneDTOS);
 
             saveMilestones(milestones);

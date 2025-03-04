@@ -15,11 +15,13 @@ public class SystemDataInitializer {
     private final LabelService labelService;
     private final MilestoneService milestoneService;
 	private final ReleaseService releaseService;
+	private final CommitService commitService;
 
-    public SystemDataInitializer(LabelService labelService, MilestoneService milestoneService, ReleaseService releaseService) {
+    public SystemDataInitializer(LabelService labelService, MilestoneService milestoneService, ReleaseService releaseService, CommitService commitService) {
         this.labelService = labelService;
         this.milestoneService = milestoneService;
 		this.releaseService = releaseService;
+		this.commitService = commitService;
     }
 
 	@Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
@@ -27,5 +29,6 @@ public class SystemDataInitializer {
         labelService.injectLabels();
         milestoneService.injectMilestones();
 		releaseService.injectReleases();
+		commitService.injectCommits();
     }
 }
