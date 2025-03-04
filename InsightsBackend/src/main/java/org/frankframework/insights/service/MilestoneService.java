@@ -1,6 +1,5 @@
 package org.frankframework.insights.service;
 
-
 import java.util.Set;
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.MilestoneDTO;
@@ -18,7 +17,8 @@ public class MilestoneService {
 
     private final MilestoneRepository milestoneRepository;
 
-    public MilestoneService(GitHubClient gitHubClient, MilestoneMapper milestoneMapper, MilestoneRepository milestoneRepository) {
+    public MilestoneService(
+            GitHubClient gitHubClient, MilestoneMapper milestoneMapper, MilestoneRepository milestoneRepository) {
         this.gitHubClient = gitHubClient;
         this.milestoneMapper = milestoneMapper;
         this.milestoneRepository = milestoneRepository;
@@ -32,7 +32,7 @@ public class MilestoneService {
         try {
             Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
 
-			Set<Milestone> milestones = milestoneMapper.toEntity(milestoneDTOS);
+            Set<Milestone> milestones = milestoneMapper.toEntity(milestoneDTOS);
 
             saveMilestones(milestones);
         } catch (Exception e) {
