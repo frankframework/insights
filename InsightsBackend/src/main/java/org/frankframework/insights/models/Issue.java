@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "issue")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@NoArgsConstructor
+@Getter
 public class Issue {
 	@Id
 	private String id;

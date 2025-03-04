@@ -1,11 +1,18 @@
 package org.frankframework.insights.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
+
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
 @Table(name = "pull_request")
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
 public class PullRequest {
 	@Id
 	private String id;
