@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 
 import lombok.Getter;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 @Entity
@@ -23,8 +23,8 @@ public class Release {
 	@Column(nullable = false, unique = true)
 	private String name;
 
-	@Column(name = "published_at", columnDefinition = "TIMESTAMP")
-	private LocalDateTime publishedAt;
+	@Column(name = "published_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	private OffsetDateTime publishedAt;
 
 	@ManyToMany
 	@JoinTable(
