@@ -6,6 +6,7 @@ import org.frankframework.insights.configuration.GitHubProperties;
 import org.frankframework.insights.dto.GraphQLDTO;
 import org.frankframework.insights.dto.LabelDTO;
 import org.frankframework.insights.dto.MilestoneDTO;
+import org.frankframework.insights.dto.ReleaseDTO;
 import org.frankframework.insights.service.GraphQLQueryService;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,10 @@ public class GitHubClient extends ApiClient {
 
 	public Set<MilestoneDTO> getMilestones() {
 		return getGitHubGraphQLEntities(1, MilestoneDTO.class, "milestones");
+	}
+
+	public Set<ReleaseDTO> getReleases() {
+		return getGitHubGraphQLEntities(2, ReleaseDTO.class, "releases");
 	}
 
 	private <T> Set<T> getGitHubGraphQLEntities(int queryIndex, Class<T> entityType, String entityName) {
