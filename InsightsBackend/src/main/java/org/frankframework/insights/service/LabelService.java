@@ -1,11 +1,12 @@
 package org.frankframework.insights.service;
 
-import jakarta.transaction.Transactional;
-import java.util.HashSet;
 import java.util.Set;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.LabelDTO;
-import org.frankframework.insights.mapper.Mapper;
+import org.frankframework.insights.mapper.LabelMapper;
 import org.frankframework.insights.models.Label;
 import org.frankframework.insights.repository.LabelRepository;
 import org.springframework.stereotype.Service;
@@ -15,42 +16,45 @@ public class LabelService {
 
     private final GitHubClient gitHubClient;
 
-    private final Mapper<LabelDTO, Label> labelMapper;
+    private final LabelMapper labelMapper;
 
     private final LabelRepository labelRepository;
 
-    public LabelService(GitHubClient gitHubClient, Mapper<LabelDTO, Label> labelMapper, LabelRepository labelRepository) {
+    public LabelService(GitHubClient gitHubClient, LabelMapper labelMapper, LabelRepository labelRepository) {
         this.gitHubClient = gitHubClient;
         this.labelMapper = labelMapper;
         this.labelRepository = labelRepository;
     }
 
-	@Transactional
-    public void injectLabels() throws RuntimeException {
-        if (!labelRepository.findAll().isEmpty()) {
-            return;
-        }
+	public void injectLabels() throws RuntimeException {
+		if (!labelRepository.findAll().isEmpty()) {
+			return;
+		}
 
-        try {
-            Set<LabelDTO> labelDTOs = gitHubClient.getLabels();
+		try {
+			Set<LabelDTO> labelDTOs = gitHubClient.getLabels();
 
-			Set<Label> labels = labelMapper.toEntity(labelDTOs, Label.class);
+			// Create an ObjectMapper instance
+			ObjectMapper objectMapper = new ObjectMapper();
 
-            saveLabels(labels);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+			// Convert labelDTOs to JSON string
+			System.out.println("Received LabelDTOs:");
+			System.out.println(objectMapper.writeValueAsString(labelDTOs));
 
-    public Set<Label> getAllLabelsByName(Set<String> names) {
-        if (names.isEmpty()) {
-            return new HashSet<>();
-        }
+			Set<Label> labels = labelMapper.toEntity(labelDTOs);
 
-        return labelRepository.findByNameIn(names);
-    }
+			// Convert labels to JSON string
+			System.out.println("Mapped Labels:");
+			System.out.println(objectMapper.writeValueAsString(labels));
 
-    private void saveLabels(Set<Label> labels) {
+			saveLabels(labels);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+
+	private void saveLabels(Set<Label> labels) {
         labelRepository.saveAll(labels);
     }
 }
