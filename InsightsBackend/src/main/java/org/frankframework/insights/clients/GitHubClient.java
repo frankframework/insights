@@ -2,94 +2,71 @@ package org.frankframework.insights.clients;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.springframework.beans.factory.annotation.Value;
+import org.frankframework.insights.configuration.GitHubProperties;
+import org.frankframework.insights.dto.GraphQLDTO;
+import org.frankframework.insights.dto.LabelDTO;
+import org.frankframework.insights.dto.MilestoneDTO;
+import org.frankframework.insights.service.GraphQLQueryService;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class GitHubClient extends ApiClient {
 
-    private final String issueQuery;
+	private final GraphQLQueryService graphQLQueryService;
+	private final ObjectMapper objectMapper;
 
 	public GitHubClient(
 			GitHubProperties gitHubProperties,
-			GraphQLQueryProperties graphQLQueryProperties,
+			GraphQLQueryService graphQLQueryService,
 			ObjectMapper objectMapper) {
-		super(gitHubProperties.getUrl(), gitHubProperties.getSecret(), objectMapper);
-		this.issueQuery = graphQLQueryProperties.getIssues();
+		super(gitHubProperties.getUrl(), gitHubProperties.getSecret());
+		this.graphQLQueryService = graphQLQueryService;
+		this.objectMapper = objectMapper;
 	}
 
 	public Set<LabelDTO> getLabels() {
-		return request("/repos/frankframework/frankframework/labels",
-				HttpMethod.GET, new ParameterizedTypeReference<Set<LabelDTO>>() {}, null);
+		return getGitHubGraphQLEntities(0, LabelDTO.class, "labels");
 	}
 
-    public JsonNode getLabels() {
-        return request("/repos/frankframework/frankframework/labels");
-    }
+	public Set<MilestoneDTO> getMilestones() {
+		return getGitHubGraphQLEntities(1, MilestoneDTO.class, "milestones");
+	}
 
-    public JsonNode getIssues() {
-        JsonNode allIssuesResponse = null;
-        String cursor = null;
+	private <T> Set<T> getGitHubGraphQLEntities(int queryIndex, Class<T> entityType, String entityName) {
+		Set<T> allEntities = new HashSet<>();
+		String cursor = null;
+		boolean hasNextPage = true;
 
-        while (true) {
-            JsonNode response = fetchEntityPage(issueQuery, cursor);
-            if (allIssuesResponse == null) {
-                allIssuesResponse = response;
-            } else {
-                mergeEntityObjects("issues", allIssuesResponse, response);
-            }
+		while (hasNextPage) {
+			GraphQLDTO<T> response = fetchEntityPage(queryIndex, cursor, entityType);
 
-            JsonNode issues =
-                    response.path("data").path("repository").path("issues").path("edges");
+			if (response == null || response.data == null || response.data.repository == null) {
+				break;
+			}
 
-            if (issues.size() < 100) {
-                break;
-            }
+			GraphQLDTO.EntityConnection<T> entityConnection = response.data.repository.getEntities().get(entityName);
+			if (entityConnection == null || entityConnection.edges == null) {
+				break;
+			}
 
-            cursor = getNextCursor("issues", response);
-        }
+			allEntities.addAll(entityConnection.edges.stream()
+					.map(edge -> objectMapper.convertValue(edge.node, entityType))
+					.collect(Collectors.toSet()));
 
-        return allIssuesResponse;
-    }
+			hasNextPage = entityConnection.pageInfo != null && entityConnection.pageInfo.hasNextPage;
+			cursor = entityConnection.pageInfo != null ? entityConnection.pageInfo.endCursor : null;
+		}
 
-    private JsonNode fetchEntityPage(String query, String afterCursor) {
-        String paginatedQuery = buildPaginatedQuery(query, afterCursor);
-        return execute("/graphql", paginatedQuery);
-    }
+		return allEntities;
+	}
 
-    private String buildPaginatedQuery(String baseQuery, String afterCursor) {
-        if (afterCursor != null && !afterCursor.isEmpty()) {
-            return baseQuery.replace("first: 100", "first: 100, after: \"" + afterCursor + "\"");
-        }
-        return baseQuery;
-    }
-
-    private void mergeEntityObjects(String entity, JsonNode existingResponse, JsonNode newResponse) {
-        ArrayNode existingEdges = (ArrayNode)
-                existingResponse.path("data").path("repository").path(entity).path("edges");
-        ArrayNode newEdges = (ArrayNode)
-                newResponse.path("data").path("repository").path(entity).path("edges");
-
-        if (existingEdges != null && newEdges != null) {
-            existingEdges.addAll(newEdges);
-        }
-
-        ObjectNode existingPageInfo = (ObjectNode)
-                existingResponse.path("data").path("repository").path(entity).path("pageInfo");
-        ObjectNode newPageInfo = (ObjectNode)
-                newResponse.path("data").path("repository").path(entity).path("pageInfo");
-
-        if (existingPageInfo != null && newPageInfo != null) {
-            existingPageInfo.put("endCursor", newPageInfo.path("endCursor").asText());
-            existingPageInfo.put("hasNextPage", newPageInfo.path("hasNextPage").asBoolean());
-        }
-    }
-
-    private String getNextCursor(String entity, JsonNode response) {
-        JsonNode pageInfo =
-                response.path("data").path("repository").path(entity).path("pageInfo");
-        return pageInfo.path("endCursor").asText();
-    }
+	private <T> GraphQLDTO<T> fetchEntityPage(int queryIndex, String afterCursor, Class<T> entityType) {
+		JsonNode query = graphQLQueryService.customizeQuery(queryIndex, afterCursor, null, null);
+		return request(query, new ParameterizedTypeReference<GraphQLDTO<T>>() {});
+	}
 }

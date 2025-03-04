@@ -1,6 +1,7 @@
 package org.frankframework.insights.clients;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
@@ -16,18 +17,16 @@ public abstract class ApiClient {
 	protected String baseUrl;
 	protected final String secret;
 	private final RestTemplate restTemplate = new RestTemplate();
-	private final ObjectMapper objectMapper;
 
-	public ApiClient(String baseUrl, String secret, ObjectMapper objectMapper) {
+	public ApiClient(String baseUrl, String secret) {
 		this.baseUrl = baseUrl;
 		this.secret = secret;
-		this.objectMapper = objectMapper;
 	}
 
-	public <T> T request(String path, HttpMethod httpMethod, ParameterizedTypeReference<T> responseType, String query) {
+	public <T> T request(JsonNode query, ParameterizedTypeReference<T> responseType) {
 		try {
 			ResponseEntity<T> response =
-					restTemplate.exchange(buildUri(path), httpMethod, buildHttpEntity(query), responseType);
+					restTemplate.exchange(baseUrl, HttpMethod.POST, buildHttpEntity(query), responseType);
 			return response.getBody();
 		} catch (HttpClientErrorException | HttpServerErrorException e) {
 			throw new ApiClientException("API request failed with status: " + e.getStatusCode(), e);
@@ -36,12 +35,12 @@ public abstract class ApiClient {
 		}
 	}
 
-	private HttpEntity<String> buildHttpEntity(String query) throws JsonProcessingException {
+	private HttpEntity<JsonNode> buildHttpEntity(JsonNode query) {
 		HttpHeaders headers = buildHeaders();
 		if (query == null) {
 			return new HttpEntity<>(headers);
 		}
-		return new HttpEntity<>(buildQuery(query), headers);
+		return new HttpEntity<>(query, headers);
 	}
 
 	private HttpHeaders buildHeaders() {
@@ -49,14 +48,6 @@ public abstract class ApiClient {
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.setBearerAuth(secret);
 		return headers;
-	}
-
-	private URI buildUri(String path) {
-		return UriComponentsBuilder.fromUriString(baseUrl).path(path).build().toUri();
-	}
-
-	private String buildQuery(String query) throws JsonProcessingException {
-		return objectMapper.writeValueAsString(Map.of("query", query));
 	}
 
     // todo add global exception handler to catch exceptions like above
