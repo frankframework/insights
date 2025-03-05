@@ -21,10 +21,10 @@ public class Release {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(name = "published_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "published_at", columnDefinition = "TIMESTAMP")
     private OffsetDateTime publishedAt;
 
-    @Setter
+	@Setter
     @ManyToMany
     @JoinTable(
             name = "release_commit",

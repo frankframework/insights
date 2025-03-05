@@ -1,83 +1,92 @@
 package org.frankframework.insights.clients;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.frankframework.insights.configuration.GitHubProperties;
-import org.frankframework.insights.dto.CommitDTO;
 import org.frankframework.insights.dto.GraphQLDTO;
 import org.frankframework.insights.dto.LabelDTO;
 import org.frankframework.insights.dto.MilestoneDTO;
 import org.frankframework.insights.dto.ReleaseDTO;
-import org.frankframework.insights.service.GraphQLQueryService;
+import org.frankframework.insights.enums.GraphQLConstants;
+import org.frankframework.insights.exceptions.clients.GitHubClientException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
-public class GitHubClient extends ApiClient {
-
-    private final GraphQLQueryService graphQLQueryService;
+public class GitHubClient extends GraphQLClient {
     private final ObjectMapper objectMapper;
 
-    public GitHubClient(
-            GitHubProperties gitHubProperties, GraphQLQueryService graphQLQueryService, ObjectMapper objectMapper) {
+    public GitHubClient(GitHubProperties gitHubProperties, ObjectMapper objectMapper) {
         super(gitHubProperties.getUrl(), gitHubProperties.getSecret());
-        this.graphQLQueryService = graphQLQueryService;
         this.objectMapper = objectMapper;
     }
 
-    public Set<LabelDTO> getLabels() {
-        return getGitHubGraphQLEntities(0, LabelDTO.class, "labels");
+    public Set<LabelDTO> getLabels() throws GitHubClientException {
+        try {
+            return getEntities(GraphQLConstants.LABELS, new HashMap<>(), LabelDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
     }
 
-    public Set<MilestoneDTO> getMilestones() {
-        return getGitHubGraphQLEntities(1, MilestoneDTO.class, "labels");
+    public Set<MilestoneDTO> getMilestones() throws GitHubClientException {
+        try {
+            return getEntities(GraphQLConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
     }
 
-    public Set<ReleaseDTO> getReleases() {
-        return getGitHubGraphQLEntities(2, ReleaseDTO.class, "releases");
-    }
+	public Set<ReleaseDTO> getReleases() throws GitHubClientException {
+		try {
+			return getEntities(GraphQLConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+		} catch (Exception e) {
+			throw new GitHubClientException();
+		}
+	}
 
-    public Set<CommitDTO> getCommits(String tagName) {
-        return getGitHubGraphQLEntities(3, CommitDTO.class, "history", tagName);
-    }
-
-    private <T> Set<T> getGitHubGraphQLEntities(
-            int queryIndex, Class<T> entityType, String entityName, String... params) {
+    private <T> Set<T> getEntities(GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType) throws GitHubClientException {
         Set<T> allEntities = new HashSet<>();
         String cursor = null;
         boolean hasNextPage = true;
 
         while (hasNextPage) {
-            GraphQLDTO<T> response = fetchEntityPage(queryIndex, cursor, entityType, params);
+			queryVariables.put("after", cursor);
 
-            if (response == null || response.data == null || response.data.repository == null) {
+            GraphQLDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
+
+            if (response == null || response.edges == null) {
                 break;
             }
 
-            GraphQLDTO.EntityConnection<T> entityConnection =
-                    response.data.repository.getEntities().get(entityName);
-            if (entityConnection == null || entityConnection.edges == null) {
-                break;
-            }
-
-            allEntities.addAll(entityConnection.edges.stream()
+            allEntities.addAll(response.edges.stream()
                     .map(edge -> objectMapper.convertValue(edge.node, entityType))
                     .collect(Collectors.toSet()));
 
-            hasNextPage = entityConnection.pageInfo != null && entityConnection.pageInfo.hasNextPage;
-            cursor = entityConnection.pageInfo != null ? entityConnection.pageInfo.endCursor : null;
+            hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
+            cursor = response.pageInfo != null ? response.pageInfo.endCursor : null;
         }
 
         return allEntities;
     }
 
-    private <T> GraphQLDTO<T> fetchEntityPage(
-            int queryIndex, String afterCursor, Class<T> entityType, String... params) {
-        JsonNode query =
-                graphQLQueryService.customizeQuery(queryIndex, afterCursor, params.length > 0 ? params[0] : null, null);
-        return request(query, new ParameterizedTypeReference<GraphQLDTO<T>>() {});
+    private <T> GraphQLDTO<T> fetchEntityPage(GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+            throws GitHubClientException {
+        try {
+            return getGraphQlClient()
+                    .documentName(query.getDocumentName())
+                    .variables(queryVariables)
+                    .retrieve(query.getRetrievePath())
+                    .toEntity(new ParameterizedTypeReference<GraphQLDTO<T>>() {})
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new GitHubClientException();
+        }
     }
 }

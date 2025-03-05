@@ -27,15 +27,12 @@ public class PullRequest {
     private LocalDateTime mergedAt;
 
     @ManyToOne
-    @JoinColumn(name = "milestone_id")
     private Milestone milestone;
 
     @ManyToOne
-    @JoinColumn(name = "release_id")
     private Release release;
 
     @ManyToOne
-    @JoinColumn(name = "issue_id")
     private Issue issue;
 
     @ManyToMany

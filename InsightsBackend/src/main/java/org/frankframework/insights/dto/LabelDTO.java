@@ -1,9 +1,7 @@
 package org.frankframework.insights.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
 
-@Getter
 public class LabelDTO {
     @JsonProperty("id")
     public String id;

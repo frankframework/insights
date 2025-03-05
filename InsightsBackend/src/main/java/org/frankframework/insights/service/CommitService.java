@@ -1,9 +1,12 @@
 package org.frankframework.insights.service;
 
+import java.beans.Transient;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import jakarta.transaction.Transactional;
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.CommitDTO;
 import org.frankframework.insights.mapper.CommitMapper;
@@ -35,28 +38,28 @@ public class CommitService {
             return;
         }
 
-        try {
-            List<Release> releases = releaseService.getAllReleases();
-            Set<Commit> allCommits = new HashSet<>();
-
-            for (Release release : releases) {
-                Set<CommitDTO> commitDTOS = gitHubClient.getCommits(release.getTagName());
-
-                Set<Commit> commits = commitMapper.toEntity(commitDTOS);
-
-                release.setCommits(commits);
-                releaseService.saveOrUpdateRelease(release);
-
-                allCommits.addAll(commits);
-            }
-
-            saveCommits(allCommits);
+        try {List<Release> releases = releaseService.getAllReleases();
+//            Set<Commit> allCommits = new HashSet<>();
+//
+//            for (Release release : releases) {
+//                Set<CommitDTO> commitDTOS = gitHubClient.getCommits(release.getTagName());
+//
+//                Set<Commit> commits = commitMapper.toEntity(commitDTOS);
+//
+//                release.setCommits(commits);
+//                releaseService.saveOrUpdateRelease(release);
+//
+//                allCommits.addAll(commits);
+//            }
+//
+//            saveCommits(allCommits);
+//
         } catch (Exception e) {
             throw new RuntimeException("Error fetching commits", e);
         }
     }
 
-    private void saveCommits(Set<Commit> commits) {
+    public void saveCommits(Set<Commit> commits) {
         Set<String> existingCommitIds =
                 commitRepository.findAll().stream().map(Commit::getId).collect(Collectors.toSet());
 

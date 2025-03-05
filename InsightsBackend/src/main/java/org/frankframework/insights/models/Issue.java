@@ -23,7 +23,6 @@ public class Issue {
     private String url;
 
     @ManyToOne
-    @JoinColumn(name = "milestone_id")
     private Milestone milestone;
 
     @ManyToMany

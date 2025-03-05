@@ -1,0 +1,48 @@
+query issues($after: String) {
+  repository(owner: "frankframework", name: "frankframework") {
+    issues(first: 100, after: $after) {
+      edges {
+        node {
+          number
+          title
+          labels(first: 10) {
+            edges {
+              node {
+                id
+                name
+                description
+                color
+              }
+            }
+          }
+          milestone {
+            id
+            title
+            description
+            dueOn
+          }
+          timelineItems(first: 100) {
+            nodes {
+              ... on ConnectedEvent {
+                createdAt
+                subject {
+                  ... on PullRequest {
+                    number
+                    title
+                    url
+                    headRefName
+                    mergedAt
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+query releases($after: String) {
+  repository(owner: "frankframework", name: "frankframework") {
+    releases(first: 100, after: $after) {
+      edges {
+        node {
+          id
+          tagName
+          name
+          publishedAt
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}

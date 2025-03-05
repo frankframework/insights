@@ -23,7 +23,7 @@ public class ReleaseService {
         this.releaseRepository = releaseRepository;
     }
 
-    public void injectReleases() throws RuntimeException {
+    public void injectReleases() {
         if (!releaseRepository.findAll().isEmpty()) {
             return;
         }
