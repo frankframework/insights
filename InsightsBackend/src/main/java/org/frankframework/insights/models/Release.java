@@ -1,27 +1,32 @@
 package org.frankframework.insights.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
+import lombok.Getter;
 
 @Entity
 @Table(name = "release")
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
 public class Release {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    public UUID id;
+    private String id;
 
     @Column(name = "tag_name", nullable = false, unique = true)
     private String tagName;
 
-    @Column(name = "major_version", nullable = false)
-    private String majorVersion;
+    @Column(nullable = false, unique = true)
+    private String name;
 
     @Column(name = "published_at", columnDefinition = "TIMESTAMP")
     private LocalDateTime publishedAt;
 
-    @Column(name = "pull_requests")
-    @OneToMany(mappedBy = "release")
-    private Set<PullRequest> pullRequests;
+    @ManyToMany
+    @JoinTable(
+            name = "release_commit",
+            joinColumns = @JoinColumn(name = "release_id"),
+            inverseJoinColumns = @JoinColumn(name = "commit_id"))
+    private Set<Commit> commits;
 }

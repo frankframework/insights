@@ -1,24 +1,23 @@
 package org.frankframework.insights.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.util.Set;
-import java.util.UUID;
+import lombok.Getter;
 
 @Entity
 @Table(name = "label")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
 public class Label {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private String id;
 
-    @JsonProperty("name")
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String name;
 
-    @JsonProperty("color")
+    private String description;
+
     @Column(nullable = false)
     private String color;
 

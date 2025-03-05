@@ -1,16 +1,18 @@
 package org.frankframework.insights.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
+import lombok.Getter;
 
 @Entity
 @Table(name = "pull_request")
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
 public class PullRequest {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private String id;
 
     @Column(name = "github_id", unique = true, nullable = false)
     private int githubId;
@@ -25,15 +27,12 @@ public class PullRequest {
     private LocalDateTime mergedAt;
 
     @ManyToOne
-    @JoinColumn(name = "milestone_id")
     private Milestone milestone;
 
     @ManyToOne
-    @JoinColumn(name = "release_id")
     private Release release;
 
     @ManyToOne
-    @JoinColumn(name = "issue_id")
     private Issue issue;
 
     @ManyToMany

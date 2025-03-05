@@ -4,7 +4,7 @@ import lombok.Getter;
 import org.frankframework.insights.enums.ErrorCode;
 
 @Getter
-public abstract class ApiException extends RuntimeException {
+public abstract class ApiException extends Exception {
     private final String note;
     private final ErrorCode errorCode;
 
