@@ -3,68 +3,91 @@ package org.frankframework.insights.clients;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.frankframework.insights.configuration.GitHubProperties;
 import org.frankframework.insights.dto.GraphQLDTO;
 import org.frankframework.insights.dto.LabelDTO;
 import org.frankframework.insights.dto.MilestoneDTO;
-import org.frankframework.insights.service.GraphQLQueryService;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.graphql.client.HttpGraphQlClient;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Component
-public class GitHubClient extends ApiClient {
+public class GitHubClient extends GraphQLClient {
 
-    private final GraphQLQueryService graphQLQueryService;
+    private final HttpGraphQlClient graphQlClient;
     private final ObjectMapper objectMapper;
 
-    public GitHubClient(
-            GitHubProperties gitHubProperties, GraphQLQueryService graphQLQueryService, ObjectMapper objectMapper) {
+    public GitHubClient(GitHubProperties gitHubProperties, ObjectMapper objectMapper) {
         super(gitHubProperties.getUrl(), gitHubProperties.getSecret());
-        this.graphQLQueryService = graphQLQueryService;
+        this.graphQlClient = getGraphQLClient();
         this.objectMapper = objectMapper;
     }
 
     public Set<LabelDTO> getLabels() {
-        return getGitHubGraphQLEntities(0, LabelDTO.class, "labels");
+        return getEntities("labels", "repository.labels", LabelDTO.class, Map.of());
     }
 
     public Set<MilestoneDTO> getMilestones() {
-        return getGitHubGraphQLEntities(1, MilestoneDTO.class, "milestones");
+        return getEntities("milestones", "repository.milestones", MilestoneDTO.class, Map.of());
     }
 
-    private <T> Set<T> getGitHubGraphQLEntities(int queryIndex, Class<T> entityType, String entityName) {
+    public <T> Set<T> getEntities(
+            String documentName, String retrievePath, Class<T> entityType, Map<String, Object> extraVariables) {
         Set<T> allEntities = new HashSet<>();
         String cursor = null;
         boolean hasNextPage = true;
 
         while (hasNextPage) {
-            GraphQLDTO<T> response = fetchEntityPage(queryIndex, cursor, entityType);
+            GraphQLDTO<T> response = fetchEntityPage(documentName, retrievePath, cursor, entityType, extraVariables);
 
-            if (response == null || response.data == null || response.data.repository == null) {
+            if (response == null || response.edges == null) {
                 break;
             }
 
-            GraphQLDTO.EntityConnection<T> entityConnection =
-                    response.data.repository.getEntities().get(entityName);
-            if (entityConnection == null || entityConnection.edges == null) {
-                break;
-            }
-
-            allEntities.addAll(entityConnection.edges.stream()
+            allEntities.addAll(response.edges.stream()
                     .map(edge -> objectMapper.convertValue(edge.node, entityType))
                     .collect(Collectors.toSet()));
 
-            hasNextPage = entityConnection.pageInfo != null && entityConnection.pageInfo.hasNextPage;
-            cursor = entityConnection.pageInfo != null ? entityConnection.pageInfo.endCursor : null;
+            hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
+            cursor = response.pageInfo != null ? response.pageInfo.endCursor : null;
         }
 
         return allEntities;
     }
 
-    private <T> GraphQLDTO<T> fetchEntityPage(int queryIndex, String afterCursor, Class<T> entityType) {
-        JsonNode query = graphQLQueryService.customizeQuery(queryIndex, afterCursor, null, null);
-        return request(query, new ParameterizedTypeReference<GraphQLDTO<T>>() {});
+    private <T> GraphQLDTO<T> fetchEntityPage(
+            String documentName,
+            String retrievePath,
+            String afterCursor,
+            Class<T> entityType,
+            Map<String, Object> extraVariables) {
+        HttpGraphQlClient.RequestSpec request =
+                graphQlClient.documentName(documentName).variable("after", afterCursor);
+
+        if (extraVariables != null) {
+            extraVariables.forEach(request::variable);
+        }
+
+        return request.retrieve(retrievePath)
+                .toEntity(new ParameterizedTypeReference<GraphQLDTO<T>>() {})
+                .block();
+    }
+
+    @Override
+    protected <T> Mono<T> sendGraphQLRequest(
+            JsonNode query,
+            ParameterizedTypeReference<T> responseType,
+            HttpGraphQlClient graphQLClient,
+            String retrievePath) {
+        return graphQLClient
+                .mutate()
+                .build()
+                .document(query.toString())
+                .retrieve(retrievePath)
+                .toEntity(responseType);
     }
 }

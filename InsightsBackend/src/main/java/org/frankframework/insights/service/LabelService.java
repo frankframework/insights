@@ -33,6 +33,8 @@ public class LabelService {
 
             Set<Label> labels = labelMapper.toEntity(labelDTOs);
 
+            System.out.println(labels.size());
+
             saveLabels(labels);
         } catch (Exception e) {
             throw new RuntimeException(e);
