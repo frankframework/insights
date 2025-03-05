@@ -19,6 +19,5 @@ public class Commit {
     private String message;
 
     @ManyToOne
-    @JoinColumn(name = "pull_request_id")
     private PullRequest pullRequest;
 }

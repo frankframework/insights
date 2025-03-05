@@ -8,7 +8,4 @@ public class MilestoneDTO {
 
     @JsonProperty("title")
     public String title;
-
-    @JsonProperty("description")
-    public String description;
 }

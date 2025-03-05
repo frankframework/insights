@@ -1,14 +1,14 @@
 package org.frankframework.insights.enums;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum GraphQLConstants {
-	LABELS("labels", "repository.labels"),
-	MILESTONES("milestones", "repository.milestones");
+    LABELS("labels", "repository.labels"),
+    MILESTONES("milestones", "repository.milestones");
 
-	private final String documentName;
-	private final String retrievePath;
+    private final String documentName;
+    private final String retrievePath;
 }
