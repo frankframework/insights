@@ -1,5 +1,7 @@
 package org.frankframework.insights.configuration;
 
+import org.frankframework.insights.exceptions.labels.LabelMappingException;
+import org.frankframework.insights.exceptions.milestones.MilestoneMappingException;
 import org.frankframework.insights.service.LabelService;
 import org.frankframework.insights.service.MilestoneService;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +19,7 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-    public void InitializeSystemData() throws RuntimeException {
+    public void InitializeSystemData() throws LabelMappingException, MilestoneMappingException {
         labelService.injectLabels();
         milestoneService.injectMilestones();
     }

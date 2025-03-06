@@ -9,8 +9,10 @@ import org.frankframework.insights.dto.GraphQLDTO;
 import org.frankframework.insights.dto.LabelDTO;
 import org.frankframework.insights.dto.MilestoneDTO;
 import org.frankframework.insights.enums.GraphQLConstants;
+import org.frankframework.insights.exceptions.clients.GitHubClientException;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
 public class GitHubClient extends GraphQLClient {
@@ -21,15 +23,23 @@ public class GitHubClient extends GraphQLClient {
         this.objectMapper = objectMapper;
     }
 
-    public Set<LabelDTO> getLabels() {
-        return getEntities(GraphQLConstants.LABELS, LabelDTO.class);
+    public Set<LabelDTO> getLabels() throws GitHubClientException {
+        try {
+            return getEntities(GraphQLConstants.LABELS, LabelDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
     }
 
-    public Set<MilestoneDTO> getMilestones() {
-        return getEntities(GraphQLConstants.MILESTONES, MilestoneDTO.class);
+    public Set<MilestoneDTO> getMilestones() throws GitHubClientException {
+        try {
+            return getEntities(GraphQLConstants.MILESTONES, MilestoneDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
     }
 
-    private <T> Set<T> getEntities(GraphQLConstants query, Class<T> entityType) {
+    private <T> Set<T> getEntities(GraphQLConstants query, Class<T> entityType) throws GitHubClientException {
         Set<T> allEntities = new HashSet<>();
         String cursor = null;
         boolean hasNextPage = true;
@@ -52,12 +62,17 @@ public class GitHubClient extends GraphQLClient {
         return allEntities;
     }
 
-    private <T> GraphQLDTO<T> fetchEntityPage(GraphQLConstants query, String afterCursor, Class<T> entityType) {
-        return getGraphQlClient()
-                .documentName(query.getDocumentName())
-                .variable("after", afterCursor)
-                .retrieve(query.getRetrievePath())
-                .toEntity(new ParameterizedTypeReference<GraphQLDTO<T>>() {})
-                .block();
+    private <T> GraphQLDTO<T> fetchEntityPage(GraphQLConstants query, String afterCursor, Class<T> entityType)
+            throws GitHubClientException {
+        try {
+            return getGraphQlClient()
+                    .documentName(query.getDocumentName())
+                    .variable("after", afterCursor)
+                    .retrieve(query.getRetrievePath())
+                    .toEntity(new ParameterizedTypeReference<GraphQLDTO<T>>() {})
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new GitHubClientException();
+        }
     }
 }

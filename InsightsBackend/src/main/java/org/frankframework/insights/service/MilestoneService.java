@@ -3,6 +3,8 @@ package org.frankframework.insights.service;
 import java.util.Set;
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.MilestoneDTO;
+import org.frankframework.insights.exceptions.milestones.MilestoneDatabaseException;
+import org.frankframework.insights.exceptions.milestones.MilestoneMappingException;
 import org.frankframework.insights.mapper.MilestoneMapper;
 import org.frankframework.insights.models.Milestone;
 import org.frankframework.insights.repository.MilestoneRepository;
@@ -24,7 +26,7 @@ public class MilestoneService {
         this.milestoneRepository = milestoneRepository;
     }
 
-    public void injectMilestones() throws RuntimeException {
+    public void injectMilestones() throws MilestoneMappingException {
         if (!milestoneRepository.findAll().isEmpty()) {
             return;
         }
@@ -36,11 +38,15 @@ public class MilestoneService {
 
             saveMilestones(milestones);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new MilestoneMappingException();
         }
     }
 
-    private void saveMilestones(Set<Milestone> milestones) {
-        milestoneRepository.saveAll(milestones);
+    private void saveMilestones(Set<Milestone> milestones) throws MilestoneDatabaseException {
+        try {
+            milestoneRepository.saveAll(milestones);
+        } catch (Exception e) {
+            throw new MilestoneDatabaseException();
+        }
     }
 }
