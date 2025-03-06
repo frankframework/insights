@@ -1,18 +1,25 @@
 package org.frankframework.insights.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
-import java.util.UUID;
+import lombok.Getter;
 
 @Entity
 @Table(name = "label")
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
 public class Label {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private String id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String name;
+
+    private String description;
+
+    @Column(nullable = false)
+    private String color;
 
     @ManyToMany(mappedBy = "labels")
     private Set<Issue> issues;

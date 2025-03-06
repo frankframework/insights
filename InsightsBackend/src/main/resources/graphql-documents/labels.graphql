@@ -1,0 +1,18 @@
+query labels($after: String) {
+  repository(owner: "frankframework", name: "frankframework") {
+    labels(first: 100, after: $after) {
+      edges {
+        node {
+          id
+          name
+          description
+          color
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}
