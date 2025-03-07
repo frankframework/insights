@@ -1,15 +1,10 @@
-query releases($after: String) {
+query branches($after: String) {
 	repository(owner: "frankframework", name: "frankframework") {
-		releases(first: 100, after: $after) {
+		refs(refPrefix: "refs/heads/", first: 100, after: $after) {
 			edges {
 				node {
 					id
-					tagName
 					name
-					publishedAt
-					tagCommit {
-						oid
-					}
 				}
 			}
 			pageInfo {
