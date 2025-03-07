@@ -2,6 +2,8 @@ package org.frankframework.insights.commit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import java.time.OffsetDateTime;
+import java.util.Set;
 import lombok.Getter;
 import org.frankframework.insights.pullrequest.PullRequest;
 
@@ -18,6 +20,12 @@ public class Commit {
 
     @Column(nullable = false)
     private String message;
+
+    @Column(name = "timestamp", columnDefinition = "TIMESTAMP")
+    private OffsetDateTime timestamp;
+
+    @ManyToMany(mappedBy = "commits")
+    private Set<Branch> branches;
 
     @ManyToOne
     private PullRequest pullRequest;
