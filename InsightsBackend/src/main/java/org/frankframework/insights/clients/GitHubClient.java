@@ -85,10 +85,6 @@ public class GitHubClient extends GraphQLClient {
 
             GraphQLDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
 
-            if (response == null || response.edges == null) {
-                break;
-            }
-
             allEntities.addAll(response.edges.stream()
                     .map(edge -> objectMapper.convertValue(edge.node, entityType))
                     .collect(Collectors.toSet()));

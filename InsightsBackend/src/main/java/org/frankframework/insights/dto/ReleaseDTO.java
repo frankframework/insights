@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.OffsetDateTime;
 import lombok.Getter;
 
-@Getter
 public class ReleaseDTO {
     @JsonProperty("id")
     public String id;
 
+	@Getter
     @JsonProperty("tagName")
     public String tagName;
 
@@ -18,6 +18,7 @@ public class ReleaseDTO {
     @JsonProperty("publishedAt")
     public OffsetDateTime publishedAt;
 
+    @Getter
     @JsonProperty("tagCommit")
     private TagCommitDTO tagCommit;
 }
