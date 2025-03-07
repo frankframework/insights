@@ -8,6 +8,8 @@ import lombok.Getter;
 public enum GraphQLConstants {
     LABELS("labels", "repository.labels"),
     MILESTONES("milestones", "repository.milestones"),
+    BRANCHES("branches", "repository.refs"),
+    BRANCH_COMMITS("branchCommits", "repository.ref.target.history"),
     RELEASES("releases", "repository.releases");
 
     private final String documentName;

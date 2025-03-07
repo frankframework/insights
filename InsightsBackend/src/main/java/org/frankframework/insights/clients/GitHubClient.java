@@ -1,13 +1,14 @@
 package org.frankframework.insights.clients;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.frankframework.insights.configuration.GitHubProperties;
+import org.frankframework.insights.dto.BranchDTO;
+import org.frankframework.insights.dto.CommitDTO;
 import org.frankframework.insights.dto.GraphQLDTO;
 import org.frankframework.insights.dto.LabelDTO;
 import org.frankframework.insights.dto.MilestoneDTO;
@@ -43,21 +44,44 @@ public class GitHubClient extends GraphQLClient {
         }
     }
 
-	public Set<ReleaseDTO> getReleases() throws GitHubClientException {
-		try {
-			return getEntities(GraphQLConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
-		} catch (Exception e) {
-			throw new GitHubClientException();
-		}
-	}
+    public Set<BranchDTO> getBranches() throws GitHubClientException {
+        try {
+            return getEntities(GraphQLConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
+    }
 
-    private <T> Set<T> getEntities(GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType) throws GitHubClientException {
+    public Set<CommitDTO> getBranchCommits(String branchName) throws GitHubClientException {
+        try {
+            HashMap<String, Object> variables = new HashMap<>() {
+                {
+                    put("branchName", branchName);
+                }
+            };
+
+            return getEntities(GraphQLConstants.BRANCH_COMMITS, variables, CommitDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
+    }
+
+    public Set<ReleaseDTO> getReleases() throws GitHubClientException {
+        try {
+            return getEntities(GraphQLConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+        } catch (Exception e) {
+            throw new GitHubClientException();
+        }
+    }
+
+    private <T> Set<T> getEntities(GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+            throws GitHubClientException {
         Set<T> allEntities = new HashSet<>();
         String cursor = null;
         boolean hasNextPage = true;
 
         while (hasNextPage) {
-			queryVariables.put("after", cursor);
+            queryVariables.put("after", cursor);
 
             GraphQLDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
 
@@ -76,7 +100,8 @@ public class GitHubClient extends GraphQLClient {
         return allEntities;
     }
 
-    private <T> GraphQLDTO<T> fetchEntityPage(GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+    private <T> GraphQLDTO<T> fetchEntityPage(
+            GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
         try {
             return getGraphQlClient()
