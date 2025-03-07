@@ -1,17 +1,13 @@
 package org.frankframework.insights.service;
 
-import java.beans.Transient;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import jakarta.transaction.Transactional;
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.CommitDTO;
 import org.frankframework.insights.mapper.CommitMapper;
+import org.frankframework.insights.models.Branch;
 import org.frankframework.insights.models.Commit;
-import org.frankframework.insights.models.Release;
 import org.frankframework.insights.repository.CommitRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,40 +16,36 @@ public class CommitService {
     private final GitHubClient gitHubClient;
     private final CommitMapper commitMapper;
     private final CommitRepository commitRepository;
-    private final ReleaseService releaseService;
+    private final BranchService branchService;
 
     public CommitService(
             GitHubClient gitHubClient,
             CommitMapper commitMapper,
             CommitRepository commitRepository,
-            ReleaseService releaseService) {
+            BranchService branchService) {
         this.gitHubClient = gitHubClient;
         this.commitMapper = commitMapper;
         this.commitRepository = commitRepository;
-        this.releaseService = releaseService;
+        this.branchService = branchService;
     }
 
-    public void injectCommits() throws RuntimeException {
+    public void injectBranchCommits() throws RuntimeException {
         if (!commitRepository.findAll().isEmpty()) {
             return;
         }
 
-        try {List<Release> releases = releaseService.getAllReleases();
-//            Set<Commit> allCommits = new HashSet<>();
-//
-//            for (Release release : releases) {
-//                Set<CommitDTO> commitDTOS = gitHubClient.getCommits(release.getTagName());
-//
-//                Set<Commit> commits = commitMapper.toEntity(commitDTOS);
-//
-//                release.setCommits(commits);
-//                releaseService.saveOrUpdateRelease(release);
-//
-//                allCommits.addAll(commits);
-//            }
-//
-//            saveCommits(allCommits);
-//
+        try {
+            List<Branch> branches = branchService.getAllBranches();
+
+            for (Branch branch : branches) {
+                Set<CommitDTO> commitDTOS = gitHubClient.getBranchCommits(branch.getName());
+                Set<Commit> commits = commitMapper.toEntity(commitDTOS);
+                branch.setCommits(commits);
+
+                saveCommits(commits);
+
+                branchService.saveOrUpdateBranch(branch);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Error fetching commits", e);
         }
@@ -67,8 +59,6 @@ public class CommitService {
                 .filter(commit -> !existingCommitIds.contains(commit.getId()))
                 .collect(Collectors.toSet());
 
-        if (!newCommits.isEmpty()) {
-            commitRepository.saveAll(newCommits);
-        }
+        commitRepository.saveAll(newCommits);
     }
 }

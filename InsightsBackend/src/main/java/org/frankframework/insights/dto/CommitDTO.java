@@ -13,4 +13,7 @@ public class CommitDTO {
 
     @JsonProperty("message")
     public String message;
+
+    @JsonProperty("committedDate")
+    public String timestamp;
 }
