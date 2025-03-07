@@ -24,7 +24,11 @@ public class Release {
     @Column(name = "published_at", columnDefinition = "TIMESTAMP")
     private OffsetDateTime publishedAt;
 
-	@Setter
+    @Setter
+    @ManyToOne
+    private Branch branch;
+
+    @Setter
     @ManyToMany
     @JoinTable(
             name = "release_commit",
