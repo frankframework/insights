@@ -1,12 +1,11 @@
-package org.frankframework.insights.release;
+package org.frankframework.insights.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 import lombok.Getter;
-
-import org.frankframework.insights.commit.Commit;
+import lombok.Setter;
 
 @Entity
 @Table(name = "release")
@@ -23,8 +22,13 @@ public class Release {
     private String name;
 
     @Column(name = "published_at", columnDefinition = "TIMESTAMP")
-    private LocalDateTime publishedAt;
+    private OffsetDateTime publishedAt;
 
+    @Setter
+    @ManyToOne
+    private Branch branch;
+
+    @Setter
     @ManyToMany
     @JoinTable(
             name = "release_commit",

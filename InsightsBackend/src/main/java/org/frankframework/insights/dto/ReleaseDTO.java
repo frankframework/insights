@@ -17,4 +17,7 @@ public class ReleaseDTO {
 
     @JsonProperty("publishedAt")
     public OffsetDateTime publishedAt;
+
+    @JsonProperty("tagCommit")
+    private TagCommitDTO tagCommit;
 }
