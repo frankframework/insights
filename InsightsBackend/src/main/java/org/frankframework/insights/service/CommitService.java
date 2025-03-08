@@ -3,6 +3,8 @@ package org.frankframework.insights.service;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import jakarta.transaction.Transactional;
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.CommitDTO;
 import org.frankframework.insights.mapper.CommitMapper;
@@ -29,6 +31,7 @@ public class CommitService {
         this.branchService = branchService;
     }
 
+    @Transactional
     public void injectBranchCommits() throws RuntimeException {
         if (!commitRepository.findAll().isEmpty()) {
             return;
@@ -40,10 +43,10 @@ public class CommitService {
             for (Branch branch : branches) {
                 Set<CommitDTO> commitDTOS = gitHubClient.getBranchCommits(branch.getName());
                 Set<Commit> commits = commitMapper.toEntity(commitDTOS);
-                branch.setCommits(commits);
 
                 saveCommits(commits);
 
+                branch.setCommits(commits);
                 branchService.saveOrUpdateBranch(branch);
             }
         } catch (Exception e) {
@@ -51,12 +54,11 @@ public class CommitService {
         }
     }
 
-    public void saveCommits(Set<Commit> commits) {
-        Set<String> existingCommitIds =
-                commitRepository.findAll().stream().map(Commit::getId).collect(Collectors.toSet());
+    private void saveCommits(Set<Commit> commits) {
+        Set<String> existingCommitShas = commitRepository.findAllOid();
 
         Set<Commit> newCommits = commits.stream()
-                .filter(commit -> !existingCommitIds.contains(commit.getId()))
+                .filter(commit -> !existingCommitShas.contains(commit.getOid()))
                 .collect(Collectors.toSet());
 
         commitRepository.saveAll(newCommits);
