@@ -7,11 +7,11 @@ public class CommitDTO {
     public String id;
 
     @JsonProperty("oid")
-    public String sha;
+    public String oid;
 
     @JsonProperty("message")
     public String message;
 
     @JsonProperty("committedDate")
-    public String timestamp;
+    public String committedDate;
 }

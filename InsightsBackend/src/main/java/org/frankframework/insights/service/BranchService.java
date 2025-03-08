@@ -36,7 +36,7 @@ public class BranchService {
     }
 
     public boolean doesBranchContainCommit(Branch branch, String commitOid) {
-        return branch.getCommits().stream().anyMatch(commit -> commit.getSha().equals(commitOid));
+        return branch.getCommits().stream().anyMatch(commit -> commit.getOid().equals(commitOid));
     }
 
     public List<Branch> getAllBranches() {
