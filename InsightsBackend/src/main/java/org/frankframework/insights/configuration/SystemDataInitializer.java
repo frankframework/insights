@@ -1,7 +1,9 @@
 package org.frankframework.insights.configuration;
 
-import org.frankframework.insights.exceptions.labels.LabelMappingException;
-import org.frankframework.insights.exceptions.milestones.MilestoneMappingException;
+import lombok.extern.slf4j.Slf4j;
+
+import org.frankframework.insights.exceptions.labels.LabelInjectionException;
+import org.frankframework.insights.exceptions.milestones.MilestoneInjectionException;
 import org.frankframework.insights.service.BranchService;
 import org.frankframework.insights.service.CommitService;
 import org.frankframework.insights.service.LabelService;
@@ -11,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
+@Slf4j
 public class SystemDataInitializer {
 
     private final LabelService labelService;
@@ -33,11 +36,13 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-    public void InitializeSystemData() throws LabelMappingException, MilestoneMappingException {
+    public void InitializeSystemData() throws LabelInjectionException, MilestoneInjectionException {
+        log.info("Start fetching all GitHub data");
         labelService.injectLabels();
         milestoneService.injectMilestones();
         branchService.injectBranches();
         commitService.injectBranchCommits();
         releaseService.injectReleases();
-    }
+		log.info("Done fetching all GitHub data");
+	}
 }

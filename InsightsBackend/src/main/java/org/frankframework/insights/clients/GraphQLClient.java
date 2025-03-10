@@ -1,9 +1,11 @@
 package org.frankframework.insights.clients;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.client.HttpGraphQlClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClient;
 
+@Slf4j
 public abstract class GraphQLClient {
     private final HttpGraphQlClient graphQlClient;
 
@@ -15,6 +17,7 @@ public abstract class GraphQLClient {
                 .build();
 
         this.graphQlClient = HttpGraphQlClient.builder(webClient).build();
+        log.info("GraphQLClient initialized successfully with base URL: {}", baseUrl);
     }
 
     protected HttpGraphQlClient getGraphQlClient() {
