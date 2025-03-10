@@ -10,13 +10,9 @@ import org.frankframework.insights.models.Commit;
 import org.frankframework.insights.models.Release;
 import org.frankframework.insights.repository.ReleaseRepository;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class ReleaseService {
-	private static final Logger logger = LoggerFactory.getLogger(ReleaseService.class);
-
 	private final GitHubClient gitHubClient;
 	private final ReleaseMapper releaseMapper;
 	private final ReleaseRepository releaseRepository;
@@ -44,17 +40,14 @@ public class ReleaseService {
 			for (Release release : releases) {
 				MatchingBranch matchingBranch = releaseBranches.get(release.getTagName());
 				if (matchingBranch == null) {
-					logger.warn("No matching branch found for release {}", release.getTagName());
 					continue;
 				}
 
 				release.setBranch(matchingBranch.branch());
 				release.setCommits(matchingBranch.commits());
-				logger.debug("Saving release {} with {} commits", release.getTagName(), matchingBranch.commits().size());
 				saveRelease(release);
 			}
 		} catch (Exception e) {
-			logger.error("Error injecting releases", e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -66,10 +59,6 @@ public class ReleaseService {
 		for (ReleaseDTO releaseDTO : releaseDTOs) {
 			Set<Branch> matchingBranches = findMatchingBranches(branches, releaseDTO.getTagCommit().getOid());
 			MatchingBranch calculatedBranch = weighBestMatchingBranch(matchingBranches, releaseDTO.getTagCommit().getOid());
-
-			if (calculatedBranch == null) {
-				logger.warn("No best match found for release {} with commit {}", releaseDTO.getTagName(), releaseDTO.getTagCommit().getOid());
-			}
 
 			releaseBranches.put(releaseDTO.getTagName(),
 					calculatedBranch != null ? calculatedBranch : new MatchingBranch(null, Collections.emptySet()));
@@ -104,7 +93,6 @@ public class ReleaseService {
 			branchReleaseCommits.put(branch, new HashSet<>(commitsBeforeRelease));
 
 			if ("master".equals(branch.getName())) {
-				logger.debug("Master branch selected for release commit {}", releaseCommitOid);
 				return new MatchingBranch(branch, new HashSet<>(commitsBeforeRelease));
 			}
 
