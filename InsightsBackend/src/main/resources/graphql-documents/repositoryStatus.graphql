@@ -1,0 +1,32 @@
+query RepoStats($owner: String!, $repo: String!) {
+	repository(owner: $owner, name: $repo) {
+		releases {
+			totalCount
+		}
+		pullRequests {
+			totalCount
+		}
+		issues {
+			totalCount
+		}
+		labels {
+			totalCount
+		}
+		milestones {
+			totalCount
+		}
+		refs(refPrefix: "refs/heads/", first: 100) {
+			totalCount
+			nodes {
+				name
+				target {
+					... on Commit {
+						history(first: 1) {  # Get commit count per branch
+							totalCount
+						}
+					}
+				}
+			}
+		}
+	}
+}
