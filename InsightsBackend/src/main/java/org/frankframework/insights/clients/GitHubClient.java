@@ -16,6 +16,9 @@ import org.frankframework.insights.dto.MilestoneDTO;
 import org.frankframework.insights.dto.ReleaseDTO;
 import org.frankframework.insights.enums.GraphQLConstants;
 import org.frankframework.insights.exceptions.clients.GitHubClientException;
+import org.frankframework.insights.exceptions.releases.ReleaseDatabaseException;
+import org.frankframework.insights.models.Commit;
+
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -36,7 +39,7 @@ public class GitHubClient extends GraphQLClient {
             log.info("Successfully fetched {} labels from GitHub", labels.size());
             return labels;
         } catch (Exception e) {
-            throw new GitHubClientException("Error fetching labels", e);
+            throw new GitHubClientException("Error fetching labels from GitHub", e);
         }
     }
 
@@ -45,18 +48,19 @@ public class GitHubClient extends GraphQLClient {
             Set<MilestoneDTO> milestones = getEntities(GraphQLConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
             log.info("Successfully fetched {} milestones from GitHub", milestones.size());
             return milestones;
-            return getEntities(GraphQLConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
-        } catch (Exception e) {
-            throw new GitHubClientException();
-        }
+		} catch (Exception e) {
+			throw new GitHubClientException("Error fetching milestones from GitHub", e);
+		}
     }
 
     public Set<BranchDTO> getBranches() throws GitHubClientException {
         try {
-            return getEntities(GraphQLConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
-        } catch (Exception e) {
-            throw new GitHubClientException();
-        }
+			Set<BranchDTO> branches = getEntities(GraphQLConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
+			log.info("Successfully fetched {} branches from GitHub", branches.size());
+			return branches;
+		} catch (Exception e) {
+			throw new GitHubClientException("Error fetching branches from GitHub", e);
+		}
     }
 
     public Set<CommitDTO> getBranchCommits(String branchName) throws GitHubClientException {
@@ -67,18 +71,23 @@ public class GitHubClient extends GraphQLClient {
                 }
             };
 
-            return getEntities(GraphQLConstants.BRANCH_COMMITS, variables, CommitDTO.class);
-        } catch (Exception e) {
-            throw new GitHubClientException("Error fetching milestones", e);
-        }
+			Set<CommitDTO> commits = getEntities(GraphQLConstants.BRANCH_COMMITS, variables, CommitDTO.class);
+			log.info("Successfully fetched {} commits from GitHub", commits.size());
+			return commits;
+		} catch (Exception e) {
+			log.error("Error fetching commits for branch: {}", branchName, e);
+			throw new GitHubClientException("Error fetching commits for branch from GitHub", e);
+		}
     }
 
     public Set<ReleaseDTO> getReleases() throws GitHubClientException {
         try {
-            return getEntities(GraphQLConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
-        } catch (Exception e) {
-            throw new GitHubClientException();
-        }
+			Set<ReleaseDTO> releases = getEntities(GraphQLConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+			log.info("Successfully fetched {} releases from GitHub", releases.size());
+			return releases;
+		} catch (Exception e) {
+			throw new GitHubClientException("Error fetching releases from GitHub", e);
+		}
     }
 
     private <T> Set<T> getEntities(GraphQLConstants query, Map<String, Object> queryVariables, Class<T> entityType)
