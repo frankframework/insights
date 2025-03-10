@@ -1,12 +1,11 @@
 package org.frankframework.insights.clients;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.core.ParameterizedTypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.client.HttpGraphQlClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
+@Slf4j
 public abstract class GraphQLClient {
     private final HttpGraphQlClient graphQlClient;
 
@@ -18,11 +17,7 @@ public abstract class GraphQLClient {
                 .build();
 
         this.graphQlClient = HttpGraphQlClient.builder(webClient).build();
-    }
-
-    protected <T> Mono<T> sendGraphQLRequest(
-            JsonNode query, ParameterizedTypeReference<T> responseType, String retrievePath) {
-        return graphQlClient.document(query.toString()).retrieve(retrievePath).toEntity(responseType);
+        log.info("GraphQLClient initialized successfully with base URL: {}", baseUrl);
     }
 
     protected HttpGraphQlClient getGraphQlClient() {
