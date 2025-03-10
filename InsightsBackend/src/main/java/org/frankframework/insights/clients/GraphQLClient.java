@@ -1,14 +1,11 @@
 package org.frankframework.insights.clients;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.frankframework.insights.exceptions.clients.GraphQLClientException;
-import org.springframework.core.ParameterizedTypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.graphql.client.HttpGraphQlClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
+@Slf4j
 public abstract class GraphQLClient {
     private final HttpGraphQlClient graphQlClient;
 
@@ -20,19 +17,7 @@ public abstract class GraphQLClient {
                 .build();
 
         this.graphQlClient = HttpGraphQlClient.builder(webClient).build();
-    }
-
-    protected <T> Mono<T> sendGraphQLRequest(
-            JsonNode query, ParameterizedTypeReference<T> responseType, String retrievePath)
-            throws GraphQLClientException {
-        try {
-            return graphQlClient
-                    .document(query.toString())
-                    .retrieve(retrievePath)
-                    .toEntity(responseType);
-        } catch (WebClientResponseException e) {
-            throw new GraphQLClientException();
-        }
+        log.info("GraphQLClient initialized successfully with base URL: {}", baseUrl);
     }
 
     protected HttpGraphQlClient getGraphQlClient() {

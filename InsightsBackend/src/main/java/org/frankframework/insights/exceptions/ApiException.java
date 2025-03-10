@@ -5,11 +5,15 @@ import org.frankframework.insights.enums.ErrorCode;
 
 @Getter
 public abstract class ApiException extends Exception {
-    private final String note;
     private final ErrorCode errorCode;
 
-    public ApiException(String note, ErrorCode errorCode) {
-        this.note = note;
+    public ApiException(String message, ErrorCode errorCode) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    public ApiException(String message, ErrorCode errorCode, Throwable cause) {
+        super(message, cause);
         this.errorCode = errorCode;
     }
 }
