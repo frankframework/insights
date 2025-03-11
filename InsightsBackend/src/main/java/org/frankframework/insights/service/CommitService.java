@@ -1,7 +1,6 @@
 package org.frankframework.insights.service;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
@@ -46,36 +45,21 @@ public class CommitService {
         try {
             log.info("Start injecting GitHub commits for each branch");
             List<Branch> branches = branchService.getAllBranches();
+            Set<Branch> branchesIncludingCommits = new HashSet<>();
 
             log.info("Successfully fetched branches and found: {}", branches.size());
 
             for (Branch branch : branches) {
                 Set<CommitDTO> commitDTOS = gitHubClient.getBranchCommits(branch.getName());
                 Set<Commit> commits = commitMapper.toEntity(commitDTOS, Commit.class);
-
-                saveCommits(commits);
-
                 branch.setCommits(commits);
+                branchesIncludingCommits.add(branch);
                 log.info("Setted commits to branch {}", branch.getName());
-                branchService.saveOrUpdateBranch(branch);
             }
+
+            branchService.saveBranches(branchesIncludingCommits);
         } catch (Exception e) {
             throw new CommitInjectionException("Error while injecting GitHub commits and setting them to branches", e);
-        }
-    }
-
-    private void saveCommits(Set<Commit> commits) throws CommitDatabaseException {
-        try {
-            Set<String> existingCommitShas = commitRepository.findAllOid();
-            log.info("Found {} existing commits", existingCommitShas.size());
-            Set<Commit> newCommits = commits.stream()
-                    .filter(commit -> !existingCommitShas.contains(commit.getOid()))
-                    .collect(Collectors.toSet());
-            log.info("Found {} new commits", newCommits.size());
-            commitRepository.saveAll(newCommits);
-            log.info("Successfully saved new commits");
-        } catch (Exception e) {
-            throw new CommitDatabaseException("Error while saving new commits", e);
         }
     }
 }
