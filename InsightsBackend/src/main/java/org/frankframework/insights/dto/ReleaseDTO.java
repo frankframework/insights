@@ -3,7 +3,9 @@ package org.frankframework.insights.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.OffsetDateTime;
 import lombok.Getter;
+import lombok.Setter;
 
+@Setter
 public class ReleaseDTO {
     @JsonProperty("id")
     public String id;

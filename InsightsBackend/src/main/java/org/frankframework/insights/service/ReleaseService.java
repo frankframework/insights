@@ -68,6 +68,11 @@ public class ReleaseService {
 		Map<String, MatchingBranch> releaseBranches = new HashMap<>();
 
 		for (ReleaseDTO releaseDTO : releaseDTOs) {
+			if (releaseDTO.getTagCommit() == null || releaseDTO.getTagCommit().getOid() == null) {
+				log.warn("Skipping release '{}' because its tag commit is null.", releaseDTO.getTagName());
+				continue;
+			}
+
 			Set<Branch> matchingBranches = findMatchingBranches(branches, releaseDTO.getTagCommit().getOid());
 			MatchingBranch calculatedBranch = weighBestMatchingBranch(matchingBranches, releaseDTO.getTagCommit().getOid());
 
