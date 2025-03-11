@@ -11,6 +11,7 @@ import lombok.Setter;
 @Table(name = "branch")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class Branch {
 	@Id
 	private String id;
@@ -18,7 +19,6 @@ public class Branch {
 	@Column(nullable = false, unique = true)
 	private String name;
 
-	@Setter
 	@ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "branch_commit",

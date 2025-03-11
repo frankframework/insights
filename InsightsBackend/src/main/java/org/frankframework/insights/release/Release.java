@@ -11,6 +11,7 @@ import lombok.Setter;
 @Table(name = "release")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class Release {
     @Id
     private String id;
@@ -24,11 +25,9 @@ public class Release {
     @Column(name = "published_at", columnDefinition = "TIMESTAMP")
     private OffsetDateTime publishedAt;
 
-    @Setter
     @ManyToOne
     private Branch branch;
 
-    @Setter
     @ManyToMany
     @JoinTable(
             name = "release_commit",
