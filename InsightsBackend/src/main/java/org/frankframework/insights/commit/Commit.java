@@ -27,7 +27,7 @@ public class Commit {
 	@Column(name = "committed_date", columnDefinition = "TIMESTAMP")
 	private OffsetDateTime committedDate;
 
-	@ManyToMany(mappedBy = "commits", cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+	@ManyToMany(mappedBy = "commits")
 	private Set<Branch> branches = new HashSet<>();
 
 	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})

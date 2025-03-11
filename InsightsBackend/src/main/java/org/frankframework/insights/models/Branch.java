@@ -19,7 +19,7 @@ public class Branch {
 	@Column(nullable = false, unique = true)
 	private String name;
 
-	@ManyToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST}, fetch = FetchType.EAGER)
+	@ManyToMany(cascade = {CascadeType.PERSIST}, fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "branch_commit",
 			joinColumns = @JoinColumn(name = "branch_id"),

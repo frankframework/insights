@@ -61,18 +61,10 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-    public void saveOrUpdateBranch(Branch branch) throws BranchDatabaseException {
-        try {
-            branchRepository.save(branch);
-            log.info("Successfully updated and saved branches");
-        } catch (Exception e) {
-            throw new BranchDatabaseException("Error while updating and saving branches", e);
-        }
-    }
-
-    private void saveBranches(Set<Branch> branches) throws BranchDatabaseException {
+    public void saveBranches(Set<Branch> branches) throws BranchDatabaseException {
         try {
             branchRepository.saveAll(branches);
+            log.info("Successfully saved {} branches.", branches.size());
         } catch (Exception e) {
             throw new BranchDatabaseException("Error while saving set of branches", e);
         }
