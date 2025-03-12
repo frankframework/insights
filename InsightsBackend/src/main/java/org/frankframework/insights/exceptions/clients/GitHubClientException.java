@@ -1,10 +1,10 @@
 package org.frankframework.insights.exceptions.clients;
 
-import org.frankframework.insights.enums.ErrorCode;
 import org.frankframework.insights.exceptions.ApiException;
+import org.springframework.http.HttpStatus;
 
 public class GitHubClientException extends ApiException {
     public GitHubClientException(String message, Throwable cause) {
-        super(message, ErrorCode.GITHUB_CLIENT_ERROR, cause);
+        super(message, HttpStatus.INTERNAL_SERVER_ERROR, cause);
     }
 }

@@ -21,7 +21,7 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-    public void InitializeSystemData() throws LabelInjectionException, MilestoneInjectionException {
+    public void initializeSystemData() throws LabelInjectionException, MilestoneInjectionException {
         log.info("Start fetching all GitHub data");
         labelService.injectLabels();
         milestoneService.injectMilestones();

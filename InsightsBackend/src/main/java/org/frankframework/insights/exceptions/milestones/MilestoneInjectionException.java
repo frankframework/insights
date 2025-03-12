@@ -1,10 +1,10 @@
 package org.frankframework.insights.exceptions.milestones;
 
-import org.frankframework.insights.enums.ErrorCode;
 import org.frankframework.insights.exceptions.ApiException;
+import org.springframework.http.HttpStatus;
 
 public class MilestoneInjectionException extends ApiException {
     public MilestoneInjectionException(String message, Throwable cause) {
-        super(message, ErrorCode.MILESTONE_INJECTION_ERROR, cause);
+        super(message, HttpStatus.INTERNAL_SERVER_ERROR, cause);
     }
 }

@@ -10,43 +10,41 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class Mapper {
-	private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-	public Mapper(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
-	}
+    public Mapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
-	public <Tentity, Tdto> Tentity toEntity(Tdto dto, Class<Tentity> entityClass) {
-		return objectMapper.convertValue(dto, entityClass);
-	}
+    public <E, D> E toEntity(D dto, Class<E> entityClass) {
+        return objectMapper.convertValue(dto, entityClass);
+    }
 
-	public <Tentity, Tdto> Tdto toDTO(Tentity entity, Class<Tdto> dtoClass) {
-		return objectMapper.convertValue(entity, dtoClass);
-	}
+    public <E, D> D toDTO(E entity, Class<D> dtoClass) {
+        return objectMapper.convertValue(entity, dtoClass);
+    }
 
-	public <Tentity, Tdto> Set<Tentity> toEntity(Set<Tdto> dtoSet, Class<Tentity> entityClass) throws MappingException {
-		try {
-			log.info("Converting {} DTOs to Entities [{}]", dtoSet.size(), entityClass.getSimpleName());
-			Set<Tentity> entities = dtoSet.stream()
-					.map(dto -> toEntity(dto, entityClass))
-					.collect(Collectors.toSet());
-			log.info("Successfully mapped {} DTOs to Entities [{}]", dtoSet.size(), entityClass.getSimpleName());
-			return entities;
-		} catch (Exception e) {
-			throw new MappingException("Failed to convert DTOs to Entities: " + e.getMessage(), e);
-		}
-	}
+    public <E, D> Set<E> toEntity(Set<D> dtoSet, Class<E> entityClass) throws MappingException {
+        try {
+            log.info("Converting {} DTOs to Entities [{}]", dtoSet.size(), entityClass.getSimpleName());
+            Set<E> entities =
+                    dtoSet.stream().map(dto -> toEntity(dto, entityClass)).collect(Collectors.toSet());
+            log.info("Successfully mapped {} DTOs to Entities [{}]", dtoSet.size(), entityClass.getSimpleName());
+            return entities;
+        } catch (Exception e) {
+            throw new MappingException("Failed to convert DTOs to Entities: " + e.getMessage(), e);
+        }
+    }
 
-	public <Tentity, Tdto> Set<Tdto> toDTO(Set<Tentity> entitySet, Class<Tdto> dtoClass) throws MappingException {
-		try {
-			log.info("Converting {} Entities to DTOs [{}]", entitySet.size(), dtoClass.getSimpleName());
-			Set<Tdto> DTOs = entitySet.stream()
-					.map(entity -> toDTO(entity, dtoClass))
-					.collect(Collectors.toSet());
-			log.info("Successfully mapped {} Entities to DTOs [{}]", entitySet.size(), dtoClass.getSimpleName());
-			return DTOs;
-		} catch (Exception e) {
-			throw new MappingException("Failed to convert Entities to DTOs: " + e.getMessage(), e);
-		}
-	}
+    public <E, D> Set<D> toDTO(Set<E> entitySet, Class<D> dtoClass) throws MappingException {
+        try {
+            log.info("Converting {} Entities to DTOs [{}]", entitySet.size(), dtoClass.getSimpleName());
+            Set<D> dtos =
+                    entitySet.stream().map(entity -> toDTO(entity, dtoClass)).collect(Collectors.toSet());
+            log.info("Successfully mapped {} Entities to DTOs [{}]", entitySet.size(), dtoClass.getSimpleName());
+            return dtos;
+        } catch (Exception e) {
+            throw new MappingException("Failed to convert Entities to DTOs: " + e.getMessage(), e);
+        }
+    }
 }

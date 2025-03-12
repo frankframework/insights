@@ -1,19 +1,14 @@
 package org.frankframework.insights.exceptions;
 
 import lombok.Getter;
-import org.frankframework.insights.enums.ErrorCode;
+import org.springframework.http.HttpStatus;
 
 @Getter
 public abstract class ApiException extends Exception {
-    private final ErrorCode errorCode;
+    private final HttpStatus statusCode;
 
-    public ApiException(String message, ErrorCode errorCode) {
-        super(message);
-        this.errorCode = errorCode;
-    }
-
-    public ApiException(String message, ErrorCode errorCode, Throwable cause) {
+    public ApiException(String message, HttpStatus statusCode, Throwable cause) {
         super(message, cause);
-        this.errorCode = errorCode;
+        this.statusCode = statusCode;
     }
 }

@@ -2,7 +2,6 @@ package org.frankframework.insights.exceptions;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.enums.ErrorCode;
 import org.frankframework.insights.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +20,10 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .toList();
 
-        log.error("Exception occurred while processing validation errors: {}", errors);
+        log.error("Validation errors: {}", errors);
 
         ErrorResponse response =
-                new ErrorResponse(HttpStatus.BAD_REQUEST.value(), errors, ErrorCode.BAD_REQUEST_ERROR.getCode());
+                new ErrorResponse(HttpStatus.BAD_REQUEST.value(), errors, HttpStatus.BAD_REQUEST.getReasonPhrase());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -32,15 +31,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApiException(ApiException exception) {
         log.error(
-                "Class {} was thrown with message: {}. Stacktrace:",
-                exception.getClass().getSimpleName(),
-                exception.getMessage(),
-                exception);
-        ErrorResponse response = new ErrorResponse(
-                exception.getErrorCode().getStatus().value(),
-                List.of(exception.getMessage()),
-                exception.getErrorCode().getCode());
+                "Exception occurred: {} - {}", exception.getClass().getSimpleName(), exception.getMessage(), exception);
 
-        return ResponseEntity.status(exception.getErrorCode().getStatus()).body(response);
+        ErrorResponse response = new ErrorResponse(
+                exception.getStatusCode().value(),
+                List.of(exception.getMessage()),
+                exception.getStatusCode().getReasonPhrase());
+
+        return ResponseEntity.status(exception.getStatusCode()).body(response);
     }
 }

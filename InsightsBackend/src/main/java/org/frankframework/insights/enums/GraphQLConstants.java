@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum GraphQLConstants {
+    REPOSITORY_STATISTICS("repositoryStatistics", "repository"),
     LABELS("labels", "repository.labels"),
     MILESTONES("milestones", "repository.milestones");
 
