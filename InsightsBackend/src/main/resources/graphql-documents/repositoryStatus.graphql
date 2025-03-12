@@ -21,7 +21,7 @@ query RepoStats($owner: String!, $repo: String!) {
 				name
 				target {
 					... on Commit {
-						history(first: 1) {  # Get commit count per branch
+						history(first: 1) {
 							totalCount
 						}
 					}

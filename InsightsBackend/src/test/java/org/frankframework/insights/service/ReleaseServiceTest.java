@@ -58,7 +58,7 @@ class ReleaseServiceTest {
 
 		mockRelease = new Release();
 		mockRelease.setTagName("v9.0");
-		mockRelease.setCommits(new HashSet<>(List.of(mockCommit)));
+		mockRelease.setReleaseCommits(new HashSet<>(List.of(mockCommit)));
 
 		mockBranch = new Branch();
 		mockBranch.setName("master");
