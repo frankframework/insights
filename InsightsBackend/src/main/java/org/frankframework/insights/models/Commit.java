@@ -14,22 +14,22 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Commit {
-	@Id
-	private String id;
+    @Id
+    private String id;
 
-	@Column(nullable = false, unique = true)
-	private String oid;
+    @Column(nullable = false, unique = true)
+    private String oid;
 
-	@Lob
-	@Column(nullable = false)
-	private String message;
+    @Lob
+    @Column(nullable = false)
+    private String message;
 
-	@Column(name = "committed_date", columnDefinition = "TIMESTAMP")
-	private OffsetDateTime committedDate;
+    @Column(name = "committed_date", columnDefinition = "TIMESTAMP")
+    private OffsetDateTime committedDate;
 
-	@ManyToMany(mappedBy = "commits")
-	private Set<Branch> branches = new HashSet<>();
+    @ManyToMany(mappedBy = "commits")
+    private Set<Branch> branches = new HashSet<>();
 
-	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-	private PullRequest pullRequest;
+    @ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private PullRequest pullRequest;
 }

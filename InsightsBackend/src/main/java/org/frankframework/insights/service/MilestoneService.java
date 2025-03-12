@@ -22,9 +22,7 @@ public class MilestoneService {
     private final MilestoneRepository milestoneRepository;
 
     public MilestoneService(
-            GitHubClient gitHubClient,
-            Mapper milestoneMapper,
-            MilestoneRepository milestoneRepository) {
+            GitHubClient gitHubClient, Mapper milestoneMapper, MilestoneRepository milestoneRepository) {
         this.gitHubClient = gitHubClient;
         this.milestoneMapper = milestoneMapper;
         this.milestoneRepository = milestoneRepository;

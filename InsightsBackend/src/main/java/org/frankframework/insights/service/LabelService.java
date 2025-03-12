@@ -21,8 +21,7 @@ public class LabelService {
 
     private final LabelRepository labelRepository;
 
-    public LabelService(
-            GitHubClient gitHubClient, Mapper labelMapper, LabelRepository labelRepository) {
+    public LabelService(GitHubClient gitHubClient, Mapper labelMapper, LabelRepository labelRepository) {
         this.gitHubClient = gitHubClient;
         this.labelMapper = labelMapper;
         this.labelRepository = labelRepository;

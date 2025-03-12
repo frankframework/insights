@@ -6,10 +6,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "github.api")
+@ConfigurationProperties(prefix = "github")
 @Getter
 @Setter
 public class GitHubProperties {
     private String url;
     private String secret;
+    private String protectionRegex;
 }

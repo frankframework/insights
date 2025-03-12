@@ -10,7 +10,7 @@ public class ReleaseDTO {
     @JsonProperty("id")
     public String id;
 
-	@Getter
+    @Getter
     @JsonProperty("tagName")
     public String tagName;
 

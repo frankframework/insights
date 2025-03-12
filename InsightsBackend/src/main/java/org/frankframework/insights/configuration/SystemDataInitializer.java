@@ -1,7 +1,6 @@
 package org.frankframework.insights.configuration;
 
 import lombok.extern.slf4j.Slf4j;
-
 import org.frankframework.insights.exceptions.branches.BranchInjectionException;
 import org.frankframework.insights.exceptions.commits.CommitInjectionException;
 import org.frankframework.insights.exceptions.labels.LabelInjectionException;
@@ -39,13 +38,15 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-    public void InitializeSystemData() throws LabelInjectionException, MilestoneInjectionException, BranchInjectionException, CommitInjectionException, ReleaseInjectionException {
+    public void InitializeSystemData()
+            throws LabelInjectionException, MilestoneInjectionException, BranchInjectionException,
+                    CommitInjectionException, ReleaseInjectionException {
         log.info("Start fetching all GitHub data");
         labelService.injectLabels();
         milestoneService.injectMilestones();
         branchService.injectBranches();
         commitService.injectBranchCommits();
         releaseService.injectReleases();
-		log.info("Done fetching all GitHub data");
-	}
+        log.info("Done fetching all GitHub data");
+    }
 }
