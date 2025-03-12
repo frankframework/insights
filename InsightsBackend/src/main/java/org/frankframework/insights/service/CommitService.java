@@ -1,14 +1,10 @@
 package org.frankframework.insights.service;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 import jakarta.transaction.Transactional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.clients.GitHubClient;
 import org.frankframework.insights.dto.CommitDTO;
-import org.frankframework.insights.exceptions.branches.BranchInjectionException;
-import org.frankframework.insights.exceptions.commits.CommitDatabaseException;
 import org.frankframework.insights.exceptions.commits.CommitInjectionException;
 import org.frankframework.insights.mapper.Mapper;
 import org.frankframework.insights.models.Branch;
