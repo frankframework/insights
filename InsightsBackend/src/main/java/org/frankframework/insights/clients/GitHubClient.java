@@ -16,12 +16,9 @@ import org.frankframework.insights.dto.MilestoneDTO;
 import org.frankframework.insights.dto.ReleaseDTO;
 import org.frankframework.insights.enums.GraphQLConstants;
 import org.frankframework.insights.exceptions.clients.GitHubClientException;
-import org.frankframework.insights.exceptions.releases.ReleaseDatabaseException;
-import org.frankframework.insights.models.Commit;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
 @Slf4j

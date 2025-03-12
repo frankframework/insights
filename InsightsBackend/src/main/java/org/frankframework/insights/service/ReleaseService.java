@@ -1,13 +1,12 @@
 package org.frankframework.insights.service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.clients.GitHubClient;
-import org.frankframework.insights.dto.MatchingBranch;
 import org.frankframework.insights.dto.ReleaseDTO;
 import org.frankframework.insights.exceptions.branches.BranchDatabaseException;
-import org.frankframework.insights.exceptions.commits.CommitInjectionException;
 import org.frankframework.insights.exceptions.releases.ReleaseDatabaseException;
 import org.frankframework.insights.exceptions.releases.ReleaseInjectionException;
 import org.frankframework.insights.mapper.Mapper;
@@ -35,110 +34,83 @@ public class ReleaseService {
 
 	public void injectReleases() throws ReleaseInjectionException {
 		if (!releaseRepository.findAll().isEmpty()) {
-			log.info("Releases already found in the in database");
+			log.info("Releases already exist in the database.");
 			return;
 		}
 
 		try {
-			log.info("Start injecting GitHub releases");
+			log.info("Fetching GitHub releases...");
 			Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
-			Set<Release> releases = releaseMapper.toEntity(releaseDTOs, Release.class);
+			List<Branch> branches = branchService.getAllBranches();
 
-			Map<String, MatchingBranch> releaseBranches = stripReleaseBranches(releaseDTOs);
+			Set<Release> releases = releaseDTOs.stream()
+					.map(dto -> createReleaseWithBranchAndCommits(dto, branches))
+					.filter(Objects::nonNull)
+					.collect(Collectors.toSet());
 
-			for (Release release : releases) {
-				MatchingBranch matchingBranch = releaseBranches.get(release.getTagName());
-				if (matchingBranch == null) {
-					log.warn("No matching branch found for release with tagName '{}', skipping release.", release.getTagName());
-					continue;
-				}
-
-				release.setBranch(matchingBranch.branch());
-				release.setCommits(matchingBranch.commits());
-				log.info("Saving release '{}' with updated base branch and commits.", release.getTagName());
-				saveRelease(release);
-			}
+			saveAllReleases(releases);
 		} catch (Exception e) {
-			throw new ReleaseInjectionException("Error while injecting GitHub releases, including setting the base branch and new commits for each release", e);
+			throw new ReleaseInjectionException("Error injecting GitHub releases.", e);
 		}
 	}
 
-	private Map<String, MatchingBranch> stripReleaseBranches(Set<ReleaseDTO> releaseDTOs) throws BranchDatabaseException {
-		List<Branch> branches = branchService.getAllBranches();
-		Map<String, MatchingBranch> releaseBranches = new HashMap<>();
-
-		for (ReleaseDTO releaseDTO : releaseDTOs) {
-			if (releaseDTO.getTagCommit() == null || releaseDTO.getTagCommit().getOid() == null) {
-				log.warn("Skipping release '{}' because its tag commit is null.", releaseDTO.getTagName());
-				continue;
-			}
-
-			Set<Branch> matchingBranches = findMatchingBranches(branches, releaseDTO.getTagCommit().getOid());
-			MatchingBranch calculatedBranch = weighBestMatchingBranch(matchingBranches, releaseDTO.getTagCommit().getOid());
-
-			if (calculatedBranch == null) {
-				log.warn("No matching branch found for release '{}'.", releaseDTO.getTagName());
-			}
-
-			releaseBranches.put(releaseDTO.getTagName(),
-					calculatedBranch != null ? calculatedBranch : new MatchingBranch(null, Collections.emptySet()));
+	private Release createReleaseWithBranchAndCommits(ReleaseDTO dto, List<Branch> branches) {
+		if (dto.getTagCommit() == null || dto.getTagCommit().getOid() == null) {
+			log.warn("Skipping release '{}' due to missing commit info.", dto.getTagName());
+			return null;
 		}
 
-		return releaseBranches;
-	}
+		Release release = releaseMapper.toEntity(dto, Release.class);
+		release = setBranchForRelease(release, branches);
 
-	private Set<Branch> findMatchingBranches(List<Branch> branches, String commitOid) throws BranchDatabaseException {
-		Set<Branch> matchingBranches = new HashSet<>();
-		for (Branch branch : branches) {
-			if (branchService.doesBranchContainCommit(branch, commitOid)) {
-				matchingBranches.add(branch);
-			}
-		}
-		log.debug("Found {} matching branches for release commit '{}'.", matchingBranches.size(), commitOid);
-		return matchingBranches;
-	}
-
-	private MatchingBranch weighBestMatchingBranch(Set<Branch> branches, String releaseCommitOid) {
-		Map<Branch, Float> matchingBranches = new HashMap<>();
-		Map<Branch, Set<Commit>> branchReleaseCommits = new HashMap<>();
-
-		for (Branch branch : branches) {
-			List<Commit> sortedCommits = branch.getCommits().stream()
-					.sorted(Comparator.comparing(Commit::getCommittedDate))
-					.toList();
-
-			List<Commit> commitsBeforeRelease = sortedCommits.stream()
-					.takeWhile(commit -> !commit.getOid().equals(releaseCommitOid))
-					.toList();
-
-			branchReleaseCommits.put(branch, new HashSet<>(commitsBeforeRelease));
-
-			if ("master".equals(branch.getName())) {
-				log.info("Found 'master' branch, automatically selecting it as the matching branch for release commit '{}'.", releaseCommitOid);
-				return new MatchingBranch(branch, new HashSet<>(commitsBeforeRelease));
-			}
-
-			float ratio = calculateBestMatchingBranch(sortedCommits.size(), commitsBeforeRelease.size());
-			matchingBranches.put(branch, ratio);
+		if (release.getBranch() != null) {
+			release = setNewCommitsForRelease(release);
 		}
 
-		return matchingBranches.entrySet().stream()
-				.max(Map.Entry.comparingByValue())
-				.map(entry -> new MatchingBranch(entry.getKey(), branchReleaseCommits.get(entry.getKey())))
-				.orElse(null);
+		return release;
 	}
 
-	private float calculateBestMatchingBranch(int totalAmountCommits, int amountOfCommitsBeforeReleaseCommit) {
-		return (float) amountOfCommitsBeforeReleaseCommit / totalAmountCommits;
+	public Release setBranchForRelease(Release release, List<Branch> branches) {
+		Optional<Branch> bestBranch = branches.stream()
+				.filter(branch -> doesBranchContainCommit(branch, release.getOid()))
+				.max(Comparator.comparing(branch -> "master".equals(branch.getName()) ? 1 : 0));
+
+		bestBranch.ifPresentOrElse(release::setBranch,
+				() -> log.warn("No matching branch found for release '{}'.", release.getTagName()));
+
+		return release;
 	}
 
-	private void saveRelease(Release release) throws ReleaseDatabaseException {
+	private boolean doesBranchContainCommit(Branch branch, String commitOid) {
 		try {
-			releaseRepository.save(release);
-			log.debug("Successfully saved release '{}'.", release.getTagName());
+			return branchService.doesBranchContainCommit(branch, commitOid);
+		} catch (BranchDatabaseException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public Release setNewCommitsForRelease(Release release) {
+		Branch branch = release.getBranch();
+		if (branch == null) return release;
+
+		List<Commit> branchCommits = branch.getCommits()
+				.stream()
+				.sorted(Comparator.comparing(Commit::getCommittedDate))
+				.toList();
+
+		Set<Commit> newCommits = new HashSet<>(branchCommits);
+		release.setReleaseCommits(newCommits);
+
+		return release;
+	}
+
+	private void saveAllReleases(Set<Release> releases) throws ReleaseDatabaseException {
+		try {
+			releaseRepository.saveAll(releases);
+			log.info("Successfully saved {} releases.", releases.size());
 		} catch (Exception e) {
-			log.error("Error while saving release '{}': {}", release.getTagName(), e.getMessage(), e);
-			throw new ReleaseDatabaseException("Error occurred while saving release: " + release.getTagName(), e);
+			log.error("Error saving releases: {}", e.getMessage(), e);
+			throw new ReleaseDatabaseException("Error occurred while saving releases.", e);
 		}
 	}
 }
