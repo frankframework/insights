@@ -9,25 +9,24 @@ import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class ReleaseService {
-	private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
+    private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final ReleaseRepository releaseRepository;
     private final BranchService branchService;
 
     public ReleaseService(
-			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
+            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             ReleaseRepository releaseRepository,
             BranchService branchService) {
-		this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
+        this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.releaseRepository = releaseRepository;
@@ -35,7 +34,8 @@ public class ReleaseService {
     }
 
     public void injectReleases() throws ReleaseInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount() == releaseRepository.count()) {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount()
+                == releaseRepository.count()) {
             log.info("Releases already exist in the database.");
             return;
         }
