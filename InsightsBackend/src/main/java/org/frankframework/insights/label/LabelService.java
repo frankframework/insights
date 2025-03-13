@@ -31,7 +31,7 @@ public class LabelService {
     }
 
     public void injectLabels() throws LabelInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().labelCount()
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubLabelCount()
                 == labelRepository.count()) {
             log.info("Labels already found in the in database");
             return;

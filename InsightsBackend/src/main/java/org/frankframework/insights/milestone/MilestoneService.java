@@ -31,7 +31,7 @@ public class MilestoneService {
     }
 
     public void injectMilestones() throws MilestoneInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().milestoneCount()
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubMilestoneCount()
                 == milestoneRepository.count()) {
             log.info("Milestones already found in the in database");
             return;

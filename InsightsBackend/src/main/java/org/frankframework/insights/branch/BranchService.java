@@ -8,29 +8,34 @@ import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
+import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class BranchService {
-    private final org.frankframework.insights.github.GitHubClient gitHubClient;
+	private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
+    private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final BranchRepository branchRepository;
-    private final String protectionRegex;
+    private final List<String> branchProtectionRegexes;
 
     public BranchService(
+			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             BranchRepository branchRepository,
             GitHubProperties gitHubProperties) {
+		this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.branchRepository = branchRepository;
-        this.protectionRegex = gitHubProperties.getProtectionRegex();
+        this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
     }
 
     public void injectBranches() throws BranchInjectionException {
-        if (!branchRepository.findAll().isEmpty()) {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubBranchCount() == branchRepository.count()) {
             log.info("Branches already found in the in database");
             return;
         }
@@ -55,18 +60,18 @@ public class BranchService {
     }
 
     private Set<Branch> filterBranchesByProtectionPattern(Set<BranchDTO> branchDTOs) {
-        log.info("Filtering branches by protection pattern: {}, and maps them to database entities", protectionRegex);
-        Set<Branch> filteredBranches = branchDTOs.stream()
-                .filter(branchDTO -> Pattern.compile(protectionRegex)
-                        .matcher(branchDTO.getName())
-                        .find())
-                .map(branchDTO -> mapper.toEntity(branchDTO, Branch.class))
-                .collect(Collectors.toSet());
+        log.info("Filtering branches by protection patterns: {}, and maps them to database entities", branchProtectionRegexes);
+		Set<Branch> filteredBranches = branchDTOs.stream()
+				.filter(branchDTO -> branchProtectionRegexes.stream()
+						.anyMatch(regex -> Pattern.compile(regex)
+								.matcher(branchDTO.getName())
+								.find()))
+				.map(branchDTO -> mapper.toEntity(branchDTO, Branch.class))
+				.collect(Collectors.toSet());
 
         log.info(
-                "Successfully filtered {} branches by protection pattern: {}, and mapped them.",
-                filteredBranches.size(),
-                protectionRegex);
+                "Successfully filtered {} branches by protection patterns and mapped them.",
+                filteredBranches.size());
         return filteredBranches;
     }
 

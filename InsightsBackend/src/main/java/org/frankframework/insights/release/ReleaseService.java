@@ -8,29 +8,34 @@ import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
+import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class ReleaseService {
+	private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubClient gitHubClient;
-    private final Mapper releaseMapper;
+    private final Mapper mapper;
     private final ReleaseRepository releaseRepository;
     private final BranchService branchService;
 
     public ReleaseService(
+			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
-            Mapper releaseMapper,
+            Mapper mapper,
             ReleaseRepository releaseRepository,
             BranchService branchService) {
+		this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
-        this.releaseMapper = releaseMapper;
+        this.mapper = mapper;
         this.releaseRepository = releaseRepository;
         this.branchService = branchService;
     }
 
     public void injectReleases() throws ReleaseInjectionException {
-        if (!releaseRepository.findAll().isEmpty()) {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount() == releaseRepository.count()) {
             log.info("Releases already exist in the database.");
             return;
         }
@@ -62,19 +67,19 @@ public class ReleaseService {
             return null;
         }
 
-        Release release = releaseMapper.toEntity(dto, Release.class);
-        release = setBranchForRelease(release, branches);
+        Release release = mapper.toEntity(dto, Release.class);
+
+        Release releaseWithBranch = setBranchForRelease(release, branches);
 
         if (release.getBranch() == null) {
-            log.warn("No matching branch found for release '{}'.", release.getTagName());
+            log.warn("No matching branch found for release '{}'.", releaseWithBranch.getTagName());
             return null;
         }
 
-        release = setNewCommitsForRelease(release);
-        return release;
+        return setNewCommitsForRelease(releaseWithBranch);
     }
 
-    public Release setBranchForRelease(Release release, List<Branch> branches) {
+    private Release setBranchForRelease(Release release, List<Branch> branches) {
         Optional<Branch> bestBranch = branches.stream()
                 .filter(branch -> branchService.doesBranchContainCommit(branch, release.getOid()))
                 .max(Comparator.comparing(branch -> "master".equals(branch.getName()) ? 1 : 0));
@@ -85,7 +90,7 @@ public class ReleaseService {
         return release;
     }
 
-    public Release setNewCommitsForRelease(Release release) {
+    private Release setNewCommitsForRelease(Release release) {
         Branch branch = release.getBranch();
         if (branch == null) return release;
 
