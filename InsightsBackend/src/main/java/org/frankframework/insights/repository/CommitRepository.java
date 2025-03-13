@@ -1,13 +1,11 @@
-package org.frankframework.insights.repository;
+package org.frankframework.insights.commit;
 
-import java.util.Set;
-import org.frankframework.insights.models.Commit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CommitRepository extends JpaRepository<Commit, String> {
-    @Query("SELECT c.oid FROM Commit c")
-    Set<String> findAllOid();
+	@Query("SELECT COUNT(bc) FROM Branch b JOIN b.commits bc")
+	int countAllBranchCommitRelations();
 }
