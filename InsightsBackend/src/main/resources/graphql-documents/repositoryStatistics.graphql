@@ -1,0 +1,11 @@
+query repositoryStatistics() {
+	repository(owner: "frankframework", name: "frankframework") {
+		labels {
+			totalCount
+		}
+		milestones {
+			totalCount
+		}
+
+	}
+}
