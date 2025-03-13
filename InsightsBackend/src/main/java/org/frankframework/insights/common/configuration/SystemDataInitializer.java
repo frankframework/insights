@@ -1,15 +1,15 @@
 package org.frankframework.insights.common.configuration;
 
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.label.LabelInjectionException;
-import org.frankframework.insights.milestone.MilestoneInjectionException;
 import org.frankframework.insights.branch.BranchInjectionException;
-import org.frankframework.insights.commit.CommitInjectionException;
-import org.frankframework.insights.release.ReleaseInjectionException;
-import org.frankframework.insights.label.LabelService;
-import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.branch.BranchService;
+import org.frankframework.insights.commit.CommitInjectionException;
 import org.frankframework.insights.commit.CommitService;
+import org.frankframework.insights.label.LabelInjectionException;
+import org.frankframework.insights.label.LabelService;
+import org.frankframework.insights.milestone.MilestoneInjectionException;
+import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
