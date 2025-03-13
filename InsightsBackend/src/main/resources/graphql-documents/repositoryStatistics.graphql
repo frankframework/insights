@@ -1,0 +1,32 @@
+query repositoryStatistics() {
+	repository(owner: "frankframework", name: "frankframework") {
+		labels {
+			totalCount
+		}
+		milestones {
+			totalCount
+		}
+		refs(refPrefix: "refs/heads/", first: 100) {
+			totalCount
+			nodes {
+				name
+				target {
+					... on Commit {
+						history(first: 1) {
+							totalCount
+						}
+					}
+				}
+			}
+		}
+		releases {
+			totalCount
+		}
+		pullRequests {
+			totalCount
+		}
+		issues {
+			totalCount
+		}
+	}
+}

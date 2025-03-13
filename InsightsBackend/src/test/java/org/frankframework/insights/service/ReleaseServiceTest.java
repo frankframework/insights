@@ -4,16 +4,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
+import org.frankframework.insights.branch.Branch;
+import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.clients.GitHubClient;
-import org.frankframework.insights.dto.ReleaseDTO;
-import org.frankframework.insights.dto.TagCommitDTO;
 import org.frankframework.insights.exceptions.clients.GitHubClientException;
-import org.frankframework.insights.exceptions.releases.ReleaseInjectionException;
 import org.frankframework.insights.mapper.Mapper;
-import org.frankframework.insights.models.Branch;
 import org.frankframework.insights.models.Commit;
 import org.frankframework.insights.models.Release;
-import org.frankframework.insights.repository.ReleaseRepository;
+import org.frankframework.insights.release.ReleaseDTO;
+import org.frankframework.insights.release.ReleaseInjectionException;
+import org.frankframework.insights.release.ReleaseRepository;
+import org.frankframework.insights.release.ReleaseService;
+import org.frankframework.insights.release.ReleaseTagCommitDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,12 +50,12 @@ class ReleaseServiceTest {
         Commit mockCommit = new Commit();
         mockCommit.setOid("sha123");
 
-        TagCommitDTO mockTagCommitDTO = new TagCommitDTO();
-        mockTagCommitDTO.setOid("sha123");
+        ReleaseTagCommitDTO mockReleaseTagCommitDTO = new ReleaseTagCommitDTO();
+        mockReleaseTagCommitDTO.setOid("sha123");
 
         mockReleaseDTO = new ReleaseDTO();
         mockReleaseDTO.setTagName("v9.0");
-        mockReleaseDTO.setTagCommit(mockTagCommitDTO);
+        mockReleaseDTO.setTagCommit(mockReleaseTagCommitDTO);
 
         mockRelease = new Release();
         mockRelease.setTagName("v9.0");
