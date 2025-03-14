@@ -3,9 +3,11 @@ package org.frankframework.insights.release;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
+import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
@@ -42,41 +44,49 @@ class ReleaseServiceTest {
     private ReleaseDTO mockReleaseDTO;
     private Release mockRelease;
     private Branch mockBranch;
+    private Commit mockCommit;
     private GitHubRepositoryStatisticsDTO mockGitHubRepositoryStatisticsDTO;
+    private ReleaseTagCommitDTO mockReleaseTagCommitDTO;
 
     @BeforeEach
     void setUp() {
-        ReleaseTagCommitDTO mockReleaseTagCommitDTO = new ReleaseTagCommitDTO();
+        // Create mock commit
+        mockCommit = new Commit();
+        mockCommit.setOid("sha123");
+        mockCommit.setCommittedDate(OffsetDateTime.now());
+
+        mockReleaseTagCommitDTO = new ReleaseTagCommitDTO();
         mockReleaseTagCommitDTO.setOid("sha123");
 
         mockReleaseDTO = new ReleaseDTO();
         mockReleaseDTO.setTagName("v9.0");
         mockReleaseDTO.setTagCommit(mockReleaseTagCommitDTO);
 
-        mockRelease = new Release();
-        mockRelease.setTagName("v9.0");
-
         mockBranch = new Branch();
         mockBranch.setName("master");
+        mockBranch.setCommits(Set.of(mockCommit));
+
+        mockRelease = new Release();
+        mockRelease.setTagName("v9.0");
+        mockRelease.setOid(mockReleaseTagCommitDTO.getOid());
+        mockRelease.setBranch(mockBranch);
 
         mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
     }
 
+
     @Test
     public void should_InjectReleases_when_DatabaseIsNotFilledYet()
             throws GitHubClientException, ReleaseInjectionException {
         when(mockGitHubRepositoryStatisticsDTO.getGitHubReleaseCount()).thenReturn(10);
         when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-        when(releaseMapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
-        when(branchService.doesBranchContainCommit(any(), any())).thenReturn(true);
 
         releaseService.injectReleases();
 
-        verify(releaseRepository, times(1)).saveAll(anySet());
+        verify(gitHubClient, times(1)).getReleases();
+        verify(releaseRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -96,6 +106,7 @@ class ReleaseServiceTest {
             throws GitHubClientException, ReleaseInjectionException {
         Branch developmentBranch = new Branch();
         developmentBranch.setName("development");
+        developmentBranch.setCommits(Set.of(mockCommit));
 
         when(mockGitHubRepositoryStatisticsDTO.getGitHubReleaseCount()).thenReturn(10);
         when(releaseRepository.count()).thenReturn(0L);
@@ -114,7 +125,8 @@ class ReleaseServiceTest {
             throws GitHubClientException, ReleaseInjectionException {
         when(mockGitHubRepositoryStatisticsDTO.getGitHubReleaseCount()).thenReturn(10);
         when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Collections.emptySet());
+        when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
+        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
 
         releaseService.injectReleases();
 

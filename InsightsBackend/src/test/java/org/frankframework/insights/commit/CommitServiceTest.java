@@ -21,10 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CommitServiceTest {
-
-    @Mock
-    private GitHubProperties gitHubProperties;
+public class CommitServiceTest {
 
     @Mock
     private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
@@ -84,7 +81,7 @@ class CommitServiceTest {
 
         commitService.injectBranchCommits();
 
-        verify(branchService, times(0)).saveBranches(anySet());
+        verify(branchService, never()).saveBranches(anySet());
     }
 
     @Test
