@@ -70,6 +70,7 @@ class ReleaseServiceTest {
         mockRelease.setTagName("v9.0");
         mockRelease.setOid(mockReleaseTagCommitDTO.getOid());
         mockRelease.setBranch(mockBranch);
+        mockRelease.setPublishedAt(OffsetDateTime.now());
 
         mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
@@ -109,16 +110,17 @@ class ReleaseServiceTest {
         developmentBranch.setCommits(Set.of(mockCommit));
 
         when(mockGitHubRepositoryStatisticsDTO.getGitHubReleaseCount()).thenReturn(10);
-        when(releaseRepository.count()).thenReturn(0L);
+        when(releaseRepository.count()).thenReturn(0L); // Database is empty
         when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
         when(branchService.getAllBranches()).thenReturn(List.of(mockBranch, developmentBranch));
         when(releaseMapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
-        when(branchService.doesBranchContainCommit(any(), any())).thenReturn(true);
+        when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(true);
 
         releaseService.injectReleases();
 
         verify(releaseRepository, times(1)).saveAll(anySet());
     }
+
 
     @Test
     public void should_NotInjectReleases_when_ReleaseBranchesMapIsEmpty()
@@ -127,6 +129,7 @@ class ReleaseServiceTest {
         when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+        when(releaseMapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
 
         releaseService.injectReleases();
 
