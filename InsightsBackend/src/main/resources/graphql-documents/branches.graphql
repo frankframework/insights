@@ -1,0 +1,16 @@
+query branches($after: String) {
+	repository(owner: "frankframework", name: "frankframework") {
+		refs(refPrefix: "refs/heads/", first: 100, after: $after) {
+			edges {
+				node {
+					id
+					name
+				}
+			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+}
