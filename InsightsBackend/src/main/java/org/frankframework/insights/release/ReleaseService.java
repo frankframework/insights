@@ -45,63 +45,86 @@ public class ReleaseService {
             Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
             List<Branch> branches = branchService.getAllBranches();
 
-            Set<Release> releases = releaseDTOs.stream()
-                    .map(dto -> createReleaseWithBranchAndCommits(dto, branches))
+            List<Release> releasesWithBranches = releaseDTOs.stream()
+                    .map(dto -> createReleaseWithBranch(dto, branches))
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
+                    .toList();
 
-            if (releases.isEmpty()) {
-                log.info("No releases to inject after filtering.");
+            if (releasesWithBranches.isEmpty()) {
+                log.info("No releases with detected base branch to inject.");
                 return;
             }
 
-            saveAllReleases(releases);
+            Set<Release> releasesWithNewCommits = assignNewCommitsToReleases(releasesWithBranches);
+
+            saveAllReleases(releasesWithNewCommits);
         } catch (Exception e) {
             throw new ReleaseInjectionException("Error injecting GitHub releases.", e);
         }
     }
 
-    private Release createReleaseWithBranchAndCommits(ReleaseDTO dto, List<Branch> branches) {
+    private Release createReleaseWithBranch(ReleaseDTO dto, List<Branch> branches) {
         if (dto.getTagCommit() == null || dto.getTagCommit().getOid() == null) {
             log.warn("Skipping release '{}' due to missing commit info.", dto.getTagName());
             return null;
         }
 
         Release release = mapper.toEntity(dto, Release.class);
-
-        Release releaseWithBranch = setBranchForRelease(release, branches);
+        release.setBranch(findBranchForRelease(release, branches));
 
         if (release.getBranch() == null) {
-            log.warn("No matching branch found for release '{}'.", releaseWithBranch.getTagName());
+            log.warn("No matching branch found for release '{}'.", release.getTagName());
             return null;
         }
 
-        return setNewCommitsForRelease(releaseWithBranch);
+        return release;
     }
 
-    private Release setBranchForRelease(Release release, List<Branch> branches) {
-        Optional<Branch> bestBranch = branches.stream()
+    private Branch findBranchForRelease(Release release, List<Branch> branches) {
+        return branches.stream()
                 .filter(branch -> branchService.doesBranchContainCommit(branch, release.getOid()))
-                .max(Comparator.comparing(branch -> "master".equals(branch.getName()) ? 1 : 0));
-
-        bestBranch.ifPresentOrElse(
-                release::setBranch, () -> log.warn("No matching branch found for release '{}'.", release.getTagName()));
-
-        return release;
+                .max(Comparator.comparing(branch -> "master".equals(branch.getName()) ? 1 : 0))
+                .orElse(null);
     }
 
-    private Release setNewCommitsForRelease(Release release) {
-        Branch branch = release.getBranch();
-        if (branch == null) return release;
+    private Set<Release> assignNewCommitsToReleases(List<Release> releases) {
+        Map<Branch, List<Release>> releasesByBranch = releases.stream()
+                .filter(release -> release.getBranch() != null)
+                .collect(Collectors.groupingBy(Release::getBranch));
 
-        List<Commit> branchCommits = branch.getCommits().stream()
-                .sorted(Comparator.comparing(Commit::getCommittedDate))
-                .toList();
+        Set<Release> updatedReleases = new HashSet<>();
 
-        Set<Commit> newCommits = new HashSet<>(branchCommits);
-        release.setReleaseCommits(newCommits);
+        for (Map.Entry<Branch, List<Release>> entry : releasesByBranch.entrySet()) {
+            Branch branch = entry.getKey();
+            List<Release> branchReleases = entry.getValue();
 
-        return release;
+            branchReleases.sort(Comparator.comparing(Release::getPublishedAt));
+
+            TreeSet<Release> sortedReleases = new TreeSet<>(Comparator.comparing(Release::getPublishedAt));
+
+            for (Release release : branchReleases) {
+                Set<Commit> newCommits = new HashSet<>();
+
+                Release previousRelease = sortedReleases.lower(release);
+
+                if (previousRelease == null) {
+                    newCommits.addAll(branch.getCommits().stream()
+                            .filter(commit -> !commit.getCommittedDate().isAfter(release.getPublishedAt()))
+                            .toList());
+                } else {
+                    newCommits.addAll(branch.getCommits().stream()
+                            .filter(commit -> commit.getCommittedDate().isAfter(previousRelease.getPublishedAt()) &&
+                                    !commit.getCommittedDate().isAfter(release.getPublishedAt()))
+                            .toList());
+                }
+
+                release.setReleaseCommits(newCommits);
+                updatedReleases.add(release);
+                sortedReleases.add(release);
+            }
+        }
+
+        return updatedReleases;
     }
 
     private void saveAllReleases(Set<Release> releases) {
