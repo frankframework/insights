@@ -1,4 +1,4 @@
-package org.frankframework.insights.dto;
+package org.frankframework.insights.commit;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

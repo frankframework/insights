@@ -1,4 +1,4 @@
-package org.frankframework.insights.models;
+package org.frankframework.insights.release;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -7,7 +7,8 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.dto.TagCommitDTO;
+import org.frankframework.insights.branch.Branch;
+import org.frankframework.insights.commit.Commit;
 
 @Entity
 @Table(name = "release")
@@ -41,7 +42,7 @@ public class Release {
     private Set<Commit> releaseCommits;
 
     @JsonSetter("tagCommit")
-    public void setOidFromTagCommit(TagCommitDTO tagCommitDTO) {
-        this.oid = tagCommitDTO.getOid();
+    public void setOidFromTagCommit(ReleaseTagCommitDTO releaseTagCommitDTO) {
+        this.oid = releaseTagCommitDTO.getOid();
     }
 }

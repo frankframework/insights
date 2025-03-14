@@ -1,6 +1,5 @@
-package org.frankframework.insights.repository;
+package org.frankframework.insights.branch;
 
-import org.frankframework.insights.models.Branch;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -69,7 +69,7 @@ class BranchServiceTest {
             throws BranchInjectionException, GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount()).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(eq(Collections.emptyList()))).thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenReturn(Set.of(mockBranchDTO));
 
@@ -83,7 +83,7 @@ class BranchServiceTest {
             throws BranchInjectionException, GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount()).thenReturn(10);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(eq(Collections.emptyList()))).thenReturn(10);
         when(branchRepository.count()).thenReturn(10L);
 
         branchService.injectBranches();
@@ -96,9 +96,9 @@ class BranchServiceTest {
     public void should_ThrowBranchInjectionException_when_GitHubClientThrowsException() throws GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount()).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(eq(Collections.emptyList()))).thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
-        when(gitHubClient.getBranches()).thenReturn(Set.of(mockBranchDTO));
+        when(gitHubClient.getBranches()).thenThrow(GitHubClientException.class);
 
         assertThrows(BranchInjectionException.class, () -> branchService.injectBranches());
     }
@@ -108,7 +108,7 @@ class BranchServiceTest {
             throws BranchInjectionException, GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount()).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(eq(Collections.emptyList()))).thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenReturn(Set.of(mockBranchDTO));
 
@@ -125,7 +125,7 @@ class BranchServiceTest {
 
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount()).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(eq(Collections.emptyList()))).thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenReturn(Set.of(newBranchDTO));
 

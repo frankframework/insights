@@ -1,4 +1,4 @@
-package org.frankframework.insights.dto;
+package org.frankframework.insights.release;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.OffsetDateTime;
@@ -22,5 +22,5 @@ public class ReleaseDTO {
 
     @Getter
     @JsonProperty("tagCommit")
-    private TagCommitDTO tagCommit;
+    private ReleaseTagCommitDTO tagCommit;
 }

@@ -12,6 +12,7 @@ public class GitHubRepositoryStatisticsService {
 
     private final GitHubClient gitHubClient;
 
+
     @Getter
     private GitHubRepositoryStatisticsDTO gitHubRepositoryStatisticsDTO;
 

@@ -1,4 +1,4 @@
-package org.frankframework.insights.dto;
+package org.frankframework.insights.branch;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
