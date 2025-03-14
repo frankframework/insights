@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 import lombok.Getter;
-
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.label.Label;
 import org.frankframework.insights.milestone.Milestone;

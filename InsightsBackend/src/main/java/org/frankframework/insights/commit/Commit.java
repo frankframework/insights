@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.pullrequest.PullRequest;
 

@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-
 import org.frankframework.insights.commit.Commit;
 
 @Entity
