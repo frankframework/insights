@@ -20,8 +20,6 @@ public class Commit {
     private String id;
 
     @Column(nullable = false, unique = true)
-    private String sha;
-
     private String oid;
 
     @Lob
