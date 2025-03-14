@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 import lombok.Getter;
-
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.label.Label;
 import org.frankframework.insights.milestone.Milestone;
@@ -37,8 +36,12 @@ public class PullRequest {
     @ManyToOne
     private Release release;
 
-    @ManyToOne
-    private Issue issue;
+    @ManyToMany
+    @JoinTable(
+            name = "pull_request_issue",
+            joinColumns = @JoinColumn(name = "pull_request_id"),
+            inverseJoinColumns = @JoinColumn(name = "issue_id"))
+    private Set<Issue> issues;
 
     @ManyToMany
     @JoinTable(

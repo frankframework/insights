@@ -35,6 +35,6 @@ public class Issue {
             inverseJoinColumns = @JoinColumn(name = "label_id"))
     private Set<Label> labels;
 
-    @OneToMany(mappedBy = "issue")
+    @OneToMany(mappedBy = "issues")
     private Set<PullRequest> pullRequests;
 }
