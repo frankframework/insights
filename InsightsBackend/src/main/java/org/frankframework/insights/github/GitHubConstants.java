@@ -8,7 +8,10 @@ import lombok.Getter;
 public enum GitHubConstants {
     REPOSITORY_STATISTICS("repositoryStatistics", "repository"),
     LABELS("labels", "repository.labels"),
-    MILESTONES("milestones", "repository.milestones");
+    MILESTONES("milestones", "repository.milestones"),
+    BRANCHES("branches", "repository.refs"),
+    BRANCH_COMMITS("branchCommits", "repository.ref.target.history"),
+    RELEASES("releases", "repository.releases");
 
     private final String documentName;
     private final String retrievePath;

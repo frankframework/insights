@@ -2,8 +2,8 @@ package org.frankframework.insights.label;
 
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +31,8 @@ public class LabelService {
     }
 
     public void injectLabels() throws LabelInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().labelCount() == labelRepository.count()) {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubLabelCount()
+                == labelRepository.count()) {
             log.info("Labels already found in the in database");
             return;
         }
