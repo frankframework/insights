@@ -2,6 +2,9 @@ package org.frankframework.insights.release;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class ReleaseService {
+	private final ObjectMapper objectMapper;
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
@@ -21,11 +25,13 @@ public class ReleaseService {
     private final BranchService branchService;
 
     public ReleaseService(
+			ObjectMapper objectMapper,
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             ReleaseRepository releaseRepository,
             BranchService branchService) {
+		this.objectMapper = objectMapper;
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
@@ -43,6 +49,9 @@ public class ReleaseService {
         try {
             log.info("Fetching GitHub releases...");
             Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
+
+			System.out.println(objectMapper.writeValueAsString(releaseDTOs));
+
             List<Branch> branches = branchService.getAllBranches();
 
             List<Release> releasesWithBranches = releaseDTOs.stream()
@@ -64,7 +73,7 @@ public class ReleaseService {
     }
 
     private Release createReleaseWithBranch(ReleaseDTO dto, List<Branch> branches) {
-        if (dto.getTagCommit() == null || dto.getTagCommit().getOid() == null) {
+        if (dto.getCommitSha() == null) {
             log.warn("Skipping release '{}' due to missing commit info.", dto.getTagName());
             return null;
         }
@@ -82,7 +91,7 @@ public class ReleaseService {
 
     private Branch findBranchForRelease(Release release, List<Branch> branches) {
         return branches.stream()
-                .filter(branch -> branchService.doesBranchContainCommit(branch, release.getOid()))
+                .filter(branch -> branchService.doesBranchContainCommit(branch, release.getCommitSha()))
                 .max(Comparator.comparing(branch -> "master".equals(branch.getName()) ? 1 : 0))
                 .orElse(null);
     }

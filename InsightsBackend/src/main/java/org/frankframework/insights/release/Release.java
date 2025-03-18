@@ -28,8 +28,8 @@ public class Release {
     @Column(name = "published_at", columnDefinition = "TIMESTAMP")
     private OffsetDateTime publishedAt;
 
-    @Column(nullable = false)
-    private String oid;
+    @Column(nullable = false, unique = true)
+    private String commitSha;
 
     @ManyToOne
     private Branch branch;
@@ -40,9 +40,4 @@ public class Release {
             joinColumns = @JoinColumn(name = "release_id"),
             inverseJoinColumns = @JoinColumn(name = "commit_id"))
     private Set<Commit> releaseCommits;
-
-    @JsonSetter("tagCommit")
-    public void setOidFromTagCommit(ReleaseTagCommitDTO releaseTagCommitDTO) {
-        this.oid = releaseTagCommitDTO.getOid();
-    }
 }
