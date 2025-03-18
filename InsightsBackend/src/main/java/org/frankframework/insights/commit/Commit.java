@@ -20,7 +20,7 @@ public class Commit {
     private String id;
 
     @Column(nullable = false, unique = true)
-    private String oid;
+    private String sha;
 
     @Lob
     @Column(nullable = false)

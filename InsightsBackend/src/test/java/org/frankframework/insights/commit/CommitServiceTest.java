@@ -54,7 +54,7 @@ public class CommitServiceTest {
         mockBranch.setName("master");
 
         mockCommit = new CommitDTO();
-        mockCommit.oid = "sha123";
+        mockCommit.sha = "sha123";
 
         mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
