@@ -2,13 +2,12 @@ package org.frankframework.insights.release;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.Commit;
+import org.frankframework.insights.common.entityconnection.ReleaseCommit;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class ReleaseService {
-	private final ObjectMapper objectMapper;
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
@@ -25,13 +23,11 @@ public class ReleaseService {
     private final BranchService branchService;
 
     public ReleaseService(
-			ObjectMapper objectMapper,
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             ReleaseRepository releaseRepository,
             BranchService branchService) {
-		this.objectMapper = objectMapper;
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
@@ -49,10 +45,7 @@ public class ReleaseService {
         try {
             log.info("Fetching GitHub releases...");
             Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
-
-			System.out.println(objectMapper.writeValueAsString(releaseDTOs));
-
-            List<Branch> branches = branchService.getAllBranches();
+            List<Branch> branches = branchService.getAllBranchesWithCommits();
 
             List<Release> releasesWithBranches = releaseDTOs.stream()
                     .map(dto -> createReleaseWithBranch(dto, branches))
@@ -73,8 +66,8 @@ public class ReleaseService {
     }
 
     private Release createReleaseWithBranch(ReleaseDTO dto, List<Branch> branches) {
-        if (dto.getCommitSha() == null) {
-            log.warn("Skipping release '{}' due to missing commit info.", dto.getTagName());
+        if (dto.getTagCommit() == null || dto.getTagCommit().getCommitSha() == null || branches.isEmpty()) {
+            log.warn("Skipping release '{}' due to missing info.", dto.getTagName());
             return null;
         }
 
@@ -107,6 +100,10 @@ public class ReleaseService {
             Branch branch = entry.getKey();
             List<Release> branchReleases = entry.getValue();
 
+            if (branch == null || branchReleases.isEmpty()) {
+                return new HashSet<>(branchReleases);
+            }
+
             branchReleases.sort(Comparator.comparing(Release::getPublishedAt));
 
             TreeSet<Release> sortedReleases = new TreeSet<>(Comparator.comparing(Release::getPublishedAt));
@@ -117,17 +114,24 @@ public class ReleaseService {
                 Release previousRelease = sortedReleases.lower(release);
 
                 if (previousRelease == null) {
-                    newCommits.addAll(branch.getCommits().stream()
+                    newCommits.addAll(branch.getBranchCommits().stream()
+                            .map(BranchCommit::getCommit)
                             .filter(commit -> !commit.getCommittedDate().isAfter(release.getPublishedAt()))
                             .toList());
                 } else {
-                    newCommits.addAll(branch.getCommits().stream()
-                            .filter(commit -> commit.getCommittedDate().isAfter(previousRelease.getPublishedAt()) &&
-                                    !commit.getCommittedDate().isAfter(release.getPublishedAt()))
+                    newCommits.addAll(branch.getBranchCommits().stream()
+                            .map(BranchCommit::getCommit)
+                            .filter(commit -> commit.getCommittedDate().isAfter(previousRelease.getPublishedAt())
+                                    && !commit.getCommittedDate().isAfter(release.getPublishedAt()))
                             .toList());
                 }
 
-                release.setReleaseCommits(newCommits);
+                Set<ReleaseCommit> newReleaseCommits = newCommits.stream()
+                        .map(commit -> new ReleaseCommit(release, commit))
+                        .collect(Collectors.toSet());
+
+                release.setReleaseCommits(newReleaseCommits);
+
                 updatedReleases.add(release);
                 sortedReleases.add(release);
             }
@@ -137,7 +141,7 @@ public class ReleaseService {
     }
 
     private void saveAllReleases(Set<Release> releases) {
-        releaseRepository.saveAll(releases);
-        log.info("Successfully saved {} releases.", releases.size());
+        List<Release> savedReleases = releaseRepository.saveAll(releases);
+        log.info("Successfully saved {} releases.", savedReleases.size());
     }
 }

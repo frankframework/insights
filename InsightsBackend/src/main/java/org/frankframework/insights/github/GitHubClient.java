@@ -53,11 +53,8 @@ public class GitHubClient extends GraphQLClient {
     }
 
     public Set<CommitDTO> getBranchCommits(String branchName) throws GitHubClientException {
-        HashMap<String, Object> variables = new HashMap<>() {
-            {
-                put("branchName", branchName);
-            }
-        };
+        HashMap<String, Object> variables = new HashMap<>();
+        variables.put("branchName", branchName);
         log.info("Started fetching commits from GitHub for branch with name: {}", branchName);
 
         Set<CommitDTO> commits = getEntities(GitHubConstants.BRANCH_COMMITS, variables, CommitDTO.class);

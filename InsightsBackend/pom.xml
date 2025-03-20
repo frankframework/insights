@@ -48,7 +48,6 @@
 		<spotless.version>2.44.2</spotless.version>
 		<junit.version>5.11.4</junit.version>
 		<mockito.version>5.15.2</mockito.version>
-		<jackson.version>2.18.3</jackson.version>
 	</properties>
 
 	<dependencies>
@@ -106,11 +105,6 @@
 			<artifactId>mockito-junit-jupiter</artifactId>
 			<version>${mockito.version}</version>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 	</dependencies>
 

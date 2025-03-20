@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
@@ -49,7 +49,7 @@ public class BranchServiceTest {
     private List<String> branchProtectionRegexes;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         mockBranchDTO = new BranchDTO();
         mockBranchDTO.setName("release/v1.0.0");
 
@@ -57,9 +57,9 @@ public class BranchServiceTest {
         mockBranch.setName("release/v1.0.0");
 
         mockCommit = new Commit();
-        mockCommit.setOid("sha123");
+        mockCommit.setSha("sha123");
 
-        mockBranch.setCommits(new HashSet<>(Set.of(mockCommit)));
+        mockBranch.setBranchCommits(Set.of(new BranchCommit(mockBranch, mockCommit)));
 
         mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
 
@@ -72,10 +72,12 @@ public class BranchServiceTest {
     }
 
     @Test
-    void shouldInjectBranches_whenBranchesNotFoundInDatabase() throws BranchInjectionException, GitHubClientException {
+    public void shouldInjectBranches_whenBranchesNotFoundInDatabase()
+            throws BranchInjectionException, GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes))
+                .thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenReturn(Set.of(mockBranchDTO));
         when(branchMapper.toEntity(mockBranchDTO, Branch.class)).thenReturn(mockBranch);
@@ -86,10 +88,12 @@ public class BranchServiceTest {
     }
 
     @Test
-    void shouldNotInjectBranches_whenBranchesAlreadyExistInDatabase() throws BranchInjectionException, GitHubClientException {
+    public void shouldNotInjectBranches_whenBranchesAlreadyExistInDatabase()
+            throws BranchInjectionException, GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(10);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes))
+                .thenReturn(10);
         when(branchRepository.count()).thenReturn(10L);
 
         branchService.injectBranches();
@@ -99,10 +103,11 @@ public class BranchServiceTest {
     }
 
     @Test
-    void shouldThrowBranchInjectionException_whenGitHubClientThrowsException() throws GitHubClientException {
+    public void shouldThrowBranchInjectionException_whenGitHubClientThrowsException() throws GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes))
+                .thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenThrow(GitHubClientException.class);
 
@@ -110,10 +115,12 @@ public class BranchServiceTest {
     }
 
     @Test
-    void shouldInjectBranches_whenBranchNamesMatchRegexes() throws BranchInjectionException, GitHubClientException {
+    public void shouldInjectBranches_whenBranchNamesMatchRegexes()
+            throws BranchInjectionException, GitHubClientException {
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes))
+                .thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenReturn(Set.of(mockBranchDTO));
         when(branchMapper.toEntity(mockBranchDTO, Branch.class)).thenReturn(mockBranch);
@@ -123,16 +130,19 @@ public class BranchServiceTest {
         ArgumentCaptor<Set<Branch>> captor = ArgumentCaptor.forClass(Set.class);
         verify(branchRepository, times(1)).saveAll(captor.capture());
 
-        assertFalse(captor.getValue().isEmpty());    }
+        assertFalse(captor.getValue().isEmpty());
+    }
 
     @Test
-    void shouldNotInjectBranches_whenBranchNamesDoNotMatchRegexes() throws BranchInjectionException, GitHubClientException {
+    public void shouldNotInjectBranches_whenBranchNamesDoNotMatchRegexes()
+            throws BranchInjectionException, GitHubClientException {
         BranchDTO newBranchDTO = new BranchDTO();
         newBranchDTO.setName("feature/branch");
 
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(mockGitHubRepositoryStatisticsDTO);
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(mockGitHubRepositoryStatisticsDTO.getGitHubBranchCount(branchProtectionRegexes))
+                .thenReturn(1);
         when(branchRepository.count()).thenReturn(0L);
         when(gitHubClient.getBranches()).thenReturn(Set.of(newBranchDTO));
 
@@ -145,31 +155,31 @@ public class BranchServiceTest {
     }
 
     @Test
-    void shouldCheckIfBranchContainsCommit_whenBranchContainsCommit() {
-        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, mockCommit.getOid());
+    public void shouldCheckIfBranchContainsCommit_whenBranchContainsCommit() {
+        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, mockCommit.getSha());
 
         assertTrue(containsCommit);
     }
 
     @Test
-    void shouldCheckIfBranchContainsCommit_whenBranchDoesNotContainCommit() {
+    public void shouldCheckIfBranchContainsCommit_whenBranchDoesNotContainCommit() {
         Commit newCommit = new Commit();
-        newCommit.setOid("sha456");
+        newCommit.setSha("sha456");
 
-        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, newCommit.getOid());
+        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, newCommit.getSha());
 
         assertFalse(containsCommit);
     }
 
     @Test
-    void shouldSaveBranches() {
+    public void shouldSaveBranches() {
         branchService.saveBranches(Set.of(mockBranch));
 
         verify(branchRepository, times(1)).saveAll(anySet());
     }
 
     @Test
-    void shouldGetAllBranches() {
+    public void shouldGetAllBranches() {
         List<Branch> branches = List.of(mockBranch);
         when(branchRepository.findAll()).thenReturn(branches);
 

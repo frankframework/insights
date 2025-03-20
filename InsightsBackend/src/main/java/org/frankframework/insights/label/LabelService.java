@@ -1,5 +1,6 @@
 package org.frankframework.insights.label;
 
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -48,7 +49,7 @@ public class LabelService {
     }
 
     private void saveLabels(Set<Label> labels) {
-        labelRepository.saveAll(labels);
-        log.info("Successfully saved labels");
+        List<Label> savedLabels = labelRepository.saveAll(labels);
+        log.info("Successfully saved {} labels", savedLabels.size());
     }
 }

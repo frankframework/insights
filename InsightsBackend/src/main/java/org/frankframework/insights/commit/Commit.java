@@ -3,15 +3,14 @@ package org.frankframework.insights.commit;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.branch.Branch;
+import org.frankframework.insights.common.entityconnection.ReleaseCommit;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 import org.frankframework.insights.pullrequest.PullRequest;
 
 @Entity
-@Table(name = "commit")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 @Setter
@@ -26,12 +25,14 @@ public class Commit {
     @Column(nullable = false)
     private String message;
 
-    @Column(name = "committed_date", columnDefinition = "TIMESTAMP")
     private OffsetDateTime committedDate;
 
-    @ManyToMany(mappedBy = "commits")
-    private Set<Branch> branches = new HashSet<>();
+    @OneToMany
+    private Set<BranchCommit> branchCommits;
 
-    @ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @OneToMany
+    private Set<ReleaseCommit> releaseCommits;
+
+    @ManyToOne
     private PullRequest pullRequest;
 }

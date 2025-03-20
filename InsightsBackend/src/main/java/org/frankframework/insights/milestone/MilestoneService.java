@@ -1,5 +1,6 @@
 package org.frankframework.insights.milestone;
 
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -48,7 +49,7 @@ public class MilestoneService {
     }
 
     private void saveMilestones(Set<Milestone> milestones) {
-        milestoneRepository.saveAll(milestones);
-        log.info("Successfully saved milestones");
+        List<Milestone> savedMilestones = milestoneRepository.saveAll(milestones);
+        log.info("Successfully saved {} milestones", savedMilestones.size());
     }
 }

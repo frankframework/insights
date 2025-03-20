@@ -1,5 +1,6 @@
 package org.frankframework.insights.branch;
 
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -45,7 +46,7 @@ public class BranchService {
         try {
             log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubClient.getBranches();
-            Set<Branch> branches = filterBranchesByProtectionPattern(branchDTOs);
+            Set<Branch> branches = findProtectedBranchesByRegexPattern(branchDTOs);
             saveBranches(branches);
         } catch (Exception e) {
             throw new BranchInjectionException("Error while injecting GitHub branches", e);
@@ -53,18 +54,16 @@ public class BranchService {
     }
 
     public boolean doesBranchContainCommit(Branch branch, String commitOid) {
-        boolean containsCommit =
-                branch.getCommits().stream().anyMatch(commit -> commit.getSha().equals(commitOid));
+        boolean containsCommit = branch.getBranchCommits().stream()
+                .anyMatch(commit -> commit.getCommit().getSha().equals(commitOid));
 
         log.info("Branch {} contains commit: {}", branch.getName(), containsCommit);
 
         return containsCommit;
     }
 
-    private Set<Branch> filterBranchesByProtectionPattern(Set<BranchDTO> branchDTOs) {
-        log.info(
-                "Filtering branches by protection patterns: {}, and maps them to database entities",
-                branchProtectionRegexes);
+    private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
+        log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()
                 .filter(branchDTO -> branchProtectionRegexes.stream().anyMatch(regex -> Pattern.compile(regex)
                         .matcher(branchDTO.getName())
@@ -80,8 +79,13 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
+    @Transactional
+    public List<Branch> getAllBranchesWithCommits() {
+        return branchRepository.findAllWithCommits();
+    }
+
     public void saveBranches(Set<Branch> branches) {
-        branchRepository.saveAll(branches);
-        log.info("Successfully saved {} branches.", branches.size());
+        List<Branch> savedBranches = branchRepository.saveAll(branches);
+        log.info("Successfully saved {} branches.", savedBranches.size());
     }
 }
