@@ -52,7 +52,7 @@ public class SystemDataInitializer {
 		initializeSystemData();
 	}
 
-	@Scheduled(cron = "0 0 0 * * MON")
+	@Scheduled(cron = "0 0 0 * * SUN")
 	@SchedulerLock(name = "weeklyGitHubUpdate", lockAtMostFor = "PT24H")
 	public void weeklyJob() {
 		log.info("Weekly fetch job started");
