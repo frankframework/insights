@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableSchedulerLock(defaultLockAtMostFor = "PT24H")
+@EnableSchedulerLock(defaultLockAtMostFor = "PT2H")
 public class InsightsApplication {
     public static void main(String[] args) {
         SpringApplication.run(InsightsApplication.class, args);

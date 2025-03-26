@@ -52,15 +52,15 @@ public class SystemDataInitializer {
 		initializeSystemData();
 	}
 
-	@Scheduled(cron = "0 0 0 * * SUN")
-	@SchedulerLock(name = "weeklyGitHubUpdate", lockAtMostFor = "PT24H")
-	public void weeklyJob() {
-		log.info("Weekly fetch job started");
+	@Scheduled(cron = "0 0 0 * * *")
+	@SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H")
+	public void dailyJob() {
+		log.info("Daily fetch job started");
 		fetchGitHubStatistics();
 		initializeSystemData();
 	}
 
-	@SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT1H")
+	@SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT2H")
 	public void fetchGitHubStatistics() {
 		try {
 			gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
@@ -69,7 +69,7 @@ public class SystemDataInitializer {
 		}
 	}
 
-	@SchedulerLock(name = "initializeSystemData", lockAtMostFor = "P7D")
+	@SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
 	public void initializeSystemData() {
 		try {
 			log.info("Start fetching all GitHub data");
