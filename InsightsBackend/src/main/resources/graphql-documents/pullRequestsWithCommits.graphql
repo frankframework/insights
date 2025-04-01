@@ -1,0 +1,26 @@
+query allPullRequestsWithCommits($after: String) {
+	repository(owner: "frankframework", name: "frankframework") {
+		pullRequests(first: 100, after: $after) {
+			edges {
+				node {
+					id
+					title
+					url
+					commits(first: 100) {
+						edges {
+							node {
+								commit {
+									oid
+								}
+							}
+						}
+					}
+				}
+			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+}

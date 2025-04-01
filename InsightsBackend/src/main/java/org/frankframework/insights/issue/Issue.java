@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
-import org.frankframework.insights.label.Label;
+import org.frankframework.insights.common.entityconnection.IssueLabel;
+import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.milestone.Milestone;
-import org.frankframework.insights.pullrequest.PullRequest;
 
 @Entity
-@Table(name = "issue")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 public class Issue {
@@ -28,13 +27,9 @@ public class Issue {
     @ManyToOne
     private Milestone milestone;
 
-    @ManyToMany
-    @JoinTable(
-            name = "issue_label",
-            joinColumns = @JoinColumn(name = "issue_id"),
-            inverseJoinColumns = @JoinColumn(name = "label_id"))
-    private Set<Label> labels;
+    @OneToMany
+    private Set<IssueLabel> issueLabels;
 
-    @OneToMany(mappedBy = "issue")
-    private Set<PullRequest> pullRequests;
+    @OneToMany
+    private Set<PullRequestIssue> pullRequestIssues;
 }

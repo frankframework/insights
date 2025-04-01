@@ -1,10 +1,11 @@
 package org.frankframework.insights.milestone;
 
+import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.common.mapper.Mapper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,7 +32,8 @@ public class MilestoneService {
     }
 
     public void injectMilestones() throws MilestoneInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().milestoneCount() == milestoneRepository.count()) {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubMilestoneCount()
+                == milestoneRepository.count()) {
             log.info("Milestones already found in the in database");
             return;
         }
@@ -47,7 +49,7 @@ public class MilestoneService {
     }
 
     private void saveMilestones(Set<Milestone> milestones) {
-        milestoneRepository.saveAll(milestones);
-        log.info("Successfully saved milestones");
+        List<Milestone> savedMilestones = milestoneRepository.saveAll(milestones);
+        log.info("Successfully saved {} milestones", savedMilestones.size());
     }
 }

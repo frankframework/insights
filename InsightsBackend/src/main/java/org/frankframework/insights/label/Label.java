@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
-
-import org.frankframework.insights.issue.Issue;
-import org.frankframework.insights.pullrequest.PullRequest;
+import org.frankframework.insights.common.entityconnection.IssueLabel;
+import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 
 @Entity
-@Table(name = "label")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 public class Label {
@@ -24,9 +22,9 @@ public class Label {
     @Column(nullable = false)
     private String color;
 
-    @ManyToMany(mappedBy = "labels")
-    private Set<Issue> issues;
+    @OneToMany
+    private Set<IssueLabel> issueLabels;
 
-    @ManyToMany(mappedBy = "labels")
-    private Set<PullRequest> pullRequests;
+    @OneToMany
+    private Set<PullRequestLabel> pullRequestLabels;
 }
