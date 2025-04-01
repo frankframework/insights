@@ -1,0 +1,44 @@
+query pullRequestsInBranch($branch: String!) {
+	repository(owner: "frankframework", name: "frankframework") {
+		pullRequests(first: 100, baseRefName: $branch) {
+			edges {
+				node {
+					id
+					number
+					title
+					state
+					url
+					mergedAt
+					labels(first: 10) {
+						edges {
+							node {
+								name
+							}
+						}
+					}
+					milestone {
+						title
+					}
+					closingIssuesReferences(first: 10) {
+						edges {
+							node {
+								number
+								subIssues (first:10) {
+									edges{
+										node {
+											number
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+}
