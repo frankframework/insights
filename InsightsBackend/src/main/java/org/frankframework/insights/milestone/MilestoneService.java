@@ -51,7 +51,7 @@ public class MilestoneService {
     }
 
 	public void getOpenMilestones() {
-		List<Milestone> openMilestones = milestoneRepository.getMilestonesByState(GitHubPropertyState.OPEN.name());
+		List<Milestone> openMilestones = milestoneRepository.getMilestonesByState(GitHubPropertyState.OPEN);
 		log.info("Successfully fetched {} open milestones", openMilestones.size());
 	}
 
