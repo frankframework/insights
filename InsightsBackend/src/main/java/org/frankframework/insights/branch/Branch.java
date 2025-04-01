@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
+
+import org.frankframework.insights.common.entityconnection.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 
 @Entity
@@ -21,4 +23,7 @@ public class Branch {
 
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<BranchCommit> branchCommits = new HashSet<>();
+
+	@OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+	private Set<BranchPullRequest> branchPullRequests = new HashSet<>();
 }

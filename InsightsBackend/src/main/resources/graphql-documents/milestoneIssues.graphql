@@ -1,4 +1,4 @@
-query openMilestoneIssues($milestoneNumber: Int!, $afterCursor: String) {
+query milestoneIssues($milestoneNumber: Int!, $afterCursor: String) {
 	repository(owner: "frankframework", name: "frankframework") {
 		milestone(number: $milestoneNumber) {
 			issues(first: 100, after: $afterCursor) {

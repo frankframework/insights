@@ -1,4 +1,4 @@
-query pullRequestsInBranch($branch: String!) {
+query branchPullRequests($branch: String!) {
 	repository(owner: "frankframework", name: "frankframework") {
 		pullRequests(first: 100, baseRefName: $branch) {
 			edges {

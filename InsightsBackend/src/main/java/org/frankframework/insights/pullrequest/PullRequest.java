@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 import lombok.Getter;
+
+import org.frankframework.insights.branch.Branch;
+import org.frankframework.insights.common.entityconnection.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.milestone.Milestone;
@@ -18,7 +21,7 @@ public class PullRequest {
     private String id;
 
     @Column(unique = true, nullable = false)
-    private int githubId;
+    private int number;
 
     @Column(nullable = false)
     private String title;
@@ -32,7 +35,10 @@ public class PullRequest {
     private Milestone milestone;
 
     @ManyToOne
-    private Release release;
+    private Branch branch;
+
+	@OneToMany
+	private Set<BranchPullRequest> branchPullRequests;
 
     @OneToMany
     private Set<PullRequestIssue> pullRequestIssues;

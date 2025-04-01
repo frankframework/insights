@@ -6,6 +6,7 @@ import java.util.Set;
 import lombok.Getter;
 import org.frankframework.insights.common.entityconnection.IssueLabel;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
+import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.milestone.Milestone;
 
 @Entity
@@ -21,14 +22,23 @@ public class Issue {
     @Column(nullable = false)
     private String title;
 
+	@Column(nullable = false)
+	private GitHubPropertyState state;
+
     @Column(nullable = false)
     private String url;
+
+	@OneToMany
+	private Set<IssueLabel> issueLabels;
 
     @ManyToOne
     private Milestone milestone;
 
-    @OneToMany
-    private Set<IssueLabel> issueLabels;
+	@OneToMany(mappedBy = "parentIssue")
+	private Set<Issue> subIssues;
+
+	@ManyToOne
+	private Issue parentIssue;
 
     @OneToMany
     private Set<PullRequestIssue> pullRequestIssues;
