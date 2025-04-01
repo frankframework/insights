@@ -44,7 +44,8 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-    public void startupTask() {
+	@SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
+	public void startupTask() {
         log.info("Startup: Fetching GitHub statistics");
         fetchGitHubStatistics();
         log.info("Startup: Fetching full system data");
@@ -52,14 +53,14 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(cron = "0 0 0 * * *")
-    @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H")
+    @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         log.info("Daily fetch job started");
         fetchGitHubStatistics();
         initializeSystemData();
     }
 
-    @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT2H")
+    @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
