@@ -2,4 +2,8 @@ package org.frankframework.insights.milestone;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface MilestoneRepository extends JpaRepository<Milestone, String> {}
+import java.util.List;
+
+public interface MilestoneRepository extends JpaRepository<Milestone, String> {
+	List<Milestone> getMilestonesByState(String state);
+}
