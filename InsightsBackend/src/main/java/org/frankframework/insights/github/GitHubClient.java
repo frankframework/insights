@@ -41,7 +41,8 @@ public class GitHubClient extends GraphQLClient {
     }
 
     public Set<MilestoneDTO> getMilestones() throws GitHubClientException {
-        Set<MilestoneDTO> milestones = getEntities(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
+        Set<MilestoneDTO> milestones =
+                getEntities(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
         log.info("Successfully fetched {} milestones from GitHub", milestones.size());
         return milestones;
     }
@@ -95,7 +96,7 @@ public class GitHubClient extends GraphQLClient {
     }
 
     private <T> GitHubPaginationDTO<T> fetchEntityPage(
-			GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+            GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
         try {
             GitHubPaginationDTO<T> response = getGraphQlClient()

@@ -5,13 +5,11 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 import lombok.Getter;
-
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.common.entityconnection.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.milestone.Milestone;
-import org.frankframework.insights.release.Release;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -37,8 +35,8 @@ public class PullRequest {
     @ManyToOne
     private Branch branch;
 
-	@OneToMany
-	private Set<BranchPullRequest> branchPullRequests;
+    @OneToMany
+    private Set<BranchPullRequest> branchPullRequests;
 
     @OneToMany
     private Set<PullRequestIssue> pullRequestIssues;

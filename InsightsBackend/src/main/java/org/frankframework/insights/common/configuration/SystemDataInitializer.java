@@ -44,8 +44,8 @@ public class SystemDataInitializer {
     }
 
     @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-	@SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
-	public void startupTask() {
+    @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
+    public void startupTask() {
         log.info("Startup: Fetching GitHub statistics");
         fetchGitHubStatistics();
         log.info("Startup: Fetching full system data");

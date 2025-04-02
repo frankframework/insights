@@ -6,11 +6,10 @@ import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
 
 public record IssueDTO(
-		String id,
-		int number,
-		String title,
-		GitHubPropertyState state,
-		String url,
-		GitHubEdgesDTO<LabelDTO> labels,
-		MilestoneDTO milestone
-) {}
+        String id,
+        int number,
+        String title,
+        GitHubPropertyState state,
+        String url,
+        GitHubEdgesDTO<LabelDTO> labels,
+        MilestoneDTO milestone) {}

@@ -12,9 +12,9 @@ public enum GitHubQueryConstants {
     BRANCHES("branches", "repository.refs"),
     BRANCH_COMMITS("branchCommits", "repository.ref.target.history"),
     RELEASES("releases", "repository.releases"),
-	BRANCH_PULLS("branchPullRequests", "repository.pullRequests"),
-	MILESTONE_ISSUES("milestoneIssues", "repository.milestone.issues");
+    BRANCH_PULLS("branchPullRequests", "repository.pullRequests"),
+    MILESTONE_ISSUES("milestoneIssues", "repository.milestone.issues");
 
-	private final String documentName;
+    private final String documentName;
     private final String retrievePath;
 }

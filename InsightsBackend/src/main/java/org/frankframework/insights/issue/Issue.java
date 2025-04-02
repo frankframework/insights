@@ -22,23 +22,23 @@ public class Issue {
     @Column(nullable = false)
     private String title;
 
-	@Column(nullable = false)
-	private GitHubPropertyState state;
+    @Column(nullable = false)
+    private GitHubPropertyState state;
 
     @Column(nullable = false)
     private String url;
 
-	@OneToMany
-	private Set<IssueLabel> issueLabels;
+    @OneToMany
+    private Set<IssueLabel> issueLabels;
 
     @ManyToOne
     private Milestone milestone;
 
-	@OneToMany(mappedBy = "parentIssue")
-	private Set<Issue> subIssues;
+    @OneToMany(mappedBy = "parentIssue")
+    private Set<Issue> subIssues;
 
-	@ManyToOne
-	private Issue parentIssue;
+    @ManyToOne
+    private Issue parentIssue;
 
     @OneToMany
     private Set<PullRequestIssue> pullRequestIssues;
