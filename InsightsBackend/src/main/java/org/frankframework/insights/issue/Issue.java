@@ -28,7 +28,10 @@ public class Issue {
     @Column(nullable = false)
     private String url;
 
-    @OneToMany
+	@Lob
+	private String businessValue;
+
+	@OneToMany
     private Set<IssueLabel> issueLabels;
 
     @ManyToOne
@@ -42,4 +45,11 @@ public class Issue {
 
     @OneToMany
     private Set<PullRequestIssue> pullRequestIssues;
+
+	public String getBusinessValue() {
+		if (businessValue != null && !businessValue.isBlank()) {
+			return businessValue;
+		}
+		return (parentIssue != null) ? parentIssue.getBusinessValue() : null;
+	}
 }
