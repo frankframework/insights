@@ -39,7 +39,10 @@ public class LabelService {
         }
 
         try {
-            log.info("Start injecting GitHub labels");
+			log.info("Amount of labels found in database: {}", labelRepository.count());
+			log.info("Amount of labels found in GitHub: {}", gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubLabelCount());
+
+			log.info("Start injecting GitHub labels");
             Set<LabelDTO> labelDTOs = gitHubClient.getLabels();
             Set<Label> labels = mapper.toEntity(labelDTOs, Label.class);
             saveLabels(labels);
@@ -47,6 +50,10 @@ public class LabelService {
             throw new LabelInjectionException("Error while injecting GitHub labels", e);
         }
     }
+
+	public List<Label> getAllLabels() {
+		return labelRepository.findAll();
+	}
 
     private void saveLabels(Set<Label> labels) {
         List<Label> savedLabels = labelRepository.saveAll(labels);

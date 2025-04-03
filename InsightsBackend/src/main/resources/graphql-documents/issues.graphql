@@ -1,0 +1,29 @@
+query issues($after: String) {
+	repository(owner: "frankframework", name: "frankframework") {
+		issues(first: 100, after: $after) {
+			edges {
+				node {
+					id
+					number
+					title
+					state
+					url
+					labels(first: 10) {
+						edges {
+							node {
+								id
+							}
+						}
+					}
+					milestone {
+						id
+					}
+				}
+			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+}

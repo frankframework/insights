@@ -12,4 +12,5 @@ public record IssueDTO(
         GitHubPropertyState state,
         String url,
         GitHubEdgesDTO<LabelDTO> labels,
-        MilestoneDTO milestone) {}
+        MilestoneDTO milestone
+) {}

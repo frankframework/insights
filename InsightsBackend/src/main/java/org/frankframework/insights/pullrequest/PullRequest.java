@@ -3,10 +3,11 @@ package org.frankframework.insights.pullrequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 import lombok.Getter;
 import org.frankframework.insights.branch.Branch;
-import org.frankframework.insights.common.entityconnection.BranchPullRequest;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.milestone.Milestone;
@@ -27,7 +28,7 @@ public class PullRequest {
     @Column(nullable = false)
     private String url;
 
-    private LocalDateTime mergedAt;
+    private OffsetDateTime mergedAt;
 
     @ManyToOne
     private Milestone milestone;

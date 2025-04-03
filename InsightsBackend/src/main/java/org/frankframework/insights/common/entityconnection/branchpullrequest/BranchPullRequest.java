@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.entityconnection;
+package org.frankframework.insights.common.entityconnection.branchpullrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -23,7 +23,7 @@ public class BranchPullRequest {
     @JsonIgnore
     private Branch branch;
 
-    @ManyToOne
+	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinColumn(nullable = false)
     private PullRequest pullRequest;
 

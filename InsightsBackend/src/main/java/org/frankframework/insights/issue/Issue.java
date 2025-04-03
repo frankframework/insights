@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
+
 import org.frankframework.insights.common.entityconnection.IssueLabel;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.github.GitHubPropertyState;
@@ -12,6 +14,7 @@ import org.frankframework.insights.milestone.Milestone;
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class Issue {
     @Id
     private String id;
@@ -31,10 +34,11 @@ public class Issue {
 	@Lob
 	private String businessValue;
 
-	@OneToMany
+	@OneToMany(cascade = { CascadeType.MERGE, CascadeType.PERSIST })
     private Set<IssueLabel> issueLabels;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.MERGE)
+	@JoinColumn(name = "milestone_id")
     private Milestone milestone;
 
 	@ManyToOne

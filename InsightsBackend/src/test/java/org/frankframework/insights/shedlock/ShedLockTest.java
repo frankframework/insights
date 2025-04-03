@@ -15,8 +15,10 @@ import org.frankframework.insights.commit.CommitService;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,12 @@ public class ShedLockTest {
     @Mock
     private ReleaseService releaseService;
 
+	@Mock
+	private IssueService issueService;
+
+	@Mock
+	private PullRequestService pullRequestService;
+
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
@@ -58,6 +66,8 @@ public class ShedLockTest {
                 milestoneService,
                 branchService,
                 commitService,
+				issueService,
+				pullRequestService,
                 releaseService);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);

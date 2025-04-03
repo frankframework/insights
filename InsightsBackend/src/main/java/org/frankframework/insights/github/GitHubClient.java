@@ -11,8 +11,11 @@ import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.commit.CommitDTO;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.graphql.GraphQLClient;
+import org.frankframework.insights.issue.Issue;
+import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
+import org.frankframework.insights.pullrequest.PullRequestDTO;
 import org.frankframework.insights.release.ReleaseDTO;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -63,11 +66,27 @@ public class GitHubClient extends GraphQLClient {
         return commits;
     }
 
-    public Set<ReleaseDTO> getReleases() throws GitHubClientException {
-        Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
-        log.info("Successfully fetched {} releases from GitHub", releases.size());
-        return releases;
-    }
+	public Set<IssueDTO> getIssues() throws GitHubClientException {
+		Set<IssueDTO> issues = getEntities(GitHubQueryConstants.ISSUES, new HashMap<>(), IssueDTO.class);
+		log.info("Successfully fetched {} issues from GitHub", issues.size());
+		return issues;
+	}
+
+	public Set<PullRequestDTO> getBranchPullRequests(String branchName) throws GitHubClientException {
+		HashMap<String, Object> variables = new HashMap<>();
+		variables.put("branchName", branchName);
+		log.info("Started fetching pull requests from GitHub for branch with name: {}", branchName);
+
+		Set<PullRequestDTO> pullRequests = getEntities(GitHubQueryConstants.BRANCH_PULLS, variables, PullRequestDTO.class);
+		log.info("Successfully fetched {} pull requests from GitHub for branch with name: {}", pullRequests.size(), branchName);
+		return pullRequests;
+	}
+
+	public Set<ReleaseDTO> getReleases() throws GitHubClientException {
+		Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+		log.info("Successfully fetched {} releases from GitHub", releases.size());
+		return releases;
+	}
 
     private <T> Set<T> getEntities(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
@@ -78,18 +97,21 @@ public class GitHubClient extends GraphQLClient {
         while (hasNextPage) {
             queryVariables.put("after", cursor);
 
-            GitHubPaginationDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
+			GitHubPaginationDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
 
             if (response == null || response.edges == null || response.edges.isEmpty()) {
                 log.warn("Received empty response for query: {}", query);
                 break;
             }
+
             Set<T> entities = response.edges.stream()
                     .map(edge -> objectMapper.convertValue(edge.node, entityType))
                     .collect(Collectors.toSet());
+
             allEntities.addAll(entities);
-            log.info("Fetched {} entities for query: {}", entities.size(), query);
-            hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
+			log.info("Fetched {} additional entities with query: {}", entities.size(), query);
+
+			hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
             cursor = (response.pageInfo != null) ? response.pageInfo.endCursor : null;
         }
         return allEntities;

@@ -11,9 +11,9 @@ public enum GitHubQueryConstants {
     MILESTONES("milestones", "repository.milestones"),
     BRANCHES("branches", "repository.refs"),
     BRANCH_COMMITS("branchCommits", "repository.ref.target.history"),
-    RELEASES("releases", "repository.releases"),
-    BRANCH_PULLS("branchPullRequests", "repository.pullRequests"),
-    MILESTONE_ISSUES("milestoneIssues", "repository.milestone.issues");
+	ISSUES("issues", "repository.issues"),
+	BRANCH_PULLS("branchPullRequests", "repository.pullRequests"),
+	RELEASES("releases", "repository.releases");
 
     private final String documentName;
     private final String retrievePath;
