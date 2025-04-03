@@ -44,7 +44,10 @@ public class BranchService {
         }
 
         try {
-            log.info("Start injecting GitHub branches");
+			log.info("Amount of branches found in database: {}", branchRepository.count());
+			log.info("Amount of branches found in GitHub: {}", gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubBranchCount(branchProtectionRegexes));
+
+			log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubClient.getBranches();
             Set<Branch> branches = findProtectedBranchesByRegexPattern(branchDTOs);
             saveBranches(branches);

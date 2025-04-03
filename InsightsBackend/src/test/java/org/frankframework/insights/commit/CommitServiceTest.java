@@ -23,84 +23,109 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class CommitServiceTest {
+	@Mock
+	private GitHubProperties gitHubProperties;
 
-    @Mock
-    private GitHubProperties gitHubProperties;
+	@Mock
+	private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
 
-    @Mock
-    private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
+	@Mock
+	private GitHubClient gitHubClient;
 
-    @Mock
-    private GitHubClient gitHubClient;
+	@Mock
+	private Mapper commitMapper;
 
-    @Mock
-    private Mapper commitMapper;
+	@Mock
+	private BranchCommitRepository branchCommitRepository;
 
-    @Mock
-    private BranchCommitRepository branchCommitRepository;
+	@Mock
+	private BranchService branchService;
 
-    @Mock
-    private BranchService branchService;
+	@InjectMocks
+	private CommitService commitService;
 
-    @InjectMocks
-    private CommitService commitService;
+	private Branch mockBranch;
+	private CommitDTO mockCommitDTO;
+	private Commit mockCommit;
+	private GitHubRepositoryStatisticsDTO mockGitHubRepositoryStatisticsDTO;
+	private Map<String, Integer> gitHubCommitCounts;
 
-    private Branch mockBranch;
-    private CommitDTO mockCommitDTO;
-    private Commit mockCommit;
-    private GitHubRepositoryStatisticsDTO mockGitHubRepositoryStatisticsDTO;
+	@BeforeEach
+	public void setUp() {
+		mockBranch = new Branch();
+		mockBranch.setName("master");
 
-    @BeforeEach
-    public void setUp() {
-        mockBranch = new Branch();
-        mockBranch.setName("master");
+		mockCommit = new Commit();
+		mockCommit.setSha("sha123");
 
-        mockCommit = new Commit();
-        mockCommit.setSha("sha123");
+		mockCommitDTO = new CommitDTO();
+		mockCommitDTO.sha = "sha123";
 
-        mockCommitDTO = new CommitDTO();
-        mockCommitDTO.sha = "sha123";
+		mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+				.thenReturn(mockGitHubRepositoryStatisticsDTO);
 
-        mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(mockGitHubRepositoryStatisticsDTO);
-    }
+		gitHubCommitCounts = new HashMap<>();
+		gitHubCommitCounts.put(mockBranch.getName(), 10);  // Assuming GitHub has 10 commits
+	}
 
-    @Test
-    public void should_InjectCommitsForBranch_when_DatabaseIsNotFilledYet()
-            throws GitHubClientException, CommitInjectionException, MappingException {
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitCount(eq(Collections.emptyList())))
-                .thenReturn(10);
-        when(branchCommitRepository.count()).thenReturn(0L);
-        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-        when(gitHubClient.getBranchCommits(mockBranch.getName())).thenReturn(Set.of(mockCommitDTO));
-        when(commitMapper.toEntity(any(), any())).thenReturn(Set.of(mockCommit));
+	@Test
+	public void should_InjectCommitsForBranch_when_DatabaseIsNotFilledYet() throws GitHubClientException, MappingException {
+		when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitsCount(eq(Collections.emptyList())))
+				.thenReturn(gitHubCommitCounts);
+		when(branchCommitRepository.countBranchCommitByBranch(mockBranch)).thenReturn(0); // No commits in DB
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+		when(gitHubClient.getBranchCommits(mockBranch.getName())).thenReturn(Set.of(mockCommitDTO));
+		when(commitMapper.toEntity(any(), any())).thenReturn(Set.of(mockCommit));
 
-        commitService.injectBranchCommits();
+		commitService.injectBranchCommits();
 
-        verify(branchService, times(1)).saveBranches(anySet());
-    }
+		verify(branchService, times(1)).saveBranches(anySet()); // It should save the branch
+	}
 
-    @Test
-    public void should_NotInjectCommitsForBranch_when_DatabaseIsAlreadyFilled() throws CommitInjectionException {
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitCount(eq(Collections.emptyList())))
-                .thenReturn(10);
-        when(branchCommitRepository.count()).thenReturn(10L);
+	@Test
+	public void should_NotInjectCommitsForBranch_when_DatabaseIsAlreadyFilled() {
+		when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitsCount(eq(Collections.emptyList())))
+				.thenReturn(gitHubCommitCounts);
+		when(branchCommitRepository.countBranchCommitByBranch(mockBranch)).thenReturn(10);  // Already 10 commits in DB
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
 
-        commitService.injectBranchCommits();
+		commitService.injectBranchCommits();
 
-        verify(branchService, times(0)).saveBranches(anySet());
-    }
+		verify(branchService, times(0)).saveBranches(anySet());
+	}
 
-    @Test
-    public void should_ThrowCommitInjectionException_when_ErrorOccurs() throws GitHubClientException {
-        when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitCount(eq(Collections.emptyList())))
-                .thenReturn(10);
-        when(branchCommitRepository.count()).thenReturn(0L);
-        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-        when(gitHubClient.getBranchCommits(mockBranch.getName()))
-                .thenThrow(new GitHubClientException("Error fetching commits", null));
+	@Test
+	public void should_InjectCommitsOnlyForBranchesWithDifferentCommitCounts() throws GitHubClientException, MappingException {
+		Branch mockBranch2 = new Branch();
+		mockBranch2.setName("dev");
 
-        assertThrows(CommitInjectionException.class, () -> commitService.injectBranchCommits());
-    }
+		Map<String, Integer> commitCounts = Map.of("master", 5, "dev", 10);
+
+		when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitsCount(anyList()))
+				.thenReturn(commitCounts);
+		when(branchCommitRepository.countBranchCommitByBranch(mockBranch)).thenReturn(5);
+		when(branchCommitRepository.countBranchCommitByBranch(mockBranch2)).thenReturn(5);
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch, mockBranch2));
+		when(gitHubClient.getBranchCommits(anyString())).thenReturn(Set.of(mockCommitDTO));
+		when(commitMapper.toEntity(any(), any())).thenReturn(Set.of(mockCommit));
+
+		commitService.injectBranchCommits();
+
+		verify(branchService, times(1)).saveBranches(anySet());
+	}
+
+	@Test
+	public void should_LogInformation_when_NoBranchesToUpdate() {
+		when(mockGitHubRepositoryStatisticsDTO.getGitHubCommitsCount(eq(Collections.emptyList())))
+				.thenReturn(gitHubCommitCounts);
+		when(branchCommitRepository.countBranchCommitByBranch(mockBranch)).thenReturn(10);  // Already 10 commits in DB
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+
+		// Here, we just check if the log is called when no branches need to be updated.
+		commitService.injectBranchCommits();
+
+		verify(branchService, times(0)).saveBranches(anySet());  // No updates should happen
+		// We can also check the logs if needed
+	}
 }

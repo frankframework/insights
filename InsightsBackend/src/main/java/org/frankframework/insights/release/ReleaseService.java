@@ -1,5 +1,6 @@
 package org.frankframework.insights.release;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -7,10 +8,14 @@ import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.entityconnection.ReleaseCommit;
+import org.frankframework.insights.common.entityconnection.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.pullrequest.PullRequest;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -43,7 +48,10 @@ public class ReleaseService {
         }
 
         try {
-            log.info("Fetching GitHub releases...");
+			log.info("Amount of releases found in database: {}", releaseRepository.count());
+			log.info("Amount of releases found in GitHub: {}", gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount());
+
+			log.info("Fetching GitHub releases...");
             Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
             List<Branch> branches = branchService.getAllBranchesWithCommits();
 
@@ -57,9 +65,9 @@ public class ReleaseService {
                 return;
             }
 
-            Set<Release> releasesWithNewCommits = assignNewCommitsToReleases(releasesWithBranches);
+			Set<Release> releasesWithNewCommitsAndPRs = assignNewCommitsAndPullRequestsToReleases(releasesWithBranches);
 
-            saveAllReleases(releasesWithNewCommits);
+            saveAllReleases(releasesWithNewCommitsAndPRs);
         } catch (Exception e) {
             throw new ReleaseInjectionException("Error injecting GitHub releases.", e);
         }
@@ -89,58 +97,80 @@ public class ReleaseService {
                 .orElse(null);
     }
 
-    private Set<Release> assignNewCommitsToReleases(List<Release> releases) {
-        Map<Branch, List<Release>> releasesByBranch = releases.stream()
-                .filter(release -> release.getBranch() != null)
-                .collect(Collectors.groupingBy(Release::getBranch));
+	private Set<Release> assignNewCommitsAndPullRequestsToReleases(List<Release> releases) {
+		Map<Branch, List<Release>> releasesByBranch = groupReleasesByBranch(releases);
+		Set<Release> updatedReleases = new HashSet<>();
 
-        Set<Release> updatedReleases = new HashSet<>();
+		for (Map.Entry<Branch, List<Release>> entry : releasesByBranch.entrySet()) {
+			updatedReleases.addAll(processReleasesForBranch(entry.getKey(), entry.getValue()));
+		}
 
-        for (Map.Entry<Branch, List<Release>> entry : releasesByBranch.entrySet()) {
-            Branch branch = entry.getKey();
-            List<Release> branchReleases = entry.getValue();
+		return updatedReleases;
+	}
 
-            if (branch == null || branchReleases.isEmpty()) {
-                return new HashSet<>(branchReleases);
-            }
+	private Map<Branch, List<Release>> groupReleasesByBranch(List<Release> releases) {
+		return releases.stream()
+				.filter(release -> release.getBranch() != null)
+				.collect(Collectors.groupingBy(Release::getBranch));
+	}
 
-            branchReleases.sort(Comparator.comparing(Release::getPublishedAt));
+	private Set<Release> processReleasesForBranch(Branch branch, List<Release> branchReleases) {
+		Set<Release> updatedReleases = new HashSet<>();
+		branchReleases.sort(Comparator.comparing(Release::getPublishedAt));
+		TreeSet<Release> sortedReleases = new TreeSet<>(Comparator.comparing(Release::getPublishedAt));
 
-            TreeSet<Release> sortedReleases = new TreeSet<>(Comparator.comparing(Release::getPublishedAt));
+		for (Release release : branchReleases) {
+			processRelease(branch, release, sortedReleases, updatedReleases);
+		}
+		return updatedReleases;
+	}
 
-            for (Release release : branchReleases) {
-                Set<Commit> newCommits = new HashSet<>();
+	private void processRelease(Branch branch, Release release, TreeSet<Release> sortedReleases, Set<Release> updatedReleases) {
+		Release previousRelease = sortedReleases.lower(release);
 
-                Release previousRelease = sortedReleases.lower(release);
+		Set<Commit> newCommits = findNewCommits(branch, previousRelease, release);
+		Set<PullRequest> newPullRequests = findNewPullRequests(branch, previousRelease, release);
 
-                if (previousRelease == null) {
-                    newCommits.addAll(branch.getBranchCommits().stream()
-                            .map(BranchCommit::getCommit)
-                            .filter(commit -> !commit.getCommittedDate().isAfter(release.getPublishedAt()))
-                            .toList());
-                } else {
-                    newCommits.addAll(branch.getBranchCommits().stream()
-                            .map(BranchCommit::getCommit)
-                            .filter(commit -> commit.getCommittedDate().isAfter(previousRelease.getPublishedAt())
-                                    && !commit.getCommittedDate().isAfter(release.getPublishedAt()))
-                            .toList());
-                }
+		release.setReleaseCommits(mapToReleaseCommits(release, newCommits));
+		release.setReleasePullRequests(mapToReleasePullRequests(release, newPullRequests));
 
-                Set<ReleaseCommit> newReleaseCommits = newCommits.stream()
-                        .map(commit -> new ReleaseCommit(release, commit))
-                        .collect(Collectors.toSet());
+		updatedReleases.add(release);
+		sortedReleases.add(release);
+	}
 
-                release.setReleaseCommits(newReleaseCommits);
+	private Set<Commit> findNewCommits(Branch branch, Release previousRelease, Release release) {
+		return branch.getBranchCommits().stream()
+				.map(BranchCommit::getCommit)
+				.filter(commit -> isInReleaseRange(commit.getCommittedDate(), previousRelease, release))
+				.collect(Collectors.toSet());
+	}
 
-                updatedReleases.add(release);
-                sortedReleases.add(release);
-            }
-        }
+	private Set<PullRequest> findNewPullRequests(Branch branch, Release previousRelease, Release release) {
+		return branch.getBranchPullRequests().stream()
+				.map(BranchPullRequest::getPullRequest)
+				.filter(pr -> isInReleaseRange(pr.getMergedAt(), previousRelease, release))
+				.collect(Collectors.toSet());
+	}
 
-        return updatedReleases;
-    }
+	private boolean isInReleaseRange(OffsetDateTime date, Release previousRelease, Release release) {
+		return previousRelease == null
+				? !date.isAfter(release.getPublishedAt())
+				: date.isAfter(previousRelease.getPublishedAt()) && !date.isAfter(release.getPublishedAt());
+	}
 
-    private void saveAllReleases(Set<Release> releases) {
+	private Set<ReleaseCommit> mapToReleaseCommits(Release release, Set<Commit> commits) {
+		return commits.stream()
+				.map(commit -> new ReleaseCommit(release, commit))
+				.collect(Collectors.toSet());
+	}
+
+	private Set<ReleasePullRequest> mapToReleasePullRequests(Release release, Set<PullRequest> pullRequests) {
+		return pullRequests.stream()
+				.map(pr -> new ReleasePullRequest(release, pr))
+				.collect(Collectors.toSet());
+	}
+
+	private void saveAllReleases(Set<Release> releases) {
         List<Release> savedReleases = releaseRepository.saveAll(releases);
         log.info("Successfully saved {} releases.", savedReleases.size());
     }

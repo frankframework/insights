@@ -32,7 +32,4 @@ public class Commit {
 
     @OneToMany
     private Set<ReleaseCommit> releaseCommits;
-
-    @ManyToOne
-    private PullRequest pullRequest;
 }

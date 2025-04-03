@@ -9,33 +9,37 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import java.util.UUID;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.frankframework.insights.issue.Issue;
-import org.frankframework.insights.label.Label;
+
+import org.frankframework.insights.commit.Commit;
+import org.frankframework.insights.pullrequest.PullRequest;
+import org.frankframework.insights.release.Release;
+
+import java.util.UUID;
 
 @Entity
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class IssueLabel {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+public class ReleasePullRequest {
+	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
-    @ManyToOne
-    @JoinColumn(nullable = false)
+	@ManyToOne
+	@JoinColumn(nullable = false)
 	@JsonIgnore
-    private Issue issue;
+	private Release release;
 
 	@ManyToOne(cascade = { CascadeType.MERGE })
-    @JoinColumn(name = "label_id", nullable = false)
-    private Label label;
+	@JoinColumn(nullable = false)
+	private PullRequest pullRequest;
 
-	public IssueLabel(Issue issue, Label label) {
-		this.issue = issue;
-		this.label = label;
+	public ReleasePullRequest(Release release, PullRequest pullRequest) {
+		this.release = release;
+		this.pullRequest = pullRequest;
 	}
 }

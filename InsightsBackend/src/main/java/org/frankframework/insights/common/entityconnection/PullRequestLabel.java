@@ -1,5 +1,6 @@
 package org.frankframework.insights.common.entityconnection;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,7 +25,7 @@ public class PullRequestLabel {
     @JoinColumn(nullable = false)
     private PullRequest pullRequest;
 
-    @ManyToOne
+	@ManyToOne(cascade = { CascadeType.MERGE })
     @JoinColumn(nullable = false)
     private Label label;
 }

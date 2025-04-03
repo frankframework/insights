@@ -40,7 +40,10 @@ public class MilestoneService {
         }
 
         try {
-            log.info("Start injecting GitHub milestones");
+			log.info("Amount of milestones found in database: {}", milestoneRepository.count());
+			log.info("Amount of milestones found in GitHub: {}", gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubMilestoneCount());
+
+			log.info("Start injecting GitHub milestones");
             Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
             Set<Milestone> milestones = mapper.toEntity(milestoneDTOS, Milestone.class);
             saveMilestones(milestones);
@@ -49,10 +52,9 @@ public class MilestoneService {
         }
     }
 
-    public void getOpenMilestones() {
-        List<Milestone> openMilestones = milestoneRepository.getMilestonesByState(GitHubPropertyState.OPEN);
-        log.info("Successfully fetched {} open milestones", openMilestones.size());
-    }
+	public List<Milestone> getAllMilestones() {
+		return milestoneRepository.findAll();
+	}
 
     private void saveMilestones(Set<Milestone> milestones) {
         List<Milestone> savedMilestones = milestoneRepository.saveAll(milestones);
