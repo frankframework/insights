@@ -16,7 +16,7 @@ public class Issue {
     @Id
     private String id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private int number;
 
     @Column(nullable = false)
@@ -37,19 +37,12 @@ public class Issue {
     @ManyToOne
     private Milestone milestone;
 
-    @OneToMany(mappedBy = "parentIssue")
-    private Set<Issue> subIssues;
+	@ManyToOne
+	private Issue parentIssue;
 
-    @ManyToOne
-    private Issue parentIssue;
+    @OneToMany
+    private Set<Issue> subIssues;
 
     @OneToMany
     private Set<PullRequestIssue> pullRequestIssues;
-
-	public String getBusinessValue() {
-		if (businessValue != null && !businessValue.isBlank()) {
-			return businessValue;
-		}
-		return (parentIssue != null) ? parentIssue.getBusinessValue() : null;
-	}
 }

@@ -18,7 +18,7 @@ public class PullRequest {
     @Id
     private String id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private int number;
 
     @Column(nullable = false)
