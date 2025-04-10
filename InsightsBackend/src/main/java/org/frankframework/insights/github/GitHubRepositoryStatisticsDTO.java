@@ -17,6 +17,7 @@ public record GitHubRepositoryStatisticsDTO(
 
 	@JsonProperty("refs")
 	GitHubRefsDTO branches,
+
 	@JsonProperty("releases")
 	GitHubTotalCountDTO releases,
 
@@ -30,10 +31,6 @@ public record GitHubRepositoryStatisticsDTO(
     public int getGitHubMilestoneCount() {
 		return milestones.totalCount();
     }
-
-	public GitHubRefsDTO getGitHubBranches() {
-		return branches;
-	}
 
     public int getGitHubBranchCount(List<String> branchProtectionRegexes) {
         return (int) branches.nodes().stream()
@@ -60,16 +57,5 @@ public record GitHubRepositoryStatisticsDTO(
 
 	public int getGitHubIssueCount() {
 		return issues.totalCount();
-	}
-
-	public Map<String, Integer> getGitHubPullRequestsCounts(List<String> branchProtectionRegexes) {
-		return branches.nodes().stream()
-				.filter(branch -> branchProtectionRegexes.stream()
-						.anyMatch(regex ->
-								Pattern.compile(regex).matcher(branch.name()).find()))
-				.collect(Collectors.toMap(
-						GitHubRefsDTO.GitHubBranchNodeDTO::name,
-						branch -> branch.pullRequests().totalCount()
-				));
 	}
 }
