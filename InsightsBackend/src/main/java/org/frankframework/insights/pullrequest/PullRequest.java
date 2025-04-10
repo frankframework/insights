@@ -4,17 +4,22 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
+
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.common.entityconnection.PullRequestLabel;
+import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.milestone.Milestone;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class PullRequest {
     @Id
     private String id;
@@ -33,15 +38,9 @@ public class PullRequest {
     @ManyToOne
     private Milestone milestone;
 
-    @ManyToOne
-    private Branch branch;
+	@OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+	private Set<PullRequestLabel> pullRequestLabels = new HashSet<>();
 
-    @OneToMany
-    private Set<BranchPullRequest> branchPullRequests;
-
-    @OneToMany
+	@OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<PullRequestIssue> pullRequestIssues;
-
-    @OneToMany
-    private Set<PullRequestLabel> pullRequestLabels;
 }

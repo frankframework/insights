@@ -1,7 +1,10 @@
 package org.frankframework.insights.milestone;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
@@ -52,8 +55,8 @@ public class MilestoneService {
         }
     }
 
-	public List<Milestone> getAllMilestones() {
-		return milestoneRepository.findAll();
+	public Map<String, Milestone> getAllMilestonesMap() {
+		return milestoneRepository.findAll().stream().collect(Collectors.toMap(Milestone::getId, milestone -> milestone));
 	}
 
     private void saveMilestones(Set<Milestone> milestones) {

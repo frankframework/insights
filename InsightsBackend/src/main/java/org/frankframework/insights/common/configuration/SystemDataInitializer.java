@@ -13,6 +13,7 @@ import org.frankframework.insights.label.LabelInjectionException;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneInjectionException;
 import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.pullrequest.PullRequestInjectionException;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
@@ -88,7 +89,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             branchService.injectBranches();
             commitService.injectBranchCommits();
 			issueService.injectIssues();
-			pullRequestService.injectPullRequests();
+			pullRequestService.injectBranchPullRequests();
 			releaseService.injectReleases();
 
 			log.info("Done fetching all GitHub data");
@@ -96,6 +97,7 @@ public class SystemDataInitializer implements CommandLineRunner {
                 | MilestoneInjectionException
                 | BranchInjectionException
 				| IssueInjectionException
+				| PullRequestInjectionException
 				| ReleaseInjectionException e) {
             log.error("Error initializing system data", e);
         }

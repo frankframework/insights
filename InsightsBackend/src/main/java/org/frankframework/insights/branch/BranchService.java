@@ -1,10 +1,16 @@
 package org.frankframework.insights.branch;
 
-import jakarta.transaction.Transactional;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
+
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
+
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -58,7 +64,7 @@ public class BranchService {
 
     public boolean doesBranchContainCommit(Branch branch, String commitOid) {
         boolean containsCommit = branch.getBranchCommits().stream()
-                .anyMatch(commit -> commit.getCommit().getSha().equals(commitOid));
+				.anyMatch(bc -> bc.getCommit() != null && commitOid.equals(bc.getCommit().getSha()));
 
         log.info("Branch {} contains commit: {}", branch.getName(), containsCommit);
 
@@ -82,12 +88,19 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-    @Transactional
-    public List<Branch> getAllBranchesWithCommits() {
-        return branchRepository.findAllWithCommits();
-    }
+	public Branch getBranchByName(String branchName) {
+		return branchRepository.findBranchByName(branchName);
+	}
 
-    public void saveBranches(Set<Branch> branches) {
+	public List<Branch> getBranchesWithCommits() {
+		return branchRepository.findAllWithCommits();
+	}
+
+	public List<Branch> getBranchesWithPullRequests(List<Branch> branches) {
+		return branchRepository.findAllWithPullRequests(branches);
+	}
+
+	public void saveBranches(Set<Branch> branches) {
         List<Branch> savedBranches = branchRepository.saveAll(branches);
         log.info("Successfully saved {} branches.", savedBranches.size());
     }

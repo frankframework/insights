@@ -9,18 +9,6 @@ query repositoryStatistics {
 		refs(refPrefix: "refs/heads/", first: 100) {
 			nodes {
 				name
-				target {
-					... on Commit {
-						history(first: 1) {
-							totalCount
-						}
-					}
-				}
-				pullRequests: repository {
-					pullRequests(first: 1) {
-						totalCount
-					}
-				}
 			}
 		}
 		releases {

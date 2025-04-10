@@ -3,7 +3,6 @@ package org.frankframework.insights.commit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
@@ -63,7 +62,7 @@ public class CommitService {
 				.getGitHubCommitsCount(branchProtectionRegexes);
 	}
 
-	private List<Branch> filterBranchesToUpdate(List<Branch> branches, Map<String, Integer> githubCommitCounts) {
+	public List<Branch> filterBranchesToUpdate(List<Branch> branches, Map<String, Integer> githubCommitCounts) {
 		return branches.stream()
 				.filter(branch -> {
 					int databaseCommitCount = branchCommitRepository.countBranchCommitByBranch(branch);
@@ -77,7 +76,6 @@ public class CommitService {
 				.toList();
 	}
 
-	@Transactional
 	private void updateBranches(List<Branch> branchesToUpdate) {
 		Set<Branch> updatedBranches = branchesToUpdate.stream()
 				.map(branch -> {
@@ -120,7 +118,10 @@ public class CommitService {
 
 	private Set<BranchCommit> processBranchCommits(Branch branch, Set<Commit> commits, Set<BranchCommit> existingBranchCommits) {
 		Map<String, BranchCommit> existingCommitsMap = existingBranchCommits.stream()
-				.collect(Collectors.toMap(bc -> bc.getCommit().getSha(), bc -> bc));
+				.collect(Collectors.toMap(
+						bc -> buildUniqueKey(bc.getBranch(), bc.getCommit()),
+						bc -> bc
+				));
 
 		return commits.stream()
 				.map(commit -> getOrCreateBranchCommit(branch, commit, existingCommitsMap))
@@ -128,6 +129,11 @@ public class CommitService {
 	}
 
 	private BranchCommit getOrCreateBranchCommit(Branch branch, Commit commit, Map<String, BranchCommit> existingCommitsMap) {
-		return existingCommitsMap.getOrDefault(commit.getSha(), new BranchCommit(branch, commit));
+		String key = buildUniqueKey(branch, commit);
+		return existingCommitsMap.getOrDefault(key, new BranchCommit(branch, commit));
+	}
+
+	private String buildUniqueKey(Branch branch, Commit commit) {
+		return String.format("%s::%s", branch.getId(), commit.getId());
 	}
 }

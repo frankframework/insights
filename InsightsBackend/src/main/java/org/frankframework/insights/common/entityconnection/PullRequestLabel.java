@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import java.util.UUID;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.frankframework.insights.label.Label;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -16,6 +17,7 @@ import org.frankframework.insights.pullrequest.PullRequest;
 @Entity
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class PullRequestLabel {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,4 +30,9 @@ public class PullRequestLabel {
 	@ManyToOne(cascade = { CascadeType.MERGE })
     @JoinColumn(nullable = false)
     private Label label;
+
+	public PullRequestLabel(PullRequest pullRequest, Label label) {
+		this.pullRequest = pullRequest;
+		this.label = label;
+	}
 }
