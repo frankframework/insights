@@ -8,10 +8,7 @@ import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
-import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.label.Label;
 import org.frankframework.insights.label.LabelService;
@@ -32,7 +29,6 @@ import java.util.stream.Stream;
 @Slf4j
 public class PullRequestService {
 
-	private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
 	private final GitHubClient gitHubClient;
 	private final Mapper mapper;
 	private final BranchPullRequestRepository branchPullRequestRepository;
@@ -43,7 +39,6 @@ public class PullRequestService {
 	private final List<String> branchProtectionRegexes;
 
 	public PullRequestService(
-			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
 			GitHubClient gitHubClient,
 			Mapper mapper,
 			BranchPullRequestRepository branchPullRequestRepository,
@@ -52,7 +47,6 @@ public class PullRequestService {
 			MilestoneService milestoneService,
 			IssueService issueService,
 			GitHubProperties gitHubProperties) {
-		this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
 		this.gitHubClient = gitHubClient;
 		this.mapper = mapper;
 		this.branchPullRequestRepository = branchPullRequestRepository;
@@ -64,55 +58,12 @@ public class PullRequestService {
 	}
 
 	public void injectBranchPullRequests() throws PullRequestInjectionException {
-		Map<String, Integer> githubPullRequestsCounts = fetchGitHubPullRequestCounts();
-
 		List<Branch> branches = branchService.getAllBranches();
 		log.info("Fetched {} branches", branches.size());
 
-		List<Branch> branchesToUpdate = filterBranchesToUpdate(branches, githubPullRequestsCounts);
-		log.info("Found {} branches to update", branchesToUpdate.size());
-
-		if (branchesToUpdate.isEmpty()) {
-			log.info("No branches to update pull requests of. Skipping...");
-			return;
-		}
-
 		Set<PullRequestDTO> sortedMasterPullRequests = fetchSortedMasterPullRequests();
 
-		updateBranches(branchesToUpdate, sortedMasterPullRequests);
-	}
-
-	private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
-		try {
-			Set<PullRequestDTO> masterPullRequests = gitHubClient.getBranchPullRequests(branchProtectionRegexes.getFirst());
-			return sortPullRequestsByMergedAt(masterPullRequests);
-		} catch (Exception e) {
-			throw new PullRequestInjectionException("Error while injecting GitHub pull requests of branch master", e);
-		}
-	}
-
-	private Map<String, Integer> fetchGitHubPullRequestCounts() {
-		return gitHubRepositoryStatisticsService
-				.getGitHubRepositoryStatisticsDTO()
-				.getGitHubPullRequestsCounts(branchProtectionRegexes);
-	}
-
-	public List<Branch> filterBranchesToUpdate(List<Branch> branches, Map<String, Integer> githubPullRequestsCounts) {
-		return branches.stream()
-				.filter(branch -> {
-					int databasePullRequestCount = branchPullRequestRepository.countBranchPullRequestByBranch(branch);
-					int githubPullRequestCount = githubPullRequestsCounts.getOrDefault(branch.getName(), 0);
-
-					log.info("{} pull requests found in database, {} pull requests found in GitHub, for branch {}",
-							databasePullRequestCount, githubPullRequestCount, branch.getName());
-
-					return databasePullRequestCount != githubPullRequestCount;
-				})
-				.toList();
-	}
-
-	private void updateBranches(List<Branch> branchesToUpdate, Set<PullRequestDTO> sortedMasterPullRequests) {
-		Set<Branch> updatedBranches = branchesToUpdate.stream()
+		Set<Branch> updatedBranches = branches.stream()
 				.map(branch -> {
 					try {
 						return getPullRequestsForBranch(branch, sortedMasterPullRequests);
@@ -124,15 +75,26 @@ public class PullRequestService {
 				.filter(Objects::nonNull)
 				.collect(Collectors.toSet());
 
-		branchService.saveBranches(updatedBranches);
+		if (!updatedBranches.isEmpty()) {
+			branchService.saveBranches(updatedBranches);
+		}
+
+		log.info("Updated pull requests for {} branches", updatedBranches.size());
+	}
+
+	private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
+		try {
+			Set<PullRequestDTO> masterPullRequests = gitHubClient.getBranchPullRequests(branchProtectionRegexes.getFirst());
+			return sortPullRequestsByMergedAt(masterPullRequests);
+		} catch (Exception e) {
+			throw new PullRequestInjectionException("Error while injecting GitHub pull requests of branch master", e);
+		}
 	}
 
 	private Branch getPullRequestsForBranch(Branch branch, Set<PullRequestDTO> sortedMasterPullRequests) throws PullRequestInjectionException {
 		try {
 			Set<PullRequestDTO> branchPullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
-
 			Set<PullRequestDTO> mergedPullRequests = mergeMasterAndBranchPullRequests(sortedMasterPullRequests, branchPullRequestDTOS);
-
 			Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequests, PullRequest.class);
 
 			Map<String, PullRequestDTO> pullRequestDtoMap = mergedPullRequests.stream()
@@ -162,16 +124,16 @@ public class PullRequestService {
 		pullRequests.forEach(pullRequest -> {
 			PullRequestDTO pullRequestDTO = pullRequestsDtoMap.get(pullRequest.getId());
 			if (pullRequestDTO != null) {
-				Set<PullRequestLabel> pullRequestLabels = pullRequestDTO.labels().getEdges().stream()
-						.map(labelDTO -> new PullRequestLabel(pullRequest, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-						.filter(issueLabel -> issueLabel.getLabel() != null)
-						.collect(Collectors.toSet());
-
-				pullRequest.setPullRequestLabels(pullRequestLabels);
+				if (pullRequestDTO.labels() != null) {
+					Set<PullRequestLabel> pullRequestLabels = pullRequestDTO.labels().getEdges().stream()
+							.map(labelDTO -> new PullRequestLabel(pullRequest, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+							.filter(issueLabel -> issueLabel.getLabel() != null)
+							.collect(Collectors.toSet());
+					pullRequest.setPullRequestLabels(pullRequestLabels);
+				}
 
 				if (pullRequestDTO.milestone() != null && pullRequestDTO.milestone().id() != null) {
-					Milestone milestone = milestoneMap.get(pullRequestDTO.milestone().id());
-					pullRequest.setMilestone(milestone);
+					pullRequest.setMilestone(milestoneMap.get(pullRequestDTO.milestone().id()));
 				}
 
 				if (pullRequestDTO.closingIssuesReferences() != null &&
@@ -179,11 +141,6 @@ public class PullRequestService {
 						!pullRequestDTO.closingIssuesReferences().getEdges().isEmpty()) {
 
 					Set<PullRequestIssue> pullRequestIssues = pullRequestDTO.closingIssuesReferences().getEdges().stream()
-							.peek(issueDTO -> {
-								if (issueDTO == null) {
-									log.warn("No issueDTO found in issue edges!");
-								}
-							})
 							.filter(issueDTO -> issueDTO != null && issueDTO.getNode() != null)
 							.map(issueDTO -> new PullRequestIssue(pullRequest, issueMap.getOrDefault(issueDTO.getNode().id(), null)))
 							.filter(pullRequestIssue -> pullRequestIssue.getIssue() != null)
@@ -191,10 +148,8 @@ public class PullRequestService {
 
 					pullRequest.setPullRequestIssues(pullRequestIssues);
 				}
-
 			}
 		});
-
 		return pullRequests;
 	}
 

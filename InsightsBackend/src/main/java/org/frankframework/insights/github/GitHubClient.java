@@ -11,7 +11,6 @@ import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.commit.CommitDTO;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.graphql.GraphQLClient;
-import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
@@ -36,18 +35,6 @@ public class GitHubClient extends GraphQLClient {
         log.info("Fetched repository statistics from GitHub");
         return repositoryStatistics;
     }
-
-	public GitHubRefsDTO.GitHubBranchStatisticsDTO getBranchStatistics(String branchName, String baseRefName) throws GitHubClientException {
-		HashMap<String, Object> variables = new HashMap<>();
-		variables.put("branchName", branchName);
-		variables.put("baseRefName", baseRefName);
-		log.info("Started fetching statistics from GitHub for branch with name: {}", branchName);
-
-		GitHubRefsDTO.GitHubBranchStatisticsDTO branchStatistics =
-				fetchSingleEntity(GitHubQueryConstants.BRANCH_STATISTICS, variables, GitHubRefsDTO.GitHubBranchStatisticsDTO.class);
-		log.info("Fetched branch statistics from GitHub");
-		return branchStatistics;
-	}
 
     public Set<LabelDTO> getLabels() throws GitHubClientException {
         Set<LabelDTO> labels = getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);

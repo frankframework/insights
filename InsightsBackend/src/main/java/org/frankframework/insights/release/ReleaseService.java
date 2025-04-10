@@ -50,8 +50,8 @@ public class ReleaseService {
 		try {
 			log.info("Fetching GitHub releases...");
 			Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
-			List<Branch> branchesWithCommits = branchService.getBranchesWithCommits();  // Fetch branches with commits
-			List<Branch> branchesWithPullRequests = branchService.getBranchesWithPullRequests(branchesWithCommits);  // Fetch branches with pull requests
+			List<Branch> branchesWithCommits = branchService.getBranchesWithCommits();
+			List<Branch> branchesWithPullRequests = branchService.getBranchesWithPullRequests(branchesWithCommits);
 
 			List<Release> releasesWithBranches = releaseDTOs.stream()
 					.map(dto -> createReleaseWithBranch(dto, branchesWithCommits))
@@ -123,13 +123,9 @@ public class ReleaseService {
 
 				if (previousRelease == null) {
 					newCommits.addAll(getCommitsBeforeRelease(branch, release));
-				} else {
-					newCommits.addAll(getCommitsBetweenReleases(branch, previousRelease, release));
-				}
-
-				if (previousRelease == null) {
 					newPullRequests.addAll(getPullRequestsBeforeRelease(branchWithPRs, release));
 				} else {
+					newCommits.addAll(getCommitsBetweenReleases(branch, previousRelease, release));
 					newPullRequests.addAll(getPullRequestsBetweenReleases(branchWithPRs, previousRelease, release));
 				}
 

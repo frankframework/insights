@@ -83,7 +83,7 @@ public class ShedLockTest {
 
     @Test
     public void should_LockStartupTask_when_Executed() {
-        systemDataInitializer.startupTask();
+        systemDataInitializer.run();
         LockAssert.assertLocked();
     }
 
@@ -100,7 +100,7 @@ public class ShedLockTest {
 
         Future<?> startupFuture = executorService.submit(() -> {
             latch.countDown();
-            systemDataInitializer.startupTask();
+            systemDataInitializer.run();
         });
 
         Future<?> dailyJobFuture = executorService.submit(() -> {
@@ -141,7 +141,7 @@ public class ShedLockTest {
 
         Future<?> startupFuture = executorService.submit(() -> {
             latch.countDown();
-            systemDataInitializer.startupTask();
+            systemDataInitializer.run();
         });
 
         dailyJobFuture.get();
