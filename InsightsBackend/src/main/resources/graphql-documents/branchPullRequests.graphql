@@ -1,35 +1,27 @@
 query branchPullRequests($branchName: String!, $after: String) {
 	repository(owner: "frankframework", name: "frankframework") {
-		pullRequests(first: 100, baseRefName: $branchName, after: $after) {
+		pullRequests(first: 100, baseRefName: $branchName, after: $after, states: MERGED) {
 			edges {
 				node {
 					id
 					number
 					title
-					state
 					url
 					mergedAt
 					labels(first: 10) {
 						edges {
 							node {
-								name
+								id
 							}
 						}
 					}
 					milestone {
-						title
+						id
 					}
 					closingIssuesReferences(first: 10) {
 						edges {
 							node {
-								number
-								subIssues (first:10) {
-									edges{
-										node {
-											number
-										}
-									}
-								}
+								id
 							}
 						}
 					}

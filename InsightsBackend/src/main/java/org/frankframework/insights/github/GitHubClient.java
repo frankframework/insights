@@ -31,11 +31,23 @@ public class GitHubClient extends GraphQLClient {
     }
 
     public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
-        GitHubRepositoryStatisticsDTO statistics =
-                fetchSingleEntity(GitHubQueryConstants.REPOSITORY_STATISTICS, GitHubRepositoryStatisticsDTO.class);
+        GitHubRepositoryStatisticsDTO repositoryStatistics =
+                fetchSingleEntity(GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
         log.info("Fetched repository statistics from GitHub");
-        return statistics;
+        return repositoryStatistics;
     }
+
+	public GitHubRefsDTO.GitHubBranchStatisticsDTO getBranchStatistics(String branchName, String baseRefName) throws GitHubClientException {
+		HashMap<String, Object> variables = new HashMap<>();
+		variables.put("branchName", branchName);
+		variables.put("baseRefName", baseRefName);
+		log.info("Started fetching statistics from GitHub for branch with name: {}", branchName);
+
+		GitHubRefsDTO.GitHubBranchStatisticsDTO branchStatistics =
+				fetchSingleEntity(GitHubQueryConstants.BRANCH_STATISTICS, variables, GitHubRefsDTO.GitHubBranchStatisticsDTO.class);
+		log.info("Fetched branch statistics from GitHub");
+		return branchStatistics;
+	}
 
     public Set<LabelDTO> getLabels() throws GitHubClientException {
         Set<LabelDTO> labels = getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
@@ -135,11 +147,12 @@ public class GitHubClient extends GraphQLClient {
         }
     }
 
-    private <T> T fetchSingleEntity(GitHubQueryConstants query, Class<T> entityType) throws GitHubClientException {
+    private <T> T fetchSingleEntity(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType) throws GitHubClientException {
         try {
             T response = getGraphQlClient()
                     .documentName(query.getDocumentName())
-                    .retrieve(query.getRetrievePath())
+					.variables(queryVariables)
+					.retrieve(query.getRetrievePath())
                     .toEntity(entityType)
                     .block();
 

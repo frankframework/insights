@@ -31,7 +31,7 @@ public class IssueLabel {
     private Issue issue;
 
 	@ManyToOne(cascade = { CascadeType.MERGE })
-    @JoinColumn(name = "label_id", nullable = false)
+    @JoinColumn(nullable = false)
     private Label label;
 
 	public IssueLabel(Issue issue, Label label) {

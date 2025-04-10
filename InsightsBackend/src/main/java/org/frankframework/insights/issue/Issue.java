@@ -1,5 +1,6 @@
 package org.frankframework.insights.issue;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Set;
@@ -38,13 +39,13 @@ public class Issue {
     private Set<IssueLabel> issueLabels;
 
     @ManyToOne(cascade = CascadeType.MERGE)
-	@JoinColumn(name = "milestone_id")
     private Milestone milestone;
 
 	@ManyToOne
 	private Issue parentIssue;
 
     @OneToMany
+	@JsonIgnore
     private Set<Issue> subIssues;
 
     @OneToMany

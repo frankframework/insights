@@ -1,11 +1,16 @@
 package org.frankframework.insights.label;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.milestone.Milestone;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -51,8 +56,8 @@ public class LabelService {
         }
     }
 
-	public List<Label> getAllLabels() {
-		return labelRepository.findAll();
+	public Map<String, Label> getAllLabelsMap() {
+		return labelRepository.findAll().stream().collect(Collectors.toMap(Label::getId, label -> label));
 	}
 
     private void saveLabels(Set<Label> labels) {

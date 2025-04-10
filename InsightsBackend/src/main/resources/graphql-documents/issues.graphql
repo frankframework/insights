@@ -18,6 +18,13 @@ query issues($after: String) {
 					milestone {
 						id
 					}
+					subIssues (first:10) {
+						edges{
+							node {
+								id
+							}
+						}
+					}
 				}
 			}
 			pageInfo {

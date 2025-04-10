@@ -100,7 +100,7 @@ class ReleaseServiceTest {
                 .thenReturn(1);
         when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getAllBranchesWithCommits()).thenReturn(List.of(mockBranch));
+        when(branchService.getBranchesByCommitShas(any())).thenReturn(List.of(mockBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
         when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(true);
 
@@ -118,7 +118,7 @@ class ReleaseServiceTest {
                 .thenReturn(1);
         when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getAllBranchesWithCommits()).thenReturn(List.of(mockBranch));
+        when(branchService.getBranchesByCommitShas(any())).thenReturn(List.of(mockBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
         when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(false);
 
@@ -144,7 +144,7 @@ class ReleaseServiceTest {
                 .thenReturn(2);
         when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getAllBranchesWithCommits()).thenReturn(List.of(mockBranch));
+        when(branchService.getBranchesByCommitShas(any())).thenReturn(List.of(mockBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
         when(branchService.doesBranchContainCommit(any(), anyString())).thenReturn(true);
 
