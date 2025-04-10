@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.common.entityconnection.ReleaseCommit;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
-import org.frankframework.insights.pullrequest.PullRequest;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)

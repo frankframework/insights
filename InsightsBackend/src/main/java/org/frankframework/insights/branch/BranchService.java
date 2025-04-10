@@ -1,16 +1,9 @@
 package org.frankframework.insights.branch;
 
-import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
-
-import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
-
-import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -50,10 +43,14 @@ public class BranchService {
         }
 
         try {
-			log.info("Amount of branches found in database: {}", branchRepository.count());
-			log.info("Amount of branches found in GitHub: {}", gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubBranchCount(branchProtectionRegexes));
+            log.info("Amount of branches found in database: {}", branchRepository.count());
+            log.info(
+                    "Amount of branches found in GitHub: {}",
+                    gitHubRepositoryStatisticsService
+                            .getGitHubRepositoryStatisticsDTO()
+                            .getGitHubBranchCount(branchProtectionRegexes));
 
-			log.info("Start injecting GitHub branches");
+            log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubClient.getBranches();
             Set<Branch> branches = findProtectedBranchesByRegexPattern(branchDTOs);
             saveBranches(branches);
@@ -64,7 +61,8 @@ public class BranchService {
 
     public boolean doesBranchContainCommit(Branch branch, String commitOid) {
         boolean containsCommit = branch.getBranchCommits().stream()
-				.anyMatch(bc -> bc.getCommit() != null && commitOid.equals(bc.getCommit().getSha()));
+                .anyMatch(bc -> bc.getCommit() != null
+                        && commitOid.equals(bc.getCommit().getSha()));
 
         log.info("Branch {} contains commit: {}", branch.getName(), containsCommit);
 
@@ -88,19 +86,19 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-	public Branch getBranchByName(String branchName) {
-		return branchRepository.findBranchByName(branchName);
-	}
+    public Branch getBranchByName(String branchName) {
+        return branchRepository.findBranchByName(branchName);
+    }
 
-	public List<Branch> getBranchesWithCommits() {
-		return branchRepository.findAllWithCommits();
-	}
+    public List<Branch> getBranchesWithCommits() {
+        return branchRepository.findAllWithCommits();
+    }
 
-	public List<Branch> getBranchesWithPullRequests(List<Branch> branches) {
-		return branchRepository.findAllWithPullRequests(branches);
-	}
+    public List<Branch> getBranchesWithPullRequests(List<Branch> branches) {
+        return branchRepository.findAllWithPullRequests(branches);
+    }
 
-	public void saveBranches(Set<Branch> branches) {
+    public void saveBranches(Set<Branch> branches) {
         List<Branch> savedBranches = branchRepository.saveAll(branches);
         log.info("Successfully saved {} branches.", savedBranches.size());
     }

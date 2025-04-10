@@ -8,16 +8,16 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GitHubRepositoryStatisticsService {
 
-	private final GitHubClient gitHubClient;
+    private final GitHubClient gitHubClient;
 
-	@Getter
-	private GitHubRepositoryStatisticsDTO gitHubRepositoryStatisticsDTO;
+    @Getter
+    private GitHubRepositoryStatisticsDTO gitHubRepositoryStatisticsDTO;
 
-	public GitHubRepositoryStatisticsService(GitHubClient gitHubClient) {
-		this.gitHubClient = gitHubClient;
-	}
+    public GitHubRepositoryStatisticsService(GitHubClient gitHubClient) {
+        this.gitHubClient = gitHubClient;
+    }
 
-	public void fetchRepositoryStatistics() throws GitHubClientException {
-		gitHubRepositoryStatisticsDTO = gitHubClient.getRepositoryStatistics();
-	}
+    public void fetchRepositoryStatistics() throws GitHubClientException {
+        gitHubRepositoryStatisticsDTO = gitHubClient.getRepositoryStatistics();
+    }
 }

@@ -1,7 +1,6 @@
 package org.frankframework.insights.common.entityconnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.*;
 import java.util.UUID;
 import lombok.Getter;
@@ -21,15 +20,15 @@ public class PullRequestIssue {
 
     @ManyToOne
     @JoinColumn(nullable = false)
-	@JsonIgnore
+    @JsonIgnore
     private PullRequest pullRequest;
 
-	@ManyToOne(cascade = {CascadeType.MERGE })
-	@JoinColumn(nullable = false)
+    @ManyToOne(cascade = {CascadeType.MERGE})
+    @JoinColumn(nullable = false)
     private Issue issue;
 
-	public PullRequestIssue(PullRequest pullRequest, Issue issue) {
-		this.pullRequest = pullRequest;
-		this.issue = issue;
-	}
+    public PullRequestIssue(PullRequest pullRequest, Issue issue) {
+        this.pullRequest = pullRequest;
+        this.issue = issue;
+    }
 }

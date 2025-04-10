@@ -30,8 +30,8 @@ public class GitHubClient extends GraphQLClient {
     }
 
     public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
-        GitHubRepositoryStatisticsDTO repositoryStatistics =
-                fetchSingleEntity(GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
+        GitHubRepositoryStatisticsDTO repositoryStatistics = fetchSingleEntity(
+                GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
         log.info("Fetched repository statistics from GitHub");
         return repositoryStatistics;
     }
@@ -65,27 +65,31 @@ public class GitHubClient extends GraphQLClient {
         return commits;
     }
 
-	public Set<IssueDTO> getIssues() throws GitHubClientException {
-		Set<IssueDTO> issues = getEntities(GitHubQueryConstants.ISSUES, new HashMap<>(), IssueDTO.class);
-		log.info("Successfully fetched {} issues from GitHub", issues.size());
-		return issues;
-	}
+    public Set<IssueDTO> getIssues() throws GitHubClientException {
+        Set<IssueDTO> issues = getEntities(GitHubQueryConstants.ISSUES, new HashMap<>(), IssueDTO.class);
+        log.info("Successfully fetched {} issues from GitHub", issues.size());
+        return issues;
+    }
 
-	public Set<PullRequestDTO> getBranchPullRequests(String branchName) throws GitHubClientException {
-		HashMap<String, Object> variables = new HashMap<>();
-		variables.put("branchName", branchName);
-		log.info("Started fetching pull requests from GitHub for branch with name: {}", branchName);
+    public Set<PullRequestDTO> getBranchPullRequests(String branchName) throws GitHubClientException {
+        HashMap<String, Object> variables = new HashMap<>();
+        variables.put("branchName", branchName);
+        log.info("Started fetching pull requests from GitHub for branch with name: {}", branchName);
 
-		Set<PullRequestDTO> pullRequests = getEntities(GitHubQueryConstants.BRANCH_PULLS, variables, PullRequestDTO.class);
-		log.info("Successfully fetched {} pull requests from GitHub for branch with name: {}", pullRequests.size(), branchName);
-		return pullRequests;
-	}
+        Set<PullRequestDTO> pullRequests =
+                getEntities(GitHubQueryConstants.BRANCH_PULLS, variables, PullRequestDTO.class);
+        log.info(
+                "Successfully fetched {} pull requests from GitHub for branch with name: {}",
+                pullRequests.size(),
+                branchName);
+        return pullRequests;
+    }
 
-	public Set<ReleaseDTO> getReleases() throws GitHubClientException {
-		Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
-		log.info("Successfully fetched {} releases from GitHub", releases.size());
-		return releases;
-	}
+    public Set<ReleaseDTO> getReleases() throws GitHubClientException {
+        Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+        log.info("Successfully fetched {} releases from GitHub", releases.size());
+        return releases;
+    }
 
     private <T> Set<T> getEntities(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
@@ -96,7 +100,7 @@ public class GitHubClient extends GraphQLClient {
         while (hasNextPage) {
             queryVariables.put("after", cursor);
 
-			GitHubPaginationDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
+            GitHubPaginationDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
 
             if (response == null || response.edges == null || response.edges.isEmpty()) {
                 log.warn("Received empty response for query: {}", query);
@@ -108,9 +112,9 @@ public class GitHubClient extends GraphQLClient {
                     .collect(Collectors.toSet());
 
             allEntities.addAll(entities);
-			log.info("Fetched {} additional entities with query: {}", entities.size(), query);
+            log.info("Fetched {} additional entities with query: {}", entities.size(), query);
 
-			hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
+            hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
             cursor = (response.pageInfo != null) ? response.pageInfo.endCursor : null;
         }
         return allEntities;
@@ -134,12 +138,13 @@ public class GitHubClient extends GraphQLClient {
         }
     }
 
-    private <T> T fetchSingleEntity(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType) throws GitHubClientException {
+    private <T> T fetchSingleEntity(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+            throws GitHubClientException {
         try {
             T response = getGraphQlClient()
                     .documentName(query.getDocumentName())
-					.variables(queryVariables)
-					.retrieve(query.getRetrievePath())
+                    .variables(queryVariables)
+                    .retrieve(query.getRetrievePath())
                     .toEntity(entityType)
                     .block();
 

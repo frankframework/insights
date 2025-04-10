@@ -50,11 +50,11 @@ public class ShedLockTest {
     @Mock
     private ReleaseService releaseService;
 
-	@Mock
-	private IssueService issueService;
+    @Mock
+    private IssueService issueService;
 
-	@Mock
-	private PullRequestService pullRequestService;
+    @Mock
+    private PullRequestService pullRequestService;
 
     private SystemDataInitializer systemDataInitializer;
 
@@ -66,8 +66,8 @@ public class ShedLockTest {
                 milestoneService,
                 branchService,
                 commitService,
-				issueService,
-				pullRequestService,
+                issueService,
+                pullRequestService,
                 releaseService);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);

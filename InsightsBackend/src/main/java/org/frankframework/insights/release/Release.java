@@ -35,6 +35,6 @@ public class Release {
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<ReleaseCommit> releaseCommits;
 
-	@OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-	private Set<ReleasePullRequest> releasePullRequests;
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private Set<ReleasePullRequest> releasePullRequests;
 }

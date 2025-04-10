@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)

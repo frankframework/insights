@@ -1,7 +1,6 @@
 package org.frankframework.insights.common.entityconnection;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -27,15 +26,15 @@ public class IssueLabel {
 
     @ManyToOne
     @JoinColumn(nullable = false)
-	@JsonIgnore
+    @JsonIgnore
     private Issue issue;
 
-	@ManyToOne(cascade = { CascadeType.MERGE })
+    @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
     private Label label;
 
-	public IssueLabel(Issue issue, Label label) {
-		this.issue = issue;
-		this.label = label;
-	}
+    public IssueLabel(Issue issue, Label label) {
+        this.issue = issue;
+        this.label = label;
+    }
 }

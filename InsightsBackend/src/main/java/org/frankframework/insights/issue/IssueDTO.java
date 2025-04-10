@@ -1,7 +1,6 @@
 package org.frankframework.insights.issue;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import org.frankframework.insights.github.GitHubEdgesDTO;
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.label.LabelDTO;
@@ -16,5 +15,4 @@ public record IssueDTO(
         String url,
         GitHubEdgesDTO<LabelDTO> labels,
         MilestoneDTO milestone,
-		GitHubEdgesDTO<IssueDTO> subIssues
-) {}
+        GitHubEdgesDTO<IssueDTO> subIssues) {}

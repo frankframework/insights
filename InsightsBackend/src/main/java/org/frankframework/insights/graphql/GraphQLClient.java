@@ -17,7 +17,7 @@ public abstract class GraphQLClient {
                 .build();
 
         this.graphQlClient = HttpGraphQlClient.builder(webClient).build();
-		log.info("GraphQLClient initialized successfully with base URL: {}", baseUrl);
+        log.info("GraphQLClient initialized successfully with base URL: {}", baseUrl);
     }
 
     protected HttpGraphQlClient getGraphQlClient() {

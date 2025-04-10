@@ -17,7 +17,6 @@ import org.frankframework.insights.pullrequest.PullRequestInjectionException;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
-
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,37 +30,37 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final MilestoneService milestoneService;
     private final BranchService branchService;
     private final CommitService commitService;
-	private final IssueService issueService;
-	private final PullRequestService pullRequestService;
-	private final ReleaseService releaseService;
+    private final IssueService issueService;
+    private final PullRequestService pullRequestService;
+    private final ReleaseService releaseService;
 
-	public SystemDataInitializer(
+    public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             LabelService labelService,
             MilestoneService milestoneService,
             BranchService branchService,
             CommitService commitService,
-			IssueService issueService,
-			PullRequestService pullRequestService,
-			ReleaseService releaseService) {
+            IssueService issueService,
+            PullRequestService pullRequestService,
+            ReleaseService releaseService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
         this.branchService = branchService;
         this.commitService = commitService;
-		this.issueService = issueService;
-		this.pullRequestService = pullRequestService;
-		this.releaseService = releaseService;
-	}
+        this.issueService = issueService;
+        this.pullRequestService = pullRequestService;
+        this.releaseService = releaseService;
+    }
 
-	@Override
-	@SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
-	public void run(String... args) {
-		log.info("Startup: Fetching GitHub statistics");
-		fetchGitHubStatistics();
-		log.info("Startup: Fetching full system data");
-		initializeSystemData();
-	}
+    @Override
+    @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
+    public void run(String... args) {
+        log.info("Startup: Fetching GitHub statistics");
+        fetchGitHubStatistics();
+        log.info("Startup: Fetching full system data");
+        initializeSystemData();
+    }
 
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
@@ -88,18 +87,18 @@ public class SystemDataInitializer implements CommandLineRunner {
             milestoneService.injectMilestones();
             branchService.injectBranches();
             commitService.injectBranchCommits();
-			issueService.injectIssues();
-			pullRequestService.injectBranchPullRequests();
-			releaseService.injectReleases();
+            issueService.injectIssues();
+            pullRequestService.injectBranchPullRequests();
+            releaseService.injectReleases();
 
-			log.info("Done fetching all GitHub data");
+            log.info("Done fetching all GitHub data");
         } catch (LabelInjectionException
                 | MilestoneInjectionException
                 | BranchInjectionException
-				| IssueInjectionException
-				| PullRequestInjectionException
-				| ReleaseInjectionException e) {
+                | IssueInjectionException
+                | PullRequestInjectionException
+                | ReleaseInjectionException e) {
             log.error("Error initializing system data", e);
         }
-	}
+    }
 }
