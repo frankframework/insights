@@ -7,7 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum GitHubQueryConstants {
     REPOSITORY_STATISTICS("repositoryStatistics", "repository"),
-	BRANCH_STATISTICS("branchStatistics", "repository"),
 	LABELS("labels", "repository.labels"),
     MILESTONES("milestones", "repository.milestones"),
     BRANCHES("branches", "repository.refs"),
