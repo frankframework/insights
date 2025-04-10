@@ -27,12 +27,12 @@ public class PullRequestLabel {
     @JoinColumn(nullable = false)
     private PullRequest pullRequest;
 
-	@ManyToOne(cascade = { CascadeType.MERGE })
+    @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
     private Label label;
 
-	public PullRequestLabel(PullRequest pullRequest, Label label) {
-		this.pullRequest = pullRequest;
-		this.label = label;
-	}
+    public PullRequestLabel(PullRequest pullRequest, Label label) {
+        this.pullRequest = pullRequest;
+        this.label = label;
+    }
 }

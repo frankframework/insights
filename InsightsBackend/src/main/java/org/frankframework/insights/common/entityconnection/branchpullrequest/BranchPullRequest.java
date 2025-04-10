@@ -23,7 +23,7 @@ public class BranchPullRequest {
     @JsonIgnore
     private Branch branch;
 
-	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    @ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     @JoinColumn(nullable = false)
     private PullRequest pullRequest;
 
