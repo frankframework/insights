@@ -1,7 +1,9 @@
 package org.frankframework.insights.milestone;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
@@ -39,6 +41,13 @@ public class MilestoneService {
         }
 
         try {
+            log.info("Amount of milestones found in database: {}", milestoneRepository.count());
+            log.info(
+                    "Amount of milestones found in GitHub: {}",
+                    gitHubRepositoryStatisticsService
+                            .getGitHubRepositoryStatisticsDTO()
+                            .getGitHubMilestoneCount());
+
             log.info("Start injecting GitHub milestones");
             Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
             Set<Milestone> milestones = mapper.toEntity(milestoneDTOS, Milestone.class);
@@ -46,6 +55,11 @@ public class MilestoneService {
         } catch (Exception e) {
             throw new MilestoneInjectionException("Error while injecting GitHub milestones", e);
         }
+    }
+
+    public Map<String, Milestone> getAllMilestonesMap() {
+        return milestoneRepository.findAll().stream()
+                .collect(Collectors.toMap(Milestone::getId, milestone -> milestone));
     }
 
     private void saveMilestones(Set<Milestone> milestones) {

@@ -1,7 +1,9 @@
 package org.frankframework.insights.label;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
@@ -39,6 +41,13 @@ public class LabelService {
         }
 
         try {
+            log.info("Amount of labels found in database: {}", labelRepository.count());
+            log.info(
+                    "Amount of labels found in GitHub: {}",
+                    gitHubRepositoryStatisticsService
+                            .getGitHubRepositoryStatisticsDTO()
+                            .getGitHubLabelCount());
+
             log.info("Start injecting GitHub labels");
             Set<LabelDTO> labelDTOs = gitHubClient.getLabels();
             Set<Label> labels = mapper.toEntity(labelDTOs, Label.class);
@@ -46,6 +55,10 @@ public class LabelService {
         } catch (Exception e) {
             throw new LabelInjectionException("Error while injecting GitHub labels", e);
         }
+    }
+
+    public Map<String, Label> getAllLabelsMap() {
+        return labelRepository.findAll().stream().collect(Collectors.toMap(Label::getId, label -> label));
     }
 
     private void saveLabels(Set<Label> labels) {

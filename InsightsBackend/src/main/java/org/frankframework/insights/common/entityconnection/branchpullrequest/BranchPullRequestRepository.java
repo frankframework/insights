@@ -1,0 +1,12 @@
+package org.frankframework.insights.common.entityconnection.branchpullrequest;
+
+import java.util.Set;
+import java.util.UUID;
+import org.frankframework.insights.branch.Branch;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface BranchPullRequestRepository extends JpaRepository<BranchPullRequest, UUID> {
+    int countBranchPullRequestByBranch(Branch branch);
+
+    Set<BranchPullRequest> findBranchPullRequestByBranchId(String branchId);
+}

@@ -1,4 +1,4 @@
-query repositoryStatistics() {
+query repositoryStatistics {
 	repository(owner: "frankframework", name: "frankframework") {
 		labels {
 			totalCount
@@ -11,7 +11,7 @@ query repositoryStatistics() {
 				name
 				target {
 					... on Commit {
-						history(first: 1) {
+						history {
 							totalCount
 						}
 					}
@@ -19,9 +19,6 @@ query repositoryStatistics() {
 			}
 		}
 		releases {
-			totalCount
-		}
-		pullRequests {
 			totalCount
 		}
 		issues {

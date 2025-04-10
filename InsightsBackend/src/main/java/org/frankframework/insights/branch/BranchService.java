@@ -1,6 +1,5 @@
 package org.frankframework.insights.branch;
 
-import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -44,6 +43,13 @@ public class BranchService {
         }
 
         try {
+            log.info("Amount of branches found in database: {}", branchRepository.count());
+            log.info(
+                    "Amount of branches found in GitHub: {}",
+                    gitHubRepositoryStatisticsService
+                            .getGitHubRepositoryStatisticsDTO()
+                            .getGitHubBranchCount(branchProtectionRegexes));
+
             log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubClient.getBranches();
             Set<Branch> branches = findProtectedBranchesByRegexPattern(branchDTOs);
@@ -55,7 +61,8 @@ public class BranchService {
 
     public boolean doesBranchContainCommit(Branch branch, String commitOid) {
         boolean containsCommit = branch.getBranchCommits().stream()
-                .anyMatch(commit -> commit.getCommit().getSha().equals(commitOid));
+                .anyMatch(bc -> bc.getCommit() != null
+                        && commitOid.equals(bc.getCommit().getSha()));
 
         log.info("Branch {} contains commit: {}", branch.getName(), containsCommit);
 
@@ -79,9 +86,16 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-    @Transactional
-    public List<Branch> getAllBranchesWithCommits() {
+    public Branch getBranchByName(String branchName) {
+        return branchRepository.findBranchByName(branchName);
+    }
+
+    public List<Branch> getBranchesWithCommits() {
         return branchRepository.findAllWithCommits();
+    }
+
+    public List<Branch> getBranchesWithPullRequests(List<Branch> branches) {
+        return branchRepository.findAllWithPullRequests(branches);
     }
 
     public void saveBranches(Set<Branch> branches) {

@@ -4,6 +4,8 @@ query milestones($after: String) {
       edges {
         node {
           id
+		  number
+		  state
           title
         }
       }

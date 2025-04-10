@@ -23,7 +23,7 @@ public class ReleaseCommit {
     @JsonIgnore
     private Release release;
 
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
     private Commit commit;
 

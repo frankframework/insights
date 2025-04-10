@@ -5,12 +5,14 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum GitHubConstants {
+public enum GitHubQueryConstants {
     REPOSITORY_STATISTICS("repositoryStatistics", "repository"),
     LABELS("labels", "repository.labels"),
     MILESTONES("milestones", "repository.milestones"),
     BRANCHES("branches", "repository.refs"),
     BRANCH_COMMITS("branchCommits", "repository.ref.target.history"),
+    ISSUES("issues", "repository.issues"),
+    BRANCH_PULLS("branchPullRequests", "repository.pullRequests"),
     RELEASES("releases", "repository.releases");
 
     private final String documentName;

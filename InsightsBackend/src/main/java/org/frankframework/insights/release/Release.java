@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.common.entityconnection.ReleaseCommit;
+import org.frankframework.insights.common.entityconnection.ReleasePullRequest;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -33,4 +34,7 @@ public class Release {
 
     @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<ReleaseCommit> releaseCommits;
+
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private Set<ReleasePullRequest> releasePullRequests;
 }

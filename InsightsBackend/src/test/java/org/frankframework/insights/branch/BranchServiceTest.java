@@ -63,7 +63,7 @@ public class BranchServiceTest {
 
         mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
 
-        branchProtectionRegexes = List.of("release/.*", "hotfix/.*");
+        branchProtectionRegexes = List.of("release", "master");
 
         when(gitHubProperties.getBranchProtectionRegexes()).thenReturn(branchProtectionRegexes);
 

@@ -2,23 +2,25 @@ package org.frankframework.insights.pullrequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
 import org.frankframework.insights.common.entityconnection.PullRequestIssue;
 import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.milestone.Milestone;
-import org.frankframework.insights.release.Release;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class PullRequest {
     @Id
     private String id;
 
-    @Column(unique = true, nullable = false)
-    private int githubId;
+    @Column(nullable = false)
+    private int number;
 
     @Column(nullable = false)
     private String title;
@@ -26,17 +28,14 @@ public class PullRequest {
     @Column(nullable = false)
     private String url;
 
-    private LocalDateTime mergedAt;
+    private OffsetDateTime mergedAt;
 
     @ManyToOne
     private Milestone milestone;
 
-    @ManyToOne
-    private Release release;
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+    private Set<PullRequestLabel> pullRequestLabels = new HashSet<>();
 
-    @OneToMany
+    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
     private Set<PullRequestIssue> pullRequestIssues;
-
-    @OneToMany
-    private Set<PullRequestLabel> pullRequestLabels;
 }
