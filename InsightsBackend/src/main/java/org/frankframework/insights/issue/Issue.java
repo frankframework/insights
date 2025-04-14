@@ -6,8 +6,7 @@ import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.common.entityconnection.IssueLabel;
-import org.frankframework.insights.common.entityconnection.PullRequestIssue;
+
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.milestone.Milestone;
 
@@ -34,9 +33,6 @@ public class Issue {
     @Lob
     private String businessValue;
 
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<IssueLabel> issueLabels;
-
     @ManyToOne(cascade = CascadeType.MERGE)
     private Milestone milestone;
 
@@ -46,7 +42,4 @@ public class Issue {
     @OneToMany
     @JsonIgnore
     private Set<Issue> subIssues;
-
-    @OneToMany
-    private Set<PullRequestIssue> pullRequestIssues;
 }

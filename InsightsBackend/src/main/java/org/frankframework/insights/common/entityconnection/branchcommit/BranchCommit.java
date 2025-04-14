@@ -19,13 +19,10 @@ public class BranchCommit {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
-    @JsonIgnore
     private Branch branch;
 
-    @ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    @JoinColumn(nullable = false)
-    private Commit commit;
+	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+	private Commit commit;
 
     public BranchCommit(Branch branch, Commit commit) {
         this.branch = branch;

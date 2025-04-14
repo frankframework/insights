@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.entityconnection;
+package org.frankframework.insights.common.entityconnection.releasecommit;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -6,14 +6,14 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.frankframework.insights.issue.Issue;
-import org.frankframework.insights.pullrequest.PullRequest;
+import org.frankframework.insights.commit.Commit;
+import org.frankframework.insights.release.Release;
 
 @Entity
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class PullRequestIssue {
+public class ReleaseCommit {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -21,14 +21,14 @@ public class PullRequestIssue {
     @ManyToOne
     @JoinColumn(nullable = false)
     @JsonIgnore
-    private PullRequest pullRequest;
+    private Release release;
 
     @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
-    private Issue issue;
+    private Commit commit;
 
-    public PullRequestIssue(PullRequest pullRequest, Issue issue) {
-        this.pullRequest = pullRequest;
-        this.issue = issue;
+    public ReleaseCommit(Release release, Commit commit) {
+        this.release = release;
+        this.commit = commit;
     }
 }

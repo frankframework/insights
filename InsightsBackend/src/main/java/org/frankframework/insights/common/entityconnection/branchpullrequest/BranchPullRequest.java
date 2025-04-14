@@ -19,13 +19,10 @@ public class BranchPullRequest {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(nullable = false)
-    @JsonIgnore
     private Branch branch;
 
-    @ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    @JoinColumn(nullable = false)
-    private PullRequest pullRequest;
+	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+	private PullRequest pullRequest;
 
     public BranchPullRequest(Branch branch, PullRequest pullRequest) {
         this.branch = branch;

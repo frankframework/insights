@@ -9,6 +9,8 @@ import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
+import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
+import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
@@ -50,12 +52,18 @@ class PullRequestServiceTest {
     @Mock
     private GitHubProperties gitHubProperties;
 
+	@Mock
+	private PullRequestLabelRepository pullRequestLabelRepository;
+
+	@Mock
+	private PullRequestIssueRepository pullRequestIssueRepository;
+
     @InjectMocks
     private PullRequestService pullRequestService;
 
     private Branch testBranch;
-    private PullRequestDTO masterPR, branchPR;
-    private PullRequest pullRequestEntity;
+    private PullRequestDTO masterPR, subBranchPR;
+    private PullRequest mockPullRequest;
 
     @BeforeEach
     public void setUp() {
@@ -72,11 +80,12 @@ class PullRequestServiceTest {
                 null,
                 null,
                 null);
-        branchPR = new PullRequestDTO(
+
+        subBranchPR = new PullRequestDTO(
                 UUID.randomUUID().toString(), 2, "pr2", null, OffsetDateTime.now(), null, null, null);
 
-        pullRequestEntity = new PullRequest();
-        pullRequestEntity.setTitle("pr2");
+		mockPullRequest = new PullRequest();
+		mockPullRequest.setTitle("pr2");
 
         List<String> branchProtectionRegexes = List.of("master", "release");
 
@@ -90,7 +99,9 @@ class PullRequestServiceTest {
                 labelService,
                 milestoneService,
                 issueService,
-                gitHubProperties);
+                gitHubProperties,
+				pullRequestLabelRepository,
+				pullRequestIssueRepository);
     }
 
     @Test
@@ -98,14 +109,14 @@ class PullRequestServiceTest {
             throws PullRequestInjectionException, GitHubClientException, MappingException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(masterPR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(branchPR));
-        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(pullRequestEntity));
-        when(branchPullRequestRepository.findBranchPullRequestByBranchId(testBranch.getId()))
+        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
+        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
                 .thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService).saveBranches(anySet());
+		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
@@ -114,7 +125,7 @@ class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService, never()).saveBranches(anySet());
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -122,14 +133,14 @@ class PullRequestServiceTest {
             throws PullRequestInjectionException, GitHubClientException, MappingException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(branchPR));
-        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(pullRequestEntity));
-        when(branchPullRequestRepository.findBranchPullRequestByBranchId(testBranch.getId()))
+        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
+        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
                 .thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService).saveBranches(anySet());
+		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
@@ -146,7 +157,7 @@ class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService, times(1)).saveBranches(anySet());
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -156,7 +167,8 @@ class PullRequestServiceTest {
                 new PullRequestDTO(null, 0, "pr0", null, OffsetDateTime.now().minusDays(2), null, null, null);
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(earlyMasterPR, masterPR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(branchPR));
+        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
+
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenAnswer(invocation -> {
             Set<PullRequestDTO> dtos = invocation.getArgument(0);
             return dtos.stream()
@@ -167,12 +179,13 @@ class PullRequestServiceTest {
                     })
                     .collect(Collectors.toSet());
         });
-        when(branchPullRequestRepository.findBranchPullRequestByBranchId(testBranch.getId()))
+
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
                 .thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService).saveBranches(anySet());
+		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
@@ -181,11 +194,11 @@ class PullRequestServiceTest {
         PullRequestDTO noMergePR = new PullRequestDTO(null, 99, "prX", null, null, null, null, null);
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(noMergePR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(branchPR));
+        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService, never()).saveBranches(anySet());
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -197,12 +210,12 @@ class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(duplicatePR));
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(duplicatePR));
 
-        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(pullRequestEntity));
-        when(branchPullRequestRepository.findBranchPullRequestByBranchId(testBranch.getId()))
+        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
                 .thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(branchService).saveBranches(anySet());
+		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 }

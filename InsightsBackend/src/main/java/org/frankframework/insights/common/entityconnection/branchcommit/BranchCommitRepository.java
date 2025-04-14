@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BranchCommitRepository extends JpaRepository<BranchCommit, UUID> {
-    int countBranchCommitByBranch(Branch branch);
+    int countBranchCommitByBranch_Name(String name);
 
-    Set<BranchCommit> findBranchCommitByBranchId(String branchId);
+    Set<BranchCommit> findAllByBranch_Id(String branchId);
 }

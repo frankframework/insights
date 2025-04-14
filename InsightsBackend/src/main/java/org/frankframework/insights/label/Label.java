@@ -2,10 +2,8 @@ package org.frankframework.insights.label;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import java.util.Set;
+
 import lombok.Getter;
-import org.frankframework.insights.common.entityconnection.IssueLabel;
-import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -21,10 +19,4 @@ public class Label {
 
     @Column(nullable = false)
     private String color;
-
-    @OneToMany
-    private Set<IssueLabel> issueLabels;
-
-    @OneToMany
-    private Set<PullRequestLabel> pullRequestLabels;
 }

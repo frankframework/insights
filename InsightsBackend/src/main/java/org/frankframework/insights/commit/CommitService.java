@@ -16,125 +16,105 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class CommitService {
-    private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
-    private final GitHubClient gitHubClient;
-    private final Mapper mapper;
-    private final BranchCommitRepository branchCommitRepository;
-    private final BranchService branchService;
-    private final List<String> branchProtectionRegexes;
+	private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
+	private final GitHubClient gitHubClient;
+	private final Mapper mapper;
+	private final BranchCommitRepository branchCommitRepository;
+	private final BranchService branchService;
+	private final List<String> branchProtectionRegexes;
 
-    public CommitService(
-            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-            GitHubClient gitHubClient,
-            Mapper mapper,
-            BranchCommitRepository branchCommitRepository,
-            BranchService branchService,
-            GitHubProperties gitHubProperties) {
-        this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
-        this.gitHubClient = gitHubClient;
-        this.mapper = mapper;
-        this.branchCommitRepository = branchCommitRepository;
-        this.branchService = branchService;
-        this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
-    }
+	public CommitService(
+			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
+			GitHubClient gitHubClient,
+			Mapper mapper,
+			BranchCommitRepository branchCommitRepository,
+			BranchService branchService,
+			GitHubProperties gitHubProperties) {
+		this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
+		this.gitHubClient = gitHubClient;
+		this.mapper = mapper;
+		this.branchCommitRepository = branchCommitRepository;
+		this.branchService = branchService;
+		this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
+	}
 
-    public void injectBranchCommits() {
-        Map<String, Integer> githubCommitCounts = fetchGitHubCommitCounts();
+	public void injectBranchCommits() {
+		Map<String, Integer> githubCommitCounts = fetchGitHubCommitCounts();
+		List<Branch> branches = branchService.getAllBranches();
 
-        List<Branch> branches = branchService.getAllBranches();
-        log.info("Fetched {} branches", branches.size());
+		log.info("Fetched {} branches", branches.size());
 
-        List<Branch> branchesToUpdate = filterBranchesToUpdate(branches, githubCommitCounts);
-        log.info("Found {} branches to update", branchesToUpdate.size());
+		List<Branch> branchesToUpdate = filterBranchesToUpdate(branches, githubCommitCounts);
+		log.info("Found {} branches to update", branchesToUpdate.size());
 
-        if (branchesToUpdate.isEmpty()) {
-            log.info("No branches to update commits of. Skipping...");
-            return;
-        }
+		if (branchesToUpdate.isEmpty()) {
+			log.info("No branches to update commits of. Skipping...");
+			return;
+		}
 
-        updateBranches(branchesToUpdate);
-    }
+		injectNewBranchCommits(branchesToUpdate);
+	}
 
-    private Map<String, Integer> fetchGitHubCommitCounts() {
-        return gitHubRepositoryStatisticsService
-                .getGitHubRepositoryStatisticsDTO()
-                .getGitHubCommitsCount(branchProtectionRegexes);
-    }
+	private Map<String, Integer> fetchGitHubCommitCounts() {
+		return gitHubRepositoryStatisticsService
+				.getGitHubRepositoryStatisticsDTO()
+				.getGitHubCommitsCount(branchProtectionRegexes);
+	}
 
-    public List<Branch> filterBranchesToUpdate(List<Branch> branches, Map<String, Integer> githubCommitCounts) {
-        return branches.stream()
-                .filter(branch -> {
-                    int databaseCommitCount = branchCommitRepository.countBranchCommitByBranch(branch);
-                    int githubCommitCount = githubCommitCounts.getOrDefault(branch.getName(), 0);
+	private List<Branch> filterBranchesToUpdate(List<Branch> branches, Map<String, Integer> githubCommitCounts) {
+		return branches.stream()
+				.filter(branch -> {
+					int dbCount = branchCommitRepository.countBranchCommitByBranch_Name(branch.getName());
+					int githubCount = githubCommitCounts.getOrDefault(branch.getName(), 0);
 
-                    log.info(
-                            "{} commits found in database, {} commits found in GitHub, for branch {}",
-                            databaseCommitCount,
-                            githubCommitCount,
-                            branch.getName());
+					log.info("{} commits in DB, {} in GitHub for branch {}", dbCount, githubCount, branch.getName());
+					return dbCount != githubCount;
+				})
+				.toList();
+	}
 
-                    return databaseCommitCount != githubCommitCount;
-                })
-                .toList();
-    }
+	private void injectNewBranchCommits(List<Branch> branchesToUpdate) {
+		List<BranchCommit> newBranchCommits = new ArrayList<>();
 
-    private void updateBranches(List<Branch> branchesToUpdate) {
-        Set<Branch> updatedBranches = branchesToUpdate.stream()
-                .map(branch -> {
-                    try {
-                        return getCommitsForBranch(branch);
-                    } catch (CommitInjectionException e) {
-                        log.error("Failed to update commits for branch: {}", branch.getName(), e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+		for (Branch branch : branchesToUpdate) {
+			try {
+				Set<BranchCommit> newCommits = getNewBranchCommits(branch);
+				newBranchCommits.addAll(newCommits);
+				log.info("Prepared {} new commits for branch {}", newCommits.size(), branch.getName());
+			} catch (CommitInjectionException e) {
+				log.error("Failed to fetch commits for branch: {}", branch.getName(), e);
+			}
+		}
 
-        branchService.saveBranches(updatedBranches);
-    }
+		if (!newBranchCommits.isEmpty()) {
+			branchCommitRepository.saveAll(newBranchCommits);
+			log.info("Saved {} new BranchCommits", newBranchCommits.size());
+		}
+	}
 
-    private Branch getCommitsForBranch(Branch branch) throws CommitInjectionException {
-        try {
-            Set<CommitDTO> commitDTOs = gitHubClient.getBranchCommits(branch.getName());
-            Set<Commit> commits = mapper.toEntity(commitDTOs, Commit.class);
+	private Set<BranchCommit> getNewBranchCommits(Branch branch) throws CommitInjectionException {
+		try {
+			Set<CommitDTO> commitDTOs = gitHubClient.getBranchCommits(branch.getName());
+			Set<Commit> commits = mapper.toEntity(commitDTOs, Commit.class);
 
-            Set<BranchCommit> branchCommits = new HashSet<>(getBranchCommitsForBranch(branch));
+			Set<BranchCommit> existing = branchCommitRepository.findAllByBranch_Id(branch.getId());
+			Map<String, BranchCommit> existingMap = existing.stream()
+					.collect(Collectors.toMap(
+							bc -> buildUniqueKey(bc.getBranch(), bc.getCommit()),
+							bc -> bc
+					));
 
-            Set<BranchCommit> updatedBranchCommits = processBranchCommits(branch, commits, branchCommits);
+			return commits.stream()
+					.filter(commit -> !existingMap.containsKey(buildUniqueKey(branch, commit)))
+					.map(commit -> new BranchCommit(branch, commit))
+					.collect(Collectors.toSet());
 
-            branchCommits.clear();
-            branchCommits.addAll(updatedBranchCommits);
-            branch.setBranchCommits(branchCommits);
+		} catch (Exception e) {
+			throw new CommitInjectionException("Error while fetching or mapping commits for branch: " + branch.getName(), e);
+		}
+	}
 
-            log.info("Updated branch {} with {} commits", branch.getName(), updatedBranchCommits.size());
-            return branch;
-        } catch (Exception e) {
-            throw new CommitInjectionException("Error while injecting GitHub commits and setting them to branches", e);
-        }
-    }
-
-    private Set<BranchCommit> getBranchCommitsForBranch(Branch branch) {
-        return branchCommitRepository.findBranchCommitByBranchId(branch.getId());
-    }
-
-    private Set<BranchCommit> processBranchCommits(
-            Branch branch, Set<Commit> commits, Set<BranchCommit> existingBranchCommits) {
-        Map<String, BranchCommit> existingCommitsMap = existingBranchCommits.stream()
-                .collect(Collectors.toMap(bc -> buildUniqueKey(bc.getBranch(), bc.getCommit()), bc -> bc));
-
-        return commits.stream()
-                .map(commit -> getOrCreateBranchCommit(branch, commit, existingCommitsMap))
-                .collect(Collectors.toSet());
-    }
-
-    private BranchCommit getOrCreateBranchCommit(
-            Branch branch, Commit commit, Map<String, BranchCommit> existingCommitsMap) {
-        String key = buildUniqueKey(branch, commit);
-        return existingCommitsMap.getOrDefault(key, new BranchCommit(branch, commit));
-    }
-
-    private String buildUniqueKey(Branch branch, Commit commit) {
-        return String.format("%s::%s", branch.getId(), commit.getId());
-    }
+	private String buildUniqueKey(Branch branch, Commit commit) {
+		return branch.getId() + "::" + commit.getId();
+	}
 }

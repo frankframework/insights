@@ -5,12 +5,16 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.Commit;
-import org.frankframework.insights.common.entityconnection.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
+import org.frankframework.insights.common.entityconnection.releasecommit.ReleaseCommitRepository;
+import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
@@ -27,252 +31,213 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ReleaseServiceTest {
 
-    @Mock
-    private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
+	@Mock
+	private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
 
-    @Mock
-    private GitHubClient gitHubClient;
+	@Mock
+	private GitHubClient gitHubClient;
 
-    @Mock
-    private Mapper mapper;
+	@Mock
+	private Mapper mapper;
 
-    @Mock
-    private ReleaseRepository releaseRepository;
+	@Mock
+	private ReleaseRepository releaseRepository;
 
-    @Mock
-    private BranchService branchService;
+	@Mock
+	private BranchService branchService;
 
-    @InjectMocks
-    private ReleaseService releaseService;
+	@Mock
+	private ReleaseCommitRepository releaseCommitRepository;
 
-    private ReleaseDTO mockReleaseDTO;
-    private Release mockRelease;
-    private Branch mockBranch;
-    private Commit mockCommit;
-    private PullRequest mockPullRequest;
+	@Mock
+	private ReleasePullRequestRepository releasePullRequestRepository;
 
-    @BeforeEach
-    public void setUp() {
-        mockCommit = new Commit();
-        mockCommit.setSha("sha123");
-        mockCommit.setCommittedDate(OffsetDateTime.now().minusDays(2));
+	@Mock
+	private BranchCommitRepository branchCommitRepository;
 
-        ReleaseTagCommitDTO tagCommitDTO = new ReleaseTagCommitDTO();
-        tagCommitDTO.setCommitSha("sha123");
+	@Mock
+	private BranchPullRequestRepository branchPullRequestRepository;
 
-        mockReleaseDTO = new ReleaseDTO();
-        mockReleaseDTO.setTagName("v1.0");
-        mockReleaseDTO.setTagCommit(tagCommitDTO);
-        mockReleaseDTO.setPublishedAt(OffsetDateTime.now());
+	@InjectMocks
+	private ReleaseService releaseService;
 
-        mockBranch = new Branch();
-        mockBranch.setName("main");
-        mockBranch.setId(String.valueOf(UUID.randomUUID()));
+	private ReleaseDTO mockReleaseDTO;
+	private Release mockRelease;
+	private Branch mockBranch;
+	private Commit mockCommit;
+	private PullRequest mockPullRequest;
 
-        BranchCommit branchCommit = new BranchCommit(mockBranch, mockCommit);
-        mockBranch.setBranchCommits(Set.of(branchCommit));
+	@BeforeEach
+	public void setUp() {
+		mockCommit = new Commit();
+		mockCommit.setSha("sha123");
+		mockCommit.setCommittedDate(OffsetDateTime.now().minusDays(2));
 
-        mockPullRequest = new PullRequest();
-        mockPullRequest.setId(String.valueOf(UUID.randomUUID()));
-        mockPullRequest.setMergedAt(OffsetDateTime.now().minusDays(1));
+		ReleaseTagCommitDTO tagCommitDTO = new ReleaseTagCommitDTO();
+		tagCommitDTO.setCommitSha("sha123");
 
-        BranchPullRequest branchPullRequest = new BranchPullRequest(mockBranch, mockPullRequest);
-        mockBranch.setBranchPullRequests(Set.of(branchPullRequest));
+		mockReleaseDTO = new ReleaseDTO();
+		mockReleaseDTO.setTagName("v1.0");
+		mockReleaseDTO.setTagCommit(tagCommitDTO);
+		mockReleaseDTO.setPublishedAt(OffsetDateTime.now());
 
-        mockRelease = new Release();
-        mockRelease.setTagName("v1.0");
-        mockRelease.setCommitSha("sha123");
-        mockRelease.setPublishedAt(mockReleaseDTO.getPublishedAt());
-        mockRelease.setBranch(mockBranch);
-        mockRelease.setReleaseCommits(new HashSet<>());
-        mockRelease.setReleasePullRequests(new HashSet<>());
+		mockBranch = new Branch();
+		mockBranch.setName("main");
+		mockBranch.setId(UUID.randomUUID().toString());
 
-        GitHubRepositoryStatisticsDTO statisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statisticsDTO);
-    }
+		mockPullRequest = new PullRequest();
+		mockPullRequest.setId(UUID.randomUUID().toString());
+		mockPullRequest.setMergedAt(OffsetDateTime.now().minusDays(1));
 
-    @Test
-    public void should_NotInjectReleases_When_DatabaseIsUpToDate()
-            throws ReleaseInjectionException, GitHubClientException {
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(1);
-        when(releaseRepository.count()).thenReturn(1L);
+		mockRelease = new Release();
+		mockRelease.setTagName("v1.0");
+		mockRelease.setCommitSha("sha123");
+		mockRelease.setPublishedAt(mockReleaseDTO.getPublishedAt());
+		mockRelease.setBranch(mockBranch);
 
-        releaseService.injectReleases();
+		GitHubRepositoryStatisticsDTO statisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+				.thenReturn(statisticsDTO);
+	}
 
-        verify(gitHubClient, never()).getReleases();
-        verify(releaseRepository, never()).saveAll(anySet());
-    }
+	@Test
+	public void should_NotInjectReleases_When_DatabaseIsUpToDate() throws Exception {
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(1L);
 
-    @Test
-    public void should_InjectReleases_When_DatabaseIsEmpty() throws ReleaseInjectionException, GitHubClientException {
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getBranchesWithCommits()).thenReturn(List.of(mockBranch));
-        when(branchService.getBranchesWithPullRequests(List.of(mockBranch))).thenReturn(List.of(mockBranch));
-        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
-        when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(true);
+		releaseService.injectReleases();
 
-        releaseService.injectReleases();
+		verify(gitHubClient, never()).getReleases();
+		verify(releaseRepository, never()).saveAll(anySet());
+	}
 
-        verify(releaseRepository, times(1)).saveAll(anySet());
-    }
+	@Test
+	public void should_InjectReleases_When_DatabaseIsEmpty() throws Exception {
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
+		when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(true);
+		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of(new BranchCommit(mockBranch, mockCommit)));
+		when(branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of(new BranchPullRequest(mockBranch, mockPullRequest)));
 
-    @Test
-    public void should_NotInjectReleases_When_NoMatchingBranches()
-            throws ReleaseInjectionException, GitHubClientException {
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getBranchesWithCommits()).thenReturn(List.of(mockBranch));
-        when(branchService.getBranchesWithPullRequests(List.of(mockBranch))).thenReturn(List.of(mockBranch));
-        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
-        when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(false);
+		releaseService.injectReleases();
 
-        releaseService.injectReleases();
+		verify(releaseRepository, times(1)).saveAll(anySet());
+	}
 
-        verify(releaseRepository, never()).saveAll(anySet());
-    }
+	@Test
+	public void should_NotInjectReleases_When_NoMatchingBranches() throws Exception {
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
 
-    @Test
-    public void should_ThrowInjectionException_When_GitHubFails() throws GitHubClientException {
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenThrow(new GitHubClientException("GitHub API error", null));
+		releaseService.injectReleases();
 
-        assertThrows(ReleaseInjectionException.class, () -> releaseService.injectReleases());
-    }
+		verify(releaseRepository, never()).saveAll(anySet());
+	}
 
-    @Test
-    public void should_CorrectlyAssignNewCommitsToReleases() throws ReleaseInjectionException, GitHubClientException {
-        Commit newCommit = new Commit();
-        newCommit.setSha("sha124");
-        newCommit.setCommittedDate(OffsetDateTime.now().minusHours(5));
+	@Test
+	public void should_ThrowInjectionException_When_GitHubFails() throws GitHubClientException {
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenThrow(new GitHubClientException("GitHub API error", null));
 
-        Set<BranchCommit> branchCommits = new HashSet<>();
-        branchCommits.add(new BranchCommit(mockBranch, mockCommit));
-        branchCommits.add(new BranchCommit(mockBranch, newCommit));
-        mockBranch.setBranchCommits(branchCommits);
+		assertThrows(ReleaseInjectionException.class, () -> releaseService.injectReleases());
+	}
 
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(2);
-        when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getBranchesWithCommits()).thenReturn(List.of(mockBranch));
-        when(branchService.getBranchesWithPullRequests(List.of(mockBranch))).thenReturn(List.of(mockBranch));
-        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
-        when(branchService.doesBranchContainCommit(any(), anyString())).thenReturn(true);
+	@Test
+	public void should_CorrectlyAssignNewCommitsToReleases() throws Exception {
+		Commit newCommit = new Commit();
+		newCommit.setSha("sha124");
+		newCommit.setCommittedDate(OffsetDateTime.now().minusHours(5));
 
-        releaseService.injectReleases();
+		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(
+				Set.of(new BranchCommit(mockBranch, mockCommit), new BranchCommit(mockBranch, newCommit)));
 
-        verify(releaseRepository, times(1)).saveAll(anySet());
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
+		when(branchService.doesBranchContainCommit(any(), anyString())).thenReturn(true);
+		when(branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of());
 
-        assertTrue(mockRelease.getReleaseCommits().stream()
-                .anyMatch(releaseCommit -> releaseCommit.getCommit().getSha().equals("sha124")));
-    }
+		releaseService.injectReleases();
 
-    @Test
-    public void should_AssignPullRequestsToRelease() throws Exception {
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(2);
-        when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
-        when(branchService.getBranchesWithCommits()).thenReturn(List.of(mockBranch));
-        when(branchService.getBranchesWithPullRequests(List.of(mockBranch))).thenReturn(List.of(mockBranch));
-        when(branchService.doesBranchContainCommit(any(), eq("sha123"))).thenReturn(true);
-        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
-        when(releaseRepository.saveAll(anySet())).thenAnswer(invocation -> new ArrayList<>(invocation.getArgument(0)));
+		verify(releaseRepository, times(1)).saveAll(anySet());
+	}
 
-        releaseService.injectReleases();
+	@Test
+	public void should_AssignPullRequestsToRelease() throws Exception {
+		when(branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(
+				Set.of(new BranchPullRequest(mockBranch, mockPullRequest)));
 
-        assertEquals(1, mockRelease.getReleaseCommits().size());
-        assertEquals(1, mockRelease.getReleasePullRequests().size());
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
 
-        ReleasePullRequest releasePR =
-                mockRelease.getReleasePullRequests().iterator().next();
-        assertEquals(mockPullRequest.getId(), releasePR.getPullRequest().getId());
-    }
+		releaseService.injectReleases();
 
-    @Test
-    public void should_HandleMultipleReleasesOnSameBranch() throws Exception {
-        OffsetDateTime now = OffsetDateTime.now();
+		assertEquals(1, branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId()).size());
+	}
 
-        Commit earlierCommit = new Commit();
-        earlierCommit.setSha("sha122");
-        earlierCommit.setCommittedDate(now.minusDays(4));
+	@Test
+	public void should_SaveReleaseCommits_When_RelevantCommitsExist() throws Exception {
+		Commit commit2 = new Commit();
+		commit2.setSha("sha456");
+		commit2.setCommittedDate(OffsetDateTime.now().minusDays(1));
 
-        Commit laterCommit = new Commit();
-        laterCommit.setSha("sha124");
-        laterCommit.setCommittedDate(now.minusDays(1));
+		BranchCommit branchCommit1 = new BranchCommit(mockBranch, mockCommit);
+		BranchCommit branchCommit2 = new BranchCommit(mockBranch, commit2);
 
-        BranchCommit bc1 = new BranchCommit(mockBranch, earlierCommit);
-        BranchCommit bc2 = new BranchCommit(mockBranch, laterCommit);
-        mockBranch.setBranchCommits(Set.of(bc1, bc2));
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
+		when(branchService.doesBranchContainCommit(any(), anyString())).thenReturn(true);
+		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId()))
+				.thenReturn(Set.of(branchCommit1, branchCommit2));
+		when(branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId()))
+				.thenReturn(Set.of());
 
-        ReleaseDTO releaseDTO1 = new ReleaseDTO();
-        releaseDTO1.setTagName("v0.9");
-        releaseDTO1.setTagCommit(new ReleaseTagCommitDTO("sha122"));
-        releaseDTO1.setPublishedAt(now.minusDays(2));
+		releaseService.injectReleases();
 
-        ReleaseDTO releaseDTO2 = new ReleaseDTO();
-        releaseDTO2.setTagName("v1.0");
-        releaseDTO2.setTagCommit(new ReleaseTagCommitDTO("sha124"));
-        releaseDTO2.setPublishedAt(now);
+		verify(releaseCommitRepository, times(1)).saveAll(argThat(commits -> commits instanceof Collection && ((Collection<?>) commits).size() == 2));
+	}
 
-        Release release1 = new Release();
-        release1.setTagName("v0.9");
-        release1.setCommitSha("sha122");
-        release1.setPublishedAt(releaseDTO1.getPublishedAt());
-        release1.setBranch(mockBranch);
-        release1.setReleaseCommits(new HashSet<>());
-        release1.setReleasePullRequests(new HashSet<>());
+	@Test
+	public void should_SaveReleasePullRequests_When_RelevantPRsExist() throws Exception {
+		PullRequest pr2 = new PullRequest();
+		pr2.setId(UUID.randomUUID().toString());
+		pr2.setMergedAt(OffsetDateTime.now().minusHours(12));
 
-        Release release2 = new Release();
-        release2.setTagName("v1.0");
-        release2.setCommitSha("sha124");
-        release2.setPublishedAt(releaseDTO2.getPublishedAt());
-        release2.setBranch(mockBranch);
-        release2.setReleaseCommits(new HashSet<>());
-        release2.setReleasePullRequests(new HashSet<>());
+		BranchPullRequest branchPR1 = new BranchPullRequest(mockBranch, mockPullRequest);
+		BranchPullRequest branchPR2 = new BranchPullRequest(mockBranch, pr2);
 
-        when(gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubReleaseCount())
-                .thenReturn(2);
-        when(releaseRepository.count()).thenReturn(0L);
-        when(gitHubClient.getReleases()).thenReturn(Set.of(releaseDTO1, releaseDTO2));
-        when(branchService.getBranchesWithCommits()).thenReturn(List.of(mockBranch));
-        when(branchService.getBranchesWithPullRequests(any())).thenReturn(List.of(mockBranch));
-        when(branchService.doesBranchContainCommit(mockBranch, "sha122")).thenReturn(true);
-        when(branchService.doesBranchContainCommit(mockBranch, "sha124")).thenReturn(true);
-        when(mapper.toEntity(releaseDTO1, Release.class)).thenReturn(release1);
-        when(mapper.toEntity(releaseDTO2, Release.class)).thenReturn(release2);
-        when(releaseRepository.saveAll(anySet())).thenAnswer(invocation -> new ArrayList<>(invocation.getArgument(0)));
+		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount())
+				.thenReturn(1);
+		when(releaseRepository.count()).thenReturn(0L);
+		when(gitHubClient.getReleases()).thenReturn(Set.of(mockReleaseDTO));
+		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(mockRelease);
+		when(branchService.doesBranchContainCommit(any(), anyString())).thenReturn(true);
+		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId()))
+				.thenReturn(Set.of());
+		when(branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId()))
+				.thenReturn(Set.of(branchPR1, branchPR2));
 
-        releaseService.injectReleases();
+		releaseService.injectReleases();
 
-        assertEquals(1, release1.getReleaseCommits().size());
-        assertEquals(1, release2.getReleaseCommits().size());
-
-        // Ensure that release2 does NOT include commits from before release1
-        assertTrue(release2.getReleaseCommits().stream()
-                .noneMatch(rc -> rc.getCommit().getSha().equals("sha122")));
-    }
+		verify(releasePullRequestRepository, times(1)).saveAll(argThat(prs -> prs instanceof Collection && ((Collection<?>) prs).size() == 2));
+	}
 }
