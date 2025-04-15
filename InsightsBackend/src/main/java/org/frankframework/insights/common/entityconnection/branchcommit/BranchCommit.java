@@ -20,6 +20,7 @@ public class BranchCommit {
     private UUID id;
 
     @ManyToOne
+	@JoinColumn(nullable = false)
     private Branch branch;
 
 	@ManyToOne(cascade = { CascadeType.MERGE })

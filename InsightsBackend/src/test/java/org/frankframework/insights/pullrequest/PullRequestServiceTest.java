@@ -34,6 +34,9 @@ class PullRequestServiceTest {
     @Mock
     private Mapper mapper;
 
+	@Mock
+	private PullRequestRepository pullRequestRepository;
+
     @Mock
     private BranchPullRequestRepository branchPullRequestRepository;
 
@@ -94,6 +97,7 @@ class PullRequestServiceTest {
         pullRequestService = new PullRequestService(
                 gitHubClient,
                 mapper,
+				pullRequestRepository,
                 branchPullRequestRepository,
                 branchService,
                 labelService,

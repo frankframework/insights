@@ -1,6 +1,7 @@
 package org.frankframework.insights.branch;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -68,18 +69,17 @@ public class BranchService {
         }
     }
 
-    public boolean doesBranchContainCommit(Branch branch, String commitOid) {
-		Set<BranchCommit> branchCommitsOfBranch = branchCommitRepository.findAllByBranch_Id(branch.getId());
+	public boolean doesBranchContainCommit(String branchName, Set<BranchCommit> branchCommitsOfBranch, String commitOid) {
 		boolean containsCommit = branchCommitsOfBranch.stream()
-                .anyMatch(bc -> bc.getCommit() != null
-                        && commitOid.equals(bc.getCommit().getSha()));
+				.anyMatch(bc -> bc.getCommit() != null
+						&& commitOid.equals(bc.getCommit().getSha()));
 
-        log.info("Branch {} contains commit [{}]: {}", branch.getName(), commitOid, containsCommit);
+		log.info("Branch {} contains commit [{}]: {}", branchName, commitOid, containsCommit);
 
-        return containsCommit;
-    }
+		return containsCommit;
+	}
 
-    private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
+	private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
         log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()
                 .filter(branchDTO -> branchProtectionRegexes.stream().anyMatch(regex -> Pattern.compile(regex)
@@ -95,6 +95,22 @@ public class BranchService {
     public List<Branch> getAllBranches() {
         return branchRepository.findAll();
     }
+
+	public Map<String, Set<BranchCommit>> getBranchCommitsByBranches(List<Branch> branches) {
+		return branches.stream()
+				.collect(Collectors.toMap(
+						Branch::getId,
+						branch -> branchCommitRepository.findAllByBranch_Id(branch.getId())
+				));
+	}
+
+	public Map<String, Set<BranchPullRequest>> getBranchPullRequestsByBranches(List<Branch> branches) {
+		return branches.stream()
+				.collect(Collectors.toMap(
+						Branch::getId,
+						branch -> branchPullRequestRepository.findAllByBranch_Id(branch.getId())
+				));
+	}
 
     public Set<BranchCommit> getBranchCommitsByBranchId(String id) {
         return branchCommitRepository.findAllByBranch_Id(id);

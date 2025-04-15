@@ -29,6 +29,7 @@ public class CommitServiceTest {
 	@Mock private BranchCommitRepository branchCommitRepository;
 	@Mock private BranchService branchService;
 	@Mock private GitHubProperties gitHubProperties;
+	@Mock private CommitRepository commitRepository;
 
 	@InjectMocks private CommitService commitService;
 

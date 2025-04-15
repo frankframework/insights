@@ -189,6 +189,11 @@ public class PullRequestService {
 			Set<PullRequestDTO> sortedMasterPullRequests, Set<PullRequestDTO> branchPullRequests) {
 		Set<PullRequestDTO> sortedBranchPullRequests = sortPullRequestsByMergedAt(branchPullRequests);
 
+		if (sortedBranchPullRequests.isEmpty()) {
+			log.warn("Branch has no pull requests yet — skipping merge");
+			return Collections.emptySet();
+		}
+
 		if (new HashSet<>(sortedMasterPullRequests).equals(new HashSet<>(branchPullRequests))
 				|| sortedMasterPullRequests.isEmpty()) {
 			return sortedMasterPullRequests;

@@ -175,8 +175,7 @@ public class BranchServiceTest {
 
     @Test
     public void shouldCheckIfBranchContainsCommit_whenBranchContainsCommit() {
-		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of(mockBranchCommit));
-        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, mockCommit.getSha());
+        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch.getName(), Set.of(mockBranchCommit), mockCommit.getSha());
 
         assertTrue(containsCommit);
     }
@@ -186,9 +185,7 @@ public class BranchServiceTest {
         Commit newCommit = new Commit();
         newCommit.setSha("sha456");
 
-		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of());
-
-		boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, newCommit.getSha());
+		boolean containsCommit = branchService.doesBranchContainCommit(mockBranch.getName(), Set.of(mockBranchCommit), newCommit.getSha());
 
         assertFalse(containsCommit);
     }

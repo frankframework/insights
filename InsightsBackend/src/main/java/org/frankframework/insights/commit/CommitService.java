@@ -108,11 +108,8 @@ public class CommitService {
 					.map(Commit::getId)
 					.toList();
 
-
 			Map<String, Commit> existingCommitsMap = commitIds.stream()
-					.map(commitRepository::findById)
-					.filter(Optional::isPresent)
-					.map(Optional::get)
+					.flatMap(id -> commitRepository.findById(id).stream())
 					.collect(Collectors.toMap(Commit::getId, Function.identity()));
 
 			newBranchCommits.forEach(branchCommit -> {
@@ -122,12 +119,12 @@ public class CommitService {
 				}
 			});
 
-			commitRepository.saveAllAndFlush(
+			commitRepository.saveAll(
 					uniqueCommits.stream()
 							.filter(commit -> !existingCommitsMap.containsKey(commit.getId()))
 							.toList()
 			);
-			branchCommitRepository.saveAllAndFlush(newBranchCommits);
+			branchCommitRepository.saveAll(newBranchCommits);
 		}
 	}
 
