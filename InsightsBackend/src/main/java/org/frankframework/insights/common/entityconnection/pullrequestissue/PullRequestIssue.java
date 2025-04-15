@@ -20,7 +20,6 @@ public class PullRequestIssue {
 
     @ManyToOne
     @JoinColumn(nullable = false)
-    @JsonIgnore
     private PullRequest pullRequest;
 
     @ManyToOne(cascade = {CascadeType.MERGE})

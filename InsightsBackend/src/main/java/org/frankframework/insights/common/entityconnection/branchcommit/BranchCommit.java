@@ -1,6 +1,7 @@
 package org.frankframework.insights.common.entityconnection.branchcommit;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import java.util.UUID;
 import lombok.Getter;
@@ -21,7 +22,8 @@ public class BranchCommit {
     @ManyToOne
     private Branch branch;
 
-	@ManyToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
+	@ManyToOne(cascade = { CascadeType.MERGE })
+	@JoinColumn(nullable = false)
 	private Commit commit;
 
     public BranchCommit(Branch branch, Commit commit) {

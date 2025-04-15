@@ -26,7 +26,6 @@ public class IssueLabel {
 
     @ManyToOne
     @JoinColumn(nullable = false)
-    @JsonIgnore
     private Issue issue;
 
     @ManyToOne(cascade = {CascadeType.MERGE})

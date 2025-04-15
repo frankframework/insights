@@ -64,32 +64,25 @@ public class IssueService {
 
             Map<String, IssueDTO> issueDtoMap = issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, dto -> dto));
 
-            Set<Issue> issuesWithLabelsAndMilestones = assignLabelsAndMilestonesToIssues(issues, issueDtoMap);
+            Set<Issue> issuesWithLabelsAndMilestones = assignMilestonesToIssues(issues, issueDtoMap);
 
             List<Issue> savedIssuesWithLabelsAndMilestones = saveIssues(issuesWithLabelsAndMilestones);
 
             Set<Issue> issuesWithSubIssues = assignSubIssuesToIssues(savedIssuesWithLabelsAndMilestones, issueDtoMap);
 
             saveIssues(issuesWithSubIssues);
+			saveIssueLabels(issuesWithSubIssues, issueDtoMap);
         } catch (Exception e) {
             throw new IssueInjectionException("Error while injecting GitHub issues", e);
         }
     }
 
-    private Set<Issue> assignLabelsAndMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
-        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+    private Set<Issue> assignMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
 
         issues.forEach(issue -> {
             IssueDTO issueDTO = issueDtoMap.get(issue.getId());
             if (issueDTO != null) {
-                Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
-                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                        .filter(issueLabel -> issueLabel.getLabel() != null)
-                        .collect(Collectors.toSet());
-
-                issueLabelRepository.saveAll(issueLabels);
-
                 if (issueDTO.milestone() != null && issueDTO.milestone().id() != null) {
                     Milestone milestone = milestoneMap.get(issueDTO.milestone().id());
                     issue.setMilestone(milestone);
@@ -120,6 +113,22 @@ public class IssueService {
 
         return new HashSet<>(issues);
     }
+
+	private void saveIssueLabels(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
+		Map<String, Label> labelMap = labelService.getAllLabelsMap();
+
+		issues.forEach(issue -> {
+			IssueDTO issueDTO = issueDtoMap.get(issue.getId());
+			if (issueDTO != null && issueDTO.labels() != null && issueDTO.labels().getEdges() != null) {
+				Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
+						.map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+						.filter(issueLabel -> issueLabel.getLabel() != null)
+						.collect(Collectors.toSet());
+
+				issueLabelRepository.saveAll(issueLabels);
+			}
+		});
+	}
 
     private List<Issue> saveIssues(Set<Issue> issues) {
         List<Issue> savedIssues = issueRepository.saveAll(issues);

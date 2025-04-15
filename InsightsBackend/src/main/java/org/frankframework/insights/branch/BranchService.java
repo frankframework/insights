@@ -69,11 +69,12 @@ public class BranchService {
     }
 
     public boolean doesBranchContainCommit(Branch branch, String commitOid) {
-        boolean containsCommit = branchCommitRepository.findAllByBranch_Id(branch.getId()).stream()
+		Set<BranchCommit> branchCommitsOfBranch = branchCommitRepository.findAllByBranch_Id(branch.getId());
+		boolean containsCommit = branchCommitsOfBranch.stream()
                 .anyMatch(bc -> bc.getCommit() != null
                         && commitOid.equals(bc.getCommit().getSha()));
 
-        log.info("Branch {} contains commit: {}", branch.getName(), containsCommit);
+        log.info("Branch {} contains commit [{}]: {}", branch.getName(), commitOid, containsCommit);
 
         return containsCommit;
     }

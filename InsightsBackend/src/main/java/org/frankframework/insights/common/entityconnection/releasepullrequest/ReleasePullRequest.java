@@ -26,7 +26,6 @@ public class ReleasePullRequest {
 
     @ManyToOne
     @JoinColumn(nullable = false)
-    @JsonIgnore
     private Release release;
 
     @ManyToOne(cascade = {CascadeType.MERGE})

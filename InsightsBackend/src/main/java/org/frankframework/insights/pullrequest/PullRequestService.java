@@ -4,6 +4,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import jakarta.transaction.Transactional;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
@@ -30,6 +33,7 @@ public class PullRequestService {
 
 	private final GitHubClient gitHubClient;
 	private final Mapper mapper;
+	private final PullRequestRepository pullRequestRepository;
 	private final BranchPullRequestRepository branchPullRequestRepository;
 	private final BranchService branchService;
 	private final LabelService labelService;
@@ -42,6 +46,7 @@ public class PullRequestService {
 	public PullRequestService(
 			GitHubClient gitHubClient,
 			Mapper mapper,
+			PullRequestRepository pullRequestRepository,
 			BranchPullRequestRepository branchPullRequestRepository,
 			BranchService branchService,
 			LabelService labelService,
@@ -51,6 +56,7 @@ public class PullRequestService {
 			PullRequestLabelRepository pullRequestLabelRepository, PullRequestIssueRepository pullRequestIssueRepository) {
 		this.gitHubClient = gitHubClient;
 		this.mapper = mapper;
+		this.pullRequestRepository = pullRequestRepository;
 		this.branchPullRequestRepository = branchPullRequestRepository;
 		this.branchService = branchService;
 		this.labelService = labelService;
@@ -100,13 +106,15 @@ public class PullRequestService {
 	private Set<BranchPullRequest> getPullRequestsForBranch(Branch branch, Set<PullRequestDTO> sortedMasterPullRequests)
 			throws PullRequestInjectionException {
 		try {
-			Set<PullRequestDTO> branchPullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
-			Set<PullRequestDTO> mergedPullRequests =
-					mergeMasterAndBranchPullRequests(sortedMasterPullRequests, branchPullRequestDTOS);
-			Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequests, PullRequest.class);
+			Set<PullRequestDTO> pullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
+			Set<PullRequestDTO> mergedPullRequestDTOS =
+					mergeMasterAndBranchPullRequests(sortedMasterPullRequests, pullRequestDTOS);
+			Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequestDTOS, PullRequest.class);
 
 			Map<String, PullRequestDTO> pullRequestDtoMap =
-					mergedPullRequests.stream().collect(Collectors.toMap(PullRequestDTO::id, dto -> dto));
+					mergedPullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, dto -> dto));
+
+			assignMilestonesToPullRequests(pullRequests, pullRequestDtoMap);
 
 			Set<PullRequest> enrichedPullRequests = assignSubPropertiesToPullRequests(pullRequests, pullRequestDtoMap);
 
@@ -116,6 +124,21 @@ public class PullRequestService {
 		} catch (Exception e) {
 			throw new PullRequestInjectionException("Error while injecting GitHub pull requests", e);
 		}
+	}
+
+	private void assignMilestonesToPullRequests(
+			Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
+		Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
+
+		pullRequests.forEach(pullRequest -> {
+			PullRequestDTO pullRequestDTO = pullRequestsDtoMap.get(pullRequest.getId());
+			if (pullRequestDTO != null && pullRequestDTO.milestone() != null && pullRequestDTO.milestone().id() != null) {
+				pullRequest.setMilestone(
+					milestoneMap.get(pullRequestDTO.milestone().id()));
+			}
+		});
+
+		savePullRequests(pullRequests);
 	}
 
 	private Set<PullRequest> assignSubPropertiesToPullRequests(
@@ -135,12 +158,6 @@ public class PullRequestService {
 							.collect(Collectors.toSet());
 
 					pullRequestLabelRepository.saveAll(pullRequestLabels);
-				}
-
-				if (pullRequestDTO.milestone() != null
-						&& pullRequestDTO.milestone().id() != null) {
-					pullRequest.setMilestone(
-							milestoneMap.get(pullRequestDTO.milestone().id()));
 				}
 
 				if (pullRequestDTO.closingIssuesReferences() != null
@@ -218,5 +235,10 @@ public class PullRequestService {
 
 	private String buildUniqueKey(Branch branch, PullRequest pullRequest) {
 		return String.format("%s::%s", branch.getId(), pullRequest.getId());
+	}
+
+	private void savePullRequests(Set<PullRequest> pullRequests) {
+		pullRequestRepository.saveAll(pullRequests);
+		log.info("Saved {} pull requests", pullRequests.size());
 	}
 }
