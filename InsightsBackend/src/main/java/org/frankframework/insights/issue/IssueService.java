@@ -3,7 +3,8 @@ package org.frankframework.insights.issue;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.common.entityconnection.IssueLabel;
+import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
+import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
@@ -21,6 +22,7 @@ public class IssueService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final IssueRepository issueRepository;
+    private final IssueLabelRepository issueLabelRepository;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
 
@@ -29,12 +31,14 @@ public class IssueService {
             GitHubClient gitHubClient,
             Mapper mapper,
             IssueRepository issueRepository,
+            IssueLabelRepository issueLabelRepository,
             LabelService labelService,
             MilestoneService milestoneService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
+        this.issueLabelRepository = issueLabelRepository;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
     }
@@ -60,32 +64,25 @@ public class IssueService {
 
             Map<String, IssueDTO> issueDtoMap = issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, dto -> dto));
 
-            Set<Issue> issuesWithLabelsAndMilestones = assignLabelsAndMilestonesToIssues(issues, issueDtoMap);
+            Set<Issue> issuesWithLabelsAndMilestones = assignMilestonesToIssues(issues, issueDtoMap);
 
             List<Issue> savedIssuesWithLabelsAndMilestones = saveIssues(issuesWithLabelsAndMilestones);
 
             Set<Issue> issuesWithSubIssues = assignSubIssuesToIssues(savedIssuesWithLabelsAndMilestones, issueDtoMap);
 
             saveIssues(issuesWithSubIssues);
-
+            saveIssueLabels(issuesWithSubIssues, issueDtoMap);
         } catch (Exception e) {
             throw new IssueInjectionException("Error while injecting GitHub issues", e);
         }
     }
 
-    private Set<Issue> assignLabelsAndMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
-        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+    private Set<Issue> assignMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
 
         issues.forEach(issue -> {
             IssueDTO issueDTO = issueDtoMap.get(issue.getId());
             if (issueDTO != null) {
-                Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
-                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                        .filter(issueLabel -> issueLabel.getLabel() != null)
-                        .collect(Collectors.toSet());
-                issue.setIssueLabels(issueLabels);
-
                 if (issueDTO.milestone() != null && issueDTO.milestone().id() != null) {
                     Milestone milestone = milestoneMap.get(issueDTO.milestone().id());
                     issue.setMilestone(milestone);
@@ -115,6 +112,24 @@ public class IssueService {
         });
 
         return new HashSet<>(issues);
+    }
+
+    private void saveIssueLabels(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
+        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+
+        issues.forEach(issue -> {
+            IssueDTO issueDTO = issueDtoMap.get(issue.getId());
+            if (issueDTO != null
+                    && issueDTO.labels() != null
+                    && issueDTO.labels().getEdges() != null) {
+                Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
+                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+                        .filter(issueLabel -> issueLabel.getLabel() != null)
+                        .collect(Collectors.toSet());
+
+                issueLabelRepository.saveAll(issueLabels);
+            }
+        });
     }
 
     private List<Issue> saveIssues(Set<Issue> issues) {

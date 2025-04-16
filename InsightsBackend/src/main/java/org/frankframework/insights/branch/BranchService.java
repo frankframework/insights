@@ -1,11 +1,16 @@
 package org.frankframework.insights.branch;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
@@ -18,19 +23,25 @@ public class BranchService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final BranchRepository branchRepository;
+    private final BranchCommitRepository branchCommitRepository;
     private final List<String> branchProtectionRegexes;
+    private final BranchPullRequestRepository branchPullRequestRepository;
 
     public BranchService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             BranchRepository branchRepository,
-            GitHubProperties gitHubProperties) {
+            BranchCommitRepository branchCommitRepository,
+            GitHubProperties gitHubProperties,
+            BranchPullRequestRepository branchPullRequestRepository) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.branchRepository = branchRepository;
+        this.branchCommitRepository = branchCommitRepository;
         this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
+        this.branchPullRequestRepository = branchPullRequestRepository;
     }
 
     public void injectBranches() throws BranchInjectionException {
@@ -59,12 +70,13 @@ public class BranchService {
         }
     }
 
-    public boolean doesBranchContainCommit(Branch branch, String commitOid) {
-        boolean containsCommit = branch.getBranchCommits().stream()
+    public boolean doesBranchContainCommit(
+            String branchName, Set<BranchCommit> branchCommitsOfBranch, String commitOid) {
+        boolean containsCommit = branchCommitsOfBranch.stream()
                 .anyMatch(bc -> bc.getCommit() != null
                         && commitOid.equals(bc.getCommit().getSha()));
 
-        log.info("Branch {} contains commit: {}", branch.getName(), containsCommit);
+        log.info("Branch {} contains commit [{}]: {}", branchName, commitOid, containsCommit);
 
         return containsCommit;
     }
@@ -86,16 +98,24 @@ public class BranchService {
         return branchRepository.findAll();
     }
 
-    public Branch getBranchByName(String branchName) {
-        return branchRepository.findBranchByName(branchName);
+    public Map<String, Set<BranchCommit>> getBranchCommitsByBranches(List<Branch> branches) {
+        return branches.stream()
+                .collect(Collectors.toMap(
+                        Branch::getId, branch -> branchCommitRepository.findAllByBranch_Id(branch.getId())));
     }
 
-    public List<Branch> getBranchesWithCommits() {
-        return branchRepository.findAllWithCommits();
+    public Map<String, Set<BranchPullRequest>> getBranchPullRequestsByBranches(List<Branch> branches) {
+        return branches.stream()
+                .collect(Collectors.toMap(
+                        Branch::getId, branch -> branchPullRequestRepository.findAllByBranch_Id(branch.getId())));
     }
 
-    public List<Branch> getBranchesWithPullRequests(List<Branch> branches) {
-        return branchRepository.findAllWithPullRequests(branches);
+    public Set<BranchCommit> getBranchCommitsByBranchId(String id) {
+        return branchCommitRepository.findAllByBranch_Id(id);
+    }
+
+    public Set<BranchPullRequest> getBranchPullRequestsByBranchId(String id) {
+        return branchPullRequestRepository.findAllByBranch_Id(id);
     }
 
     public void saveBranches(Set<Branch> branches) {

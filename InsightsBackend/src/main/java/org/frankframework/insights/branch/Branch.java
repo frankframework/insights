@@ -2,12 +2,8 @@ package org.frankframework.insights.branch;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
-import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -19,10 +15,4 @@ public class Branch {
 
     @Column(nullable = false, unique = true)
     private String name;
-
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<BranchCommit> branchCommits = new HashSet<>();
-
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<BranchPullRequest> branchPullRequests = new HashSet<>();
 }

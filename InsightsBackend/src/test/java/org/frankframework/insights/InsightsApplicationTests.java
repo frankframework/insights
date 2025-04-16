@@ -7,5 +7,5 @@ import org.springframework.boot.test.context.SpringBootTest;
 class InsightsApplicationTests {
 
     @Test
-    void contextLoads() {}
+    public void contextLoads() {}
 }

@@ -8,10 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.GitHubProperties;
-import org.frankframework.insights.common.entityconnection.PullRequestIssue;
-import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
+import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssue;
+import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
+import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabel;
+import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.issue.Issue;
@@ -28,30 +30,39 @@ public class PullRequestService {
 
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
+    private final PullRequestRepository pullRequestRepository;
     private final BranchPullRequestRepository branchPullRequestRepository;
     private final BranchService branchService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
     private final IssueService issueService;
     private final List<String> branchProtectionRegexes;
+    private final PullRequestLabelRepository pullRequestLabelRepository;
+    private final PullRequestIssueRepository pullRequestIssueRepository;
 
     public PullRequestService(
             GitHubClient gitHubClient,
             Mapper mapper,
+            PullRequestRepository pullRequestRepository,
             BranchPullRequestRepository branchPullRequestRepository,
             BranchService branchService,
             LabelService labelService,
             MilestoneService milestoneService,
             IssueService issueService,
-            GitHubProperties gitHubProperties) {
+            GitHubProperties gitHubProperties,
+            PullRequestLabelRepository pullRequestLabelRepository,
+            PullRequestIssueRepository pullRequestIssueRepository) {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
+        this.pullRequestRepository = pullRequestRepository;
         this.branchPullRequestRepository = branchPullRequestRepository;
         this.branchService = branchService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
         this.issueService = issueService;
         this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
+        this.pullRequestLabelRepository = pullRequestLabelRepository;
+        this.pullRequestIssueRepository = pullRequestIssueRepository;
     }
 
     public void injectBranchPullRequests() throws PullRequestInjectionException {
@@ -60,7 +71,7 @@ public class PullRequestService {
 
         Set<PullRequestDTO> sortedMasterPullRequests = fetchSortedMasterPullRequests();
 
-        Set<Branch> updatedBranches = branches.stream()
+        Set<BranchPullRequest> updatedBranchPullRequests = branches.stream()
                 .map(branch -> {
                     try {
                         return getPullRequestsForBranch(branch, sortedMasterPullRequests);
@@ -70,13 +81,14 @@ public class PullRequestService {
                     }
                 })
                 .filter(Objects::nonNull)
+                .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
 
-        if (!updatedBranches.isEmpty()) {
-            branchService.saveBranches(updatedBranches);
+        if (!updatedBranchPullRequests.isEmpty()) {
+            branchPullRequestRepository.saveAll(updatedBranchPullRequests);
         }
 
-        log.info("Updated pull requests for {} branches", updatedBranches.size());
+        log.info("Updated pull requests for {} branches", updatedBranchPullRequests.size());
     }
 
     private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
@@ -89,32 +101,44 @@ public class PullRequestService {
         }
     }
 
-    private Branch getPullRequestsForBranch(Branch branch, Set<PullRequestDTO> sortedMasterPullRequests)
+    private Set<BranchPullRequest> getPullRequestsForBranch(Branch branch, Set<PullRequestDTO> sortedMasterPullRequests)
             throws PullRequestInjectionException {
         try {
-            Set<PullRequestDTO> branchPullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
-            Set<PullRequestDTO> mergedPullRequests =
-                    mergeMasterAndBranchPullRequests(sortedMasterPullRequests, branchPullRequestDTOS);
-            Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequests, PullRequest.class);
+            Set<PullRequestDTO> pullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
+            Set<PullRequestDTO> mergedPullRequestDTOS =
+                    mergeMasterAndBranchPullRequests(sortedMasterPullRequests, pullRequestDTOS);
+            Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequestDTOS, PullRequest.class);
 
             Map<String, PullRequestDTO> pullRequestDtoMap =
-                    mergedPullRequests.stream().collect(Collectors.toMap(PullRequestDTO::id, dto -> dto));
+                    mergedPullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, dto -> dto));
+
+            assignMilestonesToPullRequests(pullRequests, pullRequestDtoMap);
 
             Set<PullRequest> enrichedPullRequests = assignSubPropertiesToPullRequests(pullRequests, pullRequestDtoMap);
 
             Set<BranchPullRequest> existingBranchPullRequests = new HashSet<>(getBranchPullRequestsForBranch(branch));
-            Set<BranchPullRequest> updatedBranchPullRequests =
-                    processBranchPullRequests(branch, enrichedPullRequests, existingBranchPullRequests);
 
-            existingBranchPullRequests.clear();
-            existingBranchPullRequests.addAll(updatedBranchPullRequests);
-            branch.setBranchPullRequests(existingBranchPullRequests);
-
-            log.info("Updated branch {} with {} pull request(s)", branch.getName(), updatedBranchPullRequests.size());
-            return branch;
+            return processBranchPullRequests(branch, enrichedPullRequests, existingBranchPullRequests);
         } catch (Exception e) {
             throw new PullRequestInjectionException("Error while injecting GitHub pull requests", e);
         }
+    }
+
+    private void assignMilestonesToPullRequests(
+            Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
+        Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
+
+        pullRequests.forEach(pullRequest -> {
+            PullRequestDTO pullRequestDTO = pullRequestsDtoMap.get(pullRequest.getId());
+            if (pullRequestDTO != null
+                    && pullRequestDTO.milestone() != null
+                    && pullRequestDTO.milestone().id() != null) {
+                pullRequest.setMilestone(
+                        milestoneMap.get(pullRequestDTO.milestone().id()));
+            }
+        });
+
+        savePullRequests(pullRequests);
     }
 
     private Set<PullRequest> assignSubPropertiesToPullRequests(
@@ -132,13 +156,8 @@ public class PullRequestService {
                                     pullRequest, labelMap.getOrDefault(labelDTO.getNode().id, null)))
                             .filter(issueLabel -> issueLabel.getLabel() != null)
                             .collect(Collectors.toSet());
-                    pullRequest.setPullRequestLabels(pullRequestLabels);
-                }
 
-                if (pullRequestDTO.milestone() != null
-                        && pullRequestDTO.milestone().id() != null) {
-                    pullRequest.setMilestone(
-                            milestoneMap.get(pullRequestDTO.milestone().id()));
+                    pullRequestLabelRepository.saveAll(pullRequestLabels);
                 }
 
                 if (pullRequestDTO.closingIssuesReferences() != null
@@ -155,7 +174,7 @@ public class PullRequestService {
                                     .filter(pullRequestIssue -> pullRequestIssue.getIssue() != null)
                                     .collect(Collectors.toSet());
 
-                    pullRequest.setPullRequestIssues(pullRequestIssues);
+                    pullRequestIssueRepository.saveAll(pullRequestIssues);
                 }
             }
         });
@@ -163,12 +182,17 @@ public class PullRequestService {
     }
 
     private Set<BranchPullRequest> getBranchPullRequestsForBranch(Branch branch) {
-        return branchPullRequestRepository.findBranchPullRequestByBranchId(branch.getId());
+        return branchPullRequestRepository.findAllByBranch_Id(branch.getId());
     }
 
     private Set<PullRequestDTO> mergeMasterAndBranchPullRequests(
             Set<PullRequestDTO> sortedMasterPullRequests, Set<PullRequestDTO> branchPullRequests) {
         Set<PullRequestDTO> sortedBranchPullRequests = sortPullRequestsByMergedAt(branchPullRequests);
+
+        if (sortedBranchPullRequests.isEmpty()) {
+            log.warn("Branch has no pull requests yet — skipping merge");
+            return Collections.emptySet();
+        }
 
         if (new HashSet<>(sortedMasterPullRequests).equals(new HashSet<>(branchPullRequests))
                 || sortedMasterPullRequests.isEmpty()) {
@@ -216,5 +240,10 @@ public class PullRequestService {
 
     private String buildUniqueKey(Branch branch, PullRequest pullRequest) {
         return String.format("%s::%s", branch.getId(), pullRequest.getId());
+    }
+
+    private void savePullRequests(Set<PullRequest> pullRequests) {
+        pullRequestRepository.saveAll(pullRequests);
+        log.info("Saved {} pull requests", pullRequests.size());
     }
 }

@@ -7,11 +7,15 @@ import java.util.*;
 import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
+import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.pullrequest.PullRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +40,12 @@ public class BranchServiceTest {
     private BranchRepository branchRepository;
 
     @Mock
+    private BranchCommitRepository branchCommitRepository;
+
+    @Mock
+    private BranchPullRequestRepository branchPullRequestRepository;
+
+    @Mock
     private GitHubProperties gitHubProperties;
 
     @InjectMocks
@@ -44,6 +54,9 @@ public class BranchServiceTest {
     private BranchDTO mockBranchDTO;
     private Branch mockBranch;
     private Commit mockCommit;
+    private PullRequest mockPullRequest;
+    private BranchCommit mockBranchCommit;
+    private BranchPullRequest mockBranchPullRequest;
     private GitHubRepositoryStatisticsDTO mockGitHubRepositoryStatisticsDTO;
 
     private List<String> branchProtectionRegexes;
@@ -59,7 +72,12 @@ public class BranchServiceTest {
         mockCommit = new Commit();
         mockCommit.setSha("sha123");
 
-        mockBranch.setBranchCommits(Set.of(new BranchCommit(mockBranch, mockCommit)));
+        mockPullRequest = new PullRequest();
+        mockPullRequest.setId(UUID.randomUUID().toString());
+
+        mockBranchCommit = new BranchCommit(mockBranch, mockCommit);
+
+        mockBranchPullRequest = new BranchPullRequest(mockBranch, mockPullRequest);
 
         mockGitHubRepositoryStatisticsDTO = mock(GitHubRepositoryStatisticsDTO.class);
 
@@ -68,7 +86,13 @@ public class BranchServiceTest {
         when(gitHubProperties.getBranchProtectionRegexes()).thenReturn(branchProtectionRegexes);
 
         branchService = new BranchService(
-                gitHubRepositoryStatisticsService, gitHubClient, branchMapper, branchRepository, gitHubProperties);
+                gitHubRepositoryStatisticsService,
+                gitHubClient,
+                branchMapper,
+                branchRepository,
+                branchCommitRepository,
+                gitHubProperties,
+                branchPullRequestRepository);
     }
 
     @Test
@@ -156,7 +180,8 @@ public class BranchServiceTest {
 
     @Test
     public void shouldCheckIfBranchContainsCommit_whenBranchContainsCommit() {
-        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, mockCommit.getSha());
+        boolean containsCommit = branchService.doesBranchContainCommit(
+                mockBranch.getName(), Set.of(mockBranchCommit), mockCommit.getSha());
 
         assertTrue(containsCommit);
     }
@@ -166,9 +191,34 @@ public class BranchServiceTest {
         Commit newCommit = new Commit();
         newCommit.setSha("sha456");
 
-        boolean containsCommit = branchService.doesBranchContainCommit(mockBranch, newCommit.getSha());
+        boolean containsCommit = branchService.doesBranchContainCommit(
+                mockBranch.getName(), Set.of(mockBranchCommit), newCommit.getSha());
 
         assertFalse(containsCommit);
+    }
+
+    @Test
+    public void shouldGetBranchCommitsByBranchId() {
+        Set<BranchCommit> branchCommits = Set.of(mockBranchCommit);
+
+        when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(branchCommits);
+
+        Set<BranchCommit> result = branchService.getBranchCommitsByBranchId(mockBranch.getId());
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains(mockBranchCommit));
+    }
+
+    @Test
+    public void shouldGetBranchPullRequestsByBranchId() {
+        Set<BranchPullRequest> branchPullRequests = Set.of(mockBranchPullRequest);
+
+        when(branchPullRequestRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(branchPullRequests);
+
+        Set<BranchPullRequest> result = branchService.getBranchPullRequestsByBranchId(mockBranch.getId());
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains(mockBranchPullRequest));
     }
 
     @Test

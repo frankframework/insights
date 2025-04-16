@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.entityconnection;
+package org.frankframework.insights.common.entityconnection.releasepullrequest;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -11,28 +11,28 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.frankframework.insights.label.Label;
 import org.frankframework.insights.pullrequest.PullRequest;
+import org.frankframework.insights.release.Release;
 
 @Entity
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class PullRequestLabel {
+public class ReleasePullRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne
     @JoinColumn(nullable = false)
-    private PullRequest pullRequest;
+    private Release release;
 
     @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
-    private Label label;
+    private PullRequest pullRequest;
 
-    public PullRequestLabel(PullRequest pullRequest, Label label) {
+    public ReleasePullRequest(Release release, PullRequest pullRequest) {
+        this.release = release;
         this.pullRequest = pullRequest;
-        this.label = label;
     }
 }

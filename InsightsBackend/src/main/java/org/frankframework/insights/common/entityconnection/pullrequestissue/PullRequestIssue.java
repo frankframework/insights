@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.entityconnection;
+package org.frankframework.insights.common.entityconnection.pullrequestissue;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

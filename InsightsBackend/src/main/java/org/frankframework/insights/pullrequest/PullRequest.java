@@ -3,12 +3,8 @@ package org.frankframework.insights.pullrequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.common.entityconnection.PullRequestIssue;
-import org.frankframework.insights.common.entityconnection.PullRequestLabel;
 import org.frankframework.insights.milestone.Milestone;
 
 @Entity
@@ -32,10 +28,4 @@ public class PullRequest {
 
     @ManyToOne
     private Milestone milestone;
-
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<PullRequestLabel> pullRequestLabels = new HashSet<>();
-
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<PullRequestIssue> pullRequestIssues;
 }
