@@ -191,6 +191,19 @@ public class BranchServiceTest {
     }
 
 	@Test
+	public void shouldGetBranchCommitsByBranchId() {
+		Set<BranchCommit> branchCommits = Set.of(mockBranchCommit);
+
+		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId()))
+				.thenReturn(branchCommits);
+
+		Set<BranchCommit> result = branchService.getBranchCommitsByBranchId(mockBranch.getId());
+
+		assertEquals(1, result.size());
+		assertTrue(result.contains(mockBranchCommit));
+	}
+
+	@Test
 	public void shouldGetBranchPullRequestsByBranchId() {
 		Set<BranchPullRequest> branchPullRequests = Set.of(mockBranchPullRequest);
 
