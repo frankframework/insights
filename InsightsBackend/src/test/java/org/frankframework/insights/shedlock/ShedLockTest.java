@@ -1,0 +1,149 @@
+package org.frankframework.insights.shedlock;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import javax.sql.DataSource;
+import net.javacrumbs.shedlock.core.LockAssert;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import org.frankframework.insights.branch.BranchService;
+import org.frankframework.insights.commit.CommitService;
+import org.frankframework.insights.common.configuration.ShedLockConfiguration;
+import org.frankframework.insights.common.configuration.SystemDataInitializer;
+import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.label.LabelService;
+import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.release.ReleaseService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class ShedLockTest {
+
+    @Mock
+    private DataSource dataSource;
+
+    @Mock
+    private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
+
+    @Mock
+    private LabelService labelService;
+
+    @Mock
+    private MilestoneService milestoneService;
+
+    @Mock
+    private BranchService branchService;
+
+    @Mock
+    private CommitService commitService;
+
+    @Mock
+    private ReleaseService releaseService;
+
+    private SystemDataInitializer systemDataInitializer;
+
+    @BeforeEach
+    public void setUp() {
+        systemDataInitializer = new SystemDataInitializer(
+                gitHubRepositoryStatisticsService,
+                labelService,
+                milestoneService,
+                branchService,
+                commitService,
+                releaseService);
+
+        LockAssert.TestHelper.makeAllAssertsPass(true);
+    }
+
+    @Test
+    public void should_CreateLockProvider_when_BeanIsInitialized() {
+        ShedLockConfiguration shedLockConfiguration = new ShedLockConfiguration();
+        JdbcTemplateLockProvider lockProvider = shedLockConfiguration.lockProvider(dataSource);
+
+        assertNotNull(lockProvider, "LockProvider bean should be created");
+    }
+
+    @Test
+    public void should_LockStartupTask_when_Executed() {
+        systemDataInitializer.startupTask();
+        LockAssert.assertLocked();
+    }
+
+    @Test
+    public void should_LockDailyJob_when_Executed() {
+        systemDataInitializer.dailyJob();
+        LockAssert.assertLocked();
+    }
+
+    @Test
+    public void should_NotAllowStartupTaskToInterrupt_when_DailyJobIsRunning() throws Exception {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Future<?> startupFuture = executorService.submit(() -> {
+            latch.countDown();
+            systemDataInitializer.startupTask();
+        });
+
+        Future<?> dailyJobFuture = executorService.submit(() -> {
+            try {
+                latch.await();
+                systemDataInitializer.dailyJob();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Thread was interrupted while waiting", e);
+            }
+        });
+
+        startupFuture.get();
+        LockAssert.assertLocked();
+
+        try {
+            dailyJobFuture.get();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof InterruptedException) {
+                assertNotNull(e.getCause());
+                assertInstanceOf(InterruptedException.class, e.getCause());
+            }
+        }
+    }
+
+    @Test
+    public void should_NotAllowDailyJobToInterrupt_when_StartupTaskIsRunning() throws Exception {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Future<?> dailyJobFuture = executorService.submit(() -> {
+            try {
+                latch.await();
+                systemDataInitializer.dailyJob();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Thread was interrupted while waiting", e);
+            }
+        });
+
+        Future<?> startupFuture = executorService.submit(() -> {
+            latch.countDown();
+            systemDataInitializer.startupTask();
+        });
+
+        dailyJobFuture.get();
+        LockAssert.assertLocked();
+
+        try {
+            startupFuture.get();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof InterruptedException) {
+                assertNotNull(e.getCause());
+                assertInstanceOf(InterruptedException.class, e.getCause());
+            }
+        }
+    }
+}

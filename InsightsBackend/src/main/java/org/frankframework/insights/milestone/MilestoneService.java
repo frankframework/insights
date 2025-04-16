@@ -5,6 +5,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
+import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +47,11 @@ public class MilestoneService {
         } catch (Exception e) {
             throw new MilestoneInjectionException("Error while injecting GitHub milestones", e);
         }
+    }
+
+    public void getOpenMilestones() {
+        List<Milestone> openMilestones = milestoneRepository.getMilestonesByState(GitHubPropertyState.OPEN);
+        log.info("Successfully fetched {} open milestones", openMilestones.size());
     }
 
     private void saveMilestones(Set<Milestone> milestones) {

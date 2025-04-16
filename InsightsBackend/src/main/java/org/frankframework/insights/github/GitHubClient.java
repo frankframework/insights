@@ -29,25 +29,26 @@ public class GitHubClient extends GraphQLClient {
 
     public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
         GitHubRepositoryStatisticsDTO statistics =
-                fetchSingleEntity(GitHubConstants.REPOSITORY_STATISTICS, GitHubRepositoryStatisticsDTO.class);
+                fetchSingleEntity(GitHubQueryConstants.REPOSITORY_STATISTICS, GitHubRepositoryStatisticsDTO.class);
         log.info("Fetched repository statistics from GitHub");
         return statistics;
     }
 
     public Set<LabelDTO> getLabels() throws GitHubClientException {
-        Set<LabelDTO> labels = getEntities(GitHubConstants.LABELS, new HashMap<>(), LabelDTO.class);
+        Set<LabelDTO> labels = getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
         log.info("Successfully fetched {} labels from GitHub", labels.size());
         return labels;
     }
 
     public Set<MilestoneDTO> getMilestones() throws GitHubClientException {
-        Set<MilestoneDTO> milestones = getEntities(GitHubConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
+        Set<MilestoneDTO> milestones =
+                getEntities(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
         log.info("Successfully fetched {} milestones from GitHub", milestones.size());
         return milestones;
     }
 
     public Set<BranchDTO> getBranches() throws GitHubClientException {
-        Set<BranchDTO> branches = getEntities(GitHubConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
+        Set<BranchDTO> branches = getEntities(GitHubQueryConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
         log.info("Successfully fetched {} branches from GitHub", branches.size());
         return branches;
     }
@@ -57,18 +58,18 @@ public class GitHubClient extends GraphQLClient {
         variables.put("branchName", branchName);
         log.info("Started fetching commits from GitHub for branch with name: {}", branchName);
 
-        Set<CommitDTO> commits = getEntities(GitHubConstants.BRANCH_COMMITS, variables, CommitDTO.class);
+        Set<CommitDTO> commits = getEntities(GitHubQueryConstants.BRANCH_COMMITS, variables, CommitDTO.class);
         log.info("Successfully fetched {} commits from GitHub for branch with name: {}", commits.size(), branchName);
         return commits;
     }
 
     public Set<ReleaseDTO> getReleases() throws GitHubClientException {
-        Set<ReleaseDTO> releases = getEntities(GitHubConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+        Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
         log.info("Successfully fetched {} releases from GitHub", releases.size());
         return releases;
     }
 
-    private <T> Set<T> getEntities(GitHubConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+    private <T> Set<T> getEntities(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
         Set<T> allEntities = new HashSet<>();
         String cursor = null;
@@ -95,7 +96,7 @@ public class GitHubClient extends GraphQLClient {
     }
 
     private <T> GitHubPaginationDTO<T> fetchEntityPage(
-            GitHubConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+            GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
         try {
             GitHubPaginationDTO<T> response = getGraphQlClient()
@@ -112,7 +113,7 @@ public class GitHubClient extends GraphQLClient {
         }
     }
 
-    private <T> T fetchSingleEntity(GitHubConstants query, Class<T> entityType) throws GitHubClientException {
+    private <T> T fetchSingleEntity(GitHubQueryConstants query, Class<T> entityType) throws GitHubClientException {
         try {
             T response = getGraphQlClient()
                     .documentName(query.getDocumentName())

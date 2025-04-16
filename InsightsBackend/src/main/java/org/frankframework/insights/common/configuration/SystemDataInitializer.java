@@ -14,12 +14,14 @@ import org.frankframework.insights.milestone.MilestoneInjectionException;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
+
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 @Slf4j
-public class SystemDataInitializer {
+public class SystemDataInitializer implements CommandLineRunner {
 
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
@@ -43,23 +45,24 @@ public class SystemDataInitializer {
         this.releaseService = releaseService;
     }
 
-    @Scheduled(initialDelay = 1000, fixedRate = Long.MAX_VALUE)
-    public void startupTask() {
-        log.info("Startup: Fetching GitHub statistics");
-        fetchGitHubStatistics();
-        log.info("Startup: Fetching full system data");
-        initializeSystemData();
-    }
+	@Override
+	@SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
+	public void run(String... args) {
+		log.info("Startup: Fetching GitHub statistics");
+		fetchGitHubStatistics();
+		log.info("Startup: Fetching full system data");
+		initializeSystemData();
+	}
 
     @Scheduled(cron = "0 0 0 * * *")
-    @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H")
+    @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         log.info("Daily fetch job started");
         fetchGitHubStatistics();
         initializeSystemData();
     }
 
-    @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT2H")
+    @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
