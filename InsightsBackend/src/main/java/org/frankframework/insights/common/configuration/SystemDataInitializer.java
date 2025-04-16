@@ -54,7 +54,7 @@ public class SystemDataInitializer implements CommandLineRunner {
 		initializeSystemData();
 	}
 
-    @Scheduled(cron = "0 0 0 * * *")
+	@Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         log.info("Daily fetch job started");
@@ -65,6 +65,12 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
+			String gitHubFetchEnabledProperty = System.getProperty("githubFetchEnabled", "true");
+			if (!Boolean.parseBoolean(gitHubFetchEnabledProperty)) {
+				log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+				return;
+			}
+
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
         } catch (GitHubClientException e) {
             log.error("Error fetching GitHub statistics", e);
@@ -74,6 +80,12 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
+			String gitHubFetchEnabledProperty = System.getProperty("githubFetchEnabled", "true");
+			if (!Boolean.parseBoolean(gitHubFetchEnabledProperty)) {
+				log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+				return;
+			}
+
             log.info("Start fetching all GitHub data");
             labelService.injectLabels();
             milestoneService.injectMilestones();
