@@ -1,6 +1,5 @@
 package org.frankframework.insights.common.entityconnection.releasecommit;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.UUID;
 import lombok.Getter;

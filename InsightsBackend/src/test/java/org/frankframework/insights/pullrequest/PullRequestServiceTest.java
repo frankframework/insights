@@ -34,8 +34,8 @@ class PullRequestServiceTest {
     @Mock
     private Mapper mapper;
 
-	@Mock
-	private PullRequestRepository pullRequestRepository;
+    @Mock
+    private PullRequestRepository pullRequestRepository;
 
     @Mock
     private BranchPullRequestRepository branchPullRequestRepository;
@@ -55,11 +55,11 @@ class PullRequestServiceTest {
     @Mock
     private GitHubProperties gitHubProperties;
 
-	@Mock
-	private PullRequestLabelRepository pullRequestLabelRepository;
+    @Mock
+    private PullRequestLabelRepository pullRequestLabelRepository;
 
-	@Mock
-	private PullRequestIssueRepository pullRequestIssueRepository;
+    @Mock
+    private PullRequestIssueRepository pullRequestIssueRepository;
 
     @InjectMocks
     private PullRequestService pullRequestService;
@@ -87,8 +87,8 @@ class PullRequestServiceTest {
         subBranchPR = new PullRequestDTO(
                 UUID.randomUUID().toString(), 2, "pr2", null, OffsetDateTime.now(), null, null, null);
 
-		mockPullRequest = new PullRequest();
-		mockPullRequest.setTitle("pr2");
+        mockPullRequest = new PullRequest();
+        mockPullRequest.setTitle("pr2");
 
         List<String> branchProtectionRegexes = List.of("master", "release");
 
@@ -97,15 +97,15 @@ class PullRequestServiceTest {
         pullRequestService = new PullRequestService(
                 gitHubClient,
                 mapper,
-				pullRequestRepository,
+                pullRequestRepository,
                 branchPullRequestRepository,
                 branchService,
                 labelService,
                 milestoneService,
                 issueService,
                 gitHubProperties,
-				pullRequestLabelRepository,
-				pullRequestIssueRepository);
+                pullRequestLabelRepository,
+                pullRequestIssueRepository);
     }
 
     @Test
@@ -115,12 +115,11 @@ class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(masterPR));
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
-                .thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
@@ -129,7 +128,7 @@ class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, never()).saveAll(anySet());
+        verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -139,12 +138,11 @@ class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
-                .thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
@@ -161,7 +159,7 @@ class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, never()).saveAll(anySet());
+        verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -184,12 +182,11 @@ class PullRequestServiceTest {
                     .collect(Collectors.toSet());
         });
 
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
-                .thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
@@ -202,7 +199,7 @@ class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, never()).saveAll(anySet());
+        verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -215,11 +212,10 @@ class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(duplicatePR));
 
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
-                .thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
-		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 }

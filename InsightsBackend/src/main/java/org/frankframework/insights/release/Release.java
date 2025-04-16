@@ -3,7 +3,6 @@ package org.frankframework.insights.release;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.branch.Branch;

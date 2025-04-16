@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
-
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.GitHubProperties;
@@ -23,128 +22,143 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CommitServiceTest {
 
-	@Mock private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
-	@Mock private GitHubClient gitHubClient;
-	@Mock private Mapper mapper;
-	@Mock private BranchCommitRepository branchCommitRepository;
-	@Mock private BranchService branchService;
-	@Mock private GitHubProperties gitHubProperties;
-	@Mock private CommitRepository commitRepository;
+    @Mock
+    private GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
 
-	@InjectMocks private CommitService commitService;
+    @Mock
+    private GitHubClient gitHubClient;
 
-	private Branch mockBranch;
-	private CommitDTO mockCommitDTO;
-	private Commit mockCommit;
-	private GitHubRepositoryStatisticsDTO mockStatsDTO;
+    @Mock
+    private Mapper mapper;
 
-	@BeforeEach
-	void setUp() {
-		mockBranch = new Branch();
-		mockBranch.setId(UUID.randomUUID().toString());
-		mockBranch.setName("master");
+    @Mock
+    private BranchCommitRepository branchCommitRepository;
 
-		mockCommitDTO = new CommitDTO();
-		mockCommitDTO.sha = "sha123";
+    @Mock
+    private BranchService branchService;
 
-		mockCommit = new Commit();
-		mockCommit.setSha("sha123");
+    @Mock
+    private GitHubProperties gitHubProperties;
 
-		mockStatsDTO = mock(GitHubRepositoryStatisticsDTO.class);
+    @Mock
+    private CommitRepository commitRepository;
 
-		when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-	}
+    @InjectMocks
+    private CommitService commitService;
 
-	@Test
-	void should_InjectNewCommits_When_DBCountDiffersFromGitHub() throws Exception {
-		Map<String, Integer> githubCounts = Map.of("master", 10);
+    private Branch mockBranch;
+    private CommitDTO mockCommitDTO;
+    private Commit mockCommit;
+    private GitHubRepositoryStatisticsDTO mockStatsDTO;
 
-		when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(githubCounts);
-		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-		when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(0);
+    @BeforeEach
+    void setUp() {
+        mockBranch = new Branch();
+        mockBranch.setId(UUID.randomUUID().toString());
+        mockBranch.setName("master");
 
-		when(gitHubClient.getBranchCommits("master")).thenReturn(Set.of(mockCommitDTO));
-		when(mapper.toEntity(anySet(), eq(Commit.class))).thenReturn(Set.of(mockCommit));
-		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of());
+        mockCommitDTO = new CommitDTO();
+        mockCommitDTO.sha = "sha123";
 
-		commitService.injectBranchCommits();
+        mockCommit = new Commit();
+        mockCommit.setSha("sha123");
 
-		ArgumentCaptor<Collection<BranchCommit>> captor = ArgumentCaptor.forClass(Collection.class);
-		verify(branchCommitRepository).saveAll(captor.capture());
-		Collection<BranchCommit> saved = captor.getValue();
+        mockStatsDTO = mock(GitHubRepositoryStatisticsDTO.class);
 
-		assertEquals(1, saved.size());
-		BranchCommit bc = saved.iterator().next();
-		assertEquals(mockBranch.getId(), bc.getBranch().getId());
-		assertEquals("sha123", bc.getCommit().getSha());
-	}
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(mockStatsDTO);
+    }
 
-	@Test
-	void should_NotInject_When_DBAndGitHubCountsMatch() {
-		Map<String, Integer> githubCounts = Map.of("master", 10);
+    @Test
+    void should_InjectNewCommits_When_DBCountDiffersFromGitHub() throws Exception {
+        Map<String, Integer> githubCounts = Map.of("master", 10);
 
-		when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(githubCounts);
-		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-		when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(10);
+        when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(githubCounts);
+        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+        when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(0);
 
-		commitService.injectBranchCommits();
+        when(gitHubClient.getBranchCommits("master")).thenReturn(Set.of(mockCommitDTO));
+        when(mapper.toEntity(anySet(), eq(Commit.class))).thenReturn(Set.of(mockCommit));
+        when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of());
 
-		verify(branchCommitRepository, never()).saveAll(any());
-	}
+        commitService.injectBranchCommits();
 
-	@Test
-	void should_HandleMultipleBranches_WithMixedCommitCounts() throws Exception {
-		Branch mockBranch2 = new Branch();
-		mockBranch2.setId(UUID.randomUUID().toString());
-		mockBranch2.setName("dev");
+        ArgumentCaptor<Collection<BranchCommit>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(branchCommitRepository).saveAll(captor.capture());
+        Collection<BranchCommit> saved = captor.getValue();
 
-		CommitDTO dto2 = new CommitDTO();
-		dto2.sha = "sha456";
+        assertEquals(1, saved.size());
+        BranchCommit bc = saved.iterator().next();
+        assertEquals(mockBranch.getId(), bc.getBranch().getId());
+        assertEquals("sha123", bc.getCommit().getSha());
+    }
 
-		Commit commit2 = new Commit();
-		commit2.setSha("sha456");
+    @Test
+    void should_NotInject_When_DBAndGitHubCountsMatch() {
+        Map<String, Integer> githubCounts = Map.of("master", 10);
 
-		Map<String, Integer> githubCounts = Map.of("master", 10, "dev", 5);
+        when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(githubCounts);
+        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+        when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(10);
 
-		when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(githubCounts);
-		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch, mockBranch2));
+        commitService.injectBranchCommits();
 
-		when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(10);
-		when(branchCommitRepository.countBranchCommitByBranch_Name("dev")).thenReturn(3);
+        verify(branchCommitRepository, never()).saveAll(any());
+    }
 
-		when(gitHubClient.getBranchCommits("dev")).thenReturn(Set.of(dto2));
-		when(mapper.toEntity(anySet(), eq(Commit.class))).thenReturn(Set.of(commit2));
-		when(branchCommitRepository.findAllByBranch_Id(mockBranch2.getId())).thenReturn(Set.of());
+    @Test
+    void should_HandleMultipleBranches_WithMixedCommitCounts() throws Exception {
+        Branch mockBranch2 = new Branch();
+        mockBranch2.setId(UUID.randomUUID().toString());
+        mockBranch2.setName("dev");
 
-		commitService.injectBranchCommits();
+        CommitDTO dto2 = new CommitDTO();
+        dto2.sha = "sha456";
 
-		verify(branchCommitRepository, times(1)).saveAll(any());
-	}
+        Commit commit2 = new Commit();
+        commit2.setSha("sha456");
 
-	@Test
-	void should_SkipSaving_When_NoNewCommitsFound() throws Exception {
-		when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(Map.of("master", 5));
-		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-		when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(3);
-		when(gitHubClient.getBranchCommits("master")).thenReturn(Set.of(mockCommitDTO));
-		when(mapper.toEntity(anySet(), eq(Commit.class))).thenReturn(Set.of(mockCommit));
+        Map<String, Integer> githubCounts = Map.of("master", 10, "dev", 5);
 
-		BranchCommit existing = new BranchCommit(mockBranch, mockCommit);
-		when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of(existing));
+        when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(githubCounts);
+        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch, mockBranch2));
 
-		commitService.injectBranchCommits();
+        when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(10);
+        when(branchCommitRepository.countBranchCommitByBranch_Name("dev")).thenReturn(3);
 
-		verify(branchCommitRepository, never()).saveAll(any());
-	}
+        when(gitHubClient.getBranchCommits("dev")).thenReturn(Set.of(dto2));
+        when(mapper.toEntity(anySet(), eq(Commit.class))).thenReturn(Set.of(commit2));
+        when(branchCommitRepository.findAllByBranch_Id(mockBranch2.getId())).thenReturn(Set.of());
 
-	@Test
-	void should_HandleException_When_GettingCommitsFails() throws Exception {
-		when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(Map.of("master", 7));
-		when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
-		when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(3);
-		when(gitHubClient.getBranchCommits("master")).thenThrow(new RuntimeException("GitHub error"));
+        commitService.injectBranchCommits();
 
-		assertDoesNotThrow(() -> commitService.injectBranchCommits());
-		verify(branchCommitRepository, never()).saveAll(any());
-	}
+        verify(branchCommitRepository, times(1)).saveAll(any());
+    }
+
+    @Test
+    void should_SkipSaving_When_NoNewCommitsFound() throws Exception {
+        when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(Map.of("master", 5));
+        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+        when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(3);
+        when(gitHubClient.getBranchCommits("master")).thenReturn(Set.of(mockCommitDTO));
+        when(mapper.toEntity(anySet(), eq(Commit.class))).thenReturn(Set.of(mockCommit));
+
+        BranchCommit existing = new BranchCommit(mockBranch, mockCommit);
+        when(branchCommitRepository.findAllByBranch_Id(mockBranch.getId())).thenReturn(Set.of(existing));
+
+        commitService.injectBranchCommits();
+
+        verify(branchCommitRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void should_HandleException_When_GettingCommitsFails() throws Exception {
+        when(mockStatsDTO.getGitHubCommitsCount(anyList())).thenReturn(Map.of("master", 7));
+        when(branchService.getAllBranches()).thenReturn(List.of(mockBranch));
+        when(branchCommitRepository.countBranchCommitByBranch_Name("master")).thenReturn(3);
+        when(gitHubClient.getBranchCommits("master")).thenThrow(new RuntimeException("GitHub error"));
+
+        assertDoesNotThrow(() -> commitService.injectBranchCommits());
+        verify(branchCommitRepository, never()).saveAll(any());
+    }
 }
