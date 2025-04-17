@@ -1,17 +1,24 @@
 package org.frankframework.insights.issue;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
-import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
+import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssue;
+import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
+import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
+import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
+import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.label.Label;
-import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.Milestone;
+import org.frankframework.insights.milestone.MilestoneNotFoundException;
 import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.pullrequest.PullRequest;
+import org.frankframework.insights.release.Release;
+import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.frankframework.insights.release.ReleaseService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,25 +29,31 @@ public class IssueService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final IssueRepository issueRepository;
-    private final IssueLabelRepository issueLabelRepository;
-    private final LabelService labelService;
+    private final IssueLabelHelperService issueLabelHelperService;
     private final MilestoneService milestoneService;
+    private final ReleasePullRequestRepository releasePullRequestRepository;
+    private final PullRequestIssueRepository pullRequestIssueRepository;
+    private final ReleaseService releaseService;
 
     public IssueService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             IssueRepository issueRepository,
-            IssueLabelRepository issueLabelRepository,
-            LabelService labelService,
-            MilestoneService milestoneService) {
+            IssueLabelHelperService issueLabelHelperService,
+            MilestoneService milestoneService,
+            ReleasePullRequestRepository releasePullRequestRepository,
+            PullRequestIssueRepository pullRequestIssueRepository,
+            ReleaseService releaseService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
-        this.issueLabelRepository = issueLabelRepository;
-        this.labelService = labelService;
+        this.issueLabelHelperService = issueLabelHelperService;
         this.milestoneService = milestoneService;
+        this.releasePullRequestRepository = releasePullRequestRepository;
+        this.pullRequestIssueRepository = pullRequestIssueRepository;
+        this.releaseService = releaseService;
     }
 
     public void injectIssues() throws IssueInjectionException {
@@ -71,7 +84,7 @@ public class IssueService {
             Set<Issue> issuesWithSubIssues = assignSubIssuesToIssues(savedIssuesWithLabelsAndMilestones, issueDtoMap);
 
             saveIssues(issuesWithSubIssues);
-            saveIssueLabels(issuesWithSubIssues, issueDtoMap);
+            issueLabelHelperService.saveIssueLabels(issuesWithSubIssues, issueDtoMap);
         } catch (Exception e) {
             throw new IssueInjectionException("Error while injecting GitHub issues", e);
         }
@@ -114,28 +127,45 @@ public class IssueService {
         return new HashSet<>(issues);
     }
 
-    private void saveIssueLabels(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
-        Map<String, Label> labelMap = labelService.getAllLabelsMap();
-
-        issues.forEach(issue -> {
-            IssueDTO issueDTO = issueDtoMap.get(issue.getId());
-            if (issueDTO != null
-                    && issueDTO.labels() != null
-                    && issueDTO.labels().getEdges() != null) {
-                Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
-                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                        .filter(issueLabel -> issueLabel.getLabel() != null)
-                        .collect(Collectors.toSet());
-
-                issueLabelRepository.saveAll(issueLabels);
-            }
-        });
-    }
-
     private List<Issue> saveIssues(Set<Issue> issues) {
         List<Issue> savedIssues = issueRepository.saveAll(issues);
         log.info("Successfully saved {} issues", savedIssues.size());
         return savedIssues;
+    }
+
+    public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
+        Set<Issue> issues = issueRepository.findAllByClosedAtBetween(start, end);
+        return issues.stream()
+                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
+        Release release = releaseService.checkIfReleaseExists(releaseId);
+
+        Set<PullRequest> releasePullRequests =
+                releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
+                        .map(ReleasePullRequest::getPullRequest)
+                        .collect(Collectors.toSet());
+
+        Set<Issue> issues = releasePullRequests.stream()
+                .flatMap(releasePullRequest ->
+                        pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
+                                .map(PullRequestIssue::getIssue))
+                .collect(Collectors.toSet());
+
+        return issues.stream()
+                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
+        Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
+        Set<Issue> issues = issueRepository.findAllByMilestone_Id(milestone.getId());
+
+        return issues.stream()
+                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
+                .collect(Collectors.toSet());
     }
 
     public Map<String, Issue> getAllIssuesMap() {

@@ -193,8 +193,32 @@ public class ReleaseService {
                 .collect(Collectors.toSet());
     }
 
+    public Set<ReleaseResponse> getAllReleases() {
+        List<Release> releases = releaseRepository.findAll();
+        log.info("Successfully fetched {} releases from the database.", releases.size());
+
+        return releases.stream()
+                .map(release -> mapper.toDTO(release, ReleaseResponse.class))
+                .collect(Collectors.toSet());
+    }
+
+    public ReleaseResponse getReleaseById(String releaseId) throws ReleaseNotFoundException {
+        Release release = checkIfReleaseExists(releaseId);
+        log.info("Successfully fetched release with ID [{}] from the database.", releaseId);
+        return mapper.toDTO(release, ReleaseResponse.class);
+    }
+
     private void saveAllReleases(Set<Release> releases) {
         List<Release> savedReleases = releaseRepository.saveAll(releases);
         log.info("Successfully saved {} releases.", savedReleases.size());
+    }
+
+    public Release checkIfReleaseExists(String releaseId) throws ReleaseNotFoundException {
+        Optional<Release> release = releaseRepository.findById(releaseId);
+        if (release.isEmpty()) {
+            throw new ReleaseNotFoundException("Release with ID [" + releaseId + "] not found.", null);
+        }
+
+        return release.get();
     }
 }
