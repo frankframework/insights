@@ -14,6 +14,7 @@ import org.frankframework.insights.common.entityconnection.pullrequestissue.Pull
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabel;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
+import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.issue.Issue;
@@ -39,6 +40,7 @@ public class PullRequestService {
     private final List<String> branchProtectionRegexes;
     private final PullRequestLabelRepository pullRequestLabelRepository;
     private final PullRequestIssueRepository pullRequestIssueRepository;
+    private final IssueLabelHelperService issueLabelHelperService;
 
     public PullRequestService(
             GitHubClient gitHubClient,
@@ -51,7 +53,8 @@ public class PullRequestService {
             IssueService issueService,
             GitHubProperties gitHubProperties,
             PullRequestLabelRepository pullRequestLabelRepository,
-            PullRequestIssueRepository pullRequestIssueRepository) {
+            PullRequestIssueRepository pullRequestIssueRepository,
+            IssueLabelHelperService issueLabelHelperService) {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.pullRequestRepository = pullRequestRepository;
@@ -63,6 +66,7 @@ public class PullRequestService {
         this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
         this.pullRequestLabelRepository = pullRequestLabelRepository;
         this.pullRequestIssueRepository = pullRequestIssueRepository;
+        this.issueLabelHelperService = issueLabelHelperService;
     }
 
     public void injectBranchPullRequests() throws PullRequestInjectionException {
@@ -143,7 +147,7 @@ public class PullRequestService {
 
     private Set<PullRequest> assignSubPropertiesToPullRequests(
             Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
-        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+        Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
         Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
         Map<String, Issue> issueMap = issueService.getAllIssuesMap();
 

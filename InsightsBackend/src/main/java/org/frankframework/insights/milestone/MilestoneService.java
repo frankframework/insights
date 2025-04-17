@@ -2,11 +2,14 @@ package org.frankframework.insights.milestone;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
+import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +60,12 @@ public class MilestoneService {
         }
     }
 
+    public Set<MilestoneResponse> getAllOpenMilestones() throws MappingException {
+        Set<Milestone> openMilestones = milestoneRepository.findAllByState(GitHubPropertyState.OPEN);
+        log.info("Successfully fetched {} open milestones from database", openMilestones.size());
+        return mapper.toDTO(openMilestones, MilestoneResponse.class);
+    }
+
     public Map<String, Milestone> getAllMilestonesMap() {
         return milestoneRepository.findAll().stream()
                 .collect(Collectors.toMap(Milestone::getId, milestone -> milestone));
@@ -65,5 +74,14 @@ public class MilestoneService {
     private void saveMilestones(Set<Milestone> milestones) {
         List<Milestone> savedMilestones = milestoneRepository.saveAll(milestones);
         log.info("Successfully saved {} milestones", savedMilestones.size());
+    }
+
+    public Milestone checkIfMilestoneExists(String milestoneId) throws MilestoneNotFoundException {
+        Optional<Milestone> milestone = milestoneRepository.findById(milestoneId);
+        if (milestone.isEmpty()) {
+            throw new MilestoneNotFoundException("Milestone with ID [" + milestoneId + "] not found.", null);
+        }
+
+        return milestone.get();
     }
 }
