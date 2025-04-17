@@ -7,9 +7,7 @@ import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
-import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
-import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.entityconnection.releasecommit.ReleaseCommit;
 import org.frankframework.insights.common.entityconnection.releasecommit.ReleaseCommitRepository;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
@@ -31,8 +29,6 @@ public class ReleaseService {
     private final BranchService branchService;
     private final ReleaseCommitRepository releaseCommitRepository;
     private final ReleasePullRequestRepository releasePullRequestRepository;
-    private final BranchCommitRepository branchCommitRepository;
-    private final BranchPullRequestRepository branchPullRequestRepository;
 
     public ReleaseService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -41,9 +37,7 @@ public class ReleaseService {
             ReleaseRepository releaseRepository,
             BranchService branchService,
             ReleaseCommitRepository releaseCommitRepository,
-            ReleasePullRequestRepository releasePullRequestRepository,
-            BranchCommitRepository branchCommitRepository,
-            BranchPullRequestRepository branchPullRequestRepository) {
+            ReleasePullRequestRepository releasePullRequestRepository) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
@@ -51,8 +45,6 @@ public class ReleaseService {
         this.branchService = branchService;
         this.releaseCommitRepository = releaseCommitRepository;
         this.releasePullRequestRepository = releasePullRequestRepository;
-        this.branchCommitRepository = branchCommitRepository;
-        this.branchPullRequestRepository = branchPullRequestRepository;
     }
 
     public void injectReleases() throws ReleaseInjectionException {

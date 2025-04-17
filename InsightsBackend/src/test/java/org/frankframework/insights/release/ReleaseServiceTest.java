@@ -9,9 +9,7 @@ import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.Commit;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
-import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
-import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.entityconnection.releasecommit.ReleaseCommitRepository;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -50,12 +48,6 @@ class ReleaseServiceTest {
 
     @Mock
     private ReleasePullRequestRepository releasePullRequestRepository;
-
-    @Mock
-    private BranchCommitRepository branchCommitRepository;
-
-    @Mock
-    private BranchPullRequestRepository branchPullRequestRepository;
 
     @InjectMocks
     private ReleaseService releaseService;
