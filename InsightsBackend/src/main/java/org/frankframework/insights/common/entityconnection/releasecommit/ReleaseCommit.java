@@ -1,6 +1,5 @@
-package org.frankframework.insights.common.entityconnection;
+package org.frankframework.insights.common.entityconnection.releasecommit;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.UUID;
 import lombok.Getter;
@@ -20,10 +19,9 @@ public class ReleaseCommit {
 
     @ManyToOne
     @JoinColumn(nullable = false)
-    @JsonIgnore
     private Release release;
 
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
     private Commit commit;
 

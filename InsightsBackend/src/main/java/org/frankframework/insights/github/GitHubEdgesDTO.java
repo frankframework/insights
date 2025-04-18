@@ -10,8 +10,4 @@ public class GitHubEdgesDTO<T> {
     public List<GitHubNodeDTO<T>> getEdges() {
         return edges;
     }
-
-    public void setEdges(List<GitHubNodeDTO<T>> edges) {
-        this.edges = edges;
-    }
 }

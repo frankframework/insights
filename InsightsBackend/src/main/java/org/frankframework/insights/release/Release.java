@@ -3,11 +3,9 @@ package org.frankframework.insights.release;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.branch.Branch;
-import org.frankframework.insights.common.entityconnection.ReleaseCommit;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,7 +28,4 @@ public class Release {
 
     @ManyToOne
     private Branch branch;
-
-    @OneToMany(cascade = {CascadeType.MERGE, CascadeType.PERSIST})
-    private Set<ReleaseCommit> releaseCommits;
 }

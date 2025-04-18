@@ -20,7 +20,7 @@ public class Milestone {
     @Column(nullable = false)
     private GitHubPropertyState state;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String title;
 
     @OneToMany(mappedBy = "milestone")

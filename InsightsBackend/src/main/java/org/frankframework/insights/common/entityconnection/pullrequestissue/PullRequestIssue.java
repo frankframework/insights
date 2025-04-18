@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.entityconnection;
+package org.frankframework.insights.common.entityconnection.pullrequestissue;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -6,14 +6,14 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.frankframework.insights.branch.Branch;
+import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.pullrequest.PullRequest;
 
 @Entity
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class BranchPullRequest {
+public class PullRequestIssue {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -21,14 +21,14 @@ public class BranchPullRequest {
     @ManyToOne
     @JoinColumn(nullable = false)
     @JsonIgnore
-    private Branch branch;
-
-    @ManyToOne
-    @JoinColumn(nullable = false)
     private PullRequest pullRequest;
 
-    public BranchPullRequest(Branch branch, PullRequest pullRequest) {
-        this.branch = branch;
+    @ManyToOne(cascade = {CascadeType.MERGE})
+    @JoinColumn(nullable = false)
+    private Issue issue;
+
+    public PullRequestIssue(PullRequest pullRequest, Issue issue) {
         this.pullRequest = pullRequest;
+        this.issue = issue;
     }
 }
