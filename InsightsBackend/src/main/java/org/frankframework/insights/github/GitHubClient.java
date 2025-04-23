@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.commit.CommitDTO;
-import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.graphql.GraphQLClient;
 import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.label.LabelDTO;
