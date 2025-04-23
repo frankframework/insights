@@ -5,7 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.*;
 import org.frankframework.insights.commit.Commit;
-import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;

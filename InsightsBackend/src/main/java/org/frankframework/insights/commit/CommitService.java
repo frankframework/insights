@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
 import org.frankframework.insights.common.mapper.Mapper;
