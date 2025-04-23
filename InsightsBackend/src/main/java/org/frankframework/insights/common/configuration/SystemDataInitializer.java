@@ -2,20 +2,14 @@ package org.frankframework.insights.common.configuration;
 
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.CommitService;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.issue.IssueInjectionException;
 import org.frankframework.insights.issue.IssueService;
-import org.frankframework.insights.label.LabelInjectionException;
 import org.frankframework.insights.label.LabelService;
-import org.frankframework.insights.milestone.MilestoneInjectionException;
 import org.frankframework.insights.milestone.MilestoneService;
-import org.frankframework.insights.pullrequest.PullRequestInjectionException;
 import org.frankframework.insights.pullrequest.PullRequestService;
-import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
@@ -92,12 +86,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             releaseService.injectReleases();
 
             log.info("Done fetching all GitHub data");
-        } catch (LabelInjectionException
-                | MilestoneInjectionException
-                | BranchInjectionException
-                | IssueInjectionException
-                | PullRequestInjectionException
-                | ReleaseInjectionException e) {
+        } catch (Exception e) {
             log.error("Error initializing system data", e);
         }
     }

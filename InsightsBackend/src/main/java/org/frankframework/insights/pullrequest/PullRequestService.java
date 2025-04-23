@@ -34,7 +34,6 @@ public class PullRequestService {
     private final PullRequestRepository pullRequestRepository;
     private final BranchPullRequestRepository branchPullRequestRepository;
     private final BranchService branchService;
-    private final LabelService labelService;
     private final MilestoneService milestoneService;
     private final IssueService issueService;
     private final List<String> branchProtectionRegexes;
@@ -48,7 +47,6 @@ public class PullRequestService {
             PullRequestRepository pullRequestRepository,
             BranchPullRequestRepository branchPullRequestRepository,
             BranchService branchService,
-            LabelService labelService,
             MilestoneService milestoneService,
             IssueService issueService,
             GitHubProperties gitHubProperties,
@@ -60,7 +58,6 @@ public class PullRequestService {
         this.pullRequestRepository = pullRequestRepository;
         this.branchPullRequestRepository = branchPullRequestRepository;
         this.branchService = branchService;
-        this.labelService = labelService;
         this.milestoneService = milestoneService;
         this.issueService = issueService;
         this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();

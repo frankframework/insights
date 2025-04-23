@@ -70,17 +70,6 @@ public class BranchService {
         }
     }
 
-    public boolean doesBranchContainCommit(
-            String branchName, Set<BranchCommit> branchCommitsOfBranch, String commitOid) {
-        boolean containsCommit = branchCommitsOfBranch.stream()
-                .anyMatch(bc -> bc.getCommit() != null
-                        && commitOid.equals(bc.getCommit().getSha()));
-
-        log.info("Branch {} contains commit [{}]: {}", branchName, commitOid, containsCommit);
-
-        return containsCommit;
-    }
-
     private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
         log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()

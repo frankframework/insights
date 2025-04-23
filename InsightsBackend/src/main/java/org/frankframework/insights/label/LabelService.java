@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssue;
@@ -34,28 +33,28 @@ public class LabelService {
 
     private final LabelRepository labelRepository;
     private final ReleaseService releaseService;
-	private final ReleasePullRequestRepository releasePullRequestRepository;
-	private final PullRequestIssueRepository pullRequestIssueRepository;
-	private final IssueLabelRepository issueLabelRepository;
+    private final ReleasePullRequestRepository releasePullRequestRepository;
+    private final PullRequestIssueRepository pullRequestIssueRepository;
+    private final IssueLabelRepository issueLabelRepository;
 
-	public LabelService(
-			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-			GitHubClient gitHubClient,
-			Mapper mapper,
-			LabelRepository labelRepository,
-			ReleaseService releaseService,
-			ReleasePullRequestRepository releasePullRequestRepository,
-			PullRequestIssueRepository pullRequestIssueRepository,
-			IssueLabelRepository issueLabelRepository) {
+    public LabelService(
+            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
+            GitHubClient gitHubClient,
+            Mapper mapper,
+            LabelRepository labelRepository,
+            ReleaseService releaseService,
+            ReleasePullRequestRepository releasePullRequestRepository,
+            PullRequestIssueRepository pullRequestIssueRepository,
+            IssueLabelRepository issueLabelRepository) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.labelRepository = labelRepository;
         this.releaseService = releaseService;
-		this.releasePullRequestRepository = releasePullRequestRepository;
-		this.pullRequestIssueRepository = pullRequestIssueRepository;
-		this.issueLabelRepository = issueLabelRepository;
-	}
+        this.releasePullRequestRepository = releasePullRequestRepository;
+        this.pullRequestIssueRepository = pullRequestIssueRepository;
+        this.issueLabelRepository = issueLabelRepository;
+    }
 
     public void injectLabels() throws LabelInjectionException {
         if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubLabelCount()
@@ -83,24 +82,23 @@ public class LabelService {
 
     public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
-		Release release = releaseService.checkIfReleaseExists(releaseId);
+        Release release = releaseService.checkIfReleaseExists(releaseId);
 
-		Set<PullRequest> releasePullRequests =
-				releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
-						.map(ReleasePullRequest::getPullRequest)
-						.collect(Collectors.toSet());
+        Set<PullRequest> releasePullRequests =
+                releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
+                        .map(ReleasePullRequest::getPullRequest)
+                        .collect(Collectors.toSet());
 
-		Set<Issue> releaseIssues = releasePullRequests.stream()
-				.flatMap(releasePullRequest ->
-						pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
-								.map(PullRequestIssue::getIssue))
-				.collect(Collectors.toSet());
+        Set<Issue> releaseIssues = releasePullRequests.stream()
+                .flatMap(releasePullRequest ->
+                        pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
+                                .map(PullRequestIssue::getIssue))
+                .collect(Collectors.toSet());
 
-		Set<Label> releaseLabels = releaseIssues.stream()
-				.flatMap(issue -> issueLabelRepository
-						.findAllByIssue_Id(issue.getId()).stream()
-						.map(IssueLabel::getLabel))
-				.collect(Collectors.toSet());
+        Set<Label> releaseLabels = releaseIssues.stream()
+                .flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
+                        .map(IssueLabel::getLabel))
+                .collect(Collectors.toSet());
 
         return mapper.toDTO(releaseLabels, LabelResponse.class);
     }
