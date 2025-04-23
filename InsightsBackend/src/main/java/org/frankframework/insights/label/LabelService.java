@@ -1,6 +1,7 @@
 package org.frankframework.insights.label;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -80,28 +81,53 @@ public class LabelService {
         }
     }
 
-    public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
-            throws ReleaseNotFoundException, MappingException {
-        Release release = releaseService.checkIfReleaseExists(releaseId);
+	public Set<LabelResponse> getHighlightsByReleaseId(String releaseId) throws ReleaseNotFoundException, MappingException {
+		List<Label> releaseLabels = getLabelsByReleaseId(releaseId); // Changed to List
+		Map<Label, Long> labelCounts = countLabelOccurrences(releaseLabels);
 
-        Set<PullRequest> releasePullRequests =
-                releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
-                        .map(ReleasePullRequest::getPullRequest)
-                        .collect(Collectors.toSet());
+		Set<Label> filteredLabels = filterLabelsByPercentage(labelCounts);
 
-        Set<Issue> releaseIssues = releasePullRequests.stream()
-                .flatMap(releasePullRequest ->
-                        pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
-                                .map(PullRequestIssue::getIssue))
-                .collect(Collectors.toSet());
+		return mapper.toDTO(filteredLabels, LabelResponse.class);
+	}
 
-        Set<Label> releaseLabels = releaseIssues.stream()
-                .flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
-                        .map(IssueLabel::getLabel))
-                .collect(Collectors.toSet());
+	private List<Label> getLabelsByReleaseId(String releaseId) throws ReleaseNotFoundException {
+		Release release = releaseService.checkIfReleaseExists(releaseId);
 
-        return mapper.toDTO(releaseLabels, LabelResponse.class);
-    }
+		Set<PullRequest> releasePullRequests =
+				releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
+						.map(ReleasePullRequest::getPullRequest)
+						.collect(Collectors.toSet());
+
+		Set<Issue> releaseIssues = releasePullRequests.stream()
+				.flatMap(releasePullRequest ->
+						pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
+								.map(PullRequestIssue::getIssue))
+				.collect(Collectors.toSet());
+
+		return releaseIssues.stream()
+				.flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
+						.map(IssueLabel::getLabel))
+				.collect(Collectors.toList()); // Was Set, now List
+	}
+
+	private Map<Label, Long> countLabelOccurrences(List<Label> labels) {
+		return labels.stream()
+				.collect(Collectors.groupingBy(label -> label, Collectors.counting()));
+	}
+
+	private Set<Label> filterLabelsByPercentage(Map<Label, Long> labelCounts) {
+		long total = labelCounts.values().stream()
+				.mapToLong(Long::longValue)
+				.sum();
+
+		double threshold = total * 0.05;
+
+		return labelCounts.entrySet().stream()
+				.filter(entry -> entry.getValue() >= threshold)
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
+	}
+
 
     private void saveLabels(Set<Label> labels) {
         List<Label> savedLabels = labelRepository.saveAll(labels);
