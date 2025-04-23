@@ -11,12 +11,12 @@ import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
+import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.issue.IssueService;
-import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,9 +44,6 @@ class PullRequestServiceTest {
     private BranchService branchService;
 
     @Mock
-    private LabelService labelService;
-
-    @Mock
     private MilestoneService milestoneService;
 
     @Mock
@@ -60,6 +57,9 @@ class PullRequestServiceTest {
 
     @Mock
     private PullRequestIssueRepository pullRequestIssueRepository;
+
+	@Mock
+	private IssueLabelHelperService issueLabelHelperService;
 
     @InjectMocks
     private PullRequestService pullRequestService;
@@ -100,12 +100,13 @@ class PullRequestServiceTest {
                 pullRequestRepository,
                 branchPullRequestRepository,
                 branchService,
-                labelService,
                 milestoneService,
                 issueService,
                 gitHubProperties,
                 pullRequestLabelRepository,
-                pullRequestIssueRepository);
+                pullRequestIssueRepository,
+				issueLabelHelperService
+		);
     }
 
     @Test

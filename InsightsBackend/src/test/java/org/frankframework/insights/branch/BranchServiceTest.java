@@ -53,9 +53,7 @@ public class BranchServiceTest {
 
     private BranchDTO mockBranchDTO;
     private Branch mockBranch;
-    private Commit mockCommit;
-    private PullRequest mockPullRequest;
-    private BranchCommit mockBranchCommit;
+	private BranchCommit mockBranchCommit;
     private BranchPullRequest mockBranchPullRequest;
     private GitHubRepositoryStatisticsDTO mockGitHubRepositoryStatisticsDTO;
 
@@ -69,10 +67,10 @@ public class BranchServiceTest {
         mockBranch = new Branch();
         mockBranch.setName("release/v1.0.0");
 
-        mockCommit = new Commit();
+		Commit mockCommit = new Commit();
         mockCommit.setSha("sha123");
 
-        mockPullRequest = new PullRequest();
+		PullRequest mockPullRequest = new PullRequest();
         mockPullRequest.setId(UUID.randomUUID().toString());
 
         mockBranchCommit = new BranchCommit(mockBranch, mockCommit);
@@ -176,25 +174,6 @@ public class BranchServiceTest {
         verify(branchRepository, times(1)).saveAll(captor.capture());
 
         assertTrue(captor.getValue().isEmpty());
-    }
-
-    @Test
-    public void shouldCheckIfBranchContainsCommit_whenBranchContainsCommit() {
-        boolean containsCommit = branchService.doesBranchContainCommit(
-                mockBranch.getName(), Set.of(mockBranchCommit), mockCommit.getSha());
-
-        assertTrue(containsCommit);
-    }
-
-    @Test
-    public void shouldCheckIfBranchContainsCommit_whenBranchDoesNotContainCommit() {
-        Commit newCommit = new Commit();
-        newCommit.setSha("sha456");
-
-        boolean containsCommit = branchService.doesBranchContainCommit(
-                mockBranch.getName(), Set.of(mockBranchCommit), newCommit.getSha());
-
-        assertFalse(containsCommit);
     }
 
     @Test

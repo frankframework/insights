@@ -1,7 +1,6 @@
 package org.frankframework.insights.milestone;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import org.frankframework.insights.github.GitHubPropertyState;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
