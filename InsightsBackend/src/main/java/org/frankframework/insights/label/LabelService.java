@@ -107,7 +107,7 @@ public class LabelService {
 		return releaseIssues.stream()
 				.flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
 						.map(IssueLabel::getLabel))
-				.collect(Collectors.toList()); // Was Set, now List
+				.collect(Collectors.toList());
 	}
 
 	private Map<Label, Long> countLabelOccurrences(List<Label> labels) {
