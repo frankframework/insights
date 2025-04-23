@@ -18,7 +18,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Configuration
 @Slf4j
 public class SystemDataInitializer implements CommandLineRunner {
-
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
@@ -27,6 +26,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
+	private final Boolean gitHubFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -36,7 +36,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             CommitService commitService,
             IssueService issueService,
             PullRequestService pullRequestService,
-            ReleaseService releaseService) {
+            ReleaseService releaseService,
+			GitHubProperties gitHubProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -45,6 +46,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
+		this.gitHubFetchEnabled = gitHubProperties.getFetch();
     }
 
     @Override
@@ -67,8 +69,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
-			String gitHubFetchEnabledProperty = System.getProperty("githubFetchEnabled", "true");
-			if (!Boolean.parseBoolean(gitHubFetchEnabledProperty)) {
+			if (!gitHubFetchEnabled) {
 				log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
 				return;
 			}
@@ -82,8 +83,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
-			String gitHubFetchEnabledProperty = System.getProperty("githubFetchEnabled", "true");
-			if (!Boolean.parseBoolean(gitHubFetchEnabledProperty)) {
+			if (!gitHubFetchEnabled) {
 				log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
 				return;
 			}

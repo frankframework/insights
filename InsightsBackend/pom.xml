@@ -49,8 +49,6 @@
 		<spotless.version>2.44.2</spotless.version>
 		<junit.version>5.11.4</junit.version>
 		<mockito.version>5.15.2</mockito.version>
-
-		<gitHubFetchEnabled>true</gitHubFetchEnabled>
 	</properties>
 
 	<dependencies>
@@ -144,7 +142,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<systemPropertyVariables>
-						<githubFetchEnabled>false</githubFetchEnabled>
+						<spring.profiles.active>local</spring.profiles.active>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>

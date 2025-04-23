@@ -14,4 +14,5 @@ public class GitHubProperties {
     private String url;
     private String secret;
     private List<String> branchProtectionRegexes;
+	private Boolean fetch;
 }
