@@ -1,6 +1,5 @@
 package org.frankframework.insights.common.configuration;
 
-import java.util.Arrays;
 import java.util.List;
 import org.frankframework.insights.common.configuration.properties.CorsProperties;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +22,7 @@ public class CorsConfig {
         corsConfig.setAllowCredentials(true);
         corsConfig.setAllowedOrigins(List.of(allowedOrigins));
         corsConfig.setAllowedMethods(List.of("GET"));
-        corsConfig.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept"));
+        corsConfig.setAllowedHeaders(List.of("Origin", "Content-Type", "Accept"));
         corsConfig.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
