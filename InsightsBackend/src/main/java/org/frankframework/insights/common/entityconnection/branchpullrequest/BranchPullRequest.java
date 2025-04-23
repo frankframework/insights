@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.entityconnection.branchcommit;
+package org.frankframework.insights.common.entityconnection.branchpullrequest;
 
 import jakarta.persistence.*;
 import java.util.UUID;
@@ -6,13 +6,13 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.frankframework.insights.branch.Branch;
-import org.frankframework.insights.commit.Commit;
+import org.frankframework.insights.pullrequest.PullRequest;
 
 @Entity
 @Getter
 @Setter
 @RequiredArgsConstructor
-public class BranchCommit {
+public class BranchPullRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -23,10 +23,10 @@ public class BranchCommit {
 
     @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
-    private Commit commit;
+    private PullRequest pullRequest;
 
-    public BranchCommit(Branch branch, Commit commit) {
+    public BranchPullRequest(Branch branch, PullRequest pullRequest) {
         this.branch = branch;
-        this.commit = commit;
+        this.pullRequest = pullRequest;
     }
 }

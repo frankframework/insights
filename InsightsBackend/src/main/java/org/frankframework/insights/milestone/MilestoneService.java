@@ -1,11 +1,12 @@
 package org.frankframework.insights.milestone;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +41,13 @@ public class MilestoneService {
         }
 
         try {
+            log.info("Amount of milestones found in database: {}", milestoneRepository.count());
+            log.info(
+                    "Amount of milestones found in GitHub: {}",
+                    gitHubRepositoryStatisticsService
+                            .getGitHubRepositoryStatisticsDTO()
+                            .getGitHubMilestoneCount());
+
             log.info("Start injecting GitHub milestones");
             Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
             Set<Milestone> milestones = mapper.toEntity(milestoneDTOS, Milestone.class);
@@ -49,9 +57,9 @@ public class MilestoneService {
         }
     }
 
-    public void getOpenMilestones() {
-        List<Milestone> openMilestones = milestoneRepository.getMilestonesByState(GitHubPropertyState.OPEN);
-        log.info("Successfully fetched {} open milestones", openMilestones.size());
+    public Map<String, Milestone> getAllMilestonesMap() {
+        return milestoneRepository.findAll().stream()
+                .collect(Collectors.toMap(Milestone::getId, milestone -> milestone));
     }
 
     private void saveMilestones(Set<Milestone> milestones) {
