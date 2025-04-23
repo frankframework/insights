@@ -57,8 +57,7 @@ public class ReleaseService {
         try {
             Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
             List<Branch> allBranches = branchService.getAllBranches();
-            Map<String, Set<BranchCommit>> commitsByBranch =
-					branchService.getBranchCommitsByBranches(allBranches);
+            Map<String, Set<BranchCommit>> commitsByBranch = branchService.getBranchCommitsByBranches(allBranches);
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
                     branchService.getBranchPullRequestsByBranches(allBranches);
 

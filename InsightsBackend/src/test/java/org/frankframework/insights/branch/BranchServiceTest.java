@@ -53,7 +53,7 @@ public class BranchServiceTest {
 
     private BranchDTO mockBranchDTO;
     private Branch mockBranch;
-	private BranchCommit mockBranchCommit;
+    private BranchCommit mockBranchCommit;
     private BranchPullRequest mockBranchPullRequest;
     private GitHubRepositoryStatisticsDTO mockGitHubRepositoryStatisticsDTO;
 
@@ -67,10 +67,10 @@ public class BranchServiceTest {
         mockBranch = new Branch();
         mockBranch.setName("release/v1.0.0");
 
-		Commit mockCommit = new Commit();
+        Commit mockCommit = new Commit();
         mockCommit.setSha("sha123");
 
-		PullRequest mockPullRequest = new PullRequest();
+        PullRequest mockPullRequest = new PullRequest();
         mockPullRequest.setId(UUID.randomUUID().toString());
 
         mockBranchCommit = new BranchCommit(mockBranch, mockCommit);

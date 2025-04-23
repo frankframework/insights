@@ -20,7 +20,6 @@ import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.Label;
-import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.springframework.stereotype.Service;
@@ -106,6 +105,12 @@ public class PullRequestService {
             throws PullRequestInjectionException {
         try {
             Set<PullRequestDTO> pullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
+
+            if (pullRequestDTOS.size() == branchPullRequestRepository.countAllByBranch_Id(branch.getId())) {
+                log.info("Size of pull requests for branch {} are already found in the database.", branch.getName());
+                return new HashSet<>();
+            }
+
             Set<PullRequestDTO> mergedPullRequestDTOS =
                     mergeMasterAndBranchPullRequests(sortedMasterPullRequests, pullRequestDTOS);
             Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequestDTOS, PullRequest.class);
@@ -113,19 +118,19 @@ public class PullRequestService {
             Map<String, PullRequestDTO> pullRequestDtoMap =
                     mergedPullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, dto -> dto));
 
-            assignMilestonesToPullRequests(pullRequests, pullRequestDtoMap);
-
-            Set<PullRequest> enrichedPullRequests = assignSubPropertiesToPullRequests(pullRequests, pullRequestDtoMap);
-
+            Set<PullRequest> pullRequestsWithMilestones =
+                    assignMilestonesToPullRequests(pullRequests, pullRequestDtoMap);
+            Set<PullRequest> savedPullRequests = savePullRequests(pullRequestsWithMilestones);
+            Set<PullRequest> enrichedPullRequests =
+                    assignSubPropertiesToPullRequests(savedPullRequests, pullRequestDtoMap);
             Set<BranchPullRequest> existingBranchPullRequests = new HashSet<>(getBranchPullRequestsForBranch(branch));
-
             return processBranchPullRequests(branch, enrichedPullRequests, existingBranchPullRequests);
         } catch (Exception e) {
             throw new PullRequestInjectionException("Error while injecting GitHub pull requests", e);
         }
     }
 
-    private void assignMilestonesToPullRequests(
+    private Set<PullRequest> assignMilestonesToPullRequests(
             Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
         Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
 
@@ -139,13 +144,12 @@ public class PullRequestService {
             }
         });
 
-        savePullRequests(pullRequests);
+        return pullRequests;
     }
 
     private Set<PullRequest> assignSubPropertiesToPullRequests(
             Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
         Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
-        Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
         Map<String, Issue> issueMap = issueService.getAllIssuesMap();
 
         pullRequests.forEach(pullRequest -> {
@@ -243,8 +247,9 @@ public class PullRequestService {
         return String.format("%s::%s", branch.getId(), pullRequest.getId());
     }
 
-    private void savePullRequests(Set<PullRequest> pullRequests) {
-        pullRequestRepository.saveAll(pullRequests);
-        log.info("Saved {} pull requests", pullRequests.size());
+    private Set<PullRequest> savePullRequests(Set<PullRequest> pullRequests) {
+        List<PullRequest> savedPullRequests = pullRequestRepository.saveAll(pullRequests);
+        log.info("Saved {} pull requests", savedPullRequests.size());
+        return new HashSet<>(savedPullRequests);
     }
 }
