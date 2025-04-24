@@ -18,7 +18,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Configuration
 @Slf4j
 public class SystemDataInitializer implements CommandLineRunner {
-
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
@@ -27,6 +26,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
+	private final Boolean gitHubFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -36,7 +36,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             CommitService commitService,
             IssueService issueService,
             PullRequestService pullRequestService,
-            ReleaseService releaseService) {
+            ReleaseService releaseService,
+			GitHubProperties gitHubProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -45,6 +46,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
+		this.gitHubFetchEnabled = gitHubProperties.getFetch();
     }
 
     @Override
@@ -56,7 +58,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         initializeSystemData();
     }
 
-    @Scheduled(cron = "0 0 0 * * *")
+	@Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         log.info("Daily fetch job started");
@@ -67,6 +69,11 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
+			if (!gitHubFetchEnabled) {
+				log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+				return;
+			}
+
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
         } catch (GitHubClientException e) {
             log.error("Error fetching GitHub statistics", e);
@@ -76,6 +83,11 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
+			if (!gitHubFetchEnabled) {
+				log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+				return;
+			}
+
             log.info("Start fetching all GitHub data");
             labelService.injectLabels();
             milestoneService.injectMilestones();
