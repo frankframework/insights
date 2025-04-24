@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BranchPullRequestRepository extends JpaRepository<BranchPullRequest, UUID> {
-    int countAllByBranch_Id(String name);
+    int countAllByBranch_Id(String branchId);
 
     @EntityGraph(attributePaths = {"pullRequest"})
     Set<BranchPullRequest> findAllByBranch_Id(String branchId);
