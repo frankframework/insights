@@ -1,8 +1,10 @@
 package org.frankframework.insights.issue;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import java.time.OffsetDateTime;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,6 +28,8 @@ public class Issue {
     @Column(nullable = false)
     private GitHubPropertyState state;
 
+    private OffsetDateTime closedAt;
+
     @Column(nullable = false)
     private String url;
 
@@ -33,6 +37,7 @@ public class Issue {
     private String businessValue;
 
     @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference
     private Milestone milestone;
 
     @ManyToOne

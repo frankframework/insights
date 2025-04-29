@@ -1,17 +1,18 @@
 package org.frankframework.insights.issue;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
-import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
+import org.frankframework.insights.common.helper.IssueLabelHelperService;
+import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.label.Label;
-import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.Milestone;
+import org.frankframework.insights.milestone.MilestoneNotFoundException;
 import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.release.ReleaseNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,25 +23,25 @@ public class IssueService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final IssueRepository issueRepository;
-    private final IssueLabelRepository issueLabelRepository;
-    private final LabelService labelService;
+    private final IssueLabelHelperService issueLabelHelperService;
     private final MilestoneService milestoneService;
+    private final ReleaseIssueHelperService releaseIssueHelperService;
 
     public IssueService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             IssueRepository issueRepository,
-            IssueLabelRepository issueLabelRepository,
-            LabelService labelService,
-            MilestoneService milestoneService) {
+            IssueLabelHelperService issueLabelHelperService,
+            MilestoneService milestoneService,
+            ReleaseIssueHelperService releaseIssueHelperService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
-        this.issueLabelRepository = issueLabelRepository;
-        this.labelService = labelService;
+        this.issueLabelHelperService = issueLabelHelperService;
         this.milestoneService = milestoneService;
+        this.releaseIssueHelperService = releaseIssueHelperService;
     }
 
     public void injectIssues() throws IssueInjectionException {
@@ -71,7 +72,7 @@ public class IssueService {
             Set<Issue> issuesWithSubIssues = assignSubIssuesToIssues(savedIssuesWithLabelsAndMilestones, issueDtoMap);
 
             saveIssues(issuesWithSubIssues);
-            saveIssueLabels(issuesWithSubIssues, issueDtoMap);
+            issueLabelHelperService.saveIssueLabels(issuesWithSubIssues, issueDtoMap);
         } catch (Exception e) {
             throw new IssueInjectionException("Error while injecting GitHub issues", e);
         }
@@ -96,46 +97,57 @@ public class IssueService {
     private Set<Issue> assignSubIssuesToIssues(List<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Issue> issueMap = issues.stream().collect(Collectors.toMap(Issue::getId, dto -> dto));
 
-        issues.forEach(issue -> {
-            IssueDTO issueDTO = issueDtoMap.get(issue.getId());
-            if (issueDTO != null
-                    && issueDTO.subIssues() != null
-                    && issueDTO.subIssues().getEdges() != null) {
-                Set<Issue> subIssues = issueDTO.subIssues().getEdges().stream()
-                        .map(edge -> issueMap.get(edge.getNode().id()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
-
-                subIssues.forEach(sub -> sub.setParentIssue(issue));
-                issue.setSubIssues(subIssues);
-            }
-        });
-
-        return new HashSet<>(issues);
+        return issues.stream()
+                .map(issue -> {
+                    IssueDTO dto = issueDtoMap.get(issue.getId());
+                    return handleSaveSubIssues(issue, dto, issueMap);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
-    private void saveIssueLabels(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
-        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+    private Issue handleSaveSubIssues(Issue issue, IssueDTO dto, Map<String, Issue> issueMap) {
+        if (dto == null || !dto.hasSubIssues()) return null;
 
-        issues.forEach(issue -> {
-            IssueDTO issueDTO = issueDtoMap.get(issue.getId());
-            if (issueDTO != null
-                    && issueDTO.labels() != null
-                    && issueDTO.labels().getEdges() != null) {
-                Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
-                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                        .filter(issueLabel -> issueLabel.getLabel() != null)
-                        .collect(Collectors.toSet());
+        Set<Issue> subIssues = dto.subIssues().getEdges().stream()
+                .map(edge -> issueMap.get(edge.getNode().id()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-                issueLabelRepository.saveAll(issueLabels);
-            }
-        });
+        subIssues.forEach(sub -> sub.setParentIssue(issue));
+        issue.setSubIssues(subIssues);
+
+        return issue;
     }
 
     private List<Issue> saveIssues(Set<Issue> issues) {
         List<Issue> savedIssues = issueRepository.saveAll(issues);
         log.info("Successfully saved {} issues", savedIssues.size());
         return savedIssues;
+    }
+
+    public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
+        Set<Issue> issues = issueRepository.findAllByClosedAtBetween(start, end);
+        return issues.stream()
+                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
+        Set<Issue> issues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
+
+        return issues.stream()
+                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
+        Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
+        Set<Issue> issues = issueRepository.findAllByMilestone_Id(milestone.getId());
+
+        return issues.stream()
+                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
+                .collect(Collectors.toSet());
     }
 
     public Map<String, Issue> getAllIssuesMap() {

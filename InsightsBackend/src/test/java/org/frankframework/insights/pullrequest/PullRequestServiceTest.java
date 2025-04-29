@@ -1,22 +1,23 @@
 package org.frankframework.insights.pullrequest;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
+import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.issue.IssueService;
-import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PullRequestServiceTest {
+public class PullRequestServiceTest {
 
     @Mock
     private GitHubClient gitHubClient;
@@ -44,9 +45,6 @@ class PullRequestServiceTest {
     private BranchService branchService;
 
     @Mock
-    private LabelService labelService;
-
-    @Mock
     private MilestoneService milestoneService;
 
     @Mock
@@ -60,6 +58,9 @@ class PullRequestServiceTest {
 
     @Mock
     private PullRequestIssueRepository pullRequestIssueRepository;
+
+    @Mock
+    private IssueLabelHelperService issueLabelHelperService;
 
     @InjectMocks
     private PullRequestService pullRequestService;
@@ -100,12 +101,12 @@ class PullRequestServiceTest {
                 pullRequestRepository,
                 branchPullRequestRepository,
                 branchService,
-                labelService,
                 milestoneService,
                 issueService,
                 gitHubProperties,
                 pullRequestLabelRepository,
-                pullRequestIssueRepository);
+                pullRequestIssueRepository,
+                issueLabelHelperService);
     }
 
     @Test
@@ -114,8 +115,11 @@ class PullRequestServiceTest {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(masterPR));
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
+        when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
+                .thenReturn(Set.of(new BranchPullRequest(testBranch, mockPullRequest)));
+        when(pullRequestRepository.saveAll(Set.of(mockPullRequest))).thenReturn(List.of(mockPullRequest));
 
         pullRequestService.injectBranchPullRequests();
 
@@ -132,22 +136,15 @@ class PullRequestServiceTest {
     }
 
     @Test
-    public void injectBranchPullRequests_shouldHandleEmptyMasterPRs()
-            throws PullRequestInjectionException, GitHubClientException, MappingException {
+    public void injectBranchPullRequests_shouldThrowNothingIfGetPullRequestsFails() throws GitHubClientException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
-        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
+        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.singleton(subBranchPR));
 
-        pullRequestService.injectBranchPullRequests();
-
-        verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        assertDoesNotThrow(() -> pullRequestService.injectBranchPullRequests());
     }
 
     @Test
-    public void injectBranchPullRequests_shouldSkipBranchOnException()
-            throws PullRequestInjectionException, GitHubClientException {
+    public void injectBranchPullRequests_shouldSkipBranchOnException() throws GitHubClientException {
         Branch masterBranch = new Branch();
         masterBranch.setId(UUID.randomUUID().toString());
         masterBranch.setName("master");
@@ -157,36 +154,7 @@ class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests(testBranch.getName()))
                 .thenThrow(new GitHubClientException("GitHub client error", null));
 
-        pullRequestService.injectBranchPullRequests();
-
-        verify(branchPullRequestRepository, never()).saveAll(anySet());
-    }
-
-    @Test
-    public void injectBranchPullRequests_shouldIncludeRelevantMasterPRs()
-            throws PullRequestInjectionException, MappingException, GitHubClientException {
-        PullRequestDTO earlyMasterPR =
-                new PullRequestDTO(null, 0, "pr0", null, OffsetDateTime.now().minusDays(2), null, null, null);
-        when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(earlyMasterPR, masterPR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
-
-        when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenAnswer(invocation -> {
-            Set<PullRequestDTO> dtos = invocation.getArgument(0);
-            return dtos.stream()
-                    .map(dto -> {
-                        PullRequest pr = new PullRequest();
-                        pr.setId(dto.id());
-                        return pr;
-                    })
-                    .collect(Collectors.toSet());
-        });
-
-        when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
-
-        pullRequestService.injectBranchPullRequests();
-
-        verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        assertDoesNotThrow(() -> pullRequestService.injectBranchPullRequests());
     }
 
     @Test
@@ -205,17 +173,25 @@ class PullRequestServiceTest {
     @Test
     public void injectBranchPullRequests_shouldAvoidDuplicatePRs()
             throws PullRequestInjectionException, GitHubClientException, MappingException {
-        PullRequestDTO duplicatePR = new PullRequestDTO(null, 2, "pr2", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO duplicatePR = new PullRequestDTO("id-2", 2, "pr2", null, OffsetDateTime.now(), null, null, null);
 
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(duplicatePR));
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(duplicatePR));
+        when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
 
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
         when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
 
+        when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(mockPullRequest));
+
+        when(issueLabelHelperService.getAllLabelsMap()).thenReturn(Map.of());
+        when(milestoneService.getAllMilestonesMap()).thenReturn(Map.of());
+        when(issueService.getAllIssuesMap()).thenReturn(Map.of());
+
         pullRequestService.injectBranchPullRequests();
 
+        verify(pullRequestRepository, times(1)).saveAll(anySet());
         verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
 }

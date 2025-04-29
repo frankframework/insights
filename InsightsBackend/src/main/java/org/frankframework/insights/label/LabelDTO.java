@@ -7,10 +7,7 @@ import lombok.Getter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class LabelDTO {
     public String id;
-
     public String name;
-
     public String description;
-
     public String color;
 }

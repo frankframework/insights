@@ -10,12 +10,11 @@ import java.util.concurrent.Future;
 import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
-
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.commit.CommitService;
-import org.frankframework.insights.common.configuration.GitHubProperties;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.LabelService;
@@ -49,17 +48,17 @@ public class ShedLockTest {
     @Mock
     private CommitService commitService;
 
-	@Mock
-	private IssueService issueService;
+    @Mock
+    private IssueService issueService;
 
-	@Mock
-	private PullRequestService pullRequestService;
+    @Mock
+    private PullRequestService pullRequestService;
 
     @Mock
     private ReleaseService releaseService;
 
-	@Mock
-	private GitHubProperties gitHubProperties;
+    @Mock
+    private GitHubProperties gitHubProperties;
 
     private SystemDataInitializer systemDataInitializer;
 
@@ -71,10 +70,10 @@ public class ShedLockTest {
                 milestoneService,
                 branchService,
                 commitService,
-				issueService,
-				pullRequestService,
+                issueService,
+                pullRequestService,
                 releaseService,
-				gitHubProperties);
+                gitHubProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }

@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.common.configuration.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommit;
 import org.frankframework.insights.common.entityconnection.branchcommit.BranchCommitRepository;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
@@ -68,17 +68,6 @@ public class BranchService {
         } catch (Exception e) {
             throw new BranchInjectionException("Error while injecting GitHub branches", e);
         }
-    }
-
-    public boolean doesBranchContainCommit(
-            String branchName, Set<BranchCommit> branchCommitsOfBranch, String commitOid) {
-        boolean containsCommit = branchCommitsOfBranch.stream()
-                .anyMatch(bc -> bc.getCommit() != null
-                        && commitOid.equals(bc.getCommit().getSha()));
-
-        log.info("Branch {} contains commit [{}]: {}", branchName, commitOid, containsCommit);
-
-        return containsCommit;
     }
 
     private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {

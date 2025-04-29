@@ -1,6 +1,7 @@
 package org.frankframework.insights.milestone;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
@@ -17,12 +18,13 @@ public class Milestone {
     @Column(nullable = false, unique = true)
     private int number;
 
-    @Column(nullable = false)
-    private GitHubPropertyState state;
-
     @Column(nullable = false, unique = true)
     private String title;
 
+    @Column(nullable = false)
+    private GitHubPropertyState state;
+
     @OneToMany(mappedBy = "milestone")
+    @JsonManagedReference
     private Set<Issue> issues;
 }
