@@ -24,19 +24,18 @@ public class IssueLabelHelperService {
     public void saveIssueLabels(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Label> labelMap = getAllLabelsMap();
 
-        issues.forEach(issue -> {
-            IssueDTO issueDTO = issueDtoMap.get(issue.getId());
-            if (issueDTO != null
-                    && issueDTO.labels() != null
-                    && issueDTO.labels().getEdges() != null) {
-                Set<IssueLabel> issueLabels = issueDTO.labels().getEdges().stream()
-                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                        .filter(issueLabel -> issueLabel.getLabel() != null)
-                        .collect(Collectors.toSet());
+        issues.forEach(issue -> handleSaveIssueLabels(issue, issueDtoMap.get(issue.getId()), labelMap));
+    }
 
-                issueLabelRepository.saveAll(issueLabels);
-            }
-        });
+    private void handleSaveIssueLabels(Issue issue, IssueDTO dto, Map<String, Label> labelMap) {
+        if (dto == null || !dto.hasLabels()) return;
+
+        Set<IssueLabel> issueLabels = dto.labels().getEdges().stream()
+                .map(labelDTO -> new IssueLabel(issue, labelMap.get(labelDTO.getNode().id)))
+                .filter(issueLabel -> issueLabel.getLabel() != null)
+                .collect(Collectors.toSet());
+
+        issueLabelRepository.saveAll(issueLabels);
     }
 
     public Map<String, Label> getAllLabelsMap() {

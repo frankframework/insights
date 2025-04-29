@@ -7,6 +7,5 @@ import lombok.Setter;
 @Setter
 public class BranchDTO {
     public String id;
-
     public String name;
 }

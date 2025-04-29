@@ -27,7 +27,6 @@ public class IssueController {
     public ResponseEntity<Set<IssueResponse>> getIssuesByReleaseId(@PathVariable String releaseId)
             throws ReleaseNotFoundException {
         Set<IssueResponse> releaseIssues = issueService.getIssuesByReleaseId(releaseId);
-        log.info("Successfully fetched {} issues for release with ID [{}]", releaseIssues.size(), releaseId);
         return ResponseEntity.status(HttpStatus.OK).body(releaseIssues);
     }
 
@@ -35,7 +34,6 @@ public class IssueController {
     public ResponseEntity<Set<IssueResponse>> getIssuesByMilestoneId(@PathVariable String milestoneId)
             throws MilestoneNotFoundException {
         Set<IssueResponse> milestoneIssues = issueService.getIssuesByMilestoneId(milestoneId);
-        log.info("Successfully fetched {} issues for milestone with ID [{}]", milestoneIssues.size(), milestoneId);
         return ResponseEntity.status(HttpStatus.OK).body(milestoneIssues);
     }
 
@@ -43,7 +41,6 @@ public class IssueController {
     public ResponseEntity<Set<IssueResponse>> getIssuesByTimespan(
             @RequestParam OffsetDateTime startDate, @RequestParam OffsetDateTime endDate) {
         Set<IssueResponse> milestoneIssues = issueService.getIssuesByTimespan(startDate, endDate);
-        log.info("Successfully fetched {} issues between {} and {}", milestoneIssues.size(), startDate, endDate);
         return ResponseEntity.status(HttpStatus.OK).body(milestoneIssues);
     }
 }

@@ -149,41 +149,43 @@ public class PullRequestService {
 
     private Set<PullRequest> assignSubPropertiesToPullRequests(
             Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
+
         Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
         Map<String, Issue> issueMap = issueService.getAllIssuesMap();
 
         pullRequests.forEach(pullRequest -> {
-            PullRequestDTO pullRequestDTO = pullRequestsDtoMap.get(pullRequest.getId());
-            if (pullRequestDTO != null) {
-                if (pullRequestDTO.labels() != null) {
-                    Set<PullRequestLabel> pullRequestLabels = pullRequestDTO.labels().getEdges().stream()
-                            .map(labelDTO -> new PullRequestLabel(
-                                    pullRequest, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                            .filter(issueLabel -> issueLabel.getLabel() != null)
-                            .collect(Collectors.toSet());
-
-                    pullRequestLabelRepository.saveAll(pullRequestLabels);
-                }
-
-                if (pullRequestDTO.closingIssuesReferences() != null
-                        && pullRequestDTO.closingIssuesReferences().getEdges() != null
-                        && !pullRequestDTO.closingIssuesReferences().getEdges().isEmpty()) {
-
-                    Set<PullRequestIssue> pullRequestIssues =
-                            pullRequestDTO.closingIssuesReferences().getEdges().stream()
-                                    .filter(issueDTO -> issueDTO != null && issueDTO.getNode() != null)
-                                    .map(issueDTO -> new PullRequestIssue(
-                                            pullRequest,
-                                            issueMap.getOrDefault(
-                                                    issueDTO.getNode().id(), null)))
-                                    .filter(pullRequestIssue -> pullRequestIssue.getIssue() != null)
-                                    .collect(Collectors.toSet());
-
-                    pullRequestIssueRepository.saveAll(pullRequestIssues);
-                }
+            PullRequestDTO dto = pullRequestsDtoMap.get(pullRequest.getId());
+            if (dto != null) {
+                savePullRequestLabels(pullRequest, dto, labelMap);
+                savePullRequestIssues(pullRequest, dto, issueMap);
             }
         });
+
         return pullRequests;
+    }
+
+    private void savePullRequestLabels(PullRequest pullRequest, PullRequestDTO dto, Map<String, Label> labelMap) {
+        if (!dto.hasLabels()) return;
+
+        Set<PullRequestLabel> pullRequestLabels = dto.labels().getEdges().stream()
+                .map(labelDTO -> new PullRequestLabel(pullRequest, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+                .filter(prLabel -> prLabel.getLabel() != null)
+                .collect(Collectors.toSet());
+
+        pullRequestLabelRepository.saveAll(pullRequestLabels);
+    }
+
+    private void savePullRequestIssues(PullRequest pullRequest, PullRequestDTO dto, Map<String, Issue> issueMap) {
+        if (!dto.hasClosingIssuesReferences()) return;
+
+        Set<PullRequestIssue> pullRequestIssues = dto.closingIssuesReferences().getEdges().stream()
+                .filter(edge -> edge != null && edge.getNode() != null)
+                .map(edge -> new PullRequestIssue(
+                        pullRequest, issueMap.getOrDefault(edge.getNode().id(), null)))
+                .filter(prIssue -> prIssue.getIssue() != null)
+                .collect(Collectors.toSet());
+
+        pullRequestIssueRepository.saveAll(pullRequestIssues);
     }
 
     private Set<BranchPullRequest> getBranchPullRequestsForBranch(Branch branch) {

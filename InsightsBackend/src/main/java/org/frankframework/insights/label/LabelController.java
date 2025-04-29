@@ -25,7 +25,6 @@ public class LabelController {
     public ResponseEntity<Set<LabelResponse>> getHighlightsByReleaseId(@PathVariable String releaseId)
             throws ReleaseNotFoundException, MappingException {
         Set<LabelResponse> releaseHighlights = labelService.getHighlightsByReleaseId(releaseId);
-        log.info("Successfully fetched {} labels for release with ID [{}]", releaseHighlights.size(), releaseId);
         return ResponseEntity.status(HttpStatus.OK).body(releaseHighlights);
     }
 }

@@ -17,4 +17,15 @@ public record IssueDTO(
         String url,
         GitHubEdgesDTO<LabelDTO> labels,
         MilestoneDTO milestone,
-        GitHubEdgesDTO<IssueDTO> subIssues) {}
+        GitHubEdgesDTO<IssueDTO> subIssues) {
+
+    public boolean hasLabels() {
+        return labels != null && labels.getEdges() != null && !labels.getEdges().isEmpty();
+    }
+
+    public boolean hasSubIssues() {
+        return subIssues != null
+                && subIssues.getEdges() != null
+                && !subIssues.getEdges().isEmpty();
+    }
+}

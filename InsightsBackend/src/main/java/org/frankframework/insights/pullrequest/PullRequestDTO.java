@@ -14,4 +14,15 @@ public record PullRequestDTO(
         OffsetDateTime mergedAt,
         GitHubEdgesDTO<LabelDTO> labels,
         MilestoneDTO milestone,
-        GitHubEdgesDTO<IssueDTO> closingIssuesReferences) {}
+        GitHubEdgesDTO<IssueDTO> closingIssuesReferences) {
+
+    public boolean hasLabels() {
+        return labels != null && labels.getEdges() != null && !labels.getEdges().isEmpty();
+    }
+
+    public boolean hasClosingIssuesReferences() {
+        return closingIssuesReferences != null
+                && closingIssuesReferences.getEdges() != null
+                && !closingIssuesReferences.getEdges().isEmpty();
+    }
+}

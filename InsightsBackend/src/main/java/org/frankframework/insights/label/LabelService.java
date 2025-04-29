@@ -7,19 +7,13 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
-import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssue;
-import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
-import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
-import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
+import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.Issue;
-import org.frankframework.insights.pullrequest.PullRequest;
-import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
-import org.frankframework.insights.release.ReleaseService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,9 +27,7 @@ public class LabelService {
     private final Mapper mapper;
 
     private final LabelRepository labelRepository;
-    private final ReleaseService releaseService;
-    private final ReleasePullRequestRepository releasePullRequestRepository;
-    private final PullRequestIssueRepository pullRequestIssueRepository;
+    private final ReleaseIssueHelperService releaseIssueHelperService;
     private final IssueLabelRepository issueLabelRepository;
 
     public LabelService(
@@ -43,17 +35,13 @@ public class LabelService {
             GitHubClient gitHubClient,
             Mapper mapper,
             LabelRepository labelRepository,
-            ReleaseService releaseService,
-            ReleasePullRequestRepository releasePullRequestRepository,
-            PullRequestIssueRepository pullRequestIssueRepository,
+            ReleaseIssueHelperService releaseIssueHelperService,
             IssueLabelRepository issueLabelRepository) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.labelRepository = labelRepository;
-        this.releaseService = releaseService;
-        this.releasePullRequestRepository = releasePullRequestRepository;
-        this.pullRequestIssueRepository = pullRequestIssueRepository;
+        this.releaseIssueHelperService = releaseIssueHelperService;
         this.issueLabelRepository = issueLabelRepository;
     }
 
@@ -81,53 +69,39 @@ public class LabelService {
         }
     }
 
-	public Set<LabelResponse> getHighlightsByReleaseId(String releaseId) throws ReleaseNotFoundException, MappingException {
-		List<Label> releaseLabels = getLabelsByReleaseId(releaseId); // Changed to List
-		Map<Label, Long> labelCounts = countLabelOccurrences(releaseLabels);
+    public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
+            throws ReleaseNotFoundException, MappingException {
+        List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
+        Map<Label, Long> labelCounts = countLabelOccurrences(releaseLabels);
 
-		Set<Label> filteredLabels = filterLabelsByPercentage(labelCounts);
+        Set<Label> filteredLabels = filterLabelsByPercentage(labelCounts);
 
-		return mapper.toDTO(filteredLabels, LabelResponse.class);
-	}
+        return mapper.toDTO(filteredLabels, LabelResponse.class);
+    }
 
-	private List<Label> getLabelsByReleaseId(String releaseId) throws ReleaseNotFoundException {
-		Release release = releaseService.checkIfReleaseExists(releaseId);
+    private List<Label> getLabelsByReleaseId(String releaseId) throws ReleaseNotFoundException {
+        Set<Issue> releaseIssues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
 
-		Set<PullRequest> releasePullRequests =
-				releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
-						.map(ReleasePullRequest::getPullRequest)
-						.collect(Collectors.toSet());
+        return releaseIssues.stream()
+                .flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
+                        .map(IssueLabel::getLabel))
+                .collect(Collectors.toList());
+    }
 
-		Set<Issue> releaseIssues = releasePullRequests.stream()
-				.flatMap(releasePullRequest ->
-						pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
-								.map(PullRequestIssue::getIssue))
-				.collect(Collectors.toSet());
+    private Map<Label, Long> countLabelOccurrences(List<Label> labels) {
+        return labels.stream().collect(Collectors.groupingBy(label -> label, Collectors.counting()));
+    }
 
-		return releaseIssues.stream()
-				.flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
-						.map(IssueLabel::getLabel))
-				.collect(Collectors.toList());
-	}
+    private Set<Label> filterLabelsByPercentage(Map<Label, Long> labelCounts) {
+        long total = labelCounts.values().stream().mapToLong(Long::longValue).sum();
 
-	private Map<Label, Long> countLabelOccurrences(List<Label> labels) {
-		return labels.stream()
-				.collect(Collectors.groupingBy(label -> label, Collectors.counting()));
-	}
+        double threshold = total * 0.05;
 
-	private Set<Label> filterLabelsByPercentage(Map<Label, Long> labelCounts) {
-		long total = labelCounts.values().stream()
-				.mapToLong(Long::longValue)
-				.sum();
-
-		double threshold = total * 0.05;
-
-		return labelCounts.entrySet().stream()
-				.filter(entry -> entry.getValue() >= threshold)
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
-	}
-
+        return labelCounts.entrySet().stream()
+                .filter(entry -> entry.getValue() >= threshold)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
 
     private void saveLabels(Set<Label> labels) {
         List<Label> savedLabels = labelRepository.saveAll(labels);

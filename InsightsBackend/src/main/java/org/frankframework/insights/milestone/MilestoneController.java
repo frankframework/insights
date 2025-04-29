@@ -22,7 +22,6 @@ public class MilestoneController {
     @GetMapping("/open")
     public ResponseEntity<Set<MilestoneResponse>> getAllOpenMilestones() throws MappingException {
         Set<MilestoneResponse> openMilestones = milestoneService.getAllOpenMilestones();
-        log.info("Successfully fetched {} open milestones", openMilestones.size());
         return ResponseEntity.status(HttpStatus.OK).body(openMilestones);
     }
 }

@@ -31,6 +31,9 @@ public class ReleaseService {
     private final ReleaseCommitRepository releaseCommitRepository;
     private final ReleasePullRequestRepository releasePullRequestRepository;
 
+    private static final String MASTER_BRANCH_NAME = "master";
+    private static final int FIRST_RELEASE_INDEX = 0;
+
     public ReleaseService(
             GitHubRepositoryStatisticsService statisticsService,
             GitHubClient gitHubClient,
@@ -87,22 +90,23 @@ public class ReleaseService {
     }
 
     private Release mapToRelease(ReleaseDTO dto, List<Branch> branches, Map<String, Set<BranchCommit>> commitsMap) {
-        String sha = Optional.ofNullable(dto.getTagCommit())
-                .map(ReleaseTagCommitDTO::getCommitSha)
-                .orElse(null);
-        if (sha == null) return null;
+        Optional<String> sha = Optional.ofNullable(dto.getTagCommit()).map(ReleaseTagCommitDTO::getCommitSha);
 
-        return branches.stream()
-                .filter(b -> commitsMap.getOrDefault(b.getId(), Set.of()).stream()
-                        .map(BranchCommit::getCommit)
-                        .anyMatch(c -> sha.equals(c.getSha())))
-                .findFirst()
-                .map(branch -> {
+        return sha.flatMap(s -> findBranchByCommitSha(branches, commitsMap, s).map(branch -> {
                     Release release = mapper.toEntity(dto, Release.class);
                     release.setBranch(branch);
                     return release;
-                })
+                }))
                 .orElse(null);
+    }
+
+    private Optional<Branch> findBranchByCommitSha(
+            List<Branch> branches, Map<String, Set<BranchCommit>> commitsMap, String sha) {
+        return branches.stream()
+                .filter(branch -> commitsMap.getOrDefault(branch.getId(), Set.of()).stream()
+                        .map(BranchCommit::getCommit)
+                        .anyMatch(commit -> sha.equals(commit.getSha())))
+                .findFirst();
     }
 
     private void processAndAssignPullsAndCommits(
@@ -112,14 +116,14 @@ public class ReleaseService {
 
         List<Release> masterReleases = new ArrayList<>();
         Branch masterBranch = releasesByBranch.keySet().stream()
-                .filter(b -> "master".equalsIgnoreCase(b.getName()))
+                .filter(b -> MASTER_BRANCH_NAME.equalsIgnoreCase(b.getName()))
                 .findFirst()
                 .orElse(null);
 
         for (Map.Entry<Branch, List<Release>> entry : releasesByBranch.entrySet()) {
             Branch branch = entry.getKey();
             List<Release> releases = entry.getValue();
-            if ("master".equalsIgnoreCase(branch.getName())) continue;
+            if (MASTER_BRANCH_NAME.equalsIgnoreCase(branch.getName())) continue;
 
             Set<BranchCommit> commits = commitsByBranch.getOrDefault(branch.getId(), Set.of());
             Set<BranchPullRequest> prs = pullRequestsByBranch.getOrDefault(branch.getId(), Set.of());
@@ -145,12 +149,23 @@ public class ReleaseService {
         }
     }
 
+    /**
+     * Assigns commits and pull requests to each release based on the time window between the current and previous release.
+     * Only releases beyond the first one will receive assignments, as the time range requires a preceding release.
+     *
+     * @param releases the list of releases on a branch
+     * @param commits  the set of branch commits to assign
+     * @param prs      the set of branch pull requests to assign
+     * @return the list of releases sorted by their published date
+     */
     private List<Release> assignToReleases(
             List<Release> releases, Set<BranchCommit> commits, Set<BranchPullRequest> prs) {
-        for (int i = 0; i < releases.size(); i++) {
+
+        for (int i = FIRST_RELEASE_INDEX; i < releases.size(); i++) {
             Release current = releases.get(i);
 
-            if (i > 0) {
+            // Skip the first release since there is no previous release to compare to
+            if (i > FIRST_RELEASE_INDEX) {
                 OffsetDateTime from = releases.get(i - 1).getPublishedAt();
                 OffsetDateTime to = current.getPublishedAt();
                 assignCommits(current, commits, from, to);
@@ -160,7 +175,7 @@ public class ReleaseService {
 
         return releases.stream()
                 .sorted(Comparator.comparing(Release::getPublishedAt))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private void assignCommits(

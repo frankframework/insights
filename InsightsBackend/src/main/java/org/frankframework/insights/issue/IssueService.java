@@ -4,21 +4,15 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssue;
-import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
-import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
-import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.helper.IssueLabelHelperService;
+import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneNotFoundException;
 import org.frankframework.insights.milestone.MilestoneService;
-import org.frankframework.insights.pullrequest.PullRequest;
-import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
-import org.frankframework.insights.release.ReleaseService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,9 +25,7 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final IssueLabelHelperService issueLabelHelperService;
     private final MilestoneService milestoneService;
-    private final ReleasePullRequestRepository releasePullRequestRepository;
-    private final PullRequestIssueRepository pullRequestIssueRepository;
-    private final ReleaseService releaseService;
+    private final ReleaseIssueHelperService releaseIssueHelperService;
 
     public IssueService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -42,18 +34,14 @@ public class IssueService {
             IssueRepository issueRepository,
             IssueLabelHelperService issueLabelHelperService,
             MilestoneService milestoneService,
-            ReleasePullRequestRepository releasePullRequestRepository,
-            PullRequestIssueRepository pullRequestIssueRepository,
-            ReleaseService releaseService) {
+            ReleaseIssueHelperService releaseIssueHelperService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
         this.issueLabelHelperService = issueLabelHelperService;
         this.milestoneService = milestoneService;
-        this.releasePullRequestRepository = releasePullRequestRepository;
-        this.pullRequestIssueRepository = pullRequestIssueRepository;
-        this.releaseService = releaseService;
+        this.releaseIssueHelperService = releaseIssueHelperService;
     }
 
     public void injectIssues() throws IssueInjectionException {
@@ -109,22 +97,27 @@ public class IssueService {
     private Set<Issue> assignSubIssuesToIssues(List<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Issue> issueMap = issues.stream().collect(Collectors.toMap(Issue::getId, dto -> dto));
 
-        issues.forEach(issue -> {
-            IssueDTO issueDTO = issueDtoMap.get(issue.getId());
-            if (issueDTO != null
-                    && issueDTO.subIssues() != null
-                    && issueDTO.subIssues().getEdges() != null) {
-                Set<Issue> subIssues = issueDTO.subIssues().getEdges().stream()
-                        .map(edge -> issueMap.get(edge.getNode().id()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
+        return issues.stream()
+                .map(issue -> {
+                    IssueDTO dto = issueDtoMap.get(issue.getId());
+                    return handleSaveSubIssues(issue, dto, issueMap);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
 
-                subIssues.forEach(sub -> sub.setParentIssue(issue));
-                issue.setSubIssues(subIssues);
-            }
-        });
+    private Issue handleSaveSubIssues(Issue issue, IssueDTO dto, Map<String, Issue> issueMap) {
+        if (dto == null || !dto.hasSubIssues()) return null;
 
-        return new HashSet<>(issues);
+        Set<Issue> subIssues = dto.subIssues().getEdges().stream()
+                .map(edge -> issueMap.get(edge.getNode().id()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        subIssues.forEach(sub -> sub.setParentIssue(issue));
+        issue.setSubIssues(subIssues);
+
+        return issue;
     }
 
     private List<Issue> saveIssues(Set<Issue> issues) {
@@ -141,18 +134,7 @@ public class IssueService {
     }
 
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
-        Release release = releaseService.checkIfReleaseExists(releaseId);
-
-        Set<PullRequest> releasePullRequests =
-                releasePullRequestRepository.findAllByRelease_Id(release.getId()).stream()
-                        .map(ReleasePullRequest::getPullRequest)
-                        .collect(Collectors.toSet());
-
-        Set<Issue> issues = releasePullRequests.stream()
-                .flatMap(releasePullRequest ->
-                        pullRequestIssueRepository.findAllByPullRequest_Id(releasePullRequest.getId()).stream()
-                                .map(PullRequestIssue::getIssue))
-                .collect(Collectors.toSet());
+        Set<Issue> issues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
 
         return issues.stream()
                 .map(issue -> mapper.toDTO(issue, IssueResponse.class))
