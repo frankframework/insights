@@ -103,6 +103,12 @@ public class LabelService {
                 .collect(Collectors.toSet());
     }
 
+	public Set<Label> getLabelsByIssueId(String issueId) {
+		return issueLabelRepository.findAllByIssue_Id(issueId).stream()
+				.map(IssueLabel::getLabel)
+				.collect(Collectors.toSet());
+	}
+
     private void saveLabels(Set<Label> labels) {
         List<Label> savedLabels = labelRepository.saveAll(labels);
         log.info("Successfully saved {} labels", savedLabels.size());
