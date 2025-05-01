@@ -17,7 +17,8 @@ public class Commit {
     @Column(nullable = false, unique = true)
     private String sha;
 
-    @Column(nullable = false, length = 2000)
+	@Lob
+	@Column(nullable = false)
     private String message;
 
     private OffsetDateTime committedDate;

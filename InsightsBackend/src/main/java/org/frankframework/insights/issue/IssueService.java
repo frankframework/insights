@@ -134,28 +134,25 @@ public class IssueService {
 
     public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
         Set<Issue> issues = issueRepository.findAllByClosedAtBetween(start, end);
-
-		return issues.stream()
-				.map(this::mapIssueWithLabels)
-				.collect(Collectors.toSet());
+		return mapIssuesToResponsesWithLabels(issues);
     }
 
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Set<Issue> issues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
-
-		return issues.stream()
-				.map(this::mapIssueWithLabels)
-				.collect(Collectors.toSet());
+		return mapIssuesToResponsesWithLabels(issues);
     }
 
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
         Set<Issue> issues = issueRepository.findAllByMilestone_Id(milestone.getId());
-
-        return issues.stream()
-                .map(this::mapIssueWithLabels)
-                .collect(Collectors.toSet());
+        return mapIssuesToResponsesWithLabels(issues);
     }
+
+	private Set<IssueResponse> mapIssuesToResponsesWithLabels(Set<Issue> issues) {
+		return issues.stream()
+				.map(this::mapIssueWithLabels)
+				.collect(Collectors.toSet());
+	}
 
 	private IssueResponse mapIssueWithLabels(Issue issue) {
 		IssueResponse issueResponse = mapper.toDTO(issue, IssueResponse.class);
