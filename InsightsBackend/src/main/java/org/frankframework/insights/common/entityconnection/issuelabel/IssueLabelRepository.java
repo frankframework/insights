@@ -8,6 +8,4 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface IssueLabelRepository extends JpaRepository<IssueLabel, UUID> {
     Set<IssueLabel> findAllByIssue_Id(String issueId);
-
-    Set<IssueLabel> findAllByLabel_Id(String labelId);
 }

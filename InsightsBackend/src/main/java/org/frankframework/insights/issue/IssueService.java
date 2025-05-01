@@ -9,6 +9,9 @@ import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.label.Label;
+import org.frankframework.insights.label.LabelResponse;
+import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneNotFoundException;
 import org.frankframework.insights.milestone.MilestoneService;
@@ -25,6 +28,7 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final IssueLabelHelperService issueLabelHelperService;
     private final MilestoneService milestoneService;
+	private final LabelService labelService;
     private final ReleaseIssueHelperService releaseIssueHelperService;
 
     public IssueService(
@@ -34,6 +38,7 @@ public class IssueService {
             IssueRepository issueRepository,
             IssueLabelHelperService issueLabelHelperService,
             MilestoneService milestoneService,
+			LabelService labelService,
             ReleaseIssueHelperService releaseIssueHelperService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
@@ -41,6 +46,7 @@ public class IssueService {
         this.issueRepository = issueRepository;
         this.issueLabelHelperService = issueLabelHelperService;
         this.milestoneService = milestoneService;
+		this.labelService = labelService;
         this.releaseIssueHelperService = releaseIssueHelperService;
     }
 
@@ -128,29 +134,38 @@ public class IssueService {
 
     public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
         Set<Issue> issues = issueRepository.findAllByClosedAtBetween(start, end);
-        return issues.stream()
-                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
-                .collect(Collectors.toSet());
+		return mapIssuesToResponsesWithLabels(issues);
     }
 
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Set<Issue> issues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
-
-        return issues.stream()
-                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
-                .collect(Collectors.toSet());
+		return mapIssuesToResponsesWithLabels(issues);
     }
 
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
         Set<Issue> issues = issueRepository.findAllByMilestone_Id(milestone.getId());
-
-        return issues.stream()
-                .map(issue -> mapper.toDTO(issue, IssueResponse.class))
-                .collect(Collectors.toSet());
+        return mapIssuesToResponsesWithLabels(issues);
     }
 
-    public Map<String, Issue> getAllIssuesMap() {
+	private Set<IssueResponse> mapIssuesToResponsesWithLabels(Set<Issue> issues) {
+		return issues.stream()
+				.map(this::mapIssueWithLabels)
+				.collect(Collectors.toSet());
+	}
+
+	private IssueResponse mapIssueWithLabels(Issue issue) {
+		IssueResponse issueResponse = mapper.toDTO(issue, IssueResponse.class);
+		Set<Label> labels = labelService.getLabelsByIssueId(issue.getId());
+
+		Set<LabelResponse> labelResponses = labels.stream()
+				.map(label -> mapper.toDTO(label, LabelResponse.class))
+				.collect(Collectors.toSet());
+		issueResponse.setLabels(labelResponses);
+		return issueResponse;
+	}
+
+	public Map<String, Issue> getAllIssuesMap() {
         return issueRepository.findAll().stream().collect(Collectors.toMap(Issue::getId, issue -> issue));
     }
 }

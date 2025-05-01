@@ -33,7 +33,7 @@ public class Issue {
     @Column(nullable = false)
     private String url;
 
-    @Lob
+	@Lob
     private String businessValue;
 
     @ManyToOne(cascade = CascadeType.MERGE)
