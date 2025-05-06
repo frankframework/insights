@@ -22,7 +22,7 @@ type Branch = {
 export class ReleaseService {
 	constructor(private appService: AppService) { }
 
-	getAllReleases(): Observable<Record<string, ApiResponse<Release[]>>> {
+	public getAllReleases(): Observable<Record<string, ApiResponse<Release[]>>> {
 		return this.appService.getAll<Release[]>(this.appService.createAPIUrl('releases'));
 	}
 }

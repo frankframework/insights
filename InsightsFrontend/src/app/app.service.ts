@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {Observable, Timestamp} from 'rxjs';
-import {TimeSpan} from "./services/issue.service";
 
 export const GitHubState = {
 	OPEN: 0,
@@ -26,19 +25,11 @@ export class AppService {
 	constructor(private http: HttpClient) {}
 
 	/**
-	 * Get a single item by ID or unique endpoint.
-	 * @param url The API endpoint
-	 */
-	get<T>(url: string): Observable<ApiResponse<T>> {
-		return this.http.get<ApiResponse<T>>(url);
-	}
-
-	/**
 	 * Get a collection of items.
 	 * @param url The API endpoint
 	 * @param params Optional query parameters to call requests that use query parameters.
 	 */
-	getAll<T>(url: string, params?: Record<string, string | number>): Observable<Record<string, ApiResponse<T>>> {
+	public getAll<T>(url: string, params?: Record<string, string | number>): Observable<Record<string, ApiResponse<T>>> {
 		return this.http.get<Record<string, ApiResponse<T>>>(url, { params });
 	}
 
