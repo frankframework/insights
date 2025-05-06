@@ -16,7 +16,7 @@ export class MilestoneService {
 
 	constructor(private appService: AppService) { }
 
-	getOpenMilestones(): Observable<Record<string, ApiResponse<Milestone[]>>> {
+	public getOpenMilestones(): Observable<Record<string, ApiResponse<Milestone[]>>> {
 		return this.appService.getAll<Milestone[]>(this.appService.createAPIUrl("/milestones/open"));
 	}
 }

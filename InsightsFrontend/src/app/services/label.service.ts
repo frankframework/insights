@@ -16,7 +16,7 @@ export class LabelService {
 
 	constructor(private appService: AppService) {}
 
-	getHighLightsByReleaseId(releaseId: string): Observable<Record<string, ApiResponse<Label[]>>> {
+	public getHighLightsByReleaseId(releaseId: string): Observable<Record<string, ApiResponse<Label[]>>> {
 		return this.appService.getAll<Label[]>(this.appService.createAPIUrl("/labels/release/" + releaseId));
 	}
 }

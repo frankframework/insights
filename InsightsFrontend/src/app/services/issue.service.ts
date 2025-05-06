@@ -30,15 +30,15 @@ export class IssueService {
 
 	constructor(private appService: AppService) { }
 
-	getIssuesByReleaseId(releaseId: string): Observable<Record<string, ApiResponse<Issue[]>>> {
+	public getIssuesByReleaseId(releaseId: string): Observable<Record<string, ApiResponse<Issue[]>>> {
 		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("/issues/release/" + releaseId));
 	}
 
-	getIssuesByMilestoneId(milestoneId: string): Observable<Record<string, ApiResponse<Issue[]>>> {
+	public getIssuesByMilestoneId(milestoneId: string): Observable<Record<string, ApiResponse<Issue[]>>> {
 		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("/issues/milestone/" + milestoneId));
 	}
 
-	getIssuesByTimeSpan(startDate: Date, endDate: Date): Observable<Record<string, ApiResponse<Issue[]>>> {
+	public getIssuesByTimeSpan(startDate: Date, endDate: Date): Observable<Record<string, ApiResponse<Issue[]>>> {
 		const url = this.appService.createAPIUrl("issues/timespan");
 
 		const timestampParams: TimeSpanParams = {
@@ -48,5 +48,4 @@ export class IssueService {
 
 		return this.appService.getAll<Issue[]>(url, timestampParams);
 	}
-
 }
