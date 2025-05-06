@@ -1,5 +1,10 @@
 import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 
+type Position = {
+	x: number;
+	y: number;
+}
+
 interface ReleaseNode {
 	id: string;
 	label: string;
@@ -99,8 +104,8 @@ export class ReleaseCoordinatePlaneComponent implements AfterViewInit {
 
 		if (!sourcePos || !targetPos) return '';
 
-		const { x: x1, y: y1 } = sourcePos;
-		const { x: x2, y: y2 } = targetPos;
+		const { x: x1, y: y1 }: Position = sourcePos;
+		const { x: x2, y: y2 }: Position = targetPos;
 
 		const releaseNodeRadius = 20;
 
