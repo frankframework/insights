@@ -24,11 +24,4 @@ public class ReleaseController {
         Set<ReleaseResponse> releases = releaseService.getAllReleases();
         return ResponseEntity.status(HttpStatus.OK).body(releases);
     }
-
-    @GetMapping("/{releaseId}")
-    public ResponseEntity<ReleaseResponse> getReleaseById(@PathVariable String releaseId)
-            throws ReleaseNotFoundException {
-        ReleaseResponse release = releaseService.getReleaseById(releaseId);
-        return ResponseEntity.status(HttpStatus.OK).body(release);
-    }
 }

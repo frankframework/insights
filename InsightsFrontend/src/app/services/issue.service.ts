@@ -18,10 +18,10 @@ export type Issue = {
 	subIssues: Issue[];
 }
 
-export type TimeSpan = {
+type TimeSpanParams = {
 	startDate: string;
 	endDate: string;
-}
+};
 
 @Injectable({
   providedIn: 'root'
@@ -41,7 +41,7 @@ export class IssueService {
 	getIssuesByTimeSpan(startDate: Date, endDate: Date): Observable<Record<string, ApiResponse<Issue[]>>> {
 		const url = this.appService.createAPIUrl("issues/timespan");
 
-		const timestampParams: TimeSpan = {
+		const timestampParams: TimeSpanParams = {
 			startDate: startDate.toISOString(),
 			endDate: endDate.toISOString()
 		};
