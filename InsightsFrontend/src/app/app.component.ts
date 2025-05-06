@@ -1,9 +1,11 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import {ReleaseCoordinatePlaneComponent} from "./pages/release-coordinate-plane/release-coordinate-plane.component";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+	imports: [
+		ReleaseCoordinatePlaneComponent
+	],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
