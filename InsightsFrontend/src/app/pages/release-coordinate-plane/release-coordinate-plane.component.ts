@@ -1,5 +1,18 @@
 import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 
+interface ReleaseNode {
+	id: string;
+	label: string;
+	position: { x: number; y: number };
+	data: { color: string };
+}
+
+interface ReleaseLink {
+	id: string,
+	source: string,
+	target: string
+}
+
 @Component({
 	selector: 'app-release-coordinate-plane',
 	templateUrl: './release-coordinate-plane.component.html',
@@ -10,7 +23,7 @@ export class ReleaseCoordinatePlaneComponent implements AfterViewInit {
 
 	protected viewBox: string = "0 0 500 500";
 
-	nodes = [
+	nodes: ReleaseNode[] = [
 		{ id: '7.7.0', label: '7.7.0', position: { x: 0, y: 0 }, data: { color: '#ccc' } },
 		{ id: '7.8.0', label: '7.8.0', position: { x: 400, y: 0 }, data: { color: '#4fc3f7' } },
 		{ id: '7.9.0', label: '7.9.0', position: { x: 600, y: 0 }, data: { color: '#ff9800' } },
@@ -25,7 +38,7 @@ export class ReleaseCoordinatePlaneComponent implements AfterViewInit {
 		{ id: '7.8.4', label: '7.8.4', position: { x: 800, y: 200 }, data: { color: '#4fc3f7' } }
 	];
 
-	links = [
+	links: ReleaseLink[] = [
 		{ id: 'l1', source: '7.7.0', target: '7.8.0' },
 		{ id: 'l2', source: '7.8.0', target: '7.9.0' },
 		{ id: 'l3', source: '7.7.0', target: '7.7.1' },
