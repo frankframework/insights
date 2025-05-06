@@ -219,15 +219,6 @@ public class ReleaseService {
                 .collect(Collectors.toSet());
     }
 
-    public ReleaseResponse getReleaseById(String id) throws ReleaseNotFoundException {
-        return mapper.toDTO(
-                releaseRepository
-                        .findById(id)
-                        .orElseThrow(
-                                () -> new ReleaseNotFoundException("Release with ID [" + id + "] not found.", null)),
-                ReleaseResponse.class);
-    }
-
     public Release checkIfReleaseExists(String releaseId) throws ReleaseNotFoundException {
         return releaseRepository
                 .findById(releaseId)
