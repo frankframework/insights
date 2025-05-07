@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {ApiResponse, AppService, GitHubState} from "../app.service";
+import {AppService, GitHubState} from "../app.service";
 import {Milestone} from "./milestone.service";
 import {Label} from "./label.service";
 import {Observable} from "rxjs";
@@ -30,15 +30,15 @@ export class IssueService {
 
 	constructor(private appService: AppService) { }
 
-	public getIssuesByReleaseId(releaseId: string): Observable<Record<string, ApiResponse<Issue[]>>> {
-		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("/issues/release/" + releaseId));
+	public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
+		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("issues/release/" + releaseId));
 	}
 
-	public getIssuesByMilestoneId(milestoneId: string): Observable<Record<string, ApiResponse<Issue[]>>> {
-		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("/issues/milestone/" + milestoneId));
+	public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
+		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("issues/milestone/" + milestoneId));
 	}
 
-	public getIssuesByTimeSpan(startDate: Date, endDate: Date): Observable<Record<string, ApiResponse<Issue[]>>> {
+	public getIssuesByTimeSpan(startDate: Date, endDate: Date): Observable<Issue[]> {
 		const url = this.appService.createAPIUrl("issues/timespan");
 
 		const timestampParams: TimeSpanParams = {
