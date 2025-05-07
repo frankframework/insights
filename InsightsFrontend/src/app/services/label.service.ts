@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {ApiResponse, AppService} from "../app.service";
+import {AppService} from "../app.service";
 import {Observable} from "rxjs";
 
 export type Label = {
@@ -16,7 +16,7 @@ export class LabelService {
 
 	constructor(private appService: AppService) {}
 
-	public getHighLightsByReleaseId(releaseId: string): Observable<Record<string, ApiResponse<Label[]>>> {
-		return this.appService.getAll<Label[]>(this.appService.createAPIUrl("/labels/release/" + releaseId));
+	public getHighLightsByReleaseId(releaseId: string): Observable<Label[]> {
+		return this.appService.getAll<Label[]>(this.appService.createAPIUrl("labels/release/" + releaseId));
 	}
 }

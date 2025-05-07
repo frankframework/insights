@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import {Observable} from "rxjs";
-import {ApiResponse, AppService} from "../app.service";
+import { Observable } from "rxjs";
+import { AppService } from "../app.service";
 
 export type Release = {
 	id: string;
@@ -22,7 +22,7 @@ type Branch = {
 export class ReleaseService {
 	constructor(private appService: AppService) { }
 
-	public getAllReleases(): Observable<Record<string, ApiResponse<Release[]>>> {
-		return this.appService.getAll<Release[]>(this.appService.createAPIUrl('releases'));
+	public getAllReleases(): Observable<Release[]> {
+		return this.appService.get<Release[]>(this.appService.createAPIUrl('releases'));
 	}
 }
