@@ -1,24 +1,6 @@
-<!--<div class="graph-container">-->
-<!--	<div class="scroll-wrapper" (wheel)="onWheel($event)">-->
-<!--		<svg #svgElement [attr.viewBox]="viewBox">-->
-<!--			@for (releaseNode of releaseNodes; track releaseNode) {-->
-<!--				<g [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'">-->
-<!--					<circle r="20" [attr.fill]="releaseNode.color" stroke="#333" stroke-width="2"></circle>-->
-<!--					<text text-anchor="middle" y="40" fill="black" font-size="14">-->
-<!--						{{ releaseNode.label }}-->
-<!--					</text>-->
-<!--				</g>-->
-<!--			}-->
-
-<!--			@for (releaseLink of releaseLinks; track releaseLink) {-->
-<!--				<path class="line" stroke="#999" stroke-width="2" fill="none" [attr.d]="getCustomPath(releaseLink)"></path>-->
-<!--			}-->
-<!--		</svg>-->
-<!--	</div>-->
-<!--</div>-->
-
 <div class="graph-container">
-	<svg #svgElement
+	<svg id="svgElement"
+		 #svgElement
 		 (wheel)="onWheel($event)"
 		 (mousedown)="onMouseDown($event)"
 		 (mousemove)="onMouseMove($event)"

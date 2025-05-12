@@ -27,7 +27,7 @@ interface ReleaseLink {
 	templateUrl: './release-coordinate-plane.component.html',
 	styleUrls: ['./release-coordinate-plane.component.scss']
 })
-export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
+export class ReleaseCoordinatePlaneComponent implements OnInit {
 	@ViewChild('svgElement') svgElement!: ElementRef<SVGElement>;
 
 	public releaseNodes: ReleaseNode[] = [];
@@ -35,7 +35,7 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 	public scale = 1;
 	public translateX = 0;
 	public translateY = 0;
-	protected viewBox = '0 0 500 500';
+	public viewBox = '0 0 0 0';
 
 	private isPanning = false;
 	private startPan = { x: 0, y: 0 };
@@ -49,10 +49,6 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		this.getAllReleases();
 	}
 
-	ngAfterViewInit(): void {
-		setTimeout(() => this.centerGraph(), 0);
-	}
-
 	private getAllReleases(): void {
 		this.releaseService.getAllReleases().pipe(
 				map(record => Object.values(record).flat()),
@@ -61,6 +57,8 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 					const calculatedReleaseNodes = this.calculateReleaseCoordinates(sortedGroups);
 					this.releaseNodes = this.assignReleaseColors(calculatedReleaseNodes);
 					this.releaseLinks = this.createLinks(sortedGroups);
+
+					setTimeout(() => this.centerGraph(), 0);
 				}),
 				catchError(err => {
 					console.error('Failed to load releases:', err);
@@ -372,11 +370,12 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		const minY = Math.min(...ys);
 		const maxY = Math.max(...ys);
 
-		const width = (maxX - minX + 200);
-		const height = (maxY - minY + 200);
-		const x = minX - 100;
-		const y = minY - 100;
+		const padding = 100;
+		const width = (maxX - minX) + padding * 2;
+		const height = (maxY - minY) + padding * 2;
+		const x = minX - padding;
+		const y = minY - padding;
 
-		this.svgElement.nativeElement.setAttribute('viewBox', `${x} ${y} ${width} ${height}`);
+		this.viewBox = `${x} ${y} ${width} ${height}`;
 	}
 }
