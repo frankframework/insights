@@ -93,19 +93,15 @@ public class ReleaseService {
 
 	private Release mapToRelease(ReleaseDTO dto, List<Branch> branches) {
 		String releaseName = dto.getName();
-		boolean isNightly = releaseName.toLowerCase().contains("nightly");
 
 		Optional<String> majorMinor = extractMajorMinor(releaseName);
 		Optional<Branch> matchingBranch = majorMinor.flatMap(version -> findBranchByVersion(branches, version));
 
-		Branch selectedBranch = matchingBranch.orElseGet(() -> {
-			if (isNightly || majorMinor.isEmpty()) {
-				return findMasterBranch(branches).orElse(null);
-			}
-			return null;
-		});
+		Branch selectedBranch = matchingBranch.orElse(null);
 
-		if (selectedBranch == null) return null;
+		if (selectedBranch == null) {
+			selectedBranch = findMasterBranch(branches).orElse(null);
+		}
 
 		Release release = mapper.toEntity(dto, Release.class);
 		release.setBranch(selectedBranch);
