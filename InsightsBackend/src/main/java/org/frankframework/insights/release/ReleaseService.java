@@ -2,6 +2,8 @@ package org.frankframework.insights.release;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
@@ -65,7 +67,7 @@ public class ReleaseService {
                     branchService.getBranchPullRequestsByBranches(allBranches);
 
             Set<Release> releases = releaseDTOs.stream()
-                    .map(dto -> mapToRelease(dto, allBranches, commitsByBranch))
+                    .map(dto -> mapToRelease(dto, allBranches))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
@@ -89,27 +91,45 @@ public class ReleaseService {
         }
     }
 
-    private Release mapToRelease(ReleaseDTO dto, List<Branch> branches, Map<String, Set<BranchCommit>> commitsMap) {
-        Optional<String> sha = Optional.ofNullable(dto.getTagCommit()).map(ReleaseTagCommitDTO::getCommitSha);
+	private Release mapToRelease(ReleaseDTO dto, List<Branch> branches) {
+		String releaseName = dto.getName();
+		boolean isNightly = releaseName.toLowerCase().contains("nightly");
 
-        return sha.flatMap(s -> findBranchByCommitSha(branches, commitsMap, s).map(branch -> {
-                    Release release = mapper.toEntity(dto, Release.class);
-                    release.setBranch(branch);
-                    return release;
-                }))
-                .orElse(null);
-    }
+		Optional<String> majorMinor = extractMajorMinor(releaseName);
+		Optional<Branch> matchingBranch = majorMinor.flatMap(version -> findBranchByVersion(branches, version));
 
-    private Optional<Branch> findBranchByCommitSha(
-            List<Branch> branches, Map<String, Set<BranchCommit>> commitsMap, String sha) {
-        return branches.stream()
-                .filter(branch -> commitsMap.getOrDefault(branch.getId(), Set.of()).stream()
-                        .map(BranchCommit::getCommit)
-                        .anyMatch(commit -> sha.equals(commit.getSha())))
-                .findFirst();
-    }
+		Branch selectedBranch = matchingBranch.orElseGet(() -> {
+			if (isNightly || majorMinor.isEmpty()) {
+				return findMasterBranch(branches).orElse(null);
+			}
+			return null;
+		});
 
-    private void processAndAssignPullsAndCommits(
+		if (selectedBranch == null) return null;
+
+		Release release = mapper.toEntity(dto, Release.class);
+		release.setBranch(selectedBranch);
+		return release;
+	}
+
+	private Optional<String> extractMajorMinor(String tagName) {
+		Matcher matcher = Pattern.compile("v(\\d+)\\.(\\d+)").matcher(tagName);
+		return matcher.find() ? Optional.of(matcher.group(1) + "." + matcher.group(2)) : Optional.empty();
+	}
+
+	private Optional<Branch> findBranchByVersion(List<Branch> branches, String version) {
+		return branches.stream()
+				.filter(branch -> branch.getName().contains(version))
+				.findFirst();
+	}
+
+	private Optional<Branch> findMasterBranch(List<Branch> branches) {
+		return branches.stream()
+				.filter(b -> MASTER_BRANCH_NAME.equalsIgnoreCase(b.getName()))
+				.findFirst();
+	}
+
+	private void processAndAssignPullsAndCommits(
             Map<Branch, List<Release>> releasesByBranch,
             Map<String, Set<BranchCommit>> commitsByBranch,
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch) {
