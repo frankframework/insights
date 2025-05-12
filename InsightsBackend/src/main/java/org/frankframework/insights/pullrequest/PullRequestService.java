@@ -87,9 +87,7 @@ public class PullRequestService {
         if (!updatedBranchPullRequests.isEmpty()) {
             branchPullRequestRepository.saveAll(updatedBranchPullRequests);
         }
-
-        log.info("Updated pull requests for {} branches", updatedBranchPullRequests.size());
-    }
+	}
 
     private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
         try {
