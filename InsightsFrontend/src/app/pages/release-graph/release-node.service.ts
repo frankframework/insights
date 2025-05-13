@@ -154,8 +154,9 @@ export class ReleaseNodeService {
 	}
 
 	private positionMasterNodes(nodes: ReleaseNode[]) {
+		const masterReleaseNodesSpacing = 125;
 		nodes.forEach((node, idx) => {
-			node.position = { x: idx * 125, y: 0 };
+			node.position = { x: idx * masterReleaseNodesSpacing, y: 0 };
 		});
 	}
 
@@ -172,8 +173,8 @@ export class ReleaseNodeService {
 			masterNodes: ReleaseNode[],
 			positionedNodes: Map<string, ReleaseNode[]>
 	) {
-		const ySpacing = 75;
-		const xSpacing = 125;
+		const subReleaseNodeXSpacing = 125;
+		const subReleaseNodeYSpacing = 75;
 
 		subBranches.forEach(([branch, subNodes], branchIdx) => {
 			if (!subNodes.length) return;
@@ -189,11 +190,11 @@ export class ReleaseNodeService {
 			if (!matchingSynthetic) return;
 
 			const baseX = matchingSynthetic.position.x + 75;
-			const baseY = (branchIdx + 1) * ySpacing;
+			const baseY = (branchIdx + 1) * subReleaseNodeYSpacing;
 
 			const positionedSub = subNodes.map((n, i) => ({
 				...n,
-				position: { x: baseX + i * xSpacing, y: baseY }
+				position: { x: baseX + i * subReleaseNodeXSpacing, y: baseY }
 			}));
 
 			positionedNodes.set(branch, positionedSub);
@@ -211,7 +212,7 @@ export class ReleaseNodeService {
 
 		if (versionMatch) {
 			const patch = parseInt(versionMatch[3] ?? '0', 10);
-			isMajor = patch === 0 && !/rc|beta/i.test(label);
+			isMajor = patch === 0 && !/rc|b/i.test(label);
 		} else {
 			isMajor = false;
 		}
