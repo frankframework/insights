@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ReleaseCoordinatePlaneComponent } from './release-coordinate-plane.component';
+import { ReleaseCoordinatePlaneComponent } from './release-graph.component';
 
 describe('ReleaseCoordinatePlaneComponent', () => {
   let component: ReleaseCoordinatePlaneComponent;
