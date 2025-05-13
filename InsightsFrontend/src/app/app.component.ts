@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import {ReleaseCoordinatePlaneComponent} from "./pages/release-coordinate-plane/release-coordinate-plane.component";
+import {ReleaseGraphComponent} from "./pages/release-graph/release-graph.component";
 
 @Component({
   selector: 'app-root',
 	imports: [
-		ReleaseCoordinatePlaneComponent
+		ReleaseGraphComponent
 	],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
