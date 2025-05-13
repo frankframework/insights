@@ -1,6 +1,6 @@
-import {AfterViewInit, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {Release, ReleaseService} from '../../services/release.service';
-import {catchError, map, of, tap} from 'rxjs';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Release, ReleaseService } from '../../services/release.service';
+import { catchError, map, of, tap } from 'rxjs';
 
 interface Position {
 	x: number;
@@ -16,6 +16,10 @@ interface ReleaseNode {
 	publishedAt: Date;
 }
 
+interface SyntheticNode extends ReleaseNode {
+	isSynthetic?: boolean;
+}
+
 interface ReleaseLink {
 	id: string;
 	source: string;
@@ -27,7 +31,7 @@ interface ReleaseLink {
 	templateUrl: './release-coordinate-plane.component.html',
 	styleUrls: ['./release-coordinate-plane.component.scss']
 })
-export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
+export class ReleaseCoordinatePlaneComponent implements OnInit {
 	@ViewChild('svgElement') svgElement!: ElementRef<SVGElement>;
 
 	public releaseNodes: ReleaseNode[] = [];
@@ -35,7 +39,7 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 	public scale = 1;
 	public translateX = 0;
 	public translateY = 0;
-	protected viewBox = '0 0 500 500';
+	public viewBox = '0 0 0 0';
 
 	private isPanning = false;
 	private startPan = { x: 0, y: 0 };
@@ -49,10 +53,6 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		this.getAllReleases();
 	}
 
-	ngAfterViewInit(): void {
-		setTimeout(() => this.centerGraph(), 0);
-	}
-
 	private getAllReleases(): void {
 		this.releaseService.getAllReleases().pipe(
 				map(record => Object.values(record).flat()),
@@ -61,6 +61,8 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 					const calculatedReleaseNodes = this.calculateReleaseCoordinates(sortedGroups);
 					this.releaseNodes = this.assignReleaseColors(calculatedReleaseNodes);
 					this.releaseLinks = this.createLinks(sortedGroups);
+
+					setTimeout(() => this.centerGraph(), 0);
 				}),
 				catchError(err => {
 					console.error('Failed to load releases:', err);
@@ -82,43 +84,64 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 			group.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
 		});
 
-		const masterReleases = grouped.get(ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH) ?? [];
-		grouped.delete(ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH);
-
-		const otherGroups = [...grouped.entries()].map(([branch, group]) => new Map([[branch, group]]));
-		otherGroups.sort((a, b) => {
-			const aFirst = [...a.values()][0][0]?.publishedAt ?? '';
-			const bFirst = [...b.values()][0][0]?.publishedAt ?? '';
-			return new Date(bFirst).getTime() - new Date(aFirst).getTime();
-		});
-
-		for (const groupMap of otherGroups) {
-			const group = [...groupMap.values()][0];
-			const firstRelease = group.shift();
-			if (firstRelease) masterReleases.push(firstRelease);
-		}
-
-		masterReleases.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
-
-		const convertToNode = (r: Release): ReleaseNode => ({
+		const masterBranch = ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH;
+		const masterReleases: ReleaseNode[] = (grouped.get(masterBranch) ?? []).map(r => ({
 			id: r.id,
 			label: r.name,
 			branch: r.branch.name,
 			publishedAt: new Date(r.publishedAt),
 			color: '',
 			position: { x: 0, y: 0 }
+		}));
+
+		grouped.delete(masterBranch);
+
+		const otherGroups = [...grouped.entries()].map(([branch, group]) => {
+			const releaseNodes: ReleaseNode[] = group.map(r => ({
+				id: r.id,
+				label: r.name,
+				branch: r.branch.name,
+				publishedAt: new Date(r.publishedAt),
+				color: '',
+				position: { x: 0, y: 0 }
+			}));
+
+			const firstRealSub = releaseNodes[0];
+			const versionMatch = firstRealSub.label.match(/^v?(\d+)\.(\d+)/);
+			if (versionMatch) {
+				const syntheticLabel = `v${versionMatch[1]}.${versionMatch[2]}`;
+				const syntheticNode: SyntheticNode = {
+					id: `synthetic-${branch}-${firstRealSub.id}`,
+					label: syntheticLabel,
+					position: { x: 0, y: 0 },
+					color: 'gray',
+					branch: masterBranch,
+					publishedAt: new Date(firstRealSub.publishedAt),
+					isSynthetic: true
+				};
+
+				const insertIdx = masterReleases.findIndex(m => m.publishedAt > syntheticNode.publishedAt);
+				if (insertIdx === -1) {
+					masterReleases.push(syntheticNode);
+				} else {
+					masterReleases.splice(insertIdx, 0, syntheticNode);
+				}
+			}
+
+			return new Map([[branch, releaseNodes]]);
 		});
 
+		masterReleases.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
+
 		return [
-			new Map([[ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH, masterReleases.map(convertToNode)]]),
-			...otherGroups.map(groupMap => {
-				const [branch, releases] = [...groupMap.entries()][0];
-				return new Map([[branch, releases.map(convertToNode)]]);
-			})
+			new Map([[masterBranch, masterReleases]]),
+			...otherGroups
 		];
 	}
 
 	public calculateReleaseCoordinates(sortedGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
+		const positionedNodes = new Map<string, ReleaseNode[]>();
+
 		const nodeMap = new Map<string, ReleaseNode[]>();
 		sortedGroups.forEach(groupMap => {
 			for (const [branch, nodes] of groupMap.entries()) {
@@ -129,66 +152,43 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		const masterBranch = ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH;
 		const masterNodes = nodeMap.get(masterBranch) ?? [];
 
-		const positionedNodes = new Map<string, ReleaseNode[]>();
-
-		const branchNames = [...nodeMap.keys()].filter(b => b !== masterBranch);
-		const branchIndex = new Map<string, number>();
-		branchNames.forEach((b, i) => branchIndex.set(b, i));
-
-		const xSpacing = 150;
+		const xSpacing = 125
 		const ySpacing = 75;
 
-		masterNodes.forEach((masterNode, masterIdx) => {
-			const x = masterIdx * xSpacing;
-			masterNode.position = { x, y: 0 };
-
-			if (!positionedNodes.has(masterBranch)) {
-				positionedNodes.set(masterBranch, []);
-			}
-			positionedNodes.get(masterBranch)!.push(masterNode);
-
-			branchNames.forEach(branch => {
-				const releases = nodeMap.get(branch);
-				if (!releases || !releases.length) return;
-
-				const subIdx = releases.findIndex(r => new Date(r.publishedAt) > new Date(masterNode.publishedAt));
-				if (subIdx === -1) return;
-
-				const node = releases[subIdx];
-				const row = branchIndex.get(branch)!;
-				node.position = { x, y: (row + 1) * ySpacing };
-
-				if (!positionedNodes.has(branch)) {
-					positionedNodes.set(branch, []);
-				}
-				if (!positionedNodes.get(branch)!.some(n => n.id === node.id)) {
-					positionedNodes.get(branch)!.push(node);
-				}
-			});
+		masterNodes.forEach((node, idx) => {
+			node.position = { x: idx * xSpacing, y: 0 };
 		});
 
-		branchNames.forEach(branch => {
-			const nodes = nodeMap.get(branch) ?? [];
-			const positioned = positionedNodes.get(branch) ?? [];
+		positionedNodes.set(masterBranch, masterNodes);
 
-			for (let i = 1; i < nodes.length; i++) {
-				const prev = positioned.find(n => n.id === nodes[i - 1].id);
-				if (!prev) continue;
+		const subBranches = [...nodeMap.entries()]
+				.filter(([branch]) => branch !== masterBranch)
+				.sort(([, nodesA], [, nodesB]) =>
+						nodesB[0].publishedAt.getTime() - nodesA[0].publishedAt.getTime()
+				);
 
-				const curr = nodes[i];
-				if (positioned.some(n => n.id === curr.id)) continue;
+		subBranches.forEach(([branch, subNodes], branchIdx) => {
+			if (!subNodes.length) return;
 
-				curr.position = {
-					x: prev.position.x + xSpacing / 2,
-					y: prev.position.y
-				};
+			const firstSub = subNodes[0];
+			const versionMatch = firstSub.label.match(/^v?(\d+)\.(\d+)/);
+			if (!versionMatch) return;
 
-				positioned.push(curr);
-			}
+			const matchingSynthetic = masterNodes.find(n =>
+					n.label === `v${versionMatch[1]}.${versionMatch[2]}` && (n as SyntheticNode).isSynthetic
+			);
 
-			if (positioned.length) {
-				positionedNodes.set(branch, positioned);
-			}
+			if (!matchingSynthetic) return;
+
+			const baseX = matchingSynthetic.position.x + 75;
+			const baseY = (branchIdx + 1) * ySpacing;
+
+			const positionedSub = subNodes.map((n, i) => ({
+				...n,
+				position: { x: baseX + i * xSpacing, y: baseY }
+			}));
+
+			positionedNodes.set(branch, positionedSub);
 		});
 
 		return positionedNodes;
@@ -201,13 +201,24 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		for (const nodes of releaseGroups.values()) {
 			nodes.forEach(release => {
 				const published = new Date(release.publishedAt);
+				const label = release.label.toLowerCase();
+				const isNightly = label.includes(ReleaseCoordinatePlaneComponent.GITHUB_NIGHTLY_RELEASE);
 
-				if (release.label.toLowerCase().includes(ReleaseCoordinatePlaneComponent.GITHUB_NIGHTLY_RELEASE)) {
+				if (isNightly) {
 					release.color = 'darkblue';
 				} else {
-					const isMaster = release.branch === ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH;
-					const fullSupportMonths = isMaster ? 12 : 3;
-					const securitySupportMonths = isMaster ? 36 : 6;
+					const versionMatch = release.label.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?/i);
+					let isMajor = true;
+
+					if (versionMatch) {
+						const patch = parseInt(versionMatch[3] ?? '0', 10);
+						isMajor = patch === 0 && !/rc|beta/i.test(label);
+					} else {
+						isMajor = false;
+					}
+
+					const fullSupportMonths = isMajor ? 12 : 3;
+					const securitySupportMonths = isMajor ? 24 : 6;
 
 					const fullSupportEnd = new Date(published);
 					fullSupportEnd.setMonth(published.getMonth() + fullSupportMonths);
@@ -216,10 +227,10 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 					securitySupportEnd.setMonth(published.getMonth() + securitySupportMonths);
 
 					release.color = now <= fullSupportEnd
-							? 'yellow'
+							? '#30A102'
 							: now <= securitySupportEnd
-									? 'orange'
-									: 'red';
+									? '#EF9302'
+									: '#FD230E';
 				}
 
 				allNodes.push(release);
@@ -231,12 +242,9 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 
 	private createLinks(sortedGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
 		const links: ReleaseLink[] = [];
-		const nodeMap = new Map(this.releaseNodes.map(n => [n.id, n]));
 
 		const masterBranch = ReleaseCoordinatePlaneComponent.GITHUB_MASTER_BRANCH;
 		const masterNodes = sortedGroups[0].get(masterBranch) ?? [];
-
-		masterNodes.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
 
 		for (let i = 0; i < masterNodes.length - 1; i++) {
 			links.push({
@@ -246,32 +254,28 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 			});
 		}
 
-		for (let i = 1; i < sortedGroups.length; i++) {
-			const [_, subNodes] = [...sortedGroups[i].entries()][0];
+		const subGroups = sortedGroups.slice(1)
+				.sort((a, b) => {
+					const [, aNodes] = [...a.entries()][0];
+					const [, bNodes] = [...b.entries()][0];
+					return bNodes[0].publishedAt.getTime() - aNodes[0].publishedAt.getTime();
+				});
+
+		for (const subGroup of subGroups) {
+			const [branch, subNodes] = [...subGroup.entries()][0];
 			if (!subNodes.length) continue;
 
-			subNodes.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
-
 			const firstSub = subNodes[0];
-			const subVersionMatch = firstSub.label.match(/^v?(\d+\.\d+)/i);
-			if (!subVersionMatch) continue;
-			const subMajorMinor = subVersionMatch[1];
+			const versionMatch = firstSub.label.match(/^v?(\d+)\.(\d+)/);
+			if (!versionMatch) continue;
 
-			const matchingMaster = masterNodes
-					.filter(m => {
-						const masterVersionMatch = m.label.match(/^v?(\d+\.\d+)/i);
-						return (
-								masterVersionMatch &&
-								masterVersionMatch[1] === subMajorMinor &&
-								m.publishedAt.getTime() < firstSub.publishedAt.getTime()
-						);
-					})
-					.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())[0];
+			const syntheticId = `synthetic-${branch}-${firstSub.id}`;
+			const syntheticNode = masterNodes.find(n => n.id === syntheticId);
 
-			if (matchingMaster) {
+			if (syntheticNode) {
 				links.push({
-					id: `${matchingMaster.id}-${firstSub.id}`,
-					source: matchingMaster.id,
+					id: `${syntheticNode.id}-${firstSub.id}`,
+					source: syntheticNode.id,
 					target: firstSub.id
 				});
 			}
@@ -288,23 +292,30 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		return links;
 	}
 
+
 	public getCustomPath(link: ReleaseLink): string {
 		const source = this.releaseNodes.find(n => n.id === link.source);
 		const target = this.releaseNodes.find(n => n.id === link.target);
 		if (!source || !target) return '';
 
-		const nodeRadius = 20;
+		const radius = 25;
 		const [x1, y1] = [source.position.x, source.position.y];
 		const [x2, y2] = [target.position.x, target.position.y];
 
 		if (y1 === y2) {
-			return `M ${x1 + nodeRadius},${y1} L ${x2 - nodeRadius},${y2}`;
+			return `M ${x1 + radius},${y1} L ${x2 - radius},${y2}`;
 		}
 
-		const arcRadius = Math.abs(x2 - x1);
-		const sweep = x2 < x1 ? 1 : 0;
+		const verticalDirection = y2 > y1 ? 1 : -1;
+		const cornerY = y2 - verticalDirection * radius;
+		const horizontalSweep = x2 > x1 ? 0 : 1;
 
-		return `M ${x1},${y1 + nodeRadius} A ${arcRadius},${arcRadius} 0 0,${sweep} ${x2 - nodeRadius},${y2}`;
+		return [
+			`M ${x1},${y1 + radius}`,
+			`L ${x1},${cornerY}`,
+			`A ${radius},${radius} 0 0,${horizontalSweep} ${x1 + (horizontalSweep ? -radius : radius)},${y2}`,
+			`L ${x2 - radius},${y2}`
+		].join(' ');
 	}
 
 	public onWheel(event: WheelEvent): void {
@@ -372,11 +383,12 @@ export class ReleaseCoordinatePlaneComponent implements OnInit, AfterViewInit {
 		const minY = Math.min(...ys);
 		const maxY = Math.max(...ys);
 
-		const width = (maxX - minX + 200);
-		const height = (maxY - minY + 200);
-		const x = minX - 100;
-		const y = minY - 100;
+		const padding = 100;
+		const width = maxX - minX + padding * 2;
+		const height = maxY - minY + padding * 2;
+		const x = minX - padding;
+		const y = minY - padding;
 
-		this.svgElement.nativeElement.setAttribute('viewBox', `${x} ${y} ${width} ${height}`);
+		this.viewBox = `${x} ${y} ${width} ${height}`;
 	}
 }
