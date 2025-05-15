@@ -2,10 +2,6 @@
 	<svg id="svgElement"
 		 #svgElement
 		 (wheel)="onWheel($event)"
-		 (mousedown)="onMouseDown($event)"
-		 (mousemove)="onMouseMove($event)"
-		 (mouseup)="onMouseUp()"
-		 (mouseleave)="onMouseUp()"
 		 [attr.viewBox]="viewBox">
 		<g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
 			@for (releaseNode of releaseNodes; track releaseNode) {

@@ -73,8 +73,6 @@ export class ReleaseNodeService {
 		return allNodes;
 	}
 
-	// ---------------------- Private Helpers ----------------------
-
 	private groupReleasesByBranch(releases: Release[]): Map<string, Release[]> {
 		const grouped = new Map<string, Release[]>();
 		for (const release of releases) {
