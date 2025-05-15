@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import {AppService, GitHubState} from "../app.service";
-import {Milestone} from "./milestone.service";
-import {Label} from "./label.service";
-import {Observable} from "rxjs";
+import { AppService, GitHubState } from '../app.service';
+import { Milestone } from './milestone.service';
+import { Label } from './label.service';
+import { Observable } from 'rxjs';
 
-export type Issue = {
+export interface Issue {
 	id: string;
 	number: number;
 	title: string;
@@ -18,34 +18,38 @@ export type Issue = {
 	subIssues: Issue[];
 }
 
-type TimeSpanParams = {
-	startDate: string;
-	endDate: string;
-};
+export interface TimeSpanParameters {
+	startDate?: string;
+	endDate?: string;
+}
 
 @Injectable({
-  providedIn: 'root'
+	providedIn: 'root',
 })
 export class IssueService {
-
-	constructor(private appService: AppService) { }
+	constructor(private appService: AppService) {}
 
 	public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
-		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("issues/release/" + releaseId));
+		return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));
 	}
 
 	public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
-		return this.appService.getAll<Issue[]>(this.appService.createAPIUrl("issues/milestone/" + milestoneId));
+		return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
 	}
 
-	public getIssuesByTimeSpan(startDate: Date, endDate: Date): Observable<Issue[]> {
-		const url = this.appService.createAPIUrl("issues/timespan");
+	public getIssuesByTimeSpan({ startDate, endDate }: TimeSpanParameters = {}): Observable<Issue[]> {
+		const url = this.appService.createAPIUrl('issues/timespan');
 
-		const timestampParams: TimeSpanParams = {
-			startDate: startDate.toISOString(),
-			endDate: endDate.toISOString()
-		};
+		const queryParameters: Record<string, string> = {};
 
-		return this.appService.getAll<Issue[]>(url, timestampParams);
+		if (startDate && this.appService.isValidISODate(startDate)) {
+			queryParameters['startDate'] = startDate;
+		}
+
+		if (endDate && this.appService.isValidISODate(endDate)) {
+			queryParameters['endDate'] = endDate;
+		}
+
+		return this.appService.get<Issue[]>(url, queryParameters);
 	}
 }
