@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable } from "rxjs";
-import { AppService } from "../app.service";
+import { Observable } from 'rxjs';
+import { AppService } from '../app.service';
 
-export type Release = {
+export interface Release {
 	id: string;
 	tagName: string;
 	name: string;
@@ -11,16 +11,16 @@ export type Release = {
 	branch: Branch;
 }
 
-type Branch = {
+interface Branch {
 	id: string;
 	name: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+	providedIn: 'root',
 })
 export class ReleaseService {
-	constructor(private appService: AppService) { }
+	constructor(private appService: AppService) {}
 
 	public getAllReleases(): Observable<Release[]> {
 		return this.appService.get<Release[]>(this.appService.createAPIUrl('releases'));
