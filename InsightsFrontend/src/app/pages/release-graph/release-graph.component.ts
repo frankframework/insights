@@ -1,8 +1,8 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular/core';
 import { ReleaseService } from '../../services/release.service';
 import { catchError, map, of, tap } from 'rxjs';
-import {ReleaseNode, ReleaseNodeService } from './release-node.service';
-import {ReleaseLink, ReleaseLinkService} from "./release-link.service";
+import { ReleaseNode, ReleaseNodeService } from './release-node.service';
+import { ReleaseLink, ReleaseLinkService } from './release-link.service';
 
 @Component({
 	selector: 'app-release-graph',
@@ -11,7 +11,7 @@ import {ReleaseLink, ReleaseLinkService} from "./release-link.service";
 	styleUrls: ['./release-graph.component.scss']
 })
 export class ReleaseGraphComponent implements OnInit {
-	@ViewChild('svgElement') svgElement!: ElementRef<SVGElement>;
+	@ViewChild('svgElement', { static: true }) svgElement!: ElementRef<SVGSVGElement>;
 
 	public static readonly GITHUB_MASTER_BRANCH = 'master';
 
@@ -22,13 +22,13 @@ export class ReleaseGraphComponent implements OnInit {
 	public translateY = 0;
 	public viewBox = '0 0 0 0';
 
-	private isPanning = false;
-	private startPan = { x: 0, y: 0 };
+	private minTranslateX = 0;
+	private maxTranslateX = 0;
 
 	constructor(
-		private releaseService: ReleaseService,
-		private nodeService: ReleaseNodeService,
-		private linkService: ReleaseLinkService
+			private releaseService: ReleaseService,
+			private nodeService: ReleaseNodeService,
+			private linkService: ReleaseLinkService
 	) {}
 
 	ngOnInit(): void {
@@ -76,63 +76,58 @@ export class ReleaseGraphComponent implements OnInit {
 			`M ${x1},${y1 + releaseNodeRadiusWithMargin}`,
 			`L ${x1},${cornerY}`,
 			`A ${releaseNodeRadiusWithMargin},${releaseNodeRadiusWithMargin} 0 0,${horizontalSweep} ${x1 + (horizontalSweep ? -releaseNodeRadiusWithMargin : releaseNodeRadiusWithMargin)},${y2}`,
-			`L ${x2 - releaseNodeRadiusWithMargin},${y2}`,
+			`L ${x2 - releaseNodeRadiusWithMargin},${y2}`
 		].join(' ');
 	}
 
 	public onWheel(event: WheelEvent): void {
 		event.preventDefault();
-
-		const [mouseX, mouseY] = this.getMousePosition(event);
-		const svgX = (mouseX - this.translateX) / this.scale;
-		const svgY = (mouseY - this.translateY) / this.scale;
-
-		const delta = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-		this.scale *= delta;
-		this.translateX = mouseX - svgX * this.scale;
-		this.translateY = mouseY - svgY * this.scale;
-	}
-
-	private getMousePosition(event: MouseEvent | WheelEvent): [number, number] {
-		const rect = this.svgElement.nativeElement.getBoundingClientRect();
-		return [event.clientX - rect.left, event.clientY - rect.top];
-	}
-
-	public onMouseDown(event: MouseEvent): void {
-		this.isPanning = true;
-		this.startPan = { x: event.clientX, y: event.clientY };
-	}
-
-	public onMouseMove(event: MouseEvent): void {
-		if (!this.isPanning) return;
-
-		const dx = event.clientX - this.startPan.x;
-		const dy = event.clientY - this.startPan.y;
-		this.translateX += dx;
-		this.translateY += dy;
-		this.startPan = { x: event.clientX, y: event.clientY };
-	}
-
-	public onMouseUp(): void {
-		this.isPanning = false;
+		const delta = event.deltaY / this.scale;
+		let newTranslateX    = this.translateX - delta;
+		this.translateX = Math.min(this.maxTranslateX,
+				Math.max(this.minTranslateX, newTranslateX));
 	}
 
 	private centerGraph(): void {
 		if (!this.svgElement || !this.releaseNodes.length) return;
-		this.viewBox = this.calculateViewBox(this.releaseNodes, 100);
+		this.viewBox = this.calculateViewBox(this.releaseNodes);
 	}
 
-	private calculateViewBox(nodes: ReleaseNode[], padding: number): string {
-		const xs = nodes.map(n => n.position.x);
-		const ys = nodes.map(n => n.position.y);
-		const minX = Math.min(...xs);
-		const maxX = Math.max(...xs);
-		const minY = Math.min(...ys);
-		const maxY = Math.max(...ys);
-		const width = maxX - minX + padding * 2;
-		const height = maxY - minY + padding * 2;
-		const x = minX - padding;
-		const y = minY - padding;
-		return `${x} ${y} ${width} ${height}`;
+	private calculateViewBox(nodes: ReleaseNode[]): string {
+		const svg = this.svgElement.nativeElement;
+		const W   = svg.clientWidth;
+		const H   = svg.clientHeight;
+
+		const xs    = nodes.map(n => n.position.x);
+		const ys    = nodes.map(n => n.position.y);
+		const minX  = Math.min(...xs), maxX = Math.max(...xs);
+		const minY  = Math.min(...ys), maxY = Math.max(...ys);
+		const graphW = maxX - minX;
+		const graphH = maxY - minY;
+
+		this.scale      = (H * .8) / graphH;
+		this.translateY = (H * .05) / this.scale - minY;
+
+		const graph75X = minX + 0.75 * graphW;
+
+		const centerGraphX = (W / 2) / this.scale;
+
+		const padPx   = W * 0.25;
+		const padGraph = padPx / this.scale;
+
+		const initialTx = centerGraphX - graph75X;
+
+		this.maxTranslateX = padGraph / 2 - minX;
+		this.minTranslateX = (W / this.scale) - maxX - padGraph;
+
+		this.translateX = Math.min(this.maxTranslateX,
+				Math.max(this.minTranslateX, initialTx));
+
+		return `0 0 ${W} ${H}`;
+	}
+
+	@HostListener('window:resize')
+	onResize(): void {
+		this.centerGraph();
 	}
 }
