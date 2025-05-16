@@ -6,15 +6,15 @@ import { HTTP_INTERCEPTORS, provideHttpClient } from '@angular/common/http';
 import { HttpInterceptorService } from './services/http-interceptor.service';
 
 export const appConfig: ApplicationConfig = {
-	providers: [
-		provideZoneChangeDetection({ eventCoalescing: true }),
-		provideRouter(routes),
-		provideAnimations(),
-		provideHttpClient(),
-		{
-			provide: HTTP_INTERCEPTORS,
-			useClass: HttpInterceptorService,
-			multi: true,
-		},
-	],
+  providers: [
+    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideRouter(routes),
+    provideAnimations(),
+    provideHttpClient(),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: HttpInterceptorService,
+      multi: true,
+    },
+  ],
 };

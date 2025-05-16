@@ -5,51 +5,51 @@ import { Label } from './label.service';
 import { Observable } from 'rxjs';
 
 export interface Issue {
-	id: string;
-	number: number;
-	title: string;
-	state: GitHubState;
-	closedAt: Date;
-	url: string;
-	businessValue: string;
-	milestone: Milestone;
-	labels: Label[];
-	parentIssue: Issue;
-	subIssues: Issue[];
+  id: string;
+  number: number;
+  title: string;
+  state: GitHubState;
+  closedAt: Date;
+  url: string;
+  businessValue: string;
+  milestone: Milestone;
+  labels: Label[];
+  parentIssue: Issue;
+  subIssues: Issue[];
 }
 
 export interface TimeSpanParameters {
-	startDate?: string;
-	endDate?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 @Injectable({
-	providedIn: 'root',
+  providedIn: 'root',
 })
 export class IssueService {
-	constructor(private appService: AppService) {}
+  constructor(private appService: AppService) {}
 
-	public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
-		return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));
-	}
+  public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
+    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));
+  }
 
-	public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
-		return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
-	}
+  public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
+    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
+  }
 
-	public getIssuesByTimeSpan({ startDate, endDate }: TimeSpanParameters = {}): Observable<Issue[]> {
-		const url = this.appService.createAPIUrl('issues/timespan');
+  public getIssuesByTimeSpan({ startDate, endDate }: TimeSpanParameters = {}): Observable<Issue[]> {
+    const url = this.appService.createAPIUrl('issues/timespan');
 
-		const queryParameters: Record<string, string> = {};
+    const queryParameters: Record<string, string> = {};
 
-		if (startDate && this.appService.isValidISODate(startDate)) {
-			queryParameters['startDate'] = startDate;
-		}
+    if (startDate && this.appService.isValidISODate(startDate)) {
+      queryParameters['startDate'] = startDate;
+    }
 
-		if (endDate && this.appService.isValidISODate(endDate)) {
-			queryParameters['endDate'] = endDate;
-		}
+    if (endDate && this.appService.isValidISODate(endDate)) {
+      queryParameters['endDate'] = endDate;
+    }
 
-		return this.appService.get<Issue[]>(url, queryParameters);
-	}
+    return this.appService.get<Issue[]>(url, queryParameters);
+  }
 }
