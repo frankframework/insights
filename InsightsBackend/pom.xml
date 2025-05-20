@@ -49,6 +49,10 @@
 		<spotless.version>2.44.2</spotless.version>
 		<junit.version>5.11.4</junit.version>
 		<mockito.version>5.15.2</mockito.version>
+		<sonar.version>5.1.0.4751</sonar.version>
+
+		<sonar.organization>frank-framework</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 
 	<dependencies>
@@ -181,7 +185,11 @@
 					</java>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>${sonarqube.version}</version>
+			</plugin>
 		</plugins>
 	</build>
-
 </project>
