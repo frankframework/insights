@@ -68,7 +68,6 @@ public class ReleaseService {
 
             Set<Release> releases = releaseDTOs.stream()
                     .map(dto -> mapToRelease(dto, allBranches))
-                    .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
             if (releases.isEmpty()) {
