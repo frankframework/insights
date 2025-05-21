@@ -17,7 +17,9 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
+import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueService;
+import org.frankframework.insights.label.Label;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -159,7 +161,7 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldHandleNullMergedAtDates()
-            throws PullRequestInjectionException, GitHubClientException, MappingException {
+            throws PullRequestInjectionException, GitHubClientException {
         PullRequestDTO noMergePR = new PullRequestDTO(null, 99, "prX", null, null, null, null, null);
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(noMergePR));
@@ -194,4 +196,122 @@ public class PullRequestServiceTest {
         verify(pullRequestRepository, times(1)).saveAll(anySet());
         verify(branchPullRequestRepository, times(1)).saveAll(anySet());
     }
+
+	@Test
+	public void injectBranchPullRequests_shouldSkipWhenNoPullRequests() throws GitHubClientException, PullRequestInjectionException {
+		Branch emptyBranch = new Branch();
+		emptyBranch.setId(UUID.randomUUID().toString());
+		emptyBranch.setName("feature/empty");
+
+		when(branchService.getAllBranches()).thenReturn(List.of(emptyBranch));
+		when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
+		when(gitHubClient.getBranchPullRequests("feature/empty")).thenReturn(Collections.emptySet());
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
+	}
+
+	@Test
+	public void injectBranchPullRequests_shouldHandleNullPRsAndSkip() throws GitHubClientException, PullRequestInjectionException {
+		Branch branch = new Branch();
+		branch.setId(UUID.randomUUID().toString());
+		branch.setName("feature/nullpr");
+
+		PullRequestDTO prWithNullDate = new PullRequestDTO("id-n", 42, "null pr", null, null, null, null, null);
+
+		when(branchService.getAllBranches()).thenReturn(List.of(branch));
+		when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(prWithNullDate));
+		when(gitHubClient.getBranchPullRequests("feature/nullpr")).thenReturn(Collections.emptySet());
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
+	}
+
+	@Test
+	public void injectBranchPullRequests_shouldSaveLabelsAndIssues() throws GitHubClientException, PullRequestInjectionException, MappingException {
+		Branch branch = new Branch();
+		branch.setId(UUID.randomUUID().toString());
+		branch.setName("feature/labels");
+
+		PullRequestDTO prDto = new PullRequestDTO("id-x", 4, "pr labels", null, OffsetDateTime.now(), null, null, null);
+		PullRequest prEntity = new PullRequest();
+		prEntity.setId("id-x");
+		prEntity.setTitle("pr labels");
+
+		when(branchService.getAllBranches()).thenReturn(List.of(branch));
+		when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(prDto));
+		when(gitHubClient.getBranchPullRequests("feature/labels")).thenReturn(Set.of(prDto));
+		when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
+
+		when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
+		when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
+		when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prEntity));
+
+		when(issueLabelHelperService.getAllLabelsMap()).thenReturn(Map.of("l1", mock(Label.class)));
+		when(milestoneService.getAllMilestonesMap()).thenReturn(Map.of());
+		when(issueService.getAllIssuesMap()).thenReturn(Map.of("i1", mock(Issue.class)));
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(pullRequestRepository, times(1)).saveAll(anySet());
+		verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+	}
+
+	@Test
+	public void injectBranchPullRequests_shouldProcessBranchEvenIfExceptionInOne() throws GitHubClientException, PullRequestInjectionException, MappingException {
+		Branch b1 = new Branch();
+		b1.setId(UUID.randomUUID().toString());
+		b1.setName("feature/b1");
+		Branch b2 = new Branch();
+		b2.setId(UUID.randomUUID().toString());
+		b2.setName("feature/b2");
+
+		PullRequestDTO dtoB1 = new PullRequestDTO("id-b1", 10, "b1", null, OffsetDateTime.now(), null, null, null);
+		PullRequest prB1 = new PullRequest();
+		prB1.setId("id-b1");
+		prB1.setTitle("b1");
+
+		when(branchService.getAllBranches()).thenReturn(List.of(b1, b2));
+		when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(dtoB1));
+		when(gitHubClient.getBranchPullRequests("feature/b1")).thenReturn(Set.of(dtoB1));
+		when(gitHubClient.getBranchPullRequests("feature/b2")).thenThrow(new GitHubClientException("fail b2", null));
+
+		when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
+		when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prB1));
+		when(branchPullRequestRepository.findAllByBranch_Id(b1.getId())).thenReturn(Collections.emptySet());
+		when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prB1));
+
+		when(issueLabelHelperService.getAllLabelsMap()).thenReturn(Map.of());
+		when(milestoneService.getAllMilestonesMap()).thenReturn(Map.of());
+		when(issueService.getAllIssuesMap()).thenReturn(Map.of());
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(branchPullRequestRepository, atLeastOnce()).saveAll(anySet());
+	}
+
+	@Test
+	public void injectBranchPullRequests_shouldNotSaveIfNoMergedPRs() throws GitHubClientException, PullRequestInjectionException {
+		Branch branch = new Branch();
+		branch.setId(UUID.randomUUID().toString());
+		branch.setName("emptypr");
+
+		when(branchService.getAllBranches()).thenReturn(List.of(branch));
+		when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
+		when(gitHubClient.getBranchPullRequests("emptypr")).thenReturn(Collections.emptySet());
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
+	}
+
+	@Test
+	public void injectBranchPullRequests_shouldDoNothingIfBranchesEmpty() throws PullRequestInjectionException {
+		when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+		pullRequestService.injectBranchPullRequests();
+		verifyNoInteractions(branchPullRequestRepository);
+	}
+
 }

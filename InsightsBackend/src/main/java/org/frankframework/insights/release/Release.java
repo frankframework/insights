@@ -23,9 +23,6 @@ public class Release {
 
     private OffsetDateTime publishedAt;
 
-    @Column(nullable = false, unique = true)
-    private String commitSha;
-
     @ManyToOne
     private Branch branch;
 }

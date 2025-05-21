@@ -2,9 +2,7 @@ package org.frankframework.insights.github;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public record GitHubRepositoryStatisticsDTO(
         @JsonProperty("labels") GitHubTotalCountDTO labels,
@@ -27,16 +25,6 @@ public record GitHubRepositoryStatisticsDTO(
                         .anyMatch(regex ->
                                 Pattern.compile(regex).matcher(branch.name()).find()))
                 .count();
-    }
-
-    public Map<String, Integer> getGitHubCommitsCount(List<String> branchProtectionRegexes) {
-        return branches.nodes().stream()
-                .filter(branch -> branchProtectionRegexes.stream()
-                        .anyMatch(regex ->
-                                Pattern.compile(regex).matcher(branch.name()).find()))
-                .collect(Collectors.toMap(
-                        GitHubRefsDTO.GitHubBranchNodeDTO::name,
-                        branch -> branch.target().history().totalCount()));
     }
 
     public int getGitHubReleaseCount() {

@@ -8,8 +8,6 @@ import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.commit.CommitInjectionException;
-import org.frankframework.insights.commit.CommitService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubClientException;
@@ -50,9 +48,6 @@ public class ShedLockProductionTest {
     private BranchService branchService;
 
     @Mock
-    private CommitService commitService;
-
-    @Mock
     private IssueService issueService;
 
     @Mock
@@ -75,7 +70,6 @@ public class ShedLockProductionTest {
                 labelService,
                 milestoneService,
                 branchService,
-                commitService,
                 issueService,
                 pullRequestService,
                 releaseService,
@@ -87,7 +81,7 @@ public class ShedLockProductionTest {
     @Test
     public void should_FetchGitHubData_when_ProductionProfileIsActive()
             throws LabelInjectionException, GitHubClientException, MilestoneInjectionException,
-                    BranchInjectionException, ReleaseInjectionException, CommitInjectionException,
+                    BranchInjectionException, ReleaseInjectionException,
                     IssueInjectionException, PullRequestInjectionException {
         systemDataInitializer.run();
 
@@ -95,7 +89,6 @@ public class ShedLockProductionTest {
         verify(labelService, times(1)).injectLabels();
         verify(milestoneService, times(1)).injectMilestones();
         verify(branchService, times(1)).injectBranches();
-        verify(commitService, times(1)).injectBranchCommits();
         verify(issueService, times(1)).injectIssues();
         verify(pullRequestService, times(1)).injectBranchPullRequests();
         verify(releaseService, times(1)).injectReleases();

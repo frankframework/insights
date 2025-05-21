@@ -5,12 +5,15 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
+import lombok.Setter;
+
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issue.Issue;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class Milestone {
     @Id
     private String id;

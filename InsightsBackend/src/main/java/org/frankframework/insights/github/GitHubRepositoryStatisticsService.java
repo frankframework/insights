@@ -17,6 +17,10 @@ public class GitHubRepositoryStatisticsService {
         this.gitHubClient = gitHubClient;
     }
 
+	/**
+	 * Fetches the repository statistics from GitHub and stores them in the service.
+	 * @throws GitHubClientException if an error occurs during the request
+	 */
     public void fetchRepositoryStatistics() throws GitHubClientException {
         gitHubRepositoryStatisticsDTO = gitHubClient.getRepositoryStatistics();
     }

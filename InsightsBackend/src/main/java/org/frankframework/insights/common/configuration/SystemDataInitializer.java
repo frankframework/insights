@@ -3,7 +3,6 @@ package org.frankframework.insights.common.configuration;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.commit.CommitService;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
@@ -23,7 +22,6 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final LabelService labelService;
     private final MilestoneService milestoneService;
     private final BranchService branchService;
-    private final CommitService commitService;
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
@@ -34,7 +32,6 @@ public class SystemDataInitializer implements CommandLineRunner {
             LabelService labelService,
             MilestoneService milestoneService,
             BranchService branchService,
-            CommitService commitService,
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
@@ -43,13 +40,16 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.labelService = labelService;
         this.milestoneService = milestoneService;
         this.branchService = branchService;
-        this.commitService = commitService;
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
         this.gitHubFetchEnabled = gitHubProperties.getFetch();
     }
 
+	/**
+	 * CommandLineRunner method that runs on application startup.
+	 * @param args command line arguments
+	 */
     @Override
     @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
@@ -59,6 +59,9 @@ public class SystemDataInitializer implements CommandLineRunner {
         initializeSystemData();
     }
 
+	/**
+	 * Scheduled job that runs daily at midnight.
+	 */
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
@@ -67,6 +70,9 @@ public class SystemDataInitializer implements CommandLineRunner {
         initializeSystemData();
     }
 
+	/**
+	 * Fetches GitHub statistics and updates the database.
+	 */
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
@@ -81,6 +87,9 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
     }
 
+	/**
+	 * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
+	 */
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
@@ -93,7 +102,6 @@ public class SystemDataInitializer implements CommandLineRunner {
             labelService.injectLabels();
             milestoneService.injectMilestones();
             branchService.injectBranches();
-            commitService.injectBranchCommits();
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();
             releaseService.injectReleases();

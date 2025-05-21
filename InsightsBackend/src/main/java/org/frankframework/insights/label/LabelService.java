@@ -16,6 +16,10 @@ import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.release.ReleaseNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service class for managing labels.
+ * Handles the injection, mapping, and processing of GitHub labels into the database.
+ */
 @Service
 @Slf4j
 public class LabelService {
@@ -45,6 +49,10 @@ public class LabelService {
         this.issueLabelRepository = issueLabelRepository;
     }
 
+	/**
+	 * Injects labels from GitHub into the database.
+	 * @throws LabelInjectionException if an error occurs during the injection process.
+	 */
     public void injectLabels() throws LabelInjectionException {
         if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubLabelCount()
                 == labelRepository.count()) {
@@ -69,6 +77,13 @@ public class LabelService {
         }
     }
 
+	/**
+	 * Fetches labels from the database and returns them as a set of LabelResponse objects.
+	 * @param releaseId the ID of the release for which to fetch labels
+	 * @return a set of LabelResponse objects
+	 * @throws ReleaseNotFoundException if the release is not found
+	 * @throws MappingException if an error occurs during mapping
+	 */
     public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
         List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
@@ -79,6 +94,12 @@ public class LabelService {
         return mapper.toDTO(filteredLabels, LabelResponse.class);
     }
 
+	/**
+	 * Fetches labels associated with a specific release ID.
+	 * @param releaseId the ID of the release
+	 * @return a list of labels associated with the release
+	 * @throws ReleaseNotFoundException if the release is not found
+	 */
     private List<Label> getLabelsByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Set<Issue> releaseIssues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
 
@@ -88,10 +109,20 @@ public class LabelService {
                 .collect(Collectors.toList());
     }
 
+	/**
+	 * Counts the occurrences of each label in the provided list.
+	 * @param labels the list of labels to count
+	 * @return a map where the keys are labels and the values are their respective counts
+	 */
     private Map<Label, Long> countLabelOccurrences(List<Label> labels) {
         return labels.stream().collect(Collectors.groupingBy(label -> label, Collectors.counting()));
     }
 
+	/**
+	 * Filters labels based on a percentage threshold.
+	 * @param labelCounts a map of labels and their respective counts
+	 * @return a set of labels that meet the percentage threshold
+	 */
     private Set<Label> filterLabelsByPercentage(Map<Label, Long> labelCounts) {
         long total = labelCounts.values().stream().mapToLong(Long::longValue).sum();
 
@@ -103,12 +134,21 @@ public class LabelService {
                 .collect(Collectors.toSet());
     }
 
+	/**
+	 * Fetches labels associated with a specific issue ID.
+	 * @param issueId the ID of the issue
+	 * @return a set of labels associated with the issue
+	 */
 	public Set<Label> getLabelsByIssueId(String issueId) {
 		return issueLabelRepository.findAllByIssue_Id(issueId).stream()
 				.map(IssueLabel::getLabel)
 				.collect(Collectors.toSet());
 	}
 
+	/**
+	 * Saves a set of labels to the database.
+	 * @param labels the set of labels to save
+	 */
     private void saveLabels(Set<Label> labels) {
         List<Label> savedLabels = labelRepository.saveAll(labels);
         log.info("Successfully saved {} labels", savedLabels.size());
