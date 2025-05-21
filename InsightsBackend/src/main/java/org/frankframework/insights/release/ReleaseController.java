@@ -19,14 +19,14 @@ public class ReleaseController {
         this.releaseService = releaseService;
     }
 
-	/**
-	 * Fetches all releases from the database.
-	 * @return Set of ReleaseResponse objects representing all releases
-	 */
+    /**
+     * Fetches all releases from the database.
+     * @return Set of ReleaseResponse objects representing all releases
+     */
     @GetMapping
     public ResponseEntity<Set<ReleaseResponse>> getAllReleases() {
         Set<ReleaseResponse> releases = releaseService.getAllReleases();
-		if (releases == null) releases = Collections.emptySet();
-		return ResponseEntity.status(HttpStatus.OK).body(releases);
+        if (releases == null) releases = Collections.emptySet();
+        return ResponseEntity.status(HttpStatus.OK).body(releases);
     }
 }

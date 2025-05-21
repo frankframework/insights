@@ -43,10 +43,10 @@ public class BranchService {
         this.branchPullRequestRepository = branchPullRequestRepository;
     }
 
-	/**
-	 * Injects branches from GitHub into the database.
-	 * @throws BranchInjectionException if an error occurs during the injection process
-	 */
+    /**
+     * Injects branches from GitHub into the database.
+     * @throws BranchInjectionException if an error occurs during the injection process
+     */
     public void injectBranches() throws BranchInjectionException {
         if (gitHubRepositoryStatisticsService
                         .getGitHubRepositoryStatisticsDTO()
@@ -68,19 +68,19 @@ public class BranchService {
             Set<BranchDTO> branchDTOs = gitHubClient.getBranches();
             Set<Branch> branches = findProtectedBranchesByRegexPattern(branchDTOs);
 
-			if (!branches.isEmpty()) {
-				saveBranches(branches);
-			}
+            if (!branches.isEmpty()) {
+                saveBranches(branches);
+            }
         } catch (Exception e) {
             throw new BranchInjectionException("Error while injecting GitHub branches", e);
         }
     }
 
-	/**
-	 * Finds protected branches by regex patterns and maps them to database entities.
-	 * @param branchDTOs the set of branch DTOs to filter
-	 * @return a set of filtered and mapped Branch entities
-	 */
+    /**
+     * Finds protected branches by regex patterns and maps them to database entities.
+     * @param branchDTOs the set of branch DTOs to filter
+     * @return a set of filtered and mapped Branch entities
+     */
     private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
         log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()
@@ -94,38 +94,38 @@ public class BranchService {
         return filteredBranches;
     }
 
-	/**
-	 * Fetches all branches from the database.
-	 * @return a list of all Branch entities
-	 */
+    /**
+     * Fetches all branches from the database.
+     * @return a list of all Branch entities
+     */
     public List<Branch> getAllBranches() {
         return branchRepository.findAll();
     }
 
-	/**
-	 * Fetches all branch pull requests by branch
-	 * @param branches the list of branches to fetch pull requests for
-	 * @return a map of branch IDs to sets of BranchPullRequest entities
-	 */
+    /**
+     * Fetches all branch pull requests by branch
+     * @param branches the list of branches to fetch pull requests for
+     * @return a map of branch IDs to sets of BranchPullRequest entities
+     */
     public Map<String, Set<BranchPullRequest>> getBranchPullRequestsByBranches(List<Branch> branches) {
         return branches.stream()
                 .collect(Collectors.toMap(
                         Branch::getId, branch -> branchPullRequestRepository.findAllByBranch_Id(branch.getId())));
     }
 
-	/**
-	 * Fetches all branch pull requests by branch ID
-	 * @param id the ID of the branch
-	 * @return a set of BranchPullRequest entities associated with the branch ID
-	 */
+    /**
+     * Fetches all branch pull requests by branch ID
+     * @param id the ID of the branch
+     * @return a set of BranchPullRequest entities associated with the branch ID
+     */
     public Set<BranchPullRequest> getBranchPullRequestsByBranchId(String id) {
         return branchPullRequestRepository.findAllByBranch_Id(id);
     }
 
-	/**
-	 * Saves a set of branches to the database.
-	 * @param branches the set of branches to save
-	 */
+    /**
+     * Saves a set of branches to the database.
+     * @param branches the set of branches to save
+     */
     public void saveBranches(Set<Branch> branches) {
         List<Branch> savedBranches = branchRepository.saveAll(branches);
         log.info("Successfully saved {} branches.", savedBranches.size());

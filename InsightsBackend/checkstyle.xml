@@ -10,14 +10,8 @@
 			<property name="processJavadoc" value="true" />
 		</module>
 		<module name="MagicNumber">
-			<property name="ignoreNumbers" value="0,1,-1"/>
+		<property name="ignoreNumbers" value="0,1,-1"/>
 		</module>
-		<module name="WhitespaceAround"/>
-		<module name="EmptyLineSeparator"/>
-		<module name="FinalParameters"/>
-		<module name="DesignForExtension"/>
-		<module name="VisibilityModifier"/>
-		<module name="JavadocVariable"/>
 	</module>
 	<module name="LineLength">
 		<property name="severity" value="warning"/>

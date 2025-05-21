@@ -46,10 +46,10 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.gitHubFetchEnabled = gitHubProperties.getFetch();
     }
 
-	/**
-	 * CommandLineRunner method that runs on application startup.
-	 * @param args command line arguments
-	 */
+    /**
+     * CommandLineRunner method that runs on application startup.
+     * @param args command line arguments
+     */
     @Override
     @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
@@ -59,9 +59,9 @@ public class SystemDataInitializer implements CommandLineRunner {
         initializeSystemData();
     }
 
-	/**
-	 * Scheduled job that runs daily at midnight.
-	 */
+    /**
+     * Scheduled job that runs daily at midnight.
+     */
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
@@ -70,9 +70,9 @@ public class SystemDataInitializer implements CommandLineRunner {
         initializeSystemData();
     }
 
-	/**
-	 * Fetches GitHub statistics and updates the database.
-	 */
+    /**
+     * Fetches GitHub statistics and updates the database.
+     */
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
@@ -87,9 +87,9 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
     }
 
-	/**
-	 * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
-	 */
+    /**
+     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
+     */
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {

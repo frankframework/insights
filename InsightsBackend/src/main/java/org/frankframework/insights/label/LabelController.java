@@ -22,18 +22,18 @@ public class LabelController {
         this.labelService = labelService;
     }
 
-	/**
-	 * Fetches highlights by release ID.
-	 * @param releaseId The ID of the release to fetch highlights for
-	 * @return ResponseEntity containing a set of LabelResponse objects
-	 * @throws ReleaseNotFoundException if the release is not found
-	 * @throws MappingException if an error occurs during the mapping process
-	 */
+    /**
+     * Fetches highlights by release ID.
+     * @param releaseId The ID of the release to fetch highlights for
+     * @return ResponseEntity containing a set of LabelResponse objects
+     * @throws ReleaseNotFoundException if the release is not found
+     * @throws MappingException if an error occurs during the mapping process
+     */
     @GetMapping("/release/{releaseId}")
     public ResponseEntity<Set<LabelResponse>> getHighlightsByReleaseId(@PathVariable String releaseId)
             throws ReleaseNotFoundException, MappingException {
         Set<LabelResponse> releaseHighlights = labelService.getHighlightsByReleaseId(releaseId);
-		if (releaseHighlights == null) releaseHighlights = Collections.emptySet();
-		return ResponseEntity.status(HttpStatus.OK).body(releaseHighlights);
+        if (releaseHighlights == null) releaseHighlights = Collections.emptySet();
+        return ResponseEntity.status(HttpStatus.OK).body(releaseHighlights);
     }
 }

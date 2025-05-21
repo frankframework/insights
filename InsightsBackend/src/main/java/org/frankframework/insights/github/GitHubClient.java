@@ -31,11 +31,11 @@ public class GitHubClient extends GraphQLClient {
         this.objectMapper = objectMapper;
     }
 
-	/**
-	 * Fetches repository statistics from GitHub.
-	 * @return GitHubRepositoryStatisticsDTO containing repository statistics
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches repository statistics from GitHub.
+     * @return GitHubRepositoryStatisticsDTO containing repository statistics
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
         GitHubRepositoryStatisticsDTO repositoryStatistics = fetchSingleEntity(
                 GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
@@ -43,22 +43,22 @@ public class GitHubClient extends GraphQLClient {
         return repositoryStatistics;
     }
 
-	/**
-	 * Fetches labels from GitHub.
-	 * @return Set of LabelDTO containing labels
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches labels from GitHub.
+     * @return Set of LabelDTO containing labels
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public Set<LabelDTO> getLabels() throws GitHubClientException {
         Set<LabelDTO> labels = getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
         log.info("Successfully fetched {} labels from GitHub", labels.size());
         return labels;
     }
 
-	/**
-	 * Fetches milestones from GitHub.
-	 * @return Set of MilestoneDTO containing milestones
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches milestones from GitHub.
+     * @return Set of MilestoneDTO containing milestones
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public Set<MilestoneDTO> getMilestones() throws GitHubClientException {
         Set<MilestoneDTO> milestones =
                 getEntities(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
@@ -66,34 +66,34 @@ public class GitHubClient extends GraphQLClient {
         return milestones;
     }
 
-	/**
-	 * Fetches branches from GitHub.
-	 * @return Set of BranchDTO containing branches
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches branches from GitHub.
+     * @return Set of BranchDTO containing branches
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public Set<BranchDTO> getBranches() throws GitHubClientException {
         Set<BranchDTO> branches = getEntities(GitHubQueryConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
         log.info("Successfully fetched {} branches from GitHub", branches.size());
         return branches;
     }
 
-	/**
-	 * Fetches issues from GitHub.
-	 * @return Set of IssueDTO containing issues
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches issues from GitHub.
+     * @return Set of IssueDTO containing issues
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public Set<IssueDTO> getIssues() throws GitHubClientException {
         Set<IssueDTO> issues = getEntities(GitHubQueryConstants.ISSUES, new HashMap<>(), IssueDTO.class);
         log.info("Successfully fetched {} issues from GitHub", issues.size());
         return issues;
     }
 
-	/**
-	 * Fetches pull requests for a specific branch from GitHub.
-	 * @param branchName the name of the branch
-	 * @return Set of PullRequestDTO containing pull requests for the specified branch
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches pull requests for a specific branch from GitHub.
+     * @param branchName the name of the branch
+     * @return Set of PullRequestDTO containing pull requests for the specified branch
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public Set<PullRequestDTO> getBranchPullRequests(String branchName) throws GitHubClientException {
         HashMap<String, Object> variables = new HashMap<>();
         variables.put("branchName", branchName);
@@ -108,26 +108,26 @@ public class GitHubClient extends GraphQLClient {
         return pullRequests;
     }
 
-	/**
-	 * Fetches releases from GitHub.
-	 * @return Set of ReleaseDTO containing releases
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches releases from GitHub.
+     * @return Set of ReleaseDTO containing releases
+     * @throws GitHubClientException if an error occurs during the request
+     */
     public Set<ReleaseDTO> getReleases() throws GitHubClientException {
         Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
         log.info("Successfully fetched {} releases from GitHub", releases.size());
         return releases;
     }
 
-	/**
-	 * Fetches entities from GitHub using a paginated GraphQL query.
-	 * @param query the GraphQL query to execute
-	 * @param queryVariables the variables for the query
-	 * @param entityType the type of entity to fetch
-	 * @return a Set of entities of the specified type
-	 * @param <T> the type of entity
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Fetches entities from GitHub using a paginated GraphQL query.
+     * @param query the GraphQL query to execute
+     * @param queryVariables the variables for the query
+     * @param entityType the type of entity to fetch
+     * @return a Set of entities of the specified type
+     * @param <T> the type of entity
+     * @throws GitHubClientException if an error occurs during the request
+     */
     private <T> Set<T> getEntities(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
         Set<T> allEntities = new HashSet<>();
@@ -157,15 +157,15 @@ public class GitHubClient extends GraphQLClient {
         return allEntities;
     }
 
-	/**
-	 * Executes paginated GraphQL query on external GitHub server.
-	 * @param query the GraphQL query to execute
-	 * @param queryVariables the variables for the query
-	 * @param entityType the type of entity to fetch
-	 * @return a GitHubPaginationDTO containing the paginated response
-	 * @param <T> the type of entity
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
+    /**
+     * Executes paginated GraphQL query on external GitHub server.
+     * @param query the GraphQL query to execute
+     * @param queryVariables the variables for the query
+     * @param entityType the type of entity to fetch
+     * @return a GitHubPaginationDTO containing the paginated response
+     * @param <T> the type of entity
+     * @throws GitHubClientException if an error occurs during the request
+     */
     protected <T> GitHubPaginationDTO<T> fetchEntityPage(
             GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
@@ -184,16 +184,17 @@ public class GitHubClient extends GraphQLClient {
         }
     }
 
-	/**
-	 * Executes a GraphQL query to fetch a single entity from GitHub.
-	 * @param query the GraphQL query to execute
-	 * @param queryVariables the variables for the query
-	 * @param entityType the type of entity to fetch
-	 * @return the entity of the specified type
-	 * @param <T> the type of entity
-	 * @throws GitHubClientException if an error occurs during the request
-	 */
-    protected <T> T fetchSingleEntity(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
+    /**
+     * Executes a GraphQL query to fetch a single entity from GitHub.
+     * @param query the GraphQL query to execute
+     * @param queryVariables the variables for the query
+     * @param entityType the type of entity to fetch
+     * @return the entity of the specified type
+     * @param <T> the type of entity
+     * @throws GitHubClientException if an error occurs during the request
+     */
+    protected <T> T fetchSingleEntity(
+            GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GitHubClientException {
         try {
             T response = getGraphQlClient()

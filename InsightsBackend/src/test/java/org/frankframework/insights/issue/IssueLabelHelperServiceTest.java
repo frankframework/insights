@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
-
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.helper.IssueLabelHelperService;
@@ -19,135 +18,131 @@ import org.mockito.*;
 
 public class IssueLabelHelperServiceTest {
 
-	@Mock
-	private IssueLabelRepository issueLabelRepository;
-	@Mock
-	private LabelRepository labelRepository;
+    @Mock
+    private IssueLabelRepository issueLabelRepository;
 
-	@InjectMocks
-	private IssueLabelHelperService issueLabelHelperService;
+    @Mock
+    private LabelRepository labelRepository;
 
-	@BeforeEach
-	public void setUp() {
-		MockitoAnnotations.openMocks(this);
-		issueLabelHelperService = new IssueLabelHelperService(issueLabelRepository, labelRepository);
-	}
+    @InjectMocks
+    private IssueLabelHelperService issueLabelHelperService;
 
-	@Test
-	public void saveIssueLabels_shouldSaveAllLabelsForIssues() {
-		Issue issue = new Issue();
-		issue.setId("i1");
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        issueLabelHelperService = new IssueLabelHelperService(issueLabelRepository, labelRepository);
+    }
 
-		Label label = new Label();
-		label.setId("l1");
-		label.setName("bug");
+    @Test
+    public void saveIssueLabels_shouldSaveAllLabelsForIssues() {
+        Issue issue = new Issue();
+        issue.setId("i1");
 
-		var labelDTO = new org.frankframework.insights.label.LabelDTO();
-		labelDTO.id = "l1";
+        Label label = new Label();
+        label.setId("l1");
+        label.setName("bug");
 
-		var nodeDTO = new GitHubNodeDTO<org.frankframework.insights.label.LabelDTO>();
-		nodeDTO.setNode(labelDTO);
+        var labelDTO = new org.frankframework.insights.label.LabelDTO();
+        labelDTO.id = "l1";
 
-		var edges = new GitHubEdgesDTO<org.frankframework.insights.label.LabelDTO>();
-		edges.setEdges(List.of(nodeDTO));
+        var nodeDTO = new GitHubNodeDTO<org.frankframework.insights.label.LabelDTO>();
+        nodeDTO.setNode(labelDTO);
 
-		IssueDTO dto = new IssueDTO(
-				"i1", 101, "Issue", null, null, null,
-				edges, null, null);
+        var edges = new GitHubEdgesDTO<org.frankframework.insights.label.LabelDTO>();
+        edges.setEdges(List.of(nodeDTO));
 
-		Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
+        IssueDTO dto = new IssueDTO("i1", 101, "Issue", null, null, null, edges, null, null);
 
-		when(labelRepository.findAll()).thenReturn(List.of(label));
+        Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
 
-		issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
+        when(labelRepository.findAll()).thenReturn(List.of(label));
 
-		ArgumentCaptor<Collection<IssueLabel>> captor = ArgumentCaptor.forClass(Collection.class);
-		verify(issueLabelRepository).saveAll(captor.capture());
-		Collection<IssueLabel> savedLabels = captor.getValue();
-		assertEquals(1, savedLabels.size());
-		IssueLabel issueLabel = savedLabels.iterator().next();
-		assertEquals(issue, issueLabel.getIssue());
-		assertEquals(label, issueLabel.getLabel());
-	}
+        issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
 
-	@Test
-	public void saveIssueLabels_noLabelsInDTO_shouldNotSaveAnything() {
-		Issue issue = new Issue();
-		issue.setId("i1");
-		IssueDTO dto = mock(IssueDTO.class);
-		when(dto.hasLabels()).thenReturn(false);
+        ArgumentCaptor<Collection<IssueLabel>> captor = ArgumentCaptor.forClass(Collection.class);
+        verify(issueLabelRepository).saveAll(captor.capture());
+        Collection<IssueLabel> savedLabels = captor.getValue();
+        assertEquals(1, savedLabels.size());
+        IssueLabel issueLabel = savedLabels.iterator().next();
+        assertEquals(issue, issueLabel.getIssue());
+        assertEquals(label, issueLabel.getLabel());
+    }
 
-		Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
+    @Test
+    public void saveIssueLabels_noLabelsInDTO_shouldNotSaveAnything() {
+        Issue issue = new Issue();
+        issue.setId("i1");
+        IssueDTO dto = mock(IssueDTO.class);
+        when(dto.hasLabels()).thenReturn(false);
 
-		when(labelRepository.findAll()).thenReturn(Collections.emptyList());
+        Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
 
-		issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
+        when(labelRepository.findAll()).thenReturn(Collections.emptyList());
 
-		verify(issueLabelRepository, never()).saveAll(anyCollection());
-	}
+        issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
 
-	@Test
-	public void saveIssueLabels_nullDTO_shouldNotSaveAnything() {
-		Issue issue	= new Issue();
-		issue.setId("i1");
+        verify(issueLabelRepository, never()).saveAll(anyCollection());
+    }
 
-		IssueDTO dto = new IssueDTO("i1", 101, "Issue", null, null, null,
-				null, null, null);
+    @Test
+    public void saveIssueLabels_nullDTO_shouldNotSaveAnything() {
+        Issue issue = new Issue();
+        issue.setId("i1");
 
-		Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
+        IssueDTO dto = new IssueDTO("i1", 101, "Issue", null, null, null, null, null, null);
 
-		when(labelRepository.findAll()).thenReturn(Collections.emptyList());
+        Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
 
-		issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
+        when(labelRepository.findAll()).thenReturn(Collections.emptyList());
 
-		verify(issueLabelRepository, never()).saveAll(anyCollection());
-	}
+        issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
 
-	@Test
-	public void saveIssueLabels_labelNotFoundInMap_shouldSkipThatLabel() {
-		Issue issue = new Issue();
-		issue.setId("i1");
+        verify(issueLabelRepository, never()).saveAll(anyCollection());
+    }
 
-		var labelDTO = new org.frankframework.insights.label.LabelDTO();
-		labelDTO.id = "l1";
+    @Test
+    public void saveIssueLabels_labelNotFoundInMap_shouldSkipThatLabel() {
+        Issue issue = new Issue();
+        issue.setId("i1");
 
-		var nodeDTO = new GitHubNodeDTO<org.frankframework.insights.label.LabelDTO>();
-		nodeDTO.setNode(labelDTO);
+        var labelDTO = new org.frankframework.insights.label.LabelDTO();
+        labelDTO.id = "l1";
 
-		var edges = new GitHubEdgesDTO<org.frankframework.insights.label.LabelDTO>();
-		edges.setEdges(List.of(nodeDTO));
+        var nodeDTO = new GitHubNodeDTO<org.frankframework.insights.label.LabelDTO>();
+        nodeDTO.setNode(labelDTO);
 
-		IssueDTO dto = new IssueDTO(
-				"i1", 101, "Issue", null, null, null,
-				edges, null, null);
+        var edges = new GitHubEdgesDTO<org.frankframework.insights.label.LabelDTO>();
+        edges.setEdges(List.of(nodeDTO));
 
-		Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
+        IssueDTO dto = new IssueDTO("i1", 101, "Issue", null, null, null, edges, null, null);
 
-		when(labelRepository.findAll()).thenReturn(Collections.emptyList());
+        Map<String, IssueDTO> issueDtoMap = Map.of("i1", dto);
 
-		issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
+        when(labelRepository.findAll()).thenReturn(Collections.emptyList());
 
-		verify(issueLabelRepository).saveAll(argThat(iter -> !iter.iterator().hasNext()));
-	}
+        issueLabelHelperService.saveIssueLabels(Set.of(issue), issueDtoMap);
 
-	@Test
-	public void getAllLabelsMap_returnsMapOfLabels() {
-		Label label1 = new Label();
-		label1.setId("a");
-		Label label2 = new Label();
-		label2.setId("b");
-		when(labelRepository.findAll()).thenReturn(List.of(label1, label2));
+        verify(issueLabelRepository).saveAll(argThat(iter -> !iter.iterator().hasNext()));
+    }
 
-		Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
-		assertEquals(2, labelMap.size());
-		assertEquals(label1, labelMap.get("a"));
-		assertEquals(label2, labelMap.get("b"));
-	}
+    @Test
+    public void getAllLabelsMap_returnsMapOfLabels() {
+        Label label1 = new Label();
+        label1.setId("a");
+        Label label2 = new Label();
+        label2.setId("b");
+        when(labelRepository.findAll()).thenReturn(List.of(label1, label2));
 
-	@Test
-	public void getAllLabelsMap_emptyList_returnsEmptyMap() {
-		when(labelRepository.findAll()).thenReturn(Collections.emptyList());
-		Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
-		assertTrue(labelMap.isEmpty());
-	}
+        Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
+        assertEquals(2, labelMap.size());
+        assertEquals(label1, labelMap.get("a"));
+        assertEquals(label2, labelMap.get("b"));
+    }
+
+    @Test
+    public void getAllLabelsMap_emptyList_returnsEmptyMap() {
+        when(labelRepository.findAll()).thenReturn(Collections.emptyList());
+        Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
+        assertTrue(labelMap.isEmpty());
+    }
 }

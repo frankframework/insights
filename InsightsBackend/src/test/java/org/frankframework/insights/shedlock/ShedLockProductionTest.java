@@ -81,8 +81,8 @@ public class ShedLockProductionTest {
     @Test
     public void should_FetchGitHubData_when_ProductionProfileIsActive()
             throws LabelInjectionException, GitHubClientException, MilestoneInjectionException,
-                    BranchInjectionException, ReleaseInjectionException,
-                    IssueInjectionException, PullRequestInjectionException {
+                    BranchInjectionException, ReleaseInjectionException, IssueInjectionException,
+                    PullRequestInjectionException {
         systemDataInitializer.run();
 
         verify(gitHubRepositoryStatisticsService, times(1)).fetchRepositoryStatistics();

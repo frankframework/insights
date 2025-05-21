@@ -19,290 +19,313 @@ import org.mockito.*;
 
 public class GitHubClientTest {
 
-	@Mock
-	private ObjectMapper objectMapper;
+    @Mock
+    private ObjectMapper objectMapper;
 
-	@Mock
-	private GitHubProperties gitHubProperties;
+    @Mock
+    private GitHubProperties gitHubProperties;
 
-	@Spy
-	@InjectMocks
-	private GitHubClient gitHubClient;
+    @Spy
+    @InjectMocks
+    private GitHubClient gitHubClient;
 
-	@BeforeEach
-	public void setUp() {
-		MockitoAnnotations.openMocks(this);
-		when(gitHubProperties.getUrl()).thenReturn("https://api.github.com");
-		when(gitHubProperties.getSecret()).thenReturn("secret");
-		gitHubClient = spy(new GitHubClient(gitHubProperties, objectMapper));
-	}
+    @BeforeEach
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+        when(gitHubProperties.getUrl()).thenReturn("https://api.github.com");
+        when(gitHubProperties.getSecret()).thenReturn("secret");
+        gitHubClient = spy(new GitHubClient(gitHubProperties, objectMapper));
+    }
 
+    @Test
+    void getRepositoryStatistics_success() throws GitHubClientException {
+        GitHubTotalCountDTO totalCountDTO = new GitHubTotalCountDTO(1);
 
-	@Test
-	void getRepositoryStatistics_success() throws GitHubClientException {
-		GitHubTotalCountDTO totalCountDTO = new GitHubTotalCountDTO(1);
+        List<GitHubRefsDTO.GitHubBranchNodeDTO> nodes = List.of(new GitHubRefsDTO.GitHubBranchNodeDTO(
+                "branch1", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(1))));
+        GitHubRefsDTO refsDTO = new GitHubRefsDTO(nodes);
 
-		List<GitHubRefsDTO.GitHubBranchNodeDTO> nodes = List.of(
-				new GitHubRefsDTO.GitHubBranchNodeDTO("branch1",
-						new GitHubRefsDTO.GitHubTargetDTO(
-								new GitHubTotalCountDTO(1)
-						)
-				)
-		);
-		GitHubRefsDTO refsDTO = new GitHubRefsDTO(nodes);
+        GitHubRepositoryStatisticsDTO dto =
+                new GitHubRepositoryStatisticsDTO(totalCountDTO, totalCountDTO, refsDTO, totalCountDTO, totalCountDTO);
 
-		GitHubRepositoryStatisticsDTO dto =
-				new GitHubRepositoryStatisticsDTO(totalCountDTO, totalCountDTO, refsDTO, totalCountDTO, totalCountDTO);
+        doReturn(dto).when(gitHubClient).fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
+        GitHubRepositoryStatisticsDTO result = gitHubClient.getRepositoryStatistics();
 
-		doReturn(dto).when(gitHubClient).fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
-		GitHubRepositoryStatisticsDTO result = gitHubClient.getRepositoryStatistics();
+        assertEquals(dto, result);
+    }
 
-		assertEquals(dto, result);
-	}
+    @Test
+    public void getRepositoryStatistics_shouldWrapException() {
+        try {
+            doThrow(new GitHubClientException("fail", null))
+                    .when(gitHubClient)
+                    .fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
+        } catch (Exception ignored) {
+        }
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getRepositoryStatistics());
+    }
 
+    @Test
+    public void getLabels_success() throws Exception {
+        LabelDTO label = new LabelDTO();
+        List<GitHubPaginationDTO.Edge<LabelDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<LabelDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = label;
+        edges.add(edge);
+        GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-	@Test
-	public void getRepositoryStatistics_shouldWrapException() {
-		try {
-			doThrow(new GitHubClientException("fail", null)).when(gitHubClient)
-					.fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
-		} catch (Exception ignored) {}
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getRepositoryStatistics());
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        when(objectMapper.convertValue(label, LabelDTO.class)).thenReturn(label);
 
-	@Test
-	public void getLabels_success() throws Exception {
-		LabelDTO label = new LabelDTO();
-		List<GitHubPaginationDTO.Edge<LabelDTO>> edges = new ArrayList<>();
-		GitHubPaginationDTO.Edge<LabelDTO> edge = new GitHubPaginationDTO.Edge<>();
-		edge.node = label;
-		edges.add(edge);
-		GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
-		page.edges = edges;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<LabelDTO> result = gitHubClient.getLabels();
+        assertEquals(Set.of(label), result);
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-		when(objectMapper.convertValue(label, LabelDTO.class)).thenReturn(label);
+    @Test
+    public void getLabels_emptyResponse() throws Exception {
+        GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
+        page.edges = Collections.emptyList();
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
 
-		Set<LabelDTO> result = gitHubClient.getLabels();
-		assertEquals(Set.of(label), result);
-	}
+        Set<LabelDTO> result = gitHubClient.getLabels();
+        assertTrue(result.isEmpty());
+    }
 
-	@Test
-	public void getLabels_emptyResponse() throws Exception {
-		GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
-		page.edges = Collections.emptyList();
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+    @Test
+    public void getLabels_nullResponse() throws Exception {
+        doReturn(null)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        Set<LabelDTO> result = gitHubClient.getLabels();
+        assertTrue(result.isEmpty());
+    }
 
-		Set<LabelDTO> result = gitHubClient.getLabels();
-		assertTrue(result.isEmpty());
-	}
+    @Test
+    public void getLabels_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getLabels());
+    }
 
-	@Test
-	public void getLabels_nullResponse() throws Exception {
-		doReturn(null).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-		Set<LabelDTO> result = gitHubClient.getLabels();
-		assertTrue(result.isEmpty());
-	}
+    @Test
+    public void getMilestones_success() throws Exception {
+        MilestoneDTO dto = new MilestoneDTO("id", 1, null, GitHubPropertyState.OPEN);
+        List<GitHubPaginationDTO.Edge<MilestoneDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<MilestoneDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = dto;
+        edges.add(edge);
+        GitHubPaginationDTO<MilestoneDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-	@Test
-	public void getLabels_shouldWrapException() throws Exception {
-		doThrow(new GitHubClientException("fail", null))
-				.when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getLabels());
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
+        when(objectMapper.convertValue(dto, MilestoneDTO.class)).thenReturn(dto);
 
-	@Test
-	public void getMilestones_success() throws Exception {
-		MilestoneDTO dto = new MilestoneDTO("id", 1, null, GitHubPropertyState.OPEN);
-		List<GitHubPaginationDTO.Edge<MilestoneDTO>> edges = new ArrayList<>();
-		GitHubPaginationDTO.Edge<MilestoneDTO> edge = new GitHubPaginationDTO.Edge<>();
-		edge.node = dto;
-		edges.add(edge);
-		GitHubPaginationDTO<MilestoneDTO> page = new GitHubPaginationDTO<>();
-		page.edges = edges;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<MilestoneDTO> result = gitHubClient.getMilestones();
+        assertEquals(Set.of(dto), result);
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
-		when(objectMapper.convertValue(dto, MilestoneDTO.class)).thenReturn(dto);
+    @Test
+    public void getMilestones_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getMilestones());
+    }
 
-		Set<MilestoneDTO> result = gitHubClient.getMilestones();
-		assertEquals(Set.of(dto), result);
-	}
+    @Test
+    public void getBranches_success() throws Exception {
+        BranchDTO dto = new BranchDTO();
+        dto.setName("main");
+        List<GitHubPaginationDTO.Edge<BranchDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<BranchDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = dto;
+        edges.add(edge);
+        GitHubPaginationDTO<BranchDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-	@Test
-	public void getMilestones_shouldWrapException() throws Exception {
-		doThrow(new GitHubClientException("fail", null))
-				.when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getMilestones());
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
+        when(objectMapper.convertValue(dto, BranchDTO.class)).thenReturn(dto);
 
-	@Test
-	public void getBranches_success() throws Exception {
-		BranchDTO dto = new BranchDTO();
-		dto.setName("main");
-		List<GitHubPaginationDTO.Edge<BranchDTO>> edges = new ArrayList<>();
-		GitHubPaginationDTO.Edge<BranchDTO> edge = new GitHubPaginationDTO.Edge<>();
-		edge.node = dto;
-		edges.add(edge);
-		GitHubPaginationDTO<BranchDTO> page = new GitHubPaginationDTO<>();
-		page.edges = edges;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<BranchDTO> result = gitHubClient.getBranches();
+        assertEquals(Set.of(dto), result);
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
-		when(objectMapper.convertValue(dto, BranchDTO.class)).thenReturn(dto);
+    @Test
+    public void getBranches_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getBranches());
+    }
 
-		Set<BranchDTO> result = gitHubClient.getBranches();
-		assertEquals(Set.of(dto), result);
-	}
+    @Test
+    public void getIssues_success() throws Exception {
+        IssueDTO dto = mock(IssueDTO.class);
+        List<GitHubPaginationDTO.Edge<IssueDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<IssueDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = dto;
+        edges.add(edge);
+        GitHubPaginationDTO<IssueDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-	@Test
-	public void getBranches_shouldWrapException() throws Exception {
-		doThrow(new GitHubClientException("fail", null))
-				.when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getBranches());
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
+        when(objectMapper.convertValue(dto, IssueDTO.class)).thenReturn(dto);
 
-	@Test
-	public void getIssues_success() throws Exception {
-		IssueDTO dto = mock(IssueDTO.class);
-		List<GitHubPaginationDTO.Edge<IssueDTO>> edges = new ArrayList<>();
-		GitHubPaginationDTO.Edge<IssueDTO> edge = new GitHubPaginationDTO.Edge<>();
-		edge.node = dto;
-		edges.add(edge);
-		GitHubPaginationDTO<IssueDTO> page = new GitHubPaginationDTO<>();
-		page.edges = edges;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<IssueDTO> result = gitHubClient.getIssues();
+        assertEquals(Set.of(dto), result);
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
-		when(objectMapper.convertValue(dto, IssueDTO.class)).thenReturn(dto);
+    @Test
+    public void getIssues_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getIssues());
+    }
 
-		Set<IssueDTO> result = gitHubClient.getIssues();
-		assertEquals(Set.of(dto), result);
-	}
+    @Test
+    public void getBranchPullRequests_success() throws Exception {
+        PullRequestDTO dto = mock(PullRequestDTO.class);
+        List<GitHubPaginationDTO.Edge<PullRequestDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<PullRequestDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = dto;
+        edges.add(edge);
+        GitHubPaginationDTO<PullRequestDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-	@Test
-	public void getIssues_shouldWrapException() throws Exception {
-		doThrow(new GitHubClientException("fail", null))
-				.when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getIssues());
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
+        when(objectMapper.convertValue(dto, PullRequestDTO.class)).thenReturn(dto);
 
-	@Test
-	public void getBranchPullRequests_success() throws Exception {
-		PullRequestDTO dto = mock(PullRequestDTO.class);
-		List<GitHubPaginationDTO.Edge<PullRequestDTO>> edges = new ArrayList<>();
-		GitHubPaginationDTO.Edge<PullRequestDTO> edge = new GitHubPaginationDTO.Edge<>();
-		edge.node = dto;
-		edges.add(edge);
-		GitHubPaginationDTO<PullRequestDTO> page = new GitHubPaginationDTO<>();
-		page.edges = edges;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<PullRequestDTO> result = gitHubClient.getBranchPullRequests("main");
+        assertEquals(Set.of(dto), result);
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
-		when(objectMapper.convertValue(dto, PullRequestDTO.class)).thenReturn(dto);
+    @Test
+    public void getBranchPullRequests_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getBranches());
+    }
 
-		Set<PullRequestDTO> result = gitHubClient.getBranchPullRequests("main");
-		assertEquals(Set.of(dto), result);
-	}
+    @Test
+    public void getReleases_success() throws Exception {
+        ReleaseDTO dto = mock(ReleaseDTO.class);
+        List<GitHubPaginationDTO.Edge<ReleaseDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<ReleaseDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = dto;
+        edges.add(edge);
+        GitHubPaginationDTO<ReleaseDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-	@Test
-	public void getBranchPullRequests_shouldWrapException() throws Exception {
-		doThrow(new GitHubClientException("fail", null))
-				.when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getBranches());
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
+        when(objectMapper.convertValue(dto, ReleaseDTO.class)).thenReturn(dto);
 
-	@Test
-	public void getReleases_success() throws Exception {
-		ReleaseDTO dto = mock(ReleaseDTO.class);
-		List<GitHubPaginationDTO.Edge<ReleaseDTO>> edges = new ArrayList<>();
-		GitHubPaginationDTO.Edge<ReleaseDTO> edge = new GitHubPaginationDTO.Edge<>();
-		edge.node = dto;
-		edges.add(edge);
-		GitHubPaginationDTO<ReleaseDTO> page = new GitHubPaginationDTO<>();
-		page.edges = edges;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<ReleaseDTO> result = gitHubClient.getReleases();
+        assertEquals(Set.of(dto), result);
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
-		when(objectMapper.convertValue(dto, ReleaseDTO.class)).thenReturn(dto);
+    @Test
+    public void getReleases_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getReleases());
+    }
 
-		Set<ReleaseDTO> result = gitHubClient.getReleases();
-		assertEquals(Set.of(dto), result);
-	}
+    @Test
+    public void paginatedQuery_shouldHandleMultiplePages() throws Exception {
+        LabelDTO label1 = new LabelDTO();
+        LabelDTO label2 = new LabelDTO();
 
-	@Test
-	public void getReleases_shouldWrapException() throws Exception {
-		doThrow(new GitHubClientException("fail", null))
-				.when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getReleases());
-	}
+        GitHubPaginationDTO.Edge<LabelDTO> edge1 = new GitHubPaginationDTO.Edge<>();
+        edge1.node = label1;
+        GitHubPaginationDTO.Edge<LabelDTO> edge2 = new GitHubPaginationDTO.Edge<>();
+        edge2.node = label2;
 
-	@Test
-	public void paginatedQuery_shouldHandleMultiplePages() throws Exception {
-		LabelDTO label1 = new LabelDTO();
-		LabelDTO label2 = new LabelDTO();
+        GitHubPaginationDTO<LabelDTO> page1 = new GitHubPaginationDTO<>();
+        page1.edges = List.of(edge1);
+        page1.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page1.pageInfo.hasNextPage = true;
+        page1.pageInfo.endCursor = "cursor1";
 
-		GitHubPaginationDTO.Edge<LabelDTO> edge1 = new GitHubPaginationDTO.Edge<>();
-		edge1.node = label1;
-		GitHubPaginationDTO.Edge<LabelDTO> edge2 = new GitHubPaginationDTO.Edge<>();
-		edge2.node = label2;
+        GitHubPaginationDTO<LabelDTO> page2 = new GitHubPaginationDTO<>();
+        page2.edges = List.of(edge2);
+        page2.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page2.pageInfo.hasNextPage = false;
+        page2.pageInfo.endCursor = null;
 
-		GitHubPaginationDTO<LabelDTO> page1 = new GitHubPaginationDTO<>();
-		page1.edges = List.of(edge1);
-		page1.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page1.pageInfo.hasNextPage = true;
-		page1.pageInfo.endCursor = "cursor1";
+        doReturn(page1)
+                .doReturn(page2)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
 
-		GitHubPaginationDTO<LabelDTO> page2 = new GitHubPaginationDTO<>();
-		page2.edges = List.of(edge2);
-		page2.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page2.pageInfo.hasNextPage = false;
-		page2.pageInfo.endCursor = null;
+        when(objectMapper.convertValue(label1, LabelDTO.class)).thenReturn(label1);
+        when(objectMapper.convertValue(label2, LabelDTO.class)).thenReturn(label2);
 
-		doReturn(page1)
-				.doReturn(page2)
-				.when(gitHubClient)
-				.fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        Set<LabelDTO> result = gitHubClient.getLabels();
+        assertEquals(Set.of(label1, label2), result);
+    }
 
-		when(objectMapper.convertValue(label1, LabelDTO.class)).thenReturn(label1);
-		when(objectMapper.convertValue(label2, LabelDTO.class)).thenReturn(label2);
+    @Test
+    public void paginatedQuery_shouldReturnEmptySetOnNullEdges() throws Exception {
+        GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
+        page.edges = null;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
 
-		Set<LabelDTO> result = gitHubClient.getLabels();
-		assertEquals(Set.of(label1, label2), result);
-	}
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
 
-	@Test
-	public void paginatedQuery_shouldReturnEmptySetOnNullEdges() throws Exception {
-		GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
-		page.edges = null;
-		page.pageInfo = new GitHubPaginationDTO.PageInfo();
-		page.pageInfo.hasNextPage = false;
+        Set<LabelDTO> result = gitHubClient.getLabels();
+        assertTrue(result.isEmpty());
+    }
 
-		doReturn(page).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+    @Test
+    public void paginatedQuery_shouldReturnEmptySetOnNullResponse() throws Exception {
+        doReturn(null)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        Set<LabelDTO> result = gitHubClient.getLabels();
+        assertTrue(result.isEmpty());
+    }
 
-		Set<LabelDTO> result = gitHubClient.getLabels();
-		assertTrue(result.isEmpty());
-	}
-
-	@Test
-	public void paginatedQuery_shouldReturnEmptySetOnNullResponse() throws Exception {
-		doReturn(null).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-		Set<LabelDTO> result = gitHubClient.getLabels();
-		assertTrue(result.isEmpty());
-	}
-
-	@Test
-	public void paginatedQuery_shouldPropagateExceptionFromFetchEntityPage() throws Exception {
-		doThrow(new GitHubClientException("fail", null)).when(gitHubClient).fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-		assertThrows(GitHubClientException.class, () -> gitHubClient.getLabels());
-	}
+    @Test
+    public void paginatedQuery_shouldPropagateExceptionFromFetchEntityPage() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getLabels());
+    }
 }

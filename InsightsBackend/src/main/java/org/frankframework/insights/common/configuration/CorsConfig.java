@@ -11,6 +11,7 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration
 public class CorsConfig {
     private final String[] allowedOrigins;
+    private static final long MAX_CORS_CONFIGURATION_CONNECTION = 3600L;
 
     public CorsConfig(CorsProperties corsProperties) {
         allowedOrigins = corsProperties.getOrigins();
@@ -23,7 +24,7 @@ public class CorsConfig {
         corsConfig.setAllowedOrigins(List.of(allowedOrigins));
         corsConfig.setAllowedMethods(List.of("GET"));
         corsConfig.setAllowedHeaders(List.of("Origin", "Content-Type", "Accept"));
-        corsConfig.setMaxAge(3600L);
+        corsConfig.setMaxAge(MAX_CORS_CONFIGURATION_CONNECTION);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);

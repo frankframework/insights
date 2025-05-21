@@ -29,12 +29,12 @@ public class ReleaseIssueHelperService {
         this.pullRequestIssueRepository = pullRequestIssueRepository;
     }
 
-	/**
-	 * Fetches all issues associated with a given release ID.
-	 * @param releaseId The ID of the release to fetch issues for
-	 * @return Set of issues associated with the release
-	 * @throws ReleaseNotFoundException if the release is not found
-	 */
+    /**
+     * Fetches all issues associated with a given release ID.
+     * @param releaseId The ID of the release to fetch issues for
+     * @return Set of issues associated with the release
+     * @throws ReleaseNotFoundException if the release is not found
+     */
     public Set<Issue> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Release release = releaseService.checkIfReleaseExists(releaseId);
 

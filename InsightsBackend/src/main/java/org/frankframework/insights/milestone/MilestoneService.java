@@ -40,10 +40,10 @@ public class MilestoneService {
         this.milestoneRepository = milestoneRepository;
     }
 
-	/**
-	 * Injects GitHub milestones into the database.
-	 * @throws MilestoneInjectionException if an error occurs during the injection process.
-	 */
+    /**
+     * Injects GitHub milestones into the database.
+     * @throws MilestoneInjectionException if an error occurs during the injection process.
+     */
     public void injectMilestones() throws MilestoneInjectionException {
         if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubMilestoneCount()
                 == milestoneRepository.count()) {
@@ -68,41 +68,41 @@ public class MilestoneService {
         }
     }
 
-	/**
-	 * Fetches all open milestones from the database and returns them as a set of MilestoneResponse objects.
-	 * @return a set of all open milestones
-	 * @throws MappingException if an error occurs during the mapping process
-	 */
+    /**
+     * Fetches all open milestones from the database and returns them as a set of MilestoneResponse objects.
+     * @return a set of all open milestones
+     * @throws MappingException if an error occurs during the mapping process
+     */
     public Set<MilestoneResponse> getAllOpenMilestones() throws MappingException {
         Set<Milestone> openMilestones = milestoneRepository.findAllByState(GitHubPropertyState.OPEN);
         log.info("Successfully fetched {} open milestones from database", openMilestones.size());
         return mapper.toDTO(openMilestones, MilestoneResponse.class);
     }
 
-	/**
-	 * Fetches all milestones from the database and returns them as a map.
-	 * @return a map of all milestones, where the key is the milestone ID and the value is the Milestone object
-	 */
+    /**
+     * Fetches all milestones from the database and returns them as a map.
+     * @return a map of all milestones, where the key is the milestone ID and the value is the Milestone object
+     */
     public Map<String, Milestone> getAllMilestonesMap() {
         return milestoneRepository.findAll().stream()
                 .collect(Collectors.toMap(Milestone::getId, milestone -> milestone));
     }
 
-	/**
-	 * Saves a set of milestones to the database.
-	 * @param milestones the set of milestones to save
-	 */
+    /**
+     * Saves a set of milestones to the database.
+     * @param milestones the set of milestones to save
+     */
     private void saveMilestones(Set<Milestone> milestones) {
         List<Milestone> savedMilestones = milestoneRepository.saveAll(milestones);
         log.info("Successfully saved {} milestones", savedMilestones.size());
     }
 
-	/**
-	 * Checks if a milestone with the given ID exists in the database.
-	 * @param milestoneId the ID of the milestone to check
-	 * @return the Milestone object if it exists
-	 * @throws MilestoneNotFoundException if the milestone does not exist
-	 */
+    /**
+     * Checks if a milestone with the given ID exists in the database.
+     * @param milestoneId the ID of the milestone to check
+     * @return the Milestone object if it exists
+     * @throws MilestoneNotFoundException if the milestone does not exist
+     */
     public Milestone checkIfMilestoneExists(String milestoneId) throws MilestoneNotFoundException {
         Optional<Milestone> milestone = milestoneRepository.findById(milestoneId);
         if (milestone.isEmpty()) {

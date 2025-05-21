@@ -20,15 +20,15 @@ public class MilestoneController {
         this.milestoneService = milestoneService;
     }
 
-	/**
-	 * Fetches all milestones from the database.
-	 * @return ResponseEntity containing a set of MilestoneResponse objects
-	 * @throws MappingException if an error occurs during the mapping process
-	 */
+    /**
+     * Fetches all milestones from the database.
+     * @return ResponseEntity containing a set of MilestoneResponse objects
+     * @throws MappingException if an error occurs during the mapping process
+     */
     @GetMapping("/open")
     public ResponseEntity<Set<MilestoneResponse>> getAllOpenMilestones() throws MappingException {
         Set<MilestoneResponse> openMilestones = milestoneService.getAllOpenMilestones();
-		if (openMilestones == null) openMilestones = Collections.emptySet();
+        if (openMilestones == null) openMilestones = Collections.emptySet();
         return ResponseEntity.status(HttpStatus.OK).body(openMilestones);
     }
 }

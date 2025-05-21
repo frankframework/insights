@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issue.Issue;
 

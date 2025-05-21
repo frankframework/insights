@@ -27,21 +27,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-	@ExceptionHandler(ApiException.class)
-	public ResponseEntity<ErrorResponse> handleApiException(ApiException exception) {
-		log.error(
-				"Exception occurred: {} - {}", exception.getClass().getSimpleName(), exception.getMessage(), exception);
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ErrorResponse> handleApiException(ApiException exception) {
+        log.error(
+                "Exception occurred: {} - {}", exception.getClass().getSimpleName(), exception.getMessage(), exception);
 
-		List<String> messages = exception.getMessage() == null
-				? List.of()
-				: List.of(exception.getMessage());
+        List<String> messages = exception.getMessage() == null ? List.of() : List.of(exception.getMessage());
 
-		ErrorResponse response = new ErrorResponse(
-				exception.getStatusCode().value(),
-				messages,
-				exception.getStatusCode().getReasonPhrase());
+        ErrorResponse response = new ErrorResponse(
+                exception.getStatusCode().value(),
+                messages,
+                exception.getStatusCode().getReasonPhrase());
 
-		return ResponseEntity.status(exception.getStatusCode()).body(response);
-	}
-
+        return ResponseEntity.status(exception.getStatusCode()).body(response);
+    }
 }
