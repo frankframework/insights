@@ -12,7 +12,6 @@ import org.frankframework.insights.common.entityconnection.branchpullrequest.Bra
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
-import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
@@ -20,6 +19,7 @@ import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.Label;
+import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ public class PullRequestServiceTest {
     private PullRequestIssueRepository pullRequestIssueRepository;
 
     @Mock
-    private IssueLabelHelperService issueLabelHelperService;
+    private LabelService labelService;
 
     @InjectMocks
     private PullRequestService pullRequestService;
@@ -108,7 +108,7 @@ public class PullRequestServiceTest {
                 gitHubProperties,
                 pullRequestLabelRepository,
                 pullRequestIssueRepository,
-                issueLabelHelperService);
+                labelService);
     }
 
     @Test
