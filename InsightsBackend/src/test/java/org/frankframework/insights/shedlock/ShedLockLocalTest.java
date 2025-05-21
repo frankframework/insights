@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.commit.CommitService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
@@ -41,9 +40,6 @@ public class ShedLockLocalTest {
     private BranchService branchService;
 
     @Mock
-    private CommitService commitService;
-
-    @Mock
     private IssueService issueService;
 
     @Mock
@@ -66,7 +62,6 @@ public class ShedLockLocalTest {
                 labelService,
                 milestoneService,
                 branchService,
-                commitService,
                 issueService,
                 pullRequestService,
                 releaseService,
@@ -83,7 +78,6 @@ public class ShedLockLocalTest {
         verifyNoInteractions(labelService);
         verifyNoInteractions(milestoneService);
         verifyNoInteractions(branchService);
-        verifyNoInteractions(commitService);
         verifyNoInteractions(issueService);
         verifyNoInteractions(pullRequestService);
         verifyNoInteractions(releaseService);

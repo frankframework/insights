@@ -32,9 +32,11 @@ public class GlobalExceptionHandler {
         log.error(
                 "Exception occurred: {} - {}", exception.getClass().getSimpleName(), exception.getMessage(), exception);
 
+        List<String> messages = exception.getMessage() == null ? List.of() : List.of(exception.getMessage());
+
         ErrorResponse response = new ErrorResponse(
                 exception.getStatusCode().value(),
-                List.of(exception.getMessage()),
+                messages,
                 exception.getStatusCode().getReasonPhrase());
 
         return ResponseEntity.status(exception.getStatusCode()).body(response);

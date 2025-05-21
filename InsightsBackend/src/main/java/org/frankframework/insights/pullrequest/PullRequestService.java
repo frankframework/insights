@@ -16,6 +16,7 @@ import org.frankframework.insights.common.entityconnection.pullrequestlabel.Pull
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
 import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueService;
@@ -23,6 +24,7 @@ import org.frankframework.insights.label.Label;
 import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -65,30 +67,21 @@ public class PullRequestService {
         this.issueLabelHelperService = issueLabelHelperService;
     }
 
+    @Transactional
     public void injectBranchPullRequests() throws PullRequestInjectionException {
         List<Branch> branches = branchService.getAllBranches();
         log.info("Fetched {} branches", branches.size());
-
         Set<PullRequestDTO> sortedMasterPullRequests = fetchSortedMasterPullRequests();
 
         Set<BranchPullRequest> updatedBranchPullRequests = branches.stream()
-                .map(branch -> {
-                    try {
-                        return getPullRequestsForBranch(branch, sortedMasterPullRequests);
-                    } catch (PullRequestInjectionException e) {
-                        log.error("Failed to update pull requests for branch: {}", branch.getName(), e);
-                        return null;
-                    }
-                })
+                .map(branch -> processBranchPullRequests(branch, sortedMasterPullRequests))
                 .filter(Objects::nonNull)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
 
         if (!updatedBranchPullRequests.isEmpty()) {
-            branchPullRequestRepository.saveAll(updatedBranchPullRequests);
+            saveBranchPullRequests(updatedBranchPullRequests);
         }
-
-        log.info("Updated pull requests for {} branches", updatedBranchPullRequests.size());
     }
 
     private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
@@ -101,95 +94,94 @@ public class PullRequestService {
         }
     }
 
-    private Set<BranchPullRequest> getPullRequestsForBranch(Branch branch, Set<PullRequestDTO> sortedMasterPullRequests)
-            throws PullRequestInjectionException {
+    private Set<BranchPullRequest> processBranchPullRequests(
+            Branch branch, Set<PullRequestDTO> sortedMasterPullRequests) {
         try {
-            Set<PullRequestDTO> pullRequestDTOS = gitHubClient.getBranchPullRequests(branch.getName());
-
-            if (pullRequestDTOS.size() == branchPullRequestRepository.countAllByBranch_Id(branch.getId())) {
-                log.info("Size of pull requests for branch {} are already found in the database.", branch.getName());
-                return new HashSet<>();
+            Set<PullRequestDTO> branchPullRequests = gitHubClient.getBranchPullRequests(branch.getName());
+            if (isPullRequestCountUnchanged(branch, branchPullRequests)) {
+                log.info("Pull requests for branch {} are already up-to-date.", branch.getName());
+                return Collections.emptySet();
             }
 
-            Set<PullRequestDTO> mergedPullRequestDTOS =
-                    mergeMasterAndBranchPullRequests(sortedMasterPullRequests, pullRequestDTOS);
-            Set<PullRequest> pullRequests = mapper.toEntity(mergedPullRequestDTOS, PullRequest.class);
-
-            Map<String, PullRequestDTO> pullRequestDtoMap =
-                    mergedPullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, dto -> dto));
-
-            Set<PullRequest> pullRequestsWithMilestones =
-                    assignMilestonesToPullRequests(pullRequests, pullRequestDtoMap);
-            Set<PullRequest> savedPullRequests = savePullRequests(pullRequestsWithMilestones);
-            Set<PullRequest> enrichedPullRequests =
-                    assignSubPropertiesToPullRequests(savedPullRequests, pullRequestDtoMap);
-            Set<BranchPullRequest> existingBranchPullRequests = new HashSet<>(getBranchPullRequestsForBranch(branch));
-            return processBranchPullRequests(branch, enrichedPullRequests, existingBranchPullRequests);
+            Set<PullRequestDTO> mergedPullRequests =
+                    mergeMasterAndBranchPullRequests(sortedMasterPullRequests, branchPullRequests);
+            Set<PullRequest> enrichedPullRequests = enrichAndPersistPullRequests(mergedPullRequests);
+            return createBranchPullRequests(branch, enrichedPullRequests);
         } catch (Exception e) {
-            throw new PullRequestInjectionException("Error while injecting GitHub pull requests", e);
+            log.error("Failed to process pull requests for branch: {}", branch.getName(), e);
+            return null;
         }
     }
 
-    private Set<PullRequest> assignMilestonesToPullRequests(
-            Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
-        Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
-
-        pullRequests.forEach(pullRequest -> {
-            PullRequestDTO pullRequestDTO = pullRequestsDtoMap.get(pullRequest.getId());
-            if (pullRequestDTO != null
-                    && pullRequestDTO.milestone() != null
-                    && pullRequestDTO.milestone().id() != null) {
-                pullRequest.setMilestone(
-                        milestoneMap.get(pullRequestDTO.milestone().id()));
-            }
-        });
-
-        return pullRequests;
+    private boolean isPullRequestCountUnchanged(Branch branch, Set<PullRequestDTO> branchPullRequests) {
+        return branchPullRequests.size() == branchPullRequestRepository.countAllByBranch_Id(branch.getId());
     }
 
-    private Set<PullRequest> assignSubPropertiesToPullRequests(
-            Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
+    private Set<PullRequest> enrichAndPersistPullRequests(Set<PullRequestDTO> pullRequestDTOS) throws MappingException {
+        Set<PullRequest> mappedPullRequests = mapAndAssignMilestones(pullRequestDTOS);
+        Set<PullRequest> savedPullRequests = savePullRequests(mappedPullRequests);
+        persistLabelsAndIssues(savedPullRequests, pullRequestDTOS);
+        return savedPullRequests;
+    }
 
+    private Set<PullRequest> mapAndAssignMilestones(Set<PullRequestDTO> pullRequestDTOS) throws MappingException {
+        Set<PullRequest> pullRequests = mapper.toEntity(pullRequestDTOS, PullRequest.class);
+        Map<String, PullRequestDTO> pullRequestDtoMap =
+                pullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, Function.identity()));
+
+        return assignMilestonesToPullRequests(pullRequests, pullRequestDtoMap);
+    }
+
+    private void persistLabelsAndIssues(Set<PullRequest> savedPullRequests, Set<PullRequestDTO> pullRequestDTOS) {
+        Map<String, PullRequestDTO> pullRequestDtoMap =
+                pullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, Function.identity()));
         Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
         Map<String, Issue> issueMap = issueService.getAllIssuesMap();
 
-        pullRequests.forEach(pullRequest -> {
-            PullRequestDTO dto = pullRequestsDtoMap.get(pullRequest.getId());
-            if (dto != null) {
-                savePullRequestLabels(pullRequest, dto, labelMap);
-                savePullRequestIssues(pullRequest, dto, issueMap);
+        Set<PullRequestLabel> allPullRequestLabels =
+                buildAllPullRequestLabels(savedPullRequests, pullRequestDtoMap, labelMap);
+        Set<PullRequestIssue> allPullRequestIssues =
+                buildAllPullRequestIssues(savedPullRequests, pullRequestDtoMap, issueMap);
+
+        if (!allPullRequestLabels.isEmpty()) {
+            pullRequestLabelRepository.saveAll(allPullRequestLabels);
+        }
+        if (!allPullRequestIssues.isEmpty()) {
+            pullRequestIssueRepository.saveAll(allPullRequestIssues);
+        }
+    }
+
+    private Set<PullRequestLabel> buildAllPullRequestLabels(
+            Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestDtoMap, Map<String, Label> labelMap) {
+        Set<PullRequestLabel> allLabels = new HashSet<>();
+        for (PullRequest pr : pullRequests) {
+            PullRequestDTO dto = pullRequestDtoMap.get(pr.getId());
+            if (dto != null && dto.hasLabels()) {
+                dto.labels().getEdges().stream()
+                        .map(labelDTO -> new PullRequestLabel(pr, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+                        .filter(prLabel -> prLabel.getLabel() != null)
+                        .forEach(allLabels::add);
             }
-        });
-
-        return pullRequests;
+        }
+        return allLabels;
     }
 
-    private void savePullRequestLabels(PullRequest pullRequest, PullRequestDTO dto, Map<String, Label> labelMap) {
-        if (!dto.hasLabels()) return;
-
-        Set<PullRequestLabel> pullRequestLabels = dto.labels().getEdges().stream()
-                .map(labelDTO -> new PullRequestLabel(pullRequest, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                .filter(prLabel -> prLabel.getLabel() != null)
-                .collect(Collectors.toSet());
-
-        pullRequestLabelRepository.saveAll(pullRequestLabels);
-    }
-
-    private void savePullRequestIssues(PullRequest pullRequest, PullRequestDTO dto, Map<String, Issue> issueMap) {
-        if (!dto.hasClosingIssuesReferences()) return;
-
-        Set<PullRequestIssue> pullRequestIssues = dto.closingIssuesReferences().getEdges().stream()
-                .filter(edge -> edge != null && edge.getNode() != null)
-                .map(edge -> new PullRequestIssue(
-                        pullRequest, issueMap.getOrDefault(edge.getNode().id(), null)))
-                .filter(prIssue -> prIssue.getIssue() != null)
-                .collect(Collectors.toSet());
-
-        pullRequestIssueRepository.saveAll(pullRequestIssues);
-    }
-
-    private Set<BranchPullRequest> getBranchPullRequestsForBranch(Branch branch) {
-        return branchPullRequestRepository.findAllByBranch_Id(branch.getId());
+    private Set<PullRequestIssue> buildAllPullRequestIssues(
+            Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestDtoMap, Map<String, Issue> issueMap) {
+        Set<PullRequestIssue> allIssues = new HashSet<>();
+        for (PullRequest pr : pullRequests) {
+            PullRequestDTO dto = pullRequestDtoMap.get(pr.getId());
+            if (dto != null && dto.hasClosingIssuesReferences()) {
+                dto.closingIssuesReferences().getEdges().stream()
+                        .filter(Objects::nonNull)
+						.filter(edge -> edge.getNode() != null)
+                        .map(edge -> new PullRequestIssue(
+                                pr, issueMap.getOrDefault(edge.getNode().id(), null)))
+                        .filter(prIssue -> prIssue.getIssue() != null)
+                        .forEach(allIssues::add);
+            }
+        }
+        return allIssues;
     }
 
     private Set<PullRequestDTO> mergeMasterAndBranchPullRequests(
@@ -229,13 +221,31 @@ public class PullRequestService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private Set<BranchPullRequest> processBranchPullRequests(
-            Branch branch, Set<PullRequest> pullRequests, Set<BranchPullRequest> existingBranchPullRequests) {
-        Map<String, BranchPullRequest> existingPullRequestsMap = existingBranchPullRequests.stream()
-                .collect(Collectors.toMap(bp -> buildUniqueKey(bp.getBranch(), bp.getPullRequest()), bp -> bp));
+    private Set<PullRequest> assignMilestonesToPullRequests(
+            Set<PullRequest> pullRequests, Map<String, PullRequestDTO> pullRequestsDtoMap) {
+        Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
+        for (PullRequest pullRequest : pullRequests) {
+            PullRequestDTO pullRequestDTO = pullRequestsDtoMap.get(pullRequest.getId());
+            if (pullRequestDTO != null
+                    && pullRequestDTO.milestone() != null
+                    && pullRequestDTO.milestone().id() != null) {
+                pullRequest.setMilestone(
+                        milestoneMap.get(pullRequestDTO.milestone().id()));
+            }
+        }
+        return pullRequests;
+    }
 
+    private Set<BranchPullRequest> getBranchPullRequestsForBranch(Branch branch) {
+        return branchPullRequestRepository.findAllByBranch_Id(branch.getId());
+    }
+
+    private Set<BranchPullRequest> createBranchPullRequests(Branch branch, Set<PullRequest> pullRequests) {
+        Set<BranchPullRequest> existingBranchPullRequests = getBranchPullRequestsForBranch(branch);
+        Map<String, BranchPullRequest> existingMap = existingBranchPullRequests.stream()
+                .collect(Collectors.toMap(pr -> buildUniqueKey(branch, pr.getPullRequest()), Function.identity()));
         return pullRequests.stream()
-                .map(pullRequest -> getOrCreateBranchPullRequest(branch, pullRequest, existingPullRequestsMap))
+                .map(pullRequest -> getOrCreateBranchPullRequest(branch, pullRequest, existingMap))
                 .collect(Collectors.toSet());
     }
 
@@ -247,6 +257,11 @@ public class PullRequestService {
 
     private String buildUniqueKey(Branch branch, PullRequest pullRequest) {
         return String.format("%s::%s", branch.getId(), pullRequest.getId());
+    }
+
+    private void saveBranchPullRequests(Set<BranchPullRequest> branchPullRequests) {
+        List<BranchPullRequest> savedBranchPullRequests = branchPullRequestRepository.saveAll(branchPullRequests);
+        log.info("Saved {} branch pull requests", savedBranchPullRequests.size());
     }
 
     private Set<PullRequest> savePullRequests(Set<PullRequest> pullRequests) {

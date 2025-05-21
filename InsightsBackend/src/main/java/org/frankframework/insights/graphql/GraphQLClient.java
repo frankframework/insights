@@ -9,6 +9,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 public abstract class GraphQLClient {
     private final HttpGraphQlClient graphQlClient;
 
+    /**
+     * Constructor for GraphQLClient.
+     * @param baseUrl the base URL of the external GraphQL server
+     * @param secret the secret token for authentication
+     */
     public GraphQLClient(String baseUrl, String secret) {
         WebClient webClient = WebClient.builder()
                 .baseUrl(baseUrl)

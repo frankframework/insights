@@ -11,7 +11,6 @@ import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.commit.CommitService;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
@@ -46,9 +45,6 @@ public class ShedLockTest {
     private BranchService branchService;
 
     @Mock
-    private CommitService commitService;
-
-    @Mock
     private IssueService issueService;
 
     @Mock
@@ -69,7 +65,6 @@ public class ShedLockTest {
                 labelService,
                 milestoneService,
                 branchService,
-                commitService,
                 issueService,
                 pullRequestService,
                 releaseService,
