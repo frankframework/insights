@@ -2,6 +2,7 @@ package org.frankframework.insights.issue;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.helper.IssueLabelHelperService;
@@ -228,6 +229,6 @@ public class IssueService {
      * @return a map of issue id to issue
      */
     public Map<String, Issue> getAllIssuesMap() {
-        return issueRepository.findAll().stream().collect(Collectors.toMap(Issue::getId, issue -> issue));
+        return issueRepository.findAll().stream().collect(Collectors.toMap(Issue::getId, Function.identity()));
     }
 }

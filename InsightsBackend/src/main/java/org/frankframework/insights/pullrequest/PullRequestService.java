@@ -173,7 +173,8 @@ public class PullRequestService {
             PullRequestDTO dto = pullRequestDtoMap.get(pr.getId());
             if (dto != null && dto.hasClosingIssuesReferences()) {
                 dto.closingIssuesReferences().getEdges().stream()
-                        .filter(edge -> edge != null && edge.getNode() != null)
+                        .filter(Objects::nonNull)
+						.filter(edge -> edge.getNode() != null)
                         .map(edge -> new PullRequestIssue(
                                 pr, issueMap.getOrDefault(edge.getNode().id(), null)))
                         .filter(prIssue -> prIssue.getIssue() != null)
