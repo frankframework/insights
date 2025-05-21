@@ -5,7 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import org.frankframework.insights.common.helper.IssueLabelHelperService;
+
 import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
@@ -31,9 +31,6 @@ public class IssueServiceTest {
 
     @Mock
     IssueRepository issueRepository;
-
-    @Mock
-    IssueLabelHelperService issueLabelHelperService;
 
     @Mock
     MilestoneService milestoneService;
