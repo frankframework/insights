@@ -40,20 +40,20 @@ public class PullRequestService {
     private final List<String> branchProtectionRegexes;
     private final PullRequestLabelRepository pullRequestLabelRepository;
     private final PullRequestIssueRepository pullRequestIssueRepository;
-	private final LabelService labelService;
+    private final LabelService labelService;
 
-	public PullRequestService(
-			GitHubClient gitHubClient,
-			Mapper mapper,
-			PullRequestRepository pullRequestRepository,
-			BranchPullRequestRepository branchPullRequestRepository,
-			BranchService branchService,
-			MilestoneService milestoneService,
-			IssueService issueService,
-			GitHubProperties gitHubProperties,
-			PullRequestLabelRepository pullRequestLabelRepository,
-			PullRequestIssueRepository pullRequestIssueRepository,
-			LabelService labelService) {
+    public PullRequestService(
+            GitHubClient gitHubClient,
+            Mapper mapper,
+            PullRequestRepository pullRequestRepository,
+            BranchPullRequestRepository branchPullRequestRepository,
+            BranchService branchService,
+            MilestoneService milestoneService,
+            IssueService issueService,
+            GitHubProperties gitHubProperties,
+            PullRequestLabelRepository pullRequestLabelRepository,
+            PullRequestIssueRepository pullRequestIssueRepository,
+            LabelService labelService) {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.pullRequestRepository = pullRequestRepository;
@@ -64,8 +64,8 @@ public class PullRequestService {
         this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
         this.pullRequestLabelRepository = pullRequestLabelRepository;
         this.pullRequestIssueRepository = pullRequestIssueRepository;
-		this.labelService = labelService;
-	}
+        this.labelService = labelService;
+    }
 
     @Transactional
     public void injectBranchPullRequests() throws PullRequestInjectionException {
@@ -174,7 +174,7 @@ public class PullRequestService {
             if (dto != null && dto.hasClosingIssuesReferences()) {
                 dto.closingIssuesReferences().getEdges().stream()
                         .filter(Objects::nonNull)
-						.filter(edge -> edge.getNode() != null)
+                        .filter(edge -> edge.getNode() != null)
                         .map(edge -> new PullRequestIssue(
                                 pr, issueMap.getOrDefault(edge.getNode().id(), null)))
                         .filter(prIssue -> prIssue.getIssue() != null)

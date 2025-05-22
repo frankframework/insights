@@ -5,7 +5,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
@@ -34,7 +33,7 @@ public class IssueService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final IssueRepository issueRepository;
-	private final IssueLabelRepository issueLabelRepository;
+    private final IssueLabelRepository issueLabelRepository;
     private final MilestoneService milestoneService;
     private final LabelService labelService;
     private final ReleaseIssueHelperService releaseIssueHelperService;
@@ -44,7 +43,7 @@ public class IssueService {
             GitHubClient gitHubClient,
             Mapper mapper,
             IssueRepository issueRepository,
-			IssueLabelRepository issueLabelRepository,
+            IssueLabelRepository issueLabelRepository,
             MilestoneService milestoneService,
             LabelService labelService,
             ReleaseIssueHelperService releaseIssueHelperService) {
@@ -52,7 +51,7 @@ public class IssueService {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
-		this.issueLabelRepository = issueLabelRepository;
+        this.issueLabelRepository = issueLabelRepository;
         this.milestoneService = milestoneService;
         this.labelService = labelService;
         this.releaseIssueHelperService = releaseIssueHelperService;
@@ -81,16 +80,16 @@ public class IssueService {
             Set<IssueDTO> issueDTOS = gitHubClient.getIssues();
             Set<Issue> issues = mapper.toEntity(issueDTOS, Issue.class);
 
-			Map<String, IssueDTO> issueDTOMap =
-					issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, Function.identity()));
+            Map<String, IssueDTO> issueDTOMap =
+                    issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, Function.identity()));
 
             Set<Issue> issuesWithMilestones = assignMilestonesToIssues(issues, issueDTOMap);
 
-			Set<Issue> savedIssues = saveIssues(issuesWithMilestones);
+            Set<Issue> savedIssues = saveIssues(issuesWithMilestones);
 
-			assignLabelsToIssues(savedIssues, issueDTOMap);
-			assignSubIssuesToIssues(savedIssues, issueDTOMap);
-		} catch (Exception e) {
+            assignLabelsToIssues(savedIssues, issueDTOMap);
+            assignSubIssuesToIssues(savedIssues, issueDTOMap);
+        } catch (Exception e) {
             throw new IssueInjectionException("Error while injecting GitHub issues", e);
         }
     }
@@ -117,71 +116,69 @@ public class IssueService {
         return issues;
     }
 
-	/**
-	 * Assigns sub-issues to their parent issues based on the provided issue DTOs.
-	 * @param issues the set of issues to assign sub-issues to
-	 * @param issueDTOMap a map of issue IDs to their corresponding issue DTOs
-	 */
-	private void assignSubIssuesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDTOMap) {
-		Map<String, Issue> issueMap = issues.stream()
-				.collect(Collectors.toMap(Issue::getId, Function.identity()));
+    /**
+     * Assigns sub-issues to their parent issues based on the provided issue DTOs.
+     * @param issues the set of issues to assign sub-issues to
+     * @param issueDTOMap a map of issue IDs to their corresponding issue DTOs
+     */
+    private void assignSubIssuesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDTOMap) {
+        Map<String, Issue> issueMap = issues.stream().collect(Collectors.toMap(Issue::getId, Function.identity()));
 
-		for (Issue issue : issues) {
-			IssueDTO issueDTO = issueDTOMap.get(issue.getId());
-			if (issueDTO == null || !issueDTO.hasSubIssues()) continue;
+        for (Issue issue : issues) {
+            IssueDTO issueDTO = issueDTOMap.get(issue.getId());
+            if (issueDTO == null || !issueDTO.hasSubIssues()) continue;
 
-			Set<Issue> subIssues = issueDTO.subIssues().getEdges().stream()
-					.filter(Objects::nonNull)
-					.map(GitHubNodeDTO::getNode)
-					.filter(Objects::nonNull)
-					.map(node -> issueMap.get(node.id()))
-					.filter(Objects::nonNull)
-					.collect(Collectors.toSet());
+            Set<Issue> subIssues = issueDTO.subIssues().getEdges().stream()
+                    .filter(Objects::nonNull)
+                    .map(GitHubNodeDTO::getNode)
+                    .filter(Objects::nonNull)
+                    .map(node -> issueMap.get(node.id()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
 
-			subIssues.forEach(sub -> sub.setParentIssue(issue));
-			issue.setSubIssues(subIssues);
-		}
+            subIssues.forEach(sub -> sub.setParentIssue(issue));
+            issue.setSubIssues(subIssues);
+        }
 
-		saveIssues(issues);
-	}
-
-	/**
-	 * Assigns labels to issues based on the provided issue DTOs.
-	 * @param savedIssues the set of saved issues to assign labels to
-	 * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
-	 */
-	private void assignLabelsToIssues(Set<Issue> savedIssues, Map<String, IssueDTO> issueDtoMap) {
-		Map<String, Label> labelMap = labelService.getAllLabelsMap();
-
-		Set<IssueLabel> allPullRequestLabels =
-				buildAllIssueLabels(savedIssues, issueDtoMap, labelMap);
-
-		if (!allPullRequestLabels.isEmpty()) {
-			issueLabelRepository.saveAll(allPullRequestLabels);
-		}
+        saveIssues(issues);
     }
 
-	/**
-	 * Builds a set of all issue labels based on the provided issues and their corresponding DTOs.
-	 * @param issues the set of issues to process
-	 * @param issueDTOMap a map of issue IDs to their corresponding issue DTOs
-	 * @param labelMap a map of label IDs to their corresponding labels
-	 * @return a set of all issue labels
-	 */
-	private Set<IssueLabel> buildAllIssueLabels(
-			Set<Issue> issues, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
-		Set<IssueLabel> allLabels = new HashSet<>();
-		for (Issue issue : issues) {
-			IssueDTO dto = issueDTOMap.get(issue.getId());
-			if (dto != null && dto.hasLabels()) {
-				dto.labels().getEdges().stream()
-						.map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-						.filter(prLabel -> prLabel.getLabel() != null)
-						.forEach(allLabels::add);
-			}
-		}
-		return allLabels;
-	}
+    /**
+     * Assigns labels to issues based on the provided issue DTOs.
+     * @param savedIssues the set of saved issues to assign labels to
+     * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
+     */
+    private void assignLabelsToIssues(Set<Issue> savedIssues, Map<String, IssueDTO> issueDtoMap) {
+        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+
+        Set<IssueLabel> allPullRequestLabels = buildAllIssueLabels(savedIssues, issueDtoMap, labelMap);
+
+        if (!allPullRequestLabels.isEmpty()) {
+            issueLabelRepository.saveAll(allPullRequestLabels);
+        }
+    }
+
+    /**
+     * Builds a set of all issue labels based on the provided issues and their corresponding DTOs.
+     * @param issues the set of issues to process
+     * @param issueDTOMap a map of issue IDs to their corresponding issue DTOs
+     * @param labelMap a map of label IDs to their corresponding labels
+     * @return a set of all issue labels
+     */
+    private Set<IssueLabel> buildAllIssueLabels(
+            Set<Issue> issues, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
+        Set<IssueLabel> allLabels = new HashSet<>();
+        for (Issue issue : issues) {
+            IssueDTO dto = issueDTOMap.get(issue.getId());
+            if (dto != null && dto.hasLabels()) {
+                dto.labels().getEdges().stream()
+                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+                        .filter(prLabel -> prLabel.getLabel() != null)
+                        .forEach(allLabels::add);
+            }
+        }
+        return allLabels;
+    }
 
     /**
      * Saves the provided issues to the database.

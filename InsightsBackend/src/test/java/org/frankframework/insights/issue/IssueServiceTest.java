@@ -5,7 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-
+import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
@@ -31,6 +31,9 @@ public class IssueServiceTest {
 
     @Mock
     IssueRepository issueRepository;
+
+    @Mock
+    IssueLabelRepository issueLabelRepository;
 
     @Mock
     MilestoneService milestoneService;
@@ -140,6 +143,7 @@ public class IssueServiceTest {
 
         verify(gitHubClient, never()).getIssues();
         verify(issueRepository, never()).saveAll(anySet());
+        verify(issueLabelRepository, never()).saveAll(anySet());
     }
 
     @Test
@@ -156,15 +160,24 @@ public class IssueServiceTest {
         when(gitHubClient.getIssues()).thenReturn(DTOs);
         when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
         when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
-
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
-        doNothing().when(issueLabelHelperService).saveIssueLabels(anySet(), anyMap());
+        // Mock labels logic for assignLabelsToIssues
+        Label label = new Label();
+        label.setId("l1");
+        label.setName("bug");
+        label.setColor("red");
+        label.setDescription("desc");
+        Map<String, Label> labelMap = Map.of("l1", label);
+        when(labelService.getAllLabelsMap()).thenReturn(labelMap);
+
+        // SaveAll for labels
+        when(issueLabelRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         issueService.injectIssues();
 
         verify(issueRepository, times(2)).saveAll(anySet());
-        verify(issueLabelHelperService).saveIssueLabels(anySet(), anyMap());
+        verify(issueLabelRepository, atLeastOnce()).saveAll(anySet());
         assertEquals(milestone, issue1.getMilestone());
     }
 
@@ -181,15 +194,16 @@ public class IssueServiceTest {
         when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
         when(milestoneService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
-        doNothing().when(issueLabelHelperService).saveIssueLabels(anySet(), anyMap());
+
+        // Use empty label map, which matches your service logic for this test
+        when(labelService.getAllLabelsMap()).thenReturn(Collections.emptyMap());
 
         issueService.injectIssues();
 
+        // Should be called exactly TWICE: after milestones and after sub-issues
         verify(issueRepository, times(2)).saveAll(anySet());
-        verify(issueLabelHelperService).saveIssueLabels(anySet(), anyMap());
-        // sub-issue assignment logic can only be fully tested if Issue equals/hashcode is id-based
-        // so this is a smoke check:
-        // assertTrue(issueSub.getSubIssues().stream().anyMatch(i -> "i2".equals(i.getId())));
+        // No labels, so never called
+        verify(issueLabelRepository, never()).saveAll(anySet());
     }
 
     @Test

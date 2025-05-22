@@ -16,9 +16,14 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
+import org.frankframework.insights.github.GitHubEdgesDTO;
+import org.frankframework.insights.github.GitHubNodeDTO;
+import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issue.Issue;
+import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.Label;
+import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.junit.jupiter.api.BeforeEach;
@@ -91,6 +96,7 @@ public class PullRequestServiceTest {
                 UUID.randomUUID().toString(), 2, "pr2", null, OffsetDateTime.now(), null, null, null);
 
         mockPullRequest = new PullRequest();
+        mockPullRequest.setId(subBranchPR.id());
         mockPullRequest.setTitle("pr2");
 
         List<String> branchProtectionRegexes = List.of("master", "release");
@@ -121,7 +127,9 @@ public class PullRequestServiceTest {
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
         when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
                 .thenReturn(Set.of(new BranchPullRequest(testBranch, mockPullRequest)));
-        when(pullRequestRepository.saveAll(Set.of(mockPullRequest))).thenReturn(List.of(mockPullRequest));
+        when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(mockPullRequest));
+        when(labelService.getAllLabelsMap()).thenReturn(Map.of());
+        when(issueService.getAllIssuesMap()).thenReturn(Map.of());
 
         pullRequestService.injectBranchPullRequests();
 
@@ -155,6 +163,8 @@ public class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests(masterBranch.getName())).thenReturn(Set.of(masterPR));
         when(gitHubClient.getBranchPullRequests(testBranch.getName()))
                 .thenThrow(new GitHubClientException("GitHub client error", null));
+        when(labelService.getAllLabelsMap()).thenReturn(Map.of());
+        when(issueService.getAllIssuesMap()).thenReturn(Map.of());
 
         assertDoesNotThrow(() -> pullRequestService.injectBranchPullRequests());
     }
@@ -181,14 +191,10 @@ public class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(duplicatePR));
         when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(duplicatePR));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
-
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
         when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
-
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(mockPullRequest));
-
-        when(issueLabelHelperService.getAllLabelsMap()).thenReturn(Map.of());
-        when(milestoneService.getAllMilestonesMap()).thenReturn(Map.of());
+        when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
 
         pullRequestService.injectBranchPullRequests();
@@ -236,30 +242,61 @@ public class PullRequestServiceTest {
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
-        branch.setName("feature/labels");
+        branch.setName("feature/labels"); // Ensure the name matches!
 
-        PullRequestDTO prDto = new PullRequestDTO("id-x", 4, "pr labels", null, OffsetDateTime.now(), null, null, null);
+        LabelDTO labelDTO = new LabelDTO();
+        labelDTO.id = "l1";
+        labelDTO.name = "bug";
+        labelDTO.description = "desc";
+        labelDTO.color = "red";
+
+        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>();
+        labelNode.setNode(labelDTO);
+        List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
+        GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>();
+        labelEdges.setEdges(labelNodeList);
+
+        IssueDTO issue = new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null);
+        GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>();
+        issueNode.setNode(issue);
+        GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>();
+        closingIssuesEdges.setEdges(List.of(issueNode));
+
+        PullRequestDTO prDto = new PullRequestDTO(
+                "id-x", 4, "pr labels", null, OffsetDateTime.now(), labelEdges, null, closingIssuesEdges);
         PullRequest prEntity = new PullRequest();
         prEntity.setId("id-x");
         prEntity.setTitle("pr labels");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(prDto));
-        when(gitHubClient.getBranchPullRequests("feature/labels")).thenReturn(Set.of(prDto));
+        when(gitHubClient.getBranchPullRequests("feature/labels"))
+                .thenReturn(Set.of(prDto)); // <<== MATCH the branch name here!
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
-
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prEntity));
 
-        when(issueLabelHelperService.getAllLabelsMap()).thenReturn(Map.of("l1", mock(Label.class)));
-        when(milestoneService.getAllMilestonesMap()).thenReturn(Map.of());
-        when(issueService.getAllIssuesMap()).thenReturn(Map.of("i1", mock(Issue.class)));
+        Label label = new Label();
+        label.setId("l1");
+        Map<String, Label> labelMap = Map.of("l1", label);
+        when(labelService.getAllLabelsMap()).thenReturn(labelMap);
+
+        // Make sure the issue service returns a map of issue id to Issue, not IssueDTO
+        Issue issueEntity = new Issue();
+        issueEntity.setId("i1");
+        Map<String, Issue> issueMap = Map.of("i1", issueEntity);
+        when(issueService.getAllIssuesMap()).thenReturn(issueMap);
+
+        when(pullRequestLabelRepository.saveAll(anySet())).thenReturn(Collections.emptyList());
+        when(pullRequestIssueRepository.saveAll(anySet())).thenReturn(Collections.emptyList());
 
         pullRequestService.injectBranchPullRequests();
 
         verify(pullRequestRepository, times(1)).saveAll(anySet());
         verify(branchPullRequestRepository, times(1)).saveAll(anySet());
+        verify(pullRequestLabelRepository, atLeastOnce()).saveAll(anySet());
+        verify(pullRequestIssueRepository, atLeastOnce()).saveAll(anySet());
     }
 
     @Test
@@ -287,8 +324,7 @@ public class PullRequestServiceTest {
         when(branchPullRequestRepository.findAllByBranch_Id(b1.getId())).thenReturn(Collections.emptySet());
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prB1));
 
-        when(issueLabelHelperService.getAllLabelsMap()).thenReturn(Map.of());
-        when(milestoneService.getAllMilestonesMap()).thenReturn(Map.of());
+        when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
 
         pullRequestService.injectBranchPullRequests();

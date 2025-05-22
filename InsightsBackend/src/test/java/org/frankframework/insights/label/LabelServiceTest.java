@@ -147,7 +147,6 @@ public class LabelServiceTest {
         when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelA1, issueLabelA2));
         when(issueLabelRepository.findAllByIssue_Id("iB")).thenReturn(Set.of(issueLabelB1));
 
-        // Filtering: threshold = total * 0.05 = 3*0.05 = 0.15, so both labels are included
         Set<Label> filtered = Set.of(label1, label2);
         Set<LabelResponse> responses = Set.of(
                 new LabelResponse("l1", "bug", "desc", "red"), new LabelResponse("l2", "feature", "desc2", "blue"));
