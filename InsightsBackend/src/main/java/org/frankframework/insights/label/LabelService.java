@@ -133,6 +133,14 @@ public class LabelService {
     }
 
     /**
+     * Fetches all labels from the database and returns them as a map.
+     * @return Map of label IDs to Label objects
+     */
+    public Map<String, Label> getAllLabelsMap() {
+        return labelRepository.findAll().stream().collect(Collectors.toMap(Label::getId, label -> label));
+    }
+
+    /**
      * Fetches labels associated with a specific issue ID.
      * @param issueId the ID of the issue
      * @return a set of labels associated with the issue
