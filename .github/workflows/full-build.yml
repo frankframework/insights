@@ -1,0 +1,168 @@
+name: CI - Full FF Insights build
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+env:
+  JDK_VERSION: 21
+
+jobs:
+  backend-lint:
+    name: Backend Lint (Checkstyle)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: 'temurin'
+      - name: Lint backend
+        run: mvn checkstyle:check --file InsightsBackend/pom.xml
+
+  frontend-lint:
+    name: Frontend Lint (Angular)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: InsightsFrontend
+      - name: Lint frontend
+        run: npm run lint
+        working-directory: InsightsFrontend
+
+  backend-test:
+    name: Backend Unit Test
+    runs-on: ubuntu-latest
+    needs: [backend-lint]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports: [5432:5432]
+        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: 'temurin'
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-${{ runner.os }}-
+      - name: Backend Unit Tests
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
+          SPRING_DATASOURCE_USERNAME: testuser
+          SPRING_DATASOURCE_PASSWORD: testpass
+        run: mvn test --file InsightsBackend/pom.xml
+
+  frontend-test:
+    name: Frontend Unit Test
+    runs-on: ubuntu-latest
+    needs: [frontend-lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Cache Node modules
+        uses: actions/cache@v4
+        with:
+          path: InsightsFrontend/node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('InsightsFrontend/package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - name: Install dependencies
+        run: npm ci
+        working-directory: InsightsFrontend
+      - name: Frontend Unit Tests
+        run: npm run test -- --watch=false --browsers=ChromeHeadless
+        working-directory: InsightsFrontend
+
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    needs: [backend-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: 'temurin'
+      - name: Build backend
+        run: mvn package -DskipTests --file InsightsBackend/pom.xml
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: [frontend-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm ci
+        working-directory: InsightsFrontend
+      - name: Build frontend
+        run: npm run build -- --prod
+        working-directory: InsightsFrontend
+
+  # e2e-test:
+  #   name: E2E Test
+  #   runs-on: ubuntu-latest
+  #   needs: [backend-build, frontend-build]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     # Optionally, start everything via docker-compose if you have it set up.
+  #     - name: Run docker-compose (if you have it)
+  #       run: docker-compose up -d
+  #     - name: Wait for services
+  #       run: sleep 20
+  #     - name: Run E2E tests
+  #       run: npm run e2e
+  #       working-directory: InsightsFrontend
+  #     - name: Tear down docker-compose
+  #       if: always()
+  #       run: docker-compose down
+
+  # sonarcloud-analysis:
+  #   name: SonarQube/SonarCloud Analysis
+  #   runs-on: ubuntu-latest
+  #   needs: [backend-test]
+  #   if: github.repository_owner == 'your-org' && github.actor != 'dependabot[bot]'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-java@v4
+  #       with:
+  #         java-version: ${{ env.JDK_VERSION }}
+  #         distribution: 'temurin'
+  #     - name: SonarQube analysis
+  #       env:
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       run: mvn sonar:sonar -Dsonar.projectKey=your-project-key -Dsonar.host.url=https://your.sonarqube.server --file InsightsBackend/pom.xml
+
+  # deploy:
+  #   name: Deploy to ArgoCD
+  #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+  #   needs: [e2e-test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Deploy to ArgoCD
+  #       env:
+  #         ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  #         ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+  #       run: |
+  #         curl -k -H "Authorization: Bearer $ARGOCD_TOKEN" \
+  #           -X POST "$ARGOCD_SERVER/api/v1/applications/your-app-name/sync"
