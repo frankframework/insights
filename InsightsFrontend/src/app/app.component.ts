@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { ReleaseGraphComponent } from './pages/release-graph/release-graph.component';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  imports: [ReleaseGraphComponent],
+  imports: [RouterOutlet],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
