@@ -6,7 +6,9 @@ describe('HttpInterceptorService', () => {
   let service: HttpInterceptorService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [HttpInterceptorService],
+    });
     service = TestBed.inject(HttpInterceptorService);
   });
 

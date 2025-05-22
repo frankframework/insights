@@ -1,12 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 
 import { MilestoneService } from './milestone.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('MilestoneService', () => {
   let service: MilestoneService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(MilestoneService);
   });
 
