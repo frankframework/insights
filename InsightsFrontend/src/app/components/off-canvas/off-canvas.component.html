@@ -1,0 +1,9 @@
+<div class="off-canvas open">
+  <div class="off-canvas-content">
+    @if (title) {
+      <h4 class="off-canvas-title">{{ title }}</h4>
+    }
+    <button (click)="onClose()">✕</button>
+    <ng-content />
+  </div>
+</div>

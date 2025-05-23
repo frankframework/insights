@@ -1,22 +1,29 @@
 import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular/core';
-import { ReleaseService } from '../../services/release.service';
-import { catchError, map, of, tap } from 'rxjs';
+import { Release, ReleaseService } from '../../services/release.service';
+import { BehaviorSubject, catchError, map, of, tap } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService } from './release-link.service';
+import { ReleaseOffCanvasComponent } from './release-off-canvas/release-off-canvas.component';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'app-release-graph',
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
+  imports: [ReleaseOffCanvasComponent, AsyncPipe]
 })
 export class ReleaseGraphComponent implements OnInit {
   public static readonly GITHUB_MASTER_BRANCH = 'master';
 
   @ViewChild('svgElement', { static: true }) svgElement!: ElementRef<SVGSVGElement>;
 
+  public _selectedRelease = new BehaviorSubject<Release | null>(null);
+  public selectedRelease$ = this._selectedRelease.asObservable();
+
   public releaseNodes: ReleaseNode[] = [];
   public releaseLinks: ReleaseLink[] = [];
+  public releases: Release[] = [];
   public scale = 1;
   public translateX = 0;
   public translateY = 0;
@@ -74,11 +81,21 @@ export class ReleaseGraphComponent implements OnInit {
     ].join(' ');
   }
 
+  public openReleaseDetails(releaseNode: ReleaseNode): void {
+    const release = this.releases.find((r) => r.id === releaseNode.id) ?? null;
+    this._selectedRelease.next(release);
+  }
+
+  public closeReleaseDetails(): void {
+    this._selectedRelease.next(null);
+  }
+
   private getAllReleases(): void {
     this.releaseService
       .getAllReleases()
       .pipe(
         map((record) => Object.values(record).flat()),
+        tap((releases) => (this.releases = releases)),
         map((releases) => this.nodeService.sortReleases(releases)),
         tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
         catchError((error) => {
@@ -119,9 +136,9 @@ export class ReleaseGraphComponent implements OnInit {
     this.scale = (H * 0.5) / graphH;
     this.translateY = (H * 0.15) / this.scale - minY;
 
-    const graph85X = minX + 0.85 * graphW;
+    const graph85X = minX + 0.8 * graphW;
 
-    const centerGraphX = W / 2 / this.scale;
+    const centerGraphX = (W * 0.8) / this.scale;
 
     const padPx = W * 0.25;
     const padGraph = padPx / this.scale;
@@ -129,7 +146,7 @@ export class ReleaseGraphComponent implements OnInit {
     const initialTx = centerGraphX - graph85X;
 
     this.maxTranslateX = padGraph / 2 - minX;
-    this.minTranslateX = W / this.scale - padGraph / 2 - maxX;
+    this.minTranslateX = W / this.scale - maxX * 1.25;
 
     this.translateX = Math.min(this.maxTranslateX, Math.max(this.minTranslateX, initialTx));
 

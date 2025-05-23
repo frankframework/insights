@@ -1,1 +1,7 @@
-<router-outlet></router-outlet>
+<app-tab-header />
+<div>
+  @if (loading) {
+    <app-loader />
+  }
+  <router-outlet />
+</div>
