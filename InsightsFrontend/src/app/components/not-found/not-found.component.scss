@@ -1,0 +1,22 @@
+#not-found-container {
+  height: calc(100vh - 1rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  img {
+    margin-bottom: 2rem;
+    max-width: 15%;
+    max-height: 15%;
+    width: auto;
+    height: auto;
+    display: block;
+  }
+
+  h2 {
+    font-size: 2rem;
+    margin: 0;
+    color: #222;
+  }
+}

@@ -82,14 +82,18 @@ public class LabelService {
      * @throws ReleaseNotFoundException if the release is not found
      * @throws MappingException if an error occurs during mapping
      */
-    public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
+    public HighlightsResponse getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
         List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
         Map<Label, Long> labelCounts = countLabelOccurrences(releaseLabels);
-
         Set<Label> filteredLabels = filterLabelsByPercentage(labelCounts);
 
-        return mapper.toDTO(filteredLabels, LabelResponse.class);
+		Map<LabelResponse, Long> labelResponseCounts = labelCounts.entrySet().stream()
+				.collect(Collectors.toMap(entry -> mapper.toDTO(entry.getKey(), LabelResponse.class), Map.Entry::getValue));
+
+		Set<LabelResponse> filteredLabelResponses = mapper.toDTO(filteredLabels, LabelResponse.class);
+
+        return new HighlightsResponse(labelResponseCounts, filteredLabelResponses);
     }
 
     /**
