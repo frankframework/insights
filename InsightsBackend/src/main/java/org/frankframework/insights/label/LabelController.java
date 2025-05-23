@@ -30,10 +30,9 @@ public class LabelController {
      * @throws MappingException if an error occurs during the mapping process
      */
     @GetMapping("/release/{releaseId}")
-    public ResponseEntity<Set<LabelResponse>> getHighlightsByReleaseId(@PathVariable String releaseId)
+    public ResponseEntity<HighlightsResponse> getHighlightsByReleaseId(@PathVariable String releaseId)
             throws ReleaseNotFoundException, MappingException {
-        Set<LabelResponse> releaseHighlights = labelService.getHighlightsByReleaseId(releaseId);
-        if (releaseHighlights == null) releaseHighlights = Collections.emptySet();
+        HighlightsResponse releaseHighlights = labelService.getHighlightsByReleaseId(releaseId);
         return ResponseEntity.status(HttpStatus.OK).body(releaseHighlights);
     }
 }
