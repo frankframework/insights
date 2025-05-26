@@ -11,6 +11,7 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.*;
 import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.*;
 import org.frankframework.insights.milestone.*;
@@ -242,37 +243,40 @@ public class IssueServiceTest {
         assertThrows(IssueInjectionException.class, () -> issueService.injectIssues());
     }
 
-    @Test
-    public void getIssuesByTimespan_returnsResponsesWithLabels() {
-        Set<Issue> issues = Set.of(issue1, issue2);
-        when(issueRepository.findAllByClosedAtBetween(any(), any())).thenReturn(issues);
+	@Test
+	public void getIssuesByTimespan_returnsResponsesWithLabels() {
+		Set<Issue> issues = Set.of(issue1, issue2);
+		when(issueRepository.findAllByClosedAtBetween(any(), any())).thenReturn(issues);
 
-        Label label = new Label();
-        label.setId("l1");
-        label.setName("bug");
-        label.setColor("red");
-        label.setDescription("desc");
+		Label label = new Label();
+		label.setId("l1");
+		label.setName("bug");
+		label.setColor("red");
+		label.setDescription("desc");
+		LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
 
-        LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
+		IssueTypeResponse itr = new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple");
 
-        IssueResponse ir1 = new IssueResponse();
-        ir1.setId("i1");
-        ir1.setClosedAt(now);
-        IssueResponse ir2 = new IssueResponse();
-        ir2.setId("i2");
-        ir2.setClosedAt(now);
+		IssueResponse ir1 = new IssueResponse();
+		ir1.setId("i1");
+		ir1.setClosedAt(now);
+		IssueResponse ir2 = new IssueResponse();
+		ir2.setId("i2");
+		ir2.setClosedAt(now);
 
-        when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir1);
-        when(mapper.toDTO(eq(issue2), eq(IssueResponse.class))).thenReturn(ir2);
-        when(labelService.getLabelsByIssueId(anyString())).thenReturn(Set.of(label));
-        when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
+		when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir1);
+		when(mapper.toDTO(eq(issue2), eq(IssueResponse.class))).thenReturn(ir2);
+		when(labelService.getLabelsByIssueId(anyString())).thenReturn(Set.of(label));
+		when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
 
-        Set<IssueResponse> resp = issueService.getIssuesByTimespan(now.minusDays(5), now.plusDays(5));
+		when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class))).thenReturn(itr);
 
-        assertEquals(2, resp.size());
-        assertTrue(resp.stream().anyMatch(r -> r.getId().equals("i1")));
-        assertTrue(resp.stream().anyMatch(r -> r.getId().equals("i2")));
-    }
+		Set<IssueResponse> resp = issueService.getIssuesByTimespan(now.minusDays(5), now.plusDays(5));
+
+		assertEquals(2, resp.size());
+		assertTrue(resp.stream().anyMatch(r -> r.getId().equals("i1")));
+		assertTrue(resp.stream().anyMatch(r -> r.getId().equals("i2")));
+	}
 
     @Test
     public void getIssuesByReleaseId_returnsResponsesWithLabels() throws Exception {

@@ -9,18 +9,13 @@ export interface Label {
   color: string;
 }
 
-export interface ReleaseHighlights {
-  AllHighlights: Record<string, number>;
-  filteredHighlights: Label[];
-}
-
 @Injectable({
   providedIn: 'root',
 })
 export class LabelService {
   constructor(private appService: AppService) {}
 
-  public getHighLightsByReleaseId(releaseId: string): Observable<ReleaseHighlights> {
-    return this.appService.get<ReleaseHighlights>(this.appService.createAPIUrl(`labels/release/${releaseId}`));
+  public getHighLightsByReleaseId(releaseId: string): Observable<Label[]> {
+    return this.appService.get<Label[]>(this.appService.createAPIUrl(`labels/release/${releaseId}`));
   }
 }

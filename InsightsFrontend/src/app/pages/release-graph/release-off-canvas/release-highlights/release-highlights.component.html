@@ -1,19 +1,21 @@
 <div class="highlight-pie">
   <div class="highlight-info-container">
     <h4 class="highlight-title">Highlights</h4>
-    @for (highlight of highlights?.filteredHighlights; track highlight) {
+    @for (highlightLabel of highlightedLabels; track highlightLabel) {
       <div class="highlight-label">
-        <span class="highlight-dot" [style.background]="'#' + highlight.color"></span>
-        <p>{{ highlight.name }}</p>
+        <span class="highlight-dot" [style.background]="getDotColor(highlightLabel.color)"></span>
+        <p>{{ highlightLabel.name }}</p>
       </div>
     }
   </div>
-  <ngx-charts-pie-chart
-    class="highlight-donut-chart"
-    [view]="[300, 300]"
-    [results]="pieData"
-    [customColors]="customColors"
-    [doughnut]="true"
-    [animations]="false"
-  />
+  <div #chartWrapper class="highlight-donut-wrapper">
+    <ngx-charts-pie-chart
+      class="highlight-donut-chart"
+      [view]="[pieWidth, pieWidth]"
+      [results]="pieData"
+      [customColors]="customColors"
+      [doughnut]="true"
+      [animations]="false"
+    />
+  </div>
 </div>

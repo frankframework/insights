@@ -11,10 +11,10 @@ import { AsyncPipe } from '@angular/common';
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [ReleaseOffCanvasComponent, AsyncPipe]
+  imports: [ReleaseOffCanvasComponent, AsyncPipe],
 })
 export class ReleaseGraphComponent implements OnInit {
-  public static readonly GITHUB_MASTER_BRANCH = 'master';
+  public static readonly GITHUB_MASTER_BRANCH: string = 'master';
 
   @ViewChild('svgElement', { static: true }) svgElement!: ElementRef<SVGSVGElement>;
 

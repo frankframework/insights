@@ -28,7 +28,7 @@ const SupportColors = {
 
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
-  private static readonly GITHUB_NIGHTLY_RELEASE = 'nightly';
+  private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
 
   public sortReleases(releases: Release[]): Map<string, ReleaseNode[]>[] {
     const grouped = this.groupReleasesByBranch(releases);
