@@ -2,17 +2,24 @@
   <svg #svgElement id="svgElement" [attr.viewBox]="viewBox" (wheel)="onWheel($event)">
     <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
       @for (releaseNode of releaseNodes; track releaseNode) {
-        <g [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'">
+        <g
+          id="node"
+          [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
+          (click)="openReleaseDetails(releaseNode)"
+        >
           <circle r="20" [attr.fill]="releaseNode.color" />
           <text y="-30">
             {{ releaseNode.label }}
           </text>
         </g>
       }
-
       @for (releaseLink of releaseLinks; track releaseLink) {
         <path [attr.d]="getCustomPath(releaseLink)" />
       }
     </g>
   </svg>
+
+  @if (selectedRelease$ | async; as release) {
+    <app-release-off-canvas [release]="release" (closeCanvas)="closeReleaseDetails()" />
+  }
 </div>

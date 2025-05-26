@@ -85,7 +85,7 @@ public class LabelService {
      * @throws ReleaseNotFoundException if the release is not found
      * @throws MappingException if an error occurs during mapping
      */
-    public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
+    public HighlightsResponse getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
         List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
         Set<Label> filteredLabels = filterLabelsByPriority(releaseLabels);
