@@ -3,6 +3,7 @@ package org.frankframework.insights.label;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
@@ -132,13 +133,13 @@ public class LabelService {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * Fetches all labels from the database and returns them as a map.
-     * @return Map of label IDs to Label objects
-     */
-    public Map<String, Label> getAllLabelsMap() {
-        return labelRepository.findAll().stream().collect(Collectors.toMap(Label::getId, label -> label));
-    }
+	/**
+	 * Fetches all labels from the database and returns them as a map.
+	 * @return Map of label IDs to Label objects
+	 */
+	public Map<String, Label> getAllLabelsMap() {
+		return labelRepository.findAll().stream().collect(Collectors.toMap(Label::getId, Function.identity()));
+	}
 
     /**
      * Fetches labels associated with a specific issue ID.

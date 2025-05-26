@@ -14,6 +14,7 @@ import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
 import org.frankframework.insights.issue.IssueService;
+import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelInjectionException;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneInjectionException;
@@ -44,6 +45,9 @@ public class ShedLockProductionTest {
     @Mock
     private MilestoneService milestoneService;
 
+	@Mock
+	private IssueTypeService issueTypeService;
+
     @Mock
     private BranchService branchService;
 
@@ -69,6 +73,7 @@ public class ShedLockProductionTest {
                 gitHubRepositoryStatisticsService,
                 labelService,
                 milestoneService,
+				issueTypeService,
                 branchService,
                 issueService,
                 pullRequestService,

@@ -9,6 +9,8 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.milestone.Milestone;
 
 @Entity
@@ -39,6 +41,10 @@ public class Issue {
     @ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference
     private Milestone milestone;
+
+	@ManyToOne(cascade = CascadeType.MERGE)
+	@JsonBackReference
+	private IssueType issueType;
 
     @ManyToOne
     private Issue parentIssue;

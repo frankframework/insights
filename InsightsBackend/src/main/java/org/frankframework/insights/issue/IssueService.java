@@ -12,6 +12,8 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubNodeDTO;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.Label;
 import org.frankframework.insights.label.LabelResponse;
 import org.frankframework.insights.label.LabelService;
@@ -35,6 +37,7 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final IssueLabelRepository issueLabelRepository;
     private final MilestoneService milestoneService;
+	private final IssueTypeService issueTypeService;
     private final LabelService labelService;
     private final ReleaseIssueHelperService releaseIssueHelperService;
 
@@ -45,6 +48,7 @@ public class IssueService {
             IssueRepository issueRepository,
             IssueLabelRepository issueLabelRepository,
             MilestoneService milestoneService,
+			IssueTypeService issueTypeService,
             LabelService labelService,
             ReleaseIssueHelperService releaseIssueHelperService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
@@ -53,6 +57,7 @@ public class IssueService {
         this.issueRepository = issueRepository;
         this.issueLabelRepository = issueLabelRepository;
         this.milestoneService = milestoneService;
+		this.issueTypeService = issueTypeService;
         this.labelService = labelService;
         this.releaseIssueHelperService = releaseIssueHelperService;
     }
@@ -83,7 +88,7 @@ public class IssueService {
             Map<String, IssueDTO> issueDTOMap =
                     issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, Function.identity()));
 
-            Set<Issue> issuesWithMilestones = assignMilestonesToIssues(issues, issueDTOMap);
+            Set<Issue> issuesWithMilestones = assignTypesAndMilestonesToIssues(issues, issueDTOMap);
 
             Set<Issue> savedIssues = saveIssues(issuesWithMilestones);
 
@@ -94,14 +99,15 @@ public class IssueService {
         }
     }
 
-    /**
-     * Assigns milestones to issues based on the provided issue DTOs.
-     * @param issues the set of issues to assign milestones to
-     * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
-     * @return a set of issues with assigned milestones
-     */
-    private Set<Issue> assignMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
+	/**
+	 * Assigns milestones and issue types to issues based on the provided issue DTOs.
+	 * @param issues the set of issues to assign milestones and issue types to
+	 * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
+	 * @return a set of issues with assigned milestones and issue types
+	 */
+	private Set<Issue> assignTypesAndMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
+		Map<String, IssueType> issueTypeMap = issueTypeService.getAllIssueTypesMap();
 
         issues.forEach(issue -> {
             IssueDTO issueDTO = issueDtoMap.get(issue.getId());
@@ -110,6 +116,10 @@ public class IssueService {
                     Milestone milestone = milestoneMap.get(issueDTO.milestone().id());
                     issue.setMilestone(milestone);
                 }
+				if (issueDTO.issueType() != null && issueDTO.issueType().id != null) {
+					IssueType issueType = issueTypeMap.get(issueDTO.issueType().id);
+					issue.setIssueType(issueType);
+				}
             }
         });
 

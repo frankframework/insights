@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -79,13 +80,14 @@ public class MilestoneService {
         return mapper.toDTO(openMilestones, MilestoneResponse.class);
     }
 
-    /**
-     * Fetches all milestones from the database and returns them as a map.
-     * @return a map of all milestones, where the key is the milestone ID and the value is the Milestone object
-     */
+
+	/**
+	 * Fetches all milestones from the database and returns them as a map.
+	 * @return a map of milestone IDs to Milestone objects
+	 */
     public Map<String, Milestone> getAllMilestonesMap() {
         return milestoneRepository.findAll().stream()
-                .collect(Collectors.toMap(Milestone::getId, milestone -> milestone));
+                .collect(Collectors.toMap(Milestone::getId, Function.identity()));
     }
 
     /**

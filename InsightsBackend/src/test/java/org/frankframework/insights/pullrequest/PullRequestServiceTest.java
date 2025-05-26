@@ -256,7 +256,7 @@ public class PullRequestServiceTest {
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>();
         labelEdges.setEdges(labelNodeList);
 
-        IssueDTO issue = new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null);
+        IssueDTO issue = new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null);
         GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>();
         issueNode.setNode(issue);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>();

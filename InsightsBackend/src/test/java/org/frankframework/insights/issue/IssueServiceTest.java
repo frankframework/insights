@@ -10,6 +10,8 @@ import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.*;
+import org.frankframework.insights.issuetype.IssueTypeService;
+import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.label.*;
 import org.frankframework.insights.milestone.*;
 import org.junit.jupiter.api.*;
@@ -21,34 +23,37 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class IssueServiceTest {
 
     @Mock
-    GitHubRepositoryStatisticsService statisticsService;
+    private GitHubRepositoryStatisticsService statisticsService;
 
     @Mock
-    GitHubClient gitHubClient;
+	private GitHubClient gitHubClient;
 
     @Mock
-    Mapper mapper;
+	private Mapper mapper;
 
     @Mock
-    IssueRepository issueRepository;
+	private IssueRepository issueRepository;
 
     @Mock
-    IssueLabelRepository issueLabelRepository;
+	private IssueLabelRepository issueLabelRepository;
 
     @Mock
-    MilestoneService milestoneService;
+	private MilestoneService milestoneService;
+
+	@Mock
+	private IssueTypeService issueTypeService;
 
     @Mock
-    LabelService labelService;
+	private LabelService labelService;
 
     @Mock
-    ReleaseIssueHelperService releaseIssueHelperService;
+	private ReleaseIssueHelperService releaseIssueHelperService;
 
     @InjectMocks
-    IssueService issueService;
+	private IssueService issueService;
 
     @Mock
-    GitHubRepositoryStatisticsDTO statsDTO;
+	private GitHubRepositoryStatisticsDTO statsDTO;
 
     private OffsetDateTime now;
     private IssueDTO dto1, dto2, dtoSub;
@@ -111,9 +116,10 @@ public class IssueServiceTest {
                 "http://issue1",
                 labelEdges,
                 new MilestoneDTO("m1", 1, "Milestone 1", GitHubPropertyState.OPEN),
-                null);
+                null,
+				null);
         dto2 = new IssueDTO(
-                "i2", 102, "Issue 2", GitHubPropertyState.OPEN, now.minusDays(2), "http://issue2", null, null, null);
+                "i2", 102, "Issue 2", GitHubPropertyState.OPEN, now.minusDays(2), "http://issue2", null, null, null, null);
 
         GitHubNodeDTO<IssueDTO> subNode = new GitHubNodeDTO<>();
         subNode.setNode(dto2);
@@ -130,6 +136,7 @@ public class IssueServiceTest {
                 "http://issue4",
                 null,
                 null,
+				null,
                 subIssuesEdge);
     }
 
@@ -147,12 +154,24 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_savesAllAndHandlesMilestoneAndLabels()
+    public void injectIssues_savesAllAndHandlesTypeMilestoneAndLabels()
             throws GitHubClientException, IssueInjectionException, MappingException {
         Set<IssueDTO> DTOs = Set.of(dto1, dto2);
         Set<Issue> mappedIssues = Set.of(issue1, issue2);
 
+		IssueType issueType = new IssueType();
+		issueType.setId("it1");
+		issueType.setName("issueType1");
+
         Map<String, Milestone> milestones = Map.of("m1", milestone);
+		Map<String, IssueType> issueTypes = Map.of("it1", issueType);
+
+		when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
+		when(statsDTO.getGitHubIssueCount()).thenReturn(2);
+		when(issueRepository.count()).thenReturn(0L);
+		when(gitHubClient.getIssues()).thenReturn(DTOs);
+		when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
+		when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(4);
@@ -160,9 +179,9 @@ public class IssueServiceTest {
         when(gitHubClient.getIssues()).thenReturn(DTOs);
         when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
         when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
+		when(issueTypeService.getAllIssueTypesMap()).thenReturn(issueTypes);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
-        // Mock labels logic for assignLabelsToIssues
         Label label = new Label();
         label.setId("l1");
         label.setName("bug");
@@ -171,7 +190,6 @@ public class IssueServiceTest {
         Map<String, Label> labelMap = Map.of("l1", label);
         when(labelService.getAllLabelsMap()).thenReturn(labelMap);
 
-        // SaveAll for labels
         when(issueLabelRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         issueService.injectIssues();
@@ -179,6 +197,7 @@ public class IssueServiceTest {
         verify(issueRepository, times(2)).saveAll(anySet());
         verify(issueLabelRepository, atLeastOnce()).saveAll(anySet());
         assertEquals(milestone, issue1.getMilestone());
+		assertEquals(issueType, issue1.getIssueType());
     }
 
     @Test
@@ -195,14 +214,11 @@ public class IssueServiceTest {
         when(milestoneService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
-        // Use empty label map, which matches your service logic for this test
         when(labelService.getAllLabelsMap()).thenReturn(Collections.emptyMap());
 
         issueService.injectIssues();
 
-        // Should be called exactly TWICE: after milestones and after sub-issues
         verify(issueRepository, times(2)).saveAll(anySet());
-        // No labels, so never called
         verify(issueLabelRepository, never()).saveAll(anySet());
     }
 

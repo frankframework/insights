@@ -1,0 +1,18 @@
+query issueTypes($after: String) {
+	repository(owner: "frankframework", name: "frankframework") {
+		issueTypes(first: 100, after: $after) {
+			edges {
+				node {
+					id
+					name
+					description
+					color
+				}
+			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+}
