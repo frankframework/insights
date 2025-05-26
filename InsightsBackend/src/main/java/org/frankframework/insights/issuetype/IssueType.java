@@ -1,13 +1,20 @@
 package org.frankframework.insights.issuetype;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 
+import jakarta.persistence.OneToMany;
+
 import lombok.Getter;
 import lombok.Setter;
+
+import org.frankframework.insights.issue.Issue;
+
+import java.util.Set;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -24,4 +31,8 @@ public class IssueType {
 
 	@Column(nullable = false)
 	private String color;
+
+	@OneToMany(mappedBy = "issueType")
+	@JsonManagedReference("issueType-issue")
+	private Set<Issue> issues;
 }

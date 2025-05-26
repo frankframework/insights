@@ -27,6 +27,6 @@ public class Milestone {
     private GitHubPropertyState state;
 
     @OneToMany(mappedBy = "milestone")
-    @JsonManagedReference
+    @JsonManagedReference("milestone-issue")
     private Set<Issue> issues;
 }

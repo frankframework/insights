@@ -39,11 +39,11 @@ public class Issue {
     private String businessValue;
 
     @ManyToOne(cascade = CascadeType.MERGE)
-    @JsonBackReference
+    @JsonBackReference("milestone-issue")
     private Milestone milestone;
 
 	@ManyToOne(cascade = CascadeType.MERGE)
-	@JsonBackReference
+	@JsonBackReference("issueType-issue")
 	private IssueType issueType;
 
     @ManyToOne
