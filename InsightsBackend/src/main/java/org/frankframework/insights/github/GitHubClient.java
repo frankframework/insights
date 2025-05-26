@@ -11,6 +11,7 @@ import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.graphql.GraphQLClient;
 import org.frankframework.insights.issue.IssueDTO;
+import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
 import org.frankframework.insights.pullrequest.PullRequestDTO;
@@ -64,6 +65,18 @@ public class GitHubClient extends GraphQLClient {
                 getEntities(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
         log.info("Successfully fetched {} milestones from GitHub", milestones.size());
         return milestones;
+    }
+
+    /**
+     * Fetches issue types from GitHub
+     * @return Set of IssueTypeDTO containing issue types
+     * @throws GitHubClientException of an error occurs during the request
+     */
+    public Set<IssueTypeDTO> getIssueTypes() throws GitHubClientException {
+        Set<IssueTypeDTO> issueTypes =
+                getEntities(GitHubQueryConstants.ISSUE_TYPES, new HashMap<>(), IssueTypeDTO.class);
+        log.info("Successfully fetched {} issue types from GitHub", issueTypes.size());
+        return issueTypes;
     }
 
     /**

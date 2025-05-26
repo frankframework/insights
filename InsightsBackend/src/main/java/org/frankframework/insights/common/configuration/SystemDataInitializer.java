@@ -7,6 +7,7 @@ import org.frankframework.insights.common.configuration.properties.GitHubPropert
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
+import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
@@ -21,6 +22,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
+    private final IssueTypeService issueTypeService;
     private final BranchService branchService;
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
@@ -31,6 +33,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             LabelService labelService,
             MilestoneService milestoneService,
+            IssueTypeService issueTypeService,
             BranchService branchService,
             IssueService issueService,
             PullRequestService pullRequestService,
@@ -39,6 +42,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
+        this.issueTypeService = issueTypeService;
         this.branchService = branchService;
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
@@ -101,6 +105,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             log.info("Start fetching all GitHub data");
             labelService.injectLabels();
             milestoneService.injectMilestones();
+            issueTypeService.injectIssueTypes();
             branchService.injectBranches();
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();

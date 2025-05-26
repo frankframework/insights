@@ -19,6 +19,9 @@ query issues($after: String) {
 					milestone {
 						id
 					}
+					issueType {
+						id
+					}
 					subIssues (first:10) {
 						edges{
 							node {

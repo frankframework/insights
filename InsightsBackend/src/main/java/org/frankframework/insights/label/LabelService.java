@@ -3,8 +3,10 @@ package org.frankframework.insights.label;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
@@ -29,8 +31,7 @@ public class LabelService {
     private final LabelRepository labelRepository;
     private final ReleaseIssueHelperService releaseIssueHelperService;
     private final IssueLabelRepository issueLabelRepository;
-
-    private static final double HIGHLIGHTS_LABEL_THRESHOLD = 0.05;
+    private final List<String> priorityLabels;
 
     public LabelService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -38,13 +39,15 @@ public class LabelService {
             Mapper mapper,
             LabelRepository labelRepository,
             ReleaseIssueHelperService releaseIssueHelperService,
-            IssueLabelRepository issueLabelRepository) {
+            IssueLabelRepository issueLabelRepository,
+            GitHubProperties gitHubProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.labelRepository = labelRepository;
         this.releaseIssueHelperService = releaseIssueHelperService;
         this.issueLabelRepository = issueLabelRepository;
+        this.priorityLabels = gitHubProperties.getPriorityLabels();
     }
 
     /**
@@ -85,15 +88,8 @@ public class LabelService {
     public HighlightsResponse getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
         List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
-        Map<Label, Long> labelCounts = countLabelOccurrences(releaseLabels);
-        Set<Label> filteredLabels = filterLabelsByPercentage(labelCounts);
-
-		Map<LabelResponse, Long> labelResponseCounts = labelCounts.entrySet().stream()
-				.collect(Collectors.toMap(entry -> mapper.toDTO(entry.getKey(), LabelResponse.class), Map.Entry::getValue));
-
-		Set<LabelResponse> filteredLabelResponses = mapper.toDTO(filteredLabels, LabelResponse.class);
-
-        return new HighlightsResponse(labelResponseCounts, filteredLabelResponses);
+        Set<Label> filteredLabels = filterLabelsByPriority(releaseLabels);
+        return mapper.toDTO(filteredLabels, LabelResponse.class);
     }
 
     /**
@@ -112,28 +108,22 @@ public class LabelService {
     }
 
     /**
-     * Counts the occurrences of each label in the provided list.
-     * @param labels the list of labels to count
-     * @return a map where the keys are labels and the values are their respective counts
+     * Filters labels based on priority defined in the GitHub properties.
+     * @param labels the list of labels to filter
+     * @return a set of labels that match the priority criteria
      */
-    private Map<Label, Long> countLabelOccurrences(List<Label> labels) {
-        return labels.stream().collect(Collectors.groupingBy(label -> label, Collectors.counting()));
+    private Set<Label> filterLabelsByPriority(List<Label> labels) {
+        return labels.stream()
+                .filter(label -> priorityLabels.contains(label.getColor()))
+                .collect(Collectors.toSet());
     }
 
     /**
-     * Filters labels based on a percentage threshold.
-     * @param labelCounts a map of labels and their respective counts
-     * @return a set of labels that meet the percentage threshold
+     * Fetches all labels from the database and returns them as a map.
+     * @return Map of label IDs to Label objects
      */
-    private Set<Label> filterLabelsByPercentage(Map<Label, Long> labelCounts) {
-        long total = labelCounts.values().stream().mapToLong(Long::longValue).sum();
-
-        double threshold = total * HIGHLIGHTS_LABEL_THRESHOLD;
-
-        return labelCounts.entrySet().stream()
-                .filter(entry -> entry.getValue() >= threshold)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+    public Map<String, Label> getAllLabelsMap() {
+        return labelRepository.findAll().stream().collect(Collectors.toMap(Label::getId, Function.identity()));
     }
 
     /**
