@@ -164,7 +164,7 @@ public class GitHubClientTest {
 				.fetchEntityPage(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
 		when(objectMapper.convertValue(issueType, IssueTypeDTO.class)).thenReturn(issueType);
 
-		Set<LabelDTO> result = gitHubClient.getLabels();
+		Set<IssueTypeDTO> result = gitHubClient.getIssueTypes();
 		assertEquals(Set.of(issueType), result);
 	}
 

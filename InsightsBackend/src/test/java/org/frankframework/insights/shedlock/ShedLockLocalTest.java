@@ -11,6 +11,7 @@ import org.frankframework.insights.common.configuration.properties.GitHubPropert
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuetype.IssueTypeService;
+import org.frankframework.insights.issuetype.IssueTypeServiceTest;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
