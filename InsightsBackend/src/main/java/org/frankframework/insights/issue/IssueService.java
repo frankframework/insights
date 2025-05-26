@@ -13,12 +13,14 @@ import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubNodeDTO;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.Label;
 import org.frankframework.insights.label.LabelResponse;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneNotFoundException;
+import org.frankframework.insights.milestone.MilestoneResponse;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.release.ReleaseNotFoundException;
 import org.springframework.stereotype.Service;
@@ -37,7 +39,7 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final IssueLabelRepository issueLabelRepository;
     private final MilestoneService milestoneService;
-	private final IssueTypeService issueTypeService;
+    private final IssueTypeService issueTypeService;
     private final LabelService labelService;
     private final ReleaseIssueHelperService releaseIssueHelperService;
 
@@ -48,7 +50,7 @@ public class IssueService {
             IssueRepository issueRepository,
             IssueLabelRepository issueLabelRepository,
             MilestoneService milestoneService,
-			IssueTypeService issueTypeService,
+            IssueTypeService issueTypeService,
             LabelService labelService,
             ReleaseIssueHelperService releaseIssueHelperService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
@@ -57,7 +59,7 @@ public class IssueService {
         this.issueRepository = issueRepository;
         this.issueLabelRepository = issueLabelRepository;
         this.milestoneService = milestoneService;
-		this.issueTypeService = issueTypeService;
+        this.issueTypeService = issueTypeService;
         this.labelService = labelService;
         this.releaseIssueHelperService = releaseIssueHelperService;
     }
@@ -99,15 +101,15 @@ public class IssueService {
         }
     }
 
-	/**
-	 * Assigns milestones and issue types to issues based on the provided issue DTOs.
-	 * @param issues the set of issues to assign milestones and issue types to
-	 * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
-	 * @return a set of issues with assigned milestones and issue types
-	 */
-	private Set<Issue> assignTypesAndMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
+    /**
+     * Assigns milestones and issue types to issues based on the provided issue DTOs.
+     * @param issues the set of issues to assign milestones and issue types to
+     * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
+     * @return a set of issues with assigned milestones and issue types
+     */
+    private Set<Issue> assignTypesAndMilestonesToIssues(Set<Issue> issues, Map<String, IssueDTO> issueDtoMap) {
         Map<String, Milestone> milestoneMap = milestoneService.getAllMilestonesMap();
-		Map<String, IssueType> issueTypeMap = issueTypeService.getAllIssueTypesMap();
+        Map<String, IssueType> issueTypeMap = issueTypeService.getAllIssueTypesMap();
 
         issues.forEach(issue -> {
             IssueDTO issueDTO = issueDtoMap.get(issue.getId());
@@ -116,10 +118,10 @@ public class IssueService {
                     Milestone milestone = milestoneMap.get(issueDTO.milestone().id());
                     issue.setMilestone(milestone);
                 }
-				if (issueDTO.issueType() != null && issueDTO.issueType().id != null) {
-					IssueType issueType = issueTypeMap.get(issueDTO.issueType().id);
-					issue.setIssueType(issueType);
-				}
+                if (issueDTO.issueType() != null && issueDTO.issueType().id != null) {
+                    IssueType issueType = issueTypeMap.get(issueDTO.issueType().id);
+                    issue.setIssueType(issueType);
+                }
             }
         });
 
@@ -141,13 +143,12 @@ public class IssueService {
             Set<Issue> subIssues = issueDTO.subIssues().getEdges().stream()
                     .filter(Objects::nonNull)
                     .map(GitHubNodeDTO::getNode)
-                    .filter(Objects::nonNull)
                     .map(node -> issueMap.get(node.id()))
-                    .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
 
-            subIssues.forEach(sub -> sub.setParentIssue(issue));
-            issue.setSubIssues(subIssues);
+            subIssues.forEach(subIssue -> {
+                subIssue.setParentIssue(issue);
+            });
         }
 
         saveIssues(issues);
@@ -168,26 +169,26 @@ public class IssueService {
         }
     }
 
-    /**
-     * Builds a set of all issue labels based on the provided issues and their corresponding DTOs.
-     * @param issues the set of issues to process
-     * @param issueDTOMap a map of issue IDs to their corresponding issue DTOs
-     * @param labelMap a map of label IDs to their corresponding labels
-     * @return a set of all issue labels
-     */
     private Set<IssueLabel> buildAllIssueLabels(
             Set<Issue> issues, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
-        Set<IssueLabel> allLabels = new HashSet<>();
-        for (Issue issue : issues) {
-            IssueDTO dto = issueDTOMap.get(issue.getId());
-            if (dto != null && dto.hasLabels()) {
-                dto.labels().getEdges().stream()
-                        .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
-                        .filter(prLabel -> prLabel.getLabel() != null)
-                        .forEach(allLabels::add);
-            }
+        return issues.stream()
+                .map(issue -> getLabelsForIssue(issue, issueDTOMap, labelMap))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
+    }
+
+    private List<IssueLabel> getLabelsForIssue(
+            Issue issue, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
+        IssueDTO dto = issueDTOMap.get(issue.getId());
+
+        if (dto != null && dto.hasLabels()) {
+            return dto.labels().getEdges().stream()
+                    .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+                    .filter(prLabel -> prLabel.getLabel() != null)
+                    .toList();
         }
-        return allLabels;
+
+        return Collections.emptyList();
     }
 
     /**
@@ -209,7 +210,7 @@ public class IssueService {
      */
     public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
         Set<Issue> issues = issueRepository.findAllByClosedAtBetween(start, end);
-        return mapIssuesToResponsesWithLabels(issues);
+        return mapIssuesToResponses(issues);
     }
 
     /**
@@ -220,7 +221,7 @@ public class IssueService {
      */
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Set<Issue> issues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
-        return mapIssuesToResponsesWithLabels(issues);
+        return mapIssuesToResponses(issues);
     }
 
     /**
@@ -232,32 +233,75 @@ public class IssueService {
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
         Set<Issue> issues = issueRepository.findAllByMilestone_Id(milestone.getId());
-        return mapIssuesToResponsesWithLabels(issues);
+        return mapIssuesToResponses(issues);
     }
 
     /**
-     * Maps a set of issues to a set of issue responses with labels.
+     * Maps a set of issues to a set of IssueResponse objects.
      * @param issues the set of issues to map
-     * @return a set of issue responses with labels
+     * @return a set of IssueResponse objects containing the mapped issues with their labels, milestone, issue type and subIssues
      */
-    private Set<IssueResponse> mapIssuesToResponsesWithLabels(Set<Issue> issues) {
-        return issues.stream().map(this::mapIssueWithLabels).collect(Collectors.toSet());
+    private Set<IssueResponse> mapIssuesToResponses(Set<Issue> issues) {
+        return issues.stream().map(this::mapIssueTree).collect(Collectors.toSet());
     }
 
     /**
-     * Maps an issue to an issue response and retrieves its labels.
-     * @param issue the issue to map2
-     * @return the issue response with labels
+     * Maps an issue to an IssueResponse object, including its labels, milestone, issue type and subIssues.
+     * @param issue the issue to map
+     * @return an IssueResponse object containing the mapped issue with its labels, milestone, issue type and subIssues
      */
-    private IssueResponse mapIssueWithLabels(Issue issue) {
-        IssueResponse issueResponse = mapper.toDTO(issue, IssueResponse.class);
-        Set<Label> labels = labelService.getLabelsByIssueId(issue.getId());
+    private IssueResponse mapIssueTree(Issue issue) {
+        IssueResponse response = mapper.toDTO(issue, IssueResponse.class);
+        response.setLabels(mapLabelsForIssue(issue));
+        response.setMilestone(mapMilestoneForIssue(issue));
+        response.setIssueType(mapIssueTypeForIssue(issue));
+        response.setSubIssues(mapSubIssuesForIssue(issue));
+        return response;
+    }
 
-        Set<LabelResponse> labelResponses = labels.stream()
+    /**
+     * Maps the labels for an issue to a set of LabelResponse objects.
+     * @param issue the issue for which to map the labels
+     * @return a set of LabelResponse objects representing the labels for the issue
+     */
+    private Set<LabelResponse> mapLabelsForIssue(Issue issue) {
+        return labelService.getLabelsByIssueId(issue.getId()).stream()
                 .map(label -> mapper.toDTO(label, LabelResponse.class))
                 .collect(Collectors.toSet());
-        issueResponse.setLabels(labelResponses);
-        return issueResponse;
+    }
+
+    /**
+     * Maps the milestone for an issue, or null if none.
+     * @param issue the issue for which to map the milestone
+     * @return a MilestoneResponse object representing the milestone, or null if not present
+     */
+    private MilestoneResponse mapMilestoneForIssue(Issue issue) {
+        return Optional.ofNullable(issue.getMilestone())
+                .map(milestone -> mapper.toDTO(milestone, MilestoneResponse.class))
+                .orElse(null);
+    }
+
+    /**
+     * Maps the issue type for an issue, or null if none.
+     * @param issue the issue for which to map the issue type
+     * @return an IssueTypeResponse object representing the issue type, or null if not present
+     */
+    private IssueTypeResponse mapIssueTypeForIssue(Issue issue) {
+        return Optional.ofNullable(issue.getIssueType())
+                .map(type -> mapper.toDTO(type, IssueTypeResponse.class))
+                .orElse(null);
+    }
+
+    /**
+     * Maps the sub-issues for an issue, or returns an empty set if none.
+     * @param issue the issue for which to map sub-issues
+     * @return a set of IssueResponse objects representing the sub-issues
+     */
+    private Set<IssueResponse> mapSubIssuesForIssue(Issue issue) {
+        Set<Issue> subIssues = issueRepository.findAllByParentIssue_Id(issue.getId());
+        return subIssues.isEmpty()
+                ? Collections.emptySet()
+                : subIssues.stream().map(this::mapIssueTree).collect(Collectors.toSet());
     }
 
     /**

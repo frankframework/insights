@@ -1,4 +1,6 @@
 package org.frankframework.insights.issuetype;
 
-public record IssueTypeResponse(String id, String name, String description, String color) {}
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record IssueTypeResponse(String id, String name, String description, String color) {}

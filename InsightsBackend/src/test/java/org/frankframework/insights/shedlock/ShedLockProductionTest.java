@@ -45,8 +45,8 @@ public class ShedLockProductionTest {
     @Mock
     private MilestoneService milestoneService;
 
-	@Mock
-	private IssueTypeService issueTypeService;
+    @Mock
+    private IssueTypeService issueTypeService;
 
     @Mock
     private BranchService branchService;
@@ -73,7 +73,7 @@ public class ShedLockProductionTest {
                 gitHubRepositoryStatisticsService,
                 labelService,
                 milestoneService,
-				issueTypeService,
+                issueTypeService,
                 branchService,
                 issueService,
                 pullRequestService,

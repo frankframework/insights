@@ -18,7 +18,7 @@ public record IssueDTO(
         String url,
         GitHubEdgesDTO<LabelDTO> labels,
         MilestoneDTO milestone,
-		IssueTypeDTO issueType,
+        IssueTypeDTO issueType,
         GitHubEdgesDTO<IssueDTO> subIssues) {
 
     public boolean hasLabels() {

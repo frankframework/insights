@@ -10,8 +10,8 @@ import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.*;
-import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.*;
 import org.frankframework.insights.milestone.*;
 import org.junit.jupiter.api.*;
@@ -26,41 +26,40 @@ public class IssueServiceTest {
     private GitHubRepositoryStatisticsService statisticsService;
 
     @Mock
-	private GitHubClient gitHubClient;
+    private GitHubClient gitHubClient;
 
     @Mock
-	private Mapper mapper;
+    private Mapper mapper;
 
     @Mock
-	private IssueRepository issueRepository;
+    private IssueRepository issueRepository;
 
     @Mock
-	private IssueLabelRepository issueLabelRepository;
+    private IssueLabelRepository issueLabelRepository;
 
     @Mock
-	private MilestoneService milestoneService;
-
-	@Mock
-	private IssueTypeService issueTypeService;
+    private MilestoneService milestoneService;
 
     @Mock
-	private LabelService labelService;
+    private IssueTypeService issueTypeService;
 
     @Mock
-	private ReleaseIssueHelperService releaseIssueHelperService;
+    private LabelService labelService;
+
+    @Mock
+    private ReleaseIssueHelperService releaseIssueHelperService;
 
     @InjectMocks
-	private IssueService issueService;
+    private IssueService issueService;
 
     @Mock
-	private GitHubRepositoryStatisticsDTO statsDTO;
+    private GitHubRepositoryStatisticsDTO statsDTO;
 
     private OffsetDateTime now;
     private IssueDTO dto1, dto2, dtoSub;
-    private Issue issue1;
-    private Issue issue2;
-    private Issue issueSub;
+    private Issue issue1, issue2, issueSub;
     private Milestone milestone;
+    private IssueType issueType;
 
     @BeforeEach
     public void setup() {
@@ -72,6 +71,12 @@ public class IssueServiceTest {
         milestone.setTitle("Milestone 1");
         milestone.setState(GitHubPropertyState.OPEN);
 
+        issueType = new IssueType();
+        issueType.setId("it1");
+        issueType.setName("ImportantissueType1");
+        issueType.setDescription("description1");
+        issueType.setColor("purple");
+
         issue1 = new Issue();
         issue1.setId("i1");
         issue1.setNumber(101);
@@ -79,6 +84,7 @@ public class IssueServiceTest {
         issue1.setState(GitHubPropertyState.OPEN);
         issue1.setUrl("http://issue1");
         issue1.setClosedAt(now.minusDays(1));
+        issue1.setIssueType(issueType);
 
         issue2 = new Issue();
         issue2.setId("i2");
@@ -117,9 +123,18 @@ public class IssueServiceTest {
                 labelEdges,
                 new MilestoneDTO("m1", 1, "Milestone 1", GitHubPropertyState.OPEN),
                 null,
-				null);
+                null);
         dto2 = new IssueDTO(
-                "i2", 102, "Issue 2", GitHubPropertyState.OPEN, now.minusDays(2), "http://issue2", null, null, null, null);
+                "i2",
+                102,
+                "Issue 2",
+                GitHubPropertyState.OPEN,
+                now.minusDays(2),
+                "http://issue2",
+                null,
+                null,
+                null,
+                null);
 
         GitHubNodeDTO<IssueDTO> subNode = new GitHubNodeDTO<>();
         subNode.setNode(dto2);
@@ -136,7 +151,7 @@ public class IssueServiceTest {
                 "http://issue4",
                 null,
                 null,
-				null,
+                null,
                 subIssuesEdge);
     }
 
@@ -159,19 +174,15 @@ public class IssueServiceTest {
         Set<IssueDTO> DTOs = Set.of(dto1, dto2);
         Set<Issue> mappedIssues = Set.of(issue1, issue2);
 
-		IssueType issueType = new IssueType();
-		issueType.setId("it1");
-		issueType.setName("issueType1");
-
         Map<String, Milestone> milestones = Map.of("m1", milestone);
-		Map<String, IssueType> issueTypes = Map.of("it1", issueType);
+        Map<String, IssueType> issueTypes = Map.of("it1", issueType);
 
-		when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-		when(statsDTO.getGitHubIssueCount()).thenReturn(2);
-		when(issueRepository.count()).thenReturn(0L);
-		when(gitHubClient.getIssues()).thenReturn(DTOs);
-		when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
-		when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
+        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
+        when(statsDTO.getGitHubIssueCount()).thenReturn(2);
+        when(issueRepository.count()).thenReturn(0L);
+        when(gitHubClient.getIssues()).thenReturn(DTOs);
+        when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
+        when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(4);
@@ -179,7 +190,7 @@ public class IssueServiceTest {
         when(gitHubClient.getIssues()).thenReturn(DTOs);
         when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
         when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
-		when(issueTypeService.getAllIssueTypesMap()).thenReturn(issueTypes);
+        when(issueTypeService.getAllIssueTypesMap()).thenReturn(issueTypes);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         Label label = new Label();
@@ -197,7 +208,7 @@ public class IssueServiceTest {
         verify(issueRepository, times(2)).saveAll(anySet());
         verify(issueLabelRepository, atLeastOnce()).saveAll(anySet());
         assertEquals(milestone, issue1.getMilestone());
-		assertEquals(issueType, issue1.getIssueType());
+        assertEquals(issueType, issue1.getIssueType());
     }
 
     @Test
@@ -246,8 +257,10 @@ public class IssueServiceTest {
 
         IssueResponse ir1 = new IssueResponse();
         ir1.setId("i1");
+        ir1.setClosedAt(now);
         IssueResponse ir2 = new IssueResponse();
         ir2.setId("i2");
+        ir2.setClosedAt(now);
 
         when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir1);
         when(mapper.toDTO(eq(issue2), eq(IssueResponse.class))).thenReturn(ir2);
@@ -310,6 +323,62 @@ public class IssueServiceTest {
         when(milestoneService.checkIfMilestoneExists("notfound"))
                 .thenThrow(new MilestoneNotFoundException("Not found", null));
         assertThrows(MilestoneNotFoundException.class, () -> issueService.getIssuesByMilestoneId("notfound"));
+    }
+
+    @Test
+    public void getIssuesByTimespan_mapsSubIssuesRecursively() {
+        Issue parent = new Issue();
+        parent.setId("parent");
+        parent.setTitle("Parent");
+
+        Issue child = new Issue();
+        child.setId("child");
+        child.setTitle("Child");
+        child.setParentIssue(parent);
+
+        Issue grandChild = new Issue();
+        grandChild.setId("grandchild");
+        grandChild.setTitle("Grandchild");
+        grandChild.setParentIssue(child);
+
+        when(issueRepository.findAllByClosedAtBetween(any(), any())).thenReturn(Set.of(parent));
+        when(issueRepository.findAllByParentIssue_Id("parent")).thenReturn(Set.of(child));
+        when(issueRepository.findAllByParentIssue_Id("child")).thenReturn(Set.of(grandChild));
+        when(issueRepository.findAllByParentIssue_Id("grandchild")).thenReturn(Collections.emptySet());
+
+        IssueResponse parentResp = new IssueResponse();
+        parentResp.setId("parent");
+        parentResp.setTitle("Parent");
+        IssueResponse childResp = new IssueResponse();
+        childResp.setId("child");
+        childResp.setTitle("Child");
+        IssueResponse grandChildResp = new IssueResponse();
+        grandChildResp.setId("grandchild");
+        grandChildResp.setTitle("Grandchild");
+        when(mapper.toDTO(eq(parent), eq(IssueResponse.class))).thenReturn(parentResp);
+        when(mapper.toDTO(eq(child), eq(IssueResponse.class))).thenReturn(childResp);
+        when(mapper.toDTO(eq(grandChild), eq(IssueResponse.class))).thenReturn(grandChildResp);
+
+        when(labelService.getLabelsByIssueId(anyString())).thenReturn(Collections.emptySet());
+
+        Set<IssueResponse> responses = issueService.getIssuesByTimespan(
+                OffsetDateTime.now().minusDays(1), OffsetDateTime.now().plusDays(1));
+
+        assertEquals(1, responses.size());
+        IssueResponse respParent = responses.iterator().next();
+        assertEquals("parent", respParent.getId());
+        assertNotNull(respParent.getSubIssues());
+        assertEquals(1, respParent.getSubIssues().size());
+
+        IssueResponse respChild = respParent.getSubIssues().iterator().next();
+        assertEquals("child", respChild.getId());
+        assertNotNull(respChild.getSubIssues());
+        assertEquals(1, respChild.getSubIssues().size());
+
+        IssueResponse respGrandChild = respChild.getSubIssues().iterator().next();
+        assertEquals("grandchild", respGrandChild.getId());
+        assertTrue(respGrandChild.getSubIssues() == null
+                || respGrandChild.getSubIssues().isEmpty());
     }
 
     @Test

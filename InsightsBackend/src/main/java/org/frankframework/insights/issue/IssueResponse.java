@@ -22,8 +22,7 @@ public class IssueResponse {
     public String url;
     public String businessValue;
     public MilestoneResponse milestone;
-	public IssueTypeResponse issueType;
+    public IssueTypeResponse issueType;
     public Set<LabelResponse> labels;
-    public IssueResponse parentIssue;
     public Set<IssueResponse> subIssues;
 }

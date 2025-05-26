@@ -5,12 +5,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issuetype.IssueType;
-import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.milestone.Milestone;
 
 @Entity
@@ -42,14 +40,11 @@ public class Issue {
     @JsonBackReference("milestone-issue")
     private Milestone milestone;
 
-	@ManyToOne(cascade = CascadeType.MERGE)
-	@JsonBackReference("issueType-issue")
-	private IssueType issueType;
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("issueType-issue")
+    private IssueType issueType;
 
     @ManyToOne
-    private Issue parentIssue;
-
-    @OneToMany
     @JsonIgnore
-    private Set<Issue> subIssues;
+    private Issue parentIssue;
 }

@@ -22,7 +22,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
-	private final IssueTypeService issueTypeService;
+    private final IssueTypeService issueTypeService;
     private final BranchService branchService;
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
@@ -33,7 +33,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             LabelService labelService,
             MilestoneService milestoneService,
-			IssueTypeService issueTypeService,
+            IssueTypeService issueTypeService,
             BranchService branchService,
             IssueService issueService,
             PullRequestService pullRequestService,
@@ -42,7 +42,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
-		this.issueTypeService = issueTypeService;
+        this.issueTypeService = issueTypeService;
         this.branchService = branchService;
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
@@ -105,7 +105,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             log.info("Start fetching all GitHub data");
             labelService.injectLabels();
             milestoneService.injectMilestones();
-			issueTypeService.injectIssueTypes();
+            issueTypeService.injectIssueTypes();
             branchService.injectBranches();
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();

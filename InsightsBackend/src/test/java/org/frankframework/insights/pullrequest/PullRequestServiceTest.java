@@ -242,7 +242,7 @@ public class PullRequestServiceTest {
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
-        branch.setName("feature/labels"); // Ensure the name matches!
+        branch.setName("feature/labels");
 
         LabelDTO labelDTO = new LabelDTO();
         labelDTO.id = "l1";
@@ -270,8 +270,7 @@ public class PullRequestServiceTest {
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(prDto));
-        when(gitHubClient.getBranchPullRequests("feature/labels"))
-                .thenReturn(Set.of(prDto)); // <<== MATCH the branch name here!
+        when(gitHubClient.getBranchPullRequests("feature/labels")).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());

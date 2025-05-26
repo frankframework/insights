@@ -80,14 +80,12 @@ public class MilestoneService {
         return mapper.toDTO(openMilestones, MilestoneResponse.class);
     }
 
-
-	/**
-	 * Fetches all milestones from the database and returns them as a map.
-	 * @return a map of milestone IDs to Milestone objects
-	 */
+    /**
+     * Fetches all milestones from the database and returns them as a map.
+     * @return a map of milestone IDs to Milestone objects
+     */
     public Map<String, Milestone> getAllMilestonesMap() {
-        return milestoneRepository.findAll().stream()
-                .collect(Collectors.toMap(Milestone::getId, Function.identity()));
+        return milestoneRepository.findAll().stream().collect(Collectors.toMap(Milestone::getId, Function.identity()));
     }
 
     /**

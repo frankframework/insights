@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
@@ -42,51 +43,72 @@ public class LabelServiceTest {
     @Mock
     IssueLabelRepository issueLabelRepository;
 
-    @InjectMocks
-    LabelService labelService;
-
     @Mock
     GitHubRepositoryStatisticsDTO statisticsDTO;
 
-    private Label label1, label2;
+    private LabelService labelService;
+
+    private Label labelBug;
+    private Label labelFeature;
+    private IssueLabel issueLabelBug, issueLabelFeature, issueLabelChore;
     private LabelDTO labelDTO1, labelDTO2;
-    private IssueLabel issueLabel1, issueLabel2;
 
     @BeforeEach
     void setUp() {
-        label1 = new Label();
-        label1.setId(UUID.randomUUID().toString());
-        label1.setName("bug");
-        label1.setDescription("Of type bug");
-        label1.setColor("red");
+        List<String> priorityColors = List.of("red");
 
-        label2 = new Label();
-        label2.setId(UUID.randomUUID().toString());
-        label2.setName("feature");
-        label2.setDescription("of type feature");
-        label2.setColor("blue");
+        GitHubProperties gitHubProperties = mock(GitHubProperties.class);
+        when(gitHubProperties.getPriorityLabels()).thenReturn(priorityColors);
+
+        labelService = new LabelService(
+                statisticsService,
+                gitHubClient,
+                mapper,
+                labelRepository,
+                releaseIssueHelperService,
+                issueLabelRepository,
+                gitHubProperties);
+
+        labelBug = new Label();
+        labelBug.setId(UUID.randomUUID().toString());
+        labelBug.setName("bug");
+        labelBug.setDescription("Of type bug");
+        labelBug.setColor("red");
+
+        labelFeature = new Label();
+        labelFeature.setId(UUID.randomUUID().toString());
+        labelFeature.setName("feature");
+        labelFeature.setDescription("Feature");
+        labelFeature.setColor("blue");
+
+        Label labelChore = new Label();
+        labelChore.setId(UUID.randomUUID().toString());
+        labelChore.setName("chore");
+        labelChore.setDescription("Chore");
+        labelChore.setColor("yellow");
+
+        issueLabelBug = new IssueLabel();
+        issueLabelBug.setLabel(labelBug);
+
+        issueLabelFeature = new IssueLabel();
+        issueLabelFeature.setLabel(labelFeature);
+
+        issueLabelChore = new IssueLabel();
+        issueLabelChore.setLabel(labelChore);
 
         labelDTO1 = new LabelDTO();
         labelDTO1.id = "l1";
         labelDTO1.name = "bug";
-        labelDTO1.description = "desc";
         labelDTO1.color = "red";
 
         labelDTO2 = new LabelDTO();
         labelDTO2.id = "l2";
         labelDTO2.name = "feature";
-        labelDTO2.description = "desc2";
         labelDTO2.color = "blue";
-
-        issueLabel1 = new IssueLabel();
-        issueLabel1.setLabel(label1);
-
-        issueLabel2 = new IssueLabel();
-        issueLabel2.setLabel(label2);
     }
 
     @Test
-    public void injectLabels_shouldSkipIfCountsEqual() throws LabelInjectionException, GitHubClientException {
+    public void injectLabels_shouldSkipIfCountsEqual() throws Exception {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(5);
         when(labelRepository.count()).thenReturn(5L);
@@ -98,11 +120,10 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void injectLabels_shouldSaveAllLabels()
-            throws GitHubClientException, LabelInjectionException, MappingException {
+    public void injectLabels_shouldSaveAllLabels() throws Exception {
         Set<LabelDTO> dtos = Set.of(labelDTO1, labelDTO2);
-        Set<Label> entities = Set.of(label1, label2);
-        List<Label> saved = List.of(label1, label2);
+        Set<Label> entities = Set.of(labelBug, labelFeature);
+        List<Label> saved = List.of(labelBug, labelFeature);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(3);
@@ -117,7 +138,7 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void injectLabels_shouldThrowOnException() throws GitHubClientException {
+    public void injectLabels_shouldThrowOnException() throws Exception {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(4);
         when(labelRepository.count()).thenReturn(1L);
@@ -127,7 +148,7 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void getHighlightsByReleaseId_shouldReturnFilteredDTOs() throws Exception {
+    public void getHighlightsByReleaseId_shouldReturnOnlyPriorityLabels() throws Exception {
         Issue issueA = new Issue();
         issueA.setId("iA");
         Issue issueB = new Issue();
@@ -135,28 +156,34 @@ public class LabelServiceTest {
 
         Set<Issue> issues = Set.of(issueA, issueB);
 
-        IssueLabel issueLabelA1 = mock(IssueLabel.class);
-        when(issueLabelA1.getLabel()).thenReturn(label1);
-        IssueLabel issueLabelA2 = mock(IssueLabel.class);
-        when(issueLabelA2.getLabel()).thenReturn(label1);
-
-        IssueLabel issueLabelB1 = mock(IssueLabel.class);
-        when(issueLabelB1.getLabel()).thenReturn(label2);
-
         when(releaseIssueHelperService.getIssuesByReleaseId("r1")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelA1, issueLabelA2));
-        when(issueLabelRepository.findAllByIssue_Id("iB")).thenReturn(Set.of(issueLabelB1));
+        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelBug, issueLabelFeature));
+        when(issueLabelRepository.findAllByIssue_Id("iB")).thenReturn(Set.of(issueLabelFeature));
 
-        Set<Label> filtered = Set.of(label1, label2);
-        Set<LabelResponse> responses = Set.of(
-                new LabelResponse("l1", "bug", "desc", "red"), new LabelResponse("l2", "feature", "desc2", "blue"));
-
-        when(mapper.toDTO(filtered, LabelResponse.class)).thenReturn(responses);
+        Set<Label> expectedFiltered = Set.of(labelBug);
+        Set<LabelResponse> responses = Set.of(new LabelResponse("l1", "bug", "desc", "red"));
+        when(mapper.toDTO(expectedFiltered, LabelResponse.class)).thenReturn(responses);
 
         Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r1");
 
-        assertEquals(2, result.size());
-        verify(mapper).toDTO(filtered, LabelResponse.class);
+        assertEquals(1, result.size());
+        assertTrue(result.stream().anyMatch(r -> "red".equals(r.color())));
+        verify(mapper).toDTO(expectedFiltered, LabelResponse.class);
+    }
+
+    @Test
+    public void getHighlightsByReleaseId_shouldReturnEmptyIfNoPriorityLabels() throws Exception {
+        Issue issueA = new Issue();
+        issueA.setId("iA");
+        Set<Issue> issues = Set.of(issueA);
+
+        when(releaseIssueHelperService.getIssuesByReleaseId("r1")).thenReturn(issues);
+        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelFeature, issueLabelChore));
+        when(mapper.toDTO(Collections.emptySet(), LabelResponse.class)).thenReturn(Collections.emptySet());
+
+        Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r1");
+
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -181,11 +208,8 @@ public class LabelServiceTest {
         issueA.setId("iA");
         Set<Issue> issues = Set.of(issueA);
 
-        IssueLabel issueLabelA1 = mock(IssueLabel.class);
-        when(issueLabelA1.getLabel()).thenReturn(label1);
-
         when(releaseIssueHelperService.getIssuesByReleaseId("failMap")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelA1));
+        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelBug));
         when(mapper.toDTO(anySet(), eq(LabelResponse.class))).thenThrow(new MappingException("Mapping failed", null));
 
         assertThrows(MappingException.class, () -> labelService.getHighlightsByReleaseId("failMap"));
@@ -193,11 +217,11 @@ public class LabelServiceTest {
 
     @Test
     public void getLabelsByIssueId_shouldReturnLabels() {
-        when(issueLabelRepository.findAllByIssue_Id("i1")).thenReturn(Set.of(issueLabel1, issueLabel2));
+        when(issueLabelRepository.findAllByIssue_Id("i1")).thenReturn(Set.of(issueLabelBug, issueLabelFeature));
         Set<Label> result = labelService.getLabelsByIssueId("i1");
         assertEquals(2, result.size());
-        assertTrue(result.contains(label1));
-        assertTrue(result.contains(label2));
+        assertTrue(result.contains(labelBug));
+        assertTrue(result.contains(labelFeature));
     }
 
     @Test
@@ -208,16 +232,18 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void saveLabels_andShouldLogInfo() throws GitHubClientException, MappingException, LabelInjectionException {
-        Set<Label> labels = Set.of(label1, label2);
-        when(labelRepository.saveAll(labels)).thenReturn(List.of(label1, label2));
+    public void saveLabels_andShouldLogInfo() throws Exception {
+        Set<Label> labels = Set.of(labelBug, labelFeature);
+        when(labelRepository.saveAll(labels)).thenReturn(List.of(labelBug, labelFeature));
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(1);
         when(labelRepository.count()).thenReturn(0L);
         when(gitHubClient.getLabels()).thenReturn(Set.of(labelDTO1, labelDTO2));
         when(mapper.toEntity(anySet(), eq(Label.class))).thenReturn(labels);
+
         labelService.injectLabels();
+
         verify(labelRepository).saveAll(labels);
     }
 }
