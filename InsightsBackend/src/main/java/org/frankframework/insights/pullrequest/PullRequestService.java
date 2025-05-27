@@ -14,13 +14,13 @@ import org.frankframework.insights.common.entityconnection.pullrequestissue.Pull
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabel;
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
-import org.frankframework.insights.common.helper.IssueLabelHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.Label;
+import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,7 @@ public class PullRequestService {
     private final List<String> branchProtectionRegexes;
     private final PullRequestLabelRepository pullRequestLabelRepository;
     private final PullRequestIssueRepository pullRequestIssueRepository;
-    private final IssueLabelHelperService issueLabelHelperService;
+    private final LabelService labelService;
 
     public PullRequestService(
             GitHubClient gitHubClient,
@@ -53,7 +53,7 @@ public class PullRequestService {
             GitHubProperties gitHubProperties,
             PullRequestLabelRepository pullRequestLabelRepository,
             PullRequestIssueRepository pullRequestIssueRepository,
-            IssueLabelHelperService issueLabelHelperService) {
+            LabelService labelService) {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.pullRequestRepository = pullRequestRepository;
@@ -64,7 +64,7 @@ public class PullRequestService {
         this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
         this.pullRequestLabelRepository = pullRequestLabelRepository;
         this.pullRequestIssueRepository = pullRequestIssueRepository;
-        this.issueLabelHelperService = issueLabelHelperService;
+        this.labelService = labelService;
     }
 
     @Transactional
@@ -135,7 +135,7 @@ public class PullRequestService {
     private void persistLabelsAndIssues(Set<PullRequest> savedPullRequests, Set<PullRequestDTO> pullRequestDTOS) {
         Map<String, PullRequestDTO> pullRequestDtoMap =
                 pullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, Function.identity()));
-        Map<String, Label> labelMap = issueLabelHelperService.getAllLabelsMap();
+        Map<String, Label> labelMap = labelService.getAllLabelsMap();
         Map<String, Issue> issueMap = issueService.getAllIssuesMap();
 
         Set<PullRequestLabel> allPullRequestLabels =
@@ -174,7 +174,7 @@ public class PullRequestService {
             if (dto != null && dto.hasClosingIssuesReferences()) {
                 dto.closingIssuesReferences().getEdges().stream()
                         .filter(Objects::nonNull)
-						.filter(edge -> edge.getNode() != null)
+                        .filter(edge -> edge.getNode() != null)
                         .map(edge -> new PullRequestIssue(
                                 pr, issueMap.getOrDefault(edge.getNode().id(), null)))
                         .filter(prIssue -> prIssue.getIssue() != null)

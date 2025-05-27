@@ -9,5 +9,7 @@ import org.springframework.stereotype.Repository;
 public interface IssueRepository extends JpaRepository<Issue, String> {
     Set<Issue> findAllByMilestone_Id(String milestoneId);
 
+    Set<Issue> findAllByParentIssue_Id(String parentId);
+
     Set<Issue> findAllByClosedAtBetween(OffsetDateTime startDate, OffsetDateTime endDate);
 }

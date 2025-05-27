@@ -6,6 +6,9 @@ query repositoryStatistics {
 		milestones {
 			totalCount
 		}
+		issueTypes {
+			totalCount
+		}
 		refs(refPrefix: "refs/heads/", first: 100) {
 			nodes {
 				name

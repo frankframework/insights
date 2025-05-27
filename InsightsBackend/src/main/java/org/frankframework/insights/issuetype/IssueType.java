@@ -1,32 +1,33 @@
-package org.frankframework.insights.milestone;
+package org.frankframework.insights.issuetype;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issue.Issue;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 @Setter
-public class Milestone {
+public class IssueType {
     @Id
     private String id;
 
     @Column(nullable = false, unique = true)
-    private int number;
+    private String name;
 
-    @Column(nullable = false, unique = true)
-    private String title;
+    private String description;
 
     @Column(nullable = false)
-    private GitHubPropertyState state;
+    private String color;
 
-    @OneToMany(mappedBy = "milestone")
-    @JsonManagedReference("milestone-issue")
+    @OneToMany(mappedBy = "issueType")
+    @JsonManagedReference("issueType-issue")
     private Set<Issue> issues;
 }
