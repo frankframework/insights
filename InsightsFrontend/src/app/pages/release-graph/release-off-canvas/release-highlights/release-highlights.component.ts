@@ -1,15 +1,21 @@
 import {
-  AfterViewInit, Component, ElementRef, Input,
-  OnChanges, OnDestroy, ViewChild, ChangeDetectorRef
+  AfterViewInit,
+  Component,
+  ElementRef,
+  Input,
+  OnChanges,
+  OnDestroy,
+  ViewChild,
+  ChangeDetectorRef,
 } from '@angular/core';
-import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { PieChartModule } from '@swimlane/ngx-charts';
 import { Label } from '../../../../services/label.service';
 import { Issue } from '../../../../services/issue.service';
 
 @Component({
   selector: 'app-release-highlights',
   standalone: true,
-  imports: [NgxChartsModule],
+  imports: [PieChartModule],
   templateUrl: './release-highlights.component.html',
   styleUrl: './release-highlights.component.scss',
 })
@@ -24,8 +30,7 @@ export class ReleaseHighlightsComponent implements AfterViewInit, OnChanges, OnD
 
   private resizeObserver!: ResizeObserver;
 
-  constructor(private cdr: ChangeDetectorRef) {
-  }
+  constructor(private cdr: ChangeDetectorRef) {}
 
   ngAfterViewInit(): void {
     setTimeout(() => {

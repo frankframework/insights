@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 import { OffCanvasComponent } from '../../../components/off-canvas/off-canvas.component';
 import { Release } from '../../../services/release.service';
 import { Label, LabelService } from '../../../services/label.service';
-import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { catchError, of } from 'rxjs';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { Issue, IssueService } from '../../../services/issue.service';
@@ -10,7 +9,7 @@ import { Issue, IssueService } from '../../../services/issue.service';
 @Component({
   selector: 'app-release-off-canvas',
   standalone: true,
-  imports: [OffCanvasComponent, NgxChartsModule, ReleaseHighlightsComponent, ReleaseHighlightsComponent],
+  imports: [OffCanvasComponent, ReleaseHighlightsComponent, ReleaseHighlightsComponent],
   templateUrl: './release-off-canvas.component.html',
   styleUrl: './release-off-canvas.component.scss',
 })
