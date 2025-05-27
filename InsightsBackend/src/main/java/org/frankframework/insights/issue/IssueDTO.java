@@ -25,6 +25,14 @@ public record IssueDTO(
         return labels != null && labels.getEdges() != null && !labels.getEdges().isEmpty();
     }
 
+	public boolean hasMilestone() {
+		return milestone != null && milestone.id() != null;
+	}
+
+	public boolean hasIssueType() {
+		return issueType != null && issueType.id != null;
+	}
+
     public boolean hasSubIssues() {
         return subIssues != null
                 && subIssues.getEdges() != null

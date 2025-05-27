@@ -114,11 +114,11 @@ public class IssueService {
         issues.forEach(issue -> {
             IssueDTO issueDTO = issueDtoMap.get(issue.getId());
             if (issueDTO != null) {
-                if (issueDTO.milestone() != null && issueDTO.milestone().id() != null) {
+                if (issueDTO.hasMilestone()) {
                     Milestone milestone = milestoneMap.get(issueDTO.milestone().id());
                     issue.setMilestone(milestone);
                 }
-                if (issueDTO.issueType() != null && issueDTO.issueType().id != null) {
+                if (issueDTO.hasIssueType()) {
                     IssueType issueType = issueTypeMap.get(issueDTO.issueType().id);
                     issue.setIssueType(issueType);
                 }
@@ -140,14 +140,12 @@ public class IssueService {
             IssueDTO issueDTO = issueDTOMap.get(issue.getId());
             if (issueDTO == null || !issueDTO.hasSubIssues()) continue;
 
-            Set<Issue> subIssues = issueDTO.subIssues().getEdges().stream()
+            issueDTO.subIssues().getEdges().stream()
                     .filter(Objects::nonNull)
                     .map(GitHubNodeDTO::getNode)
                     .map(node -> issueMap.get(node.id()))
-                    .collect(Collectors.toSet());
-
-            subIssues.forEach(subIssue -> subIssue.setParentIssue(issue));
-        }
+                    .forEach(subIssue -> subIssue.setParentIssue(issue));
+		}
 
         saveIssues(issues);
     }
@@ -158,28 +156,40 @@ public class IssueService {
      * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
      */
     private void assignLabelsToIssues(Set<Issue> savedIssues, Map<String, IssueDTO> issueDtoMap) {
-        Map<String, Label> labelMap = labelService.getAllLabelsMap();
-
-        Set<IssueLabel> allPullRequestLabels = buildAllIssueLabels(savedIssues, issueDtoMap, labelMap);
+        Set<IssueLabel> allPullRequestLabels = buildAllIssueLabels(savedIssues, issueDtoMap);
 
         if (!allPullRequestLabels.isEmpty()) {
             issueLabelRepository.saveAll(allPullRequestLabels);
         }
     }
 
+	/**
+	 * Builds a set of IssueLabel objects for all issues based on their labels.
+	 * @param issues the set of issues for which to build labels
+	 * @param issueDTOMap a map of issue IDs to their corresponding IssueDTOs
+	 * @return a set of IssueLabel objects representing the labels for all issues
+	 */
     private Set<IssueLabel> buildAllIssueLabels(
-            Set<Issue> issues, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
-        return issues.stream()
+            Set<Issue> issues, Map<String, IssueDTO> issueDTOMap) {
+		Map<String, Label> labelMap = labelService.getAllLabelsMap();
+		return issues.stream()
                 .map(issue -> getLabelsForIssue(issue, issueDTOMap, labelMap))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
     }
 
+	/**
+	 * Retrieves the labels for a specific issue.
+	 * @param issue the issue for which to retrieve labels
+	 * @param issueDTOMap a map of issue IDs to their corresponding IssueDTOs
+	 * @param labelMap a map of label IDs to their corresponding Label objects
+	 * @return a list of IssueLabel objects representing the labels for the issue
+	 */
     private List<IssueLabel> getLabelsForIssue(
             Issue issue, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
         IssueDTO dto = issueDTOMap.get(issue.getId());
 
-        if (dto != null && dto.hasLabels()) {
+        if (dto.hasLabels()) {
             return dto.labels().getEdges().stream()
                     .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
                     .filter(prLabel -> prLabel.getLabel() != null)
