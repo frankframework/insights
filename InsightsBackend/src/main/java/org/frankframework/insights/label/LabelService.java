@@ -1,12 +1,13 @@
 package org.frankframework.insights.label;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
@@ -119,16 +120,32 @@ public class LabelService {
                 .collect(Collectors.toList());
     }
 
+	/**
+	 * Counts occurrences of each label in the provided list.
+	 * @param labels the list of labels to count
+	 * @return a map of label IDs to their occurrence counts
+	 */
 	private Map<String, Long> countLabelOccurrences(List<Label> labels) {
 		return labels.stream()
 				.collect(Collectors.groupingBy(Label::getId, Collectors.counting()));
 	}
 
+	/**
+	 * Maps unique labels from the provided list to a map.
+	 * @param labels the list of labels to map
+	 * @return a map of label IDs to Label objects, ensuring uniqueness
+	 */
 	private Map<String, Label> mapUniqueLabels(List<Label> labels) {
 		return labels.stream()
 				.collect(Collectors.toMap(Label::getId, Function.identity(), (l1, _) -> l1));
 	}
 
+	/**
+	 * Filters and sorts labels based on priority and count.
+	 * @param uniqueLabelMap the map of unique labels
+	 * @param labelCountMap the map of label counts
+	 * @return a sorted list of labels that are either priority labels or not ignored
+	 */
 	private List<Label> getSortedLabelsByPriorityAndCount(
 			Map<String, Label> uniqueLabelMap,
 			Map<String, Long> labelCountMap) {
@@ -140,20 +157,21 @@ public class LabelService {
 				.collect(Collectors.toList());
 	}
 
+	/**
+	 * Selects the top labels from both primary and secondary lists,
+	 * @param primaryList the list of primary labels (e.g., priority labels)
+	 * @param secondaryList the list of secondary labels (e.g., non-priority labels)
+	 * @return a list of selected labels, limited to a maximum number
+	 */
 	private List<Label> selectTopLabels(List<Label> primaryList, List<Label> secondaryList) {
-		List<Label> result = new ArrayList<>(MAX_HIGHLIGHTED_LABELS);
-		for (Label l : primaryList) {
-			if (result.size() >= MAX_HIGHLIGHTED_LABELS) break;
-			result.add(l);
-		}
-		for (Label l : secondaryList) {
-			if (result.size() >= MAX_HIGHLIGHTED_LABELS) break;
-			result.add(l);
-		}
-		return result;
+		return Stream.concat(primaryList.stream(), secondaryList.stream())
+				.collect(Collectors.toCollection(LinkedHashSet::new))
+				.stream()
+				.limit(MAX_HIGHLIGHTED_LABELS)
+				.collect(Collectors.toList());
 	}
 
-    /**
+	/**
      * Fetches all labels from the database and returns them as a map.
      * @return Map of label IDs to Label objects
      */

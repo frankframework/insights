@@ -203,7 +203,7 @@ public class PullRequestService {
 		Set<PullRequestLabel> allLabels = new HashSet<>();
         for (PullRequest pr : pullRequests) {
             PullRequestDTO dto = pullRequestDtoMap.get(pr.getId());
-            if (dto.hasLabels()) {
+            if (dto != null && dto.hasLabels()) {
                 dto.labels().getEdges().stream()
                         .map(labelDTO -> new PullRequestLabel(pr, labelMap.getOrDefault(labelDTO.getNode().id, null)))
                         .filter(prLabel -> prLabel.getLabel() != null)

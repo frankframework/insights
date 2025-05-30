@@ -1,17 +1,16 @@
 <nav id="tab-header">
-  <img ngSrc="./assets/logo.png" alt="FF! insights Logo" width="48" height="48" priority />
+  <li class="logo-container" routerLink="/">
+    <img ngSrc="./assets/ff!-icon.svg" alt="FF! insights Logo" width="48" height="48" priority />
+    <h2>Insights</h2>
+  </li>
   <ul>
-    <li [class.active]="isActive('/graph')" (click)="go('/graph')">
+    <li routerLink="/graph" routerLinkActive="active">
       <h3>Release graph</h3>
-      @if (isActive('/graph')) {
-        <span class="tab-underline"></span>
-      }
+      <span class="tab-underline"></span>
     </li>
-    <li [class.active]="isActive('/roadmap')" (click)="go('/roadmap')">
+    <li routerLink="/roadmap" routerLinkActive="active">
       <h3>Roadmap</h3>
-      @if (isActive('/roadmap')) {
-        <span class="tab-underline"></span>
-      }
+      <span class="tab-underline"></span>
     </li>
   </ul>
 </nav>

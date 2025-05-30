@@ -1,10 +1,24 @@
 #tab-header {
   display: flex;
   flex-direction: row;
-  top: 1rem;
-  left: 1rem;
+  align-items: center;
   position: fixed;
-  gap: 1rem;
+  top: .5rem;
+  left: 1rem;
+  gap: 2rem;
+
+  @media (max-width: 540px) {
+    gap: 1rem;
+    font-size: .8rem;
+  }
+
+  .logo-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+  }
 
   ul {
     display: flex;
@@ -22,7 +36,7 @@
         opacity: 0.6;
       }
       &.active {
-        color: #111;
+        border-bottom: 2px solid #1e1e1e;
       }
       &:hover {
         opacity: 1;
@@ -36,20 +50,10 @@
         transition: color 0.2s, opacity 0.2s;
         margin-top: .2rem;
         margin-bottom: 0;
-      }
 
-      .tab-underline {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: 10px;
-        width: 90%;
-        height: 2.5px;
-        background: #111;
-        border-radius: 1rem;
-        transition: all 0.25s;
-        display: block;
-        z-index: 1;
+        @media (max-width: 540px) {
+          font-size: .85rem;
+        }
       }
     }
   }

@@ -217,7 +217,6 @@ export class ReleaseNodeService {
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
-    const baseXSpacing = 125;
     const ySpacing = 75;
 
     for (const [index, [branch, subNodes]] of subBranches.entries()) {
@@ -236,26 +235,31 @@ export class ReleaseNodeService {
       const baseX = synthetic.position.x + 35;
       const baseY = (index + 1) * ySpacing;
 
-      const positioned: ReleaseNode[] = [];
-      let previousExtraSpacing = 0;
+      const positioned = this.positionSubBranchNodes(subNodes, baseX);
 
-      for (const [index_, n] of subNodes.entries()) {
-        const extraSpacing = n.label ? n.label.length * 5 : 0;
-        const halfPrevious = previousExtraSpacing / 2;
-        const halfThis = extraSpacing / 3;
-        const x = baseX + index_ * baseXSpacing + halfPrevious + halfThis;
-        const y = baseY;
-
-        positioned.push({
-          ...n,
-          position: { x, y },
-          extraSpacing,
-        } as never);
-
-        previousExtraSpacing = extraSpacing;
+      for (const node of positioned) {
+        node.position.y = baseY;
       }
 
       positionedNodes.set(branch, positioned);
     }
+  }
+
+  private positionSubBranchNodes(subNodes: ReleaseNode[], baseX: number): ReleaseNode[] {
+    const baseXSpacing = 125;
+    let previousExtraSpacing = 0;
+    return subNodes.map((n, index_) => {
+      const extraSpacing = n.label ? n.label.length * 5 : 0;
+      const halfPrevious = previousExtraSpacing / 2;
+      const halfThis = extraSpacing / 3;
+      const x = baseX + index_ * baseXSpacing + halfPrevious + halfThis;
+      previousExtraSpacing = extraSpacing;
+
+      return {
+        ...n,
+        position: { x, y: 0 },
+        extraSpacing,
+      } as ReleaseNode;
+    });
   }
 }
