@@ -96,8 +96,8 @@ public class LabelService {
 		Map<String, Long> labelCountMap = countLabelOccurrences(releaseLabels);
 		Map<String, Label> uniqueLabelMap = mapUniqueLabels(releaseLabels);
 
-		List<Label> priorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap, true);
-		List<Label> nonPriorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap, false);
+		List<Label> priorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap);
+		List<Label> nonPriorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap);
 
 		List<Label> highlightLabels = selectTopLabels(priorityLabelsList, nonPriorityLabelsList);
 
@@ -131,10 +131,9 @@ public class LabelService {
 
 	private List<Label> getSortedLabelsByPriorityAndCount(
 			Map<String, Label> uniqueLabelMap,
-			Map<String, Long> labelCountMap,
-			boolean priority) {
+			Map<String, Long> labelCountMap) {
 		return uniqueLabelMap.values().stream()
-				.filter(label -> priorityLabels.contains(label.getColor()) == priority)
+				.filter(label -> priorityLabels.contains(label.getColor()))
 				.filter(label -> !ignoredLabels.contains(label.getColor()))
 				.sorted((l1, l2) -> Long.compare(labelCountMap.getOrDefault(l2.getId(), 0L),
 						labelCountMap.getOrDefault(l1.getId(), 0L)))
