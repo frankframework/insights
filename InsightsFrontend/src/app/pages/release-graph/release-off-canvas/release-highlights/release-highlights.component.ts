@@ -36,13 +36,14 @@ export class ReleaseHighlightsComponent implements OnChanges {
       },
     },
   };
+
   public doughnutChartPlugins = [];
 
   ngOnChanges(): void {
     this.generatePieData();
   }
 
-  getDotColor(color: string): string {
+  public getDotColor(color: string): string {
     return color?.startsWith('#') ? color : `#${color}`;
   }
 

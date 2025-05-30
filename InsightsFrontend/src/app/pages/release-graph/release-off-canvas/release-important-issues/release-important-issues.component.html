@@ -1,0 +1,10 @@
+<div class="release-important-issues">
+  <h2>Important issues</h2>
+  @if (releaseIssues?.length) {
+    @for (issue of releaseIssues; track issue.id) {
+      <app-issue-tree-branch [issue]="issue" [depth]="0" />
+    }
+  } @else {
+    <p>No important issues found for this release.</p>
+  }
+</div>
