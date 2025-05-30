@@ -1,0 +1,12 @@
+.off-canvas-body {
+  position: relative;
+  height: 100%;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.off-canvas-body::-webkit-scrollbar {
+  display: none;
+}

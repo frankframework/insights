@@ -1,5 +1,7 @@
 package org.frankframework.insights.label;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +34,9 @@ public class LabelService {
     private final ReleaseIssueHelperService releaseIssueHelperService;
     private final IssueLabelRepository issueLabelRepository;
     private final List<String> priorityLabels;
+	private final List<String> ignoredLabels;
+
+	private static final int MAX_HIGHLIGHTED_LABELS = 15;
 
     public LabelService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -48,6 +53,7 @@ public class LabelService {
         this.releaseIssueHelperService = releaseIssueHelperService;
         this.issueLabelRepository = issueLabelRepository;
         this.priorityLabels = gitHubProperties.getPriorityLabels();
+		this.ignoredLabels = gitHubProperties.getIgnoredLabels();
     }
 
     /**
@@ -85,11 +91,18 @@ public class LabelService {
      * @throws ReleaseNotFoundException if the release is not found
      * @throws MappingException if an error occurs during mapping
      */
-    Set<LabelResponse> getHighlightsByReleaseId(String releaseId) throws ReleaseNotFoundException, MappingException {
-        List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
-        Set<Label> filteredLabels = filterLabelsByPriority(releaseLabels);
-        return mapper.toDTO(filteredLabels, LabelResponse.class);
-    }
+	public Set<LabelResponse> getHighlightsByReleaseId(String releaseId) throws ReleaseNotFoundException, MappingException {
+		List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
+		Map<String, Long> labelCountMap = countLabelOccurrences(releaseLabels);
+		Map<String, Label> uniqueLabelMap = mapUniqueLabels(releaseLabels);
+
+		List<Label> priorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap, true);
+		List<Label> nonPriorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap, false);
+
+		List<Label> highlightLabels = selectTopLabels(priorityLabelsList, nonPriorityLabelsList);
+
+		return mapper.toDTO(new LinkedHashSet<>(highlightLabels), LabelResponse.class);
+	}
 
     /**
      * Fetches labels associated with a specific release ID.
@@ -106,16 +119,40 @@ public class LabelService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Filters labels based on priority defined in the GitHub properties.
-     * @param labels the list of labels to filter
-     * @return a set of labels that match the priority criteria
-     */
-    private Set<Label> filterLabelsByPriority(List<Label> labels) {
-        return labels.stream()
-                .filter(label -> priorityLabels.contains(label.getColor()))
-                .collect(Collectors.toSet());
-    }
+	private Map<String, Long> countLabelOccurrences(List<Label> labels) {
+		return labels.stream()
+				.collect(Collectors.groupingBy(Label::getId, Collectors.counting()));
+	}
+
+	private Map<String, Label> mapUniqueLabels(List<Label> labels) {
+		return labels.stream()
+				.collect(Collectors.toMap(Label::getId, Function.identity(), (l1, _) -> l1));
+	}
+
+	private List<Label> getSortedLabelsByPriorityAndCount(
+			Map<String, Label> uniqueLabelMap,
+			Map<String, Long> labelCountMap,
+			boolean priority) {
+		return uniqueLabelMap.values().stream()
+				.filter(label -> priorityLabels.contains(label.getColor()) == priority)
+				.filter(label -> !ignoredLabels.contains(label.getColor()))
+				.sorted((l1, l2) -> Long.compare(labelCountMap.getOrDefault(l2.getId(), 0L),
+						labelCountMap.getOrDefault(l1.getId(), 0L)))
+				.collect(Collectors.toList());
+	}
+
+	private List<Label> selectTopLabels(List<Label> primaryList, List<Label> secondaryList) {
+		List<Label> result = new ArrayList<>(MAX_HIGHLIGHTED_LABELS);
+		for (Label l : primaryList) {
+			if (result.size() >= MAX_HIGHLIGHTED_LABELS) break;
+			result.add(l);
+		}
+		for (Label l : secondaryList) {
+			if (result.size() >= MAX_HIGHLIGHTED_LABELS) break;
+			result.add(l);
+		}
+		return result;
+	}
 
     /**
      * Fetches all labels from the database and returns them as a map.
