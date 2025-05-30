@@ -2,6 +2,7 @@
   <div class="off-canvas-body">
     @if (!isLoading) {
       <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
+      <app-release-important-issues [releaseIssues]="releaseIssues" />
     } @else {
       <app-loader />
     }

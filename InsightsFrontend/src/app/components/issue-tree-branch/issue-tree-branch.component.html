@@ -1,0 +1,14 @@
+<div>
+  <div class="issue-row" [style.padding-left]="getIndent()">
+    <a class="issue-number" [routerLink]="issue.url">#{{ issue.number }}</a>
+    @if (issue.issueType) {
+      <span class="issue-type">{{ issue.issueType.name }}</span>
+    }
+    <span class="issue-title">{{ issue.title }}</span>
+  </div>
+  @if (issue.subIssues.length) {
+    @for (sub of issue.subIssues; track sub.id) {
+      <app-issue-tree-branch [issue]="sub" [depth]="depth + 1" />
+    }
+  }
+</div>
