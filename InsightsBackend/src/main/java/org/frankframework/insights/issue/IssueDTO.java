@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import org.frankframework.insights.github.GitHubEdgesDTO;
 import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
 
@@ -17,11 +18,20 @@ public record IssueDTO(
         String url,
         GitHubEdgesDTO<LabelDTO> labels,
         MilestoneDTO milestone,
+        IssueTypeDTO issueType,
         GitHubEdgesDTO<IssueDTO> subIssues) {
 
     public boolean hasLabels() {
         return labels != null && labels.getEdges() != null && !labels.getEdges().isEmpty();
     }
+
+	public boolean hasMilestone() {
+		return milestone != null && milestone.id() != null;
+	}
+
+	public boolean hasIssueType() {
+		return issueType != null && issueType.id != null;
+	}
 
     public boolean hasSubIssues() {
         return subIssues != null

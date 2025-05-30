@@ -9,6 +9,7 @@ public enum GitHubQueryConstants {
     REPOSITORY_STATISTICS("repositoryStatistics", "repository"),
     LABELS("labels", "repository.labels"),
     MILESTONES("milestones", "repository.milestones"),
+    ISSUE_TYPES("issueTypes", "repository.issueTypes"),
     BRANCHES("branches", "repository.refs"),
     ISSUES("issues", "repository.issues"),
     BRANCH_PULLS("branchPullRequests", "repository.pullRequests"),

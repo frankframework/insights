@@ -9,6 +9,7 @@ import java.util.*;
 import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.issue.IssueDTO;
+import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
 import org.frankframework.insights.pullrequest.PullRequestDTO;
@@ -45,8 +46,8 @@ public class GitHubClientTest {
                 "branch1", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(1))));
         GitHubRefsDTO refsDTO = new GitHubRefsDTO(nodes);
 
-        GitHubRepositoryStatisticsDTO dto =
-                new GitHubRepositoryStatisticsDTO(totalCountDTO, totalCountDTO, refsDTO, totalCountDTO, totalCountDTO);
+        GitHubRepositoryStatisticsDTO dto = new GitHubRepositoryStatisticsDTO(
+                totalCountDTO, totalCountDTO, totalCountDTO, refsDTO, totalCountDTO, totalCountDTO);
 
         doReturn(dto).when(gitHubClient).fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
         GitHubRepositoryStatisticsDTO result = gitHubClient.getRepositoryStatistics();
@@ -144,6 +145,35 @@ public class GitHubClientTest {
                 .when(gitHubClient)
                 .fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getMilestones());
+    }
+
+    @Test
+    public void getIssueTypes_success() throws Exception {
+        IssueTypeDTO issueType = new IssueTypeDTO();
+        List<GitHubPaginationDTO.Edge<IssueTypeDTO>> edges = new ArrayList<>();
+        GitHubPaginationDTO.Edge<IssueTypeDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = issueType;
+        edges.add(edge);
+        GitHubPaginationDTO<IssueTypeDTO> page = new GitHubPaginationDTO<>();
+        page.edges = edges;
+        page.pageInfo = new GitHubPaginationDTO.PageInfo();
+        page.pageInfo.hasNextPage = false;
+
+        doReturn(page)
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
+        when(objectMapper.convertValue(issueType, IssueTypeDTO.class)).thenReturn(issueType);
+
+        Set<IssueTypeDTO> result = gitHubClient.getIssueTypes();
+        assertEquals(Set.of(issueType), result);
+    }
+
+    @Test
+    public void getIssueTypes_shouldWrapException() throws Exception {
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .fetchEntityPage(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getIssueTypes());
     }
 
     @Test
