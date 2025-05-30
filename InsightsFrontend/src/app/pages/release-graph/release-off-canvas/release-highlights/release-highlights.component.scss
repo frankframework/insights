@@ -58,10 +58,22 @@
 }
 
 .highlight-donut-chart-wrapper {
-  padding: 0 1.5rem;
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  canvas {
+    width: 90% !important;
+    height: 90% !important;
+  }
 
   @media (max-width: 540px) {
-    align-self: center;
+    align-items: stretch;
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
   }
 }
