@@ -150,8 +150,7 @@ public class LabelService {
 			Map<String, Label> uniqueLabelMap,
 			Map<String, Long> labelCountMap) {
 		return uniqueLabelMap.values().stream()
-				.filter(label -> priorityLabels.contains(label.getColor()))
-				.filter(label -> !ignoredLabels.contains(label.getColor()))
+				.filter(label -> priorityLabels.contains(label.getColor()) || !ignoredLabels.contains(label.getColor()))
 				.sorted((l1, l2) -> Long.compare(labelCountMap.getOrDefault(l2.getId(), 0L),
 						labelCountMap.getOrDefault(l1.getId(), 0L)))
 				.collect(Collectors.toList());
