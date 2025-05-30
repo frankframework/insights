@@ -244,14 +244,52 @@ public class IssueService {
         return mapIssuesToResponses(issues);
     }
 
-    /**
-     * Maps a set of issues to a set of IssueResponse objects.
-     * @param issues the set of issues to map
-     * @return a set of IssueResponse objects containing the mapped issues with their labels, milestone, issue type and subIssues
-     */
-    private Set<IssueResponse> mapIssuesToResponses(Set<Issue> issues) {
-        return issues.stream().map(this::mapIssueTree).collect(Collectors.toSet());
-    }
+	/**
+	 * Maps a set of issues to a set of IssueResponse objects.
+	 * @param issues the set of issues to map
+	 * @return a set of IssueResponse objects representing the mapped issues
+	 */
+	public Set<IssueResponse> mapIssuesToResponses(Set<Issue> issues) {
+		Set<Issue> parentIssues = findRootParentIssues(issues);
+		return parentIssues.stream()
+				.map(this::mapIssueTree)
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Finds root parent issues from a set of issues.
+	 * @param issues the set of issues to search through
+	 * @return a set of root parent issues that have no parent and at least one child
+	 */
+	private Set<Issue> findRootParentIssues(Set<Issue> issues) {
+		Map<String, Issue> issueMap = issues.stream()
+				.collect(Collectors.toMap(Issue::getId, Function.identity()));
+		return issues.stream()
+				.filter(issue -> isRootParent(issue, issueMap))
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Checks if an issue is a root parent, meaning it has no parent and has at least one child.
+	 * @param issue the issue to check
+	 * @param issueMap a map of issue IDs to issues for quick lookup
+	 * @return true if the issue is a root parent, false otherwise
+	 */
+	private boolean isRootParent(Issue issue, Map<String, Issue> issueMap) {
+		return issue.getParentIssue() == null && hasChildren(issue, issueMap);
+	}
+
+	/**
+	 * Checks if an issue has any children in the provided issue map.
+	 * @param issue the issue to check for children
+	 * @param issueMap a map of issue IDs to issues for quick lookup
+	 * @return true if the issue has children, false otherwise
+	 */
+	private boolean hasChildren(Issue issue, Map<String, Issue> issueMap) {
+		return issueMap.values().stream()
+				.anyMatch(child -> child.getParentIssue() != null &&
+						issue.getId().equals(child.getParentIssue().getId()));
+	}
 
     /**
      * Maps an issue to an IssueResponse object, including its labels, milestone, issue type and subIssues.
