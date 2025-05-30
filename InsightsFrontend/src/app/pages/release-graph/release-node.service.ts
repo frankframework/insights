@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Release } from '../../services/release.service';
 import { ReleaseGraphComponent } from './release-graph.component';
 
-interface Position {
+export interface Position {
   x: number;
   y: number;
 }
@@ -28,7 +28,7 @@ const SupportColors = {
 
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
-  private static readonly GITHUB_NIGHTLY_RELEASE = 'nightly';
+  private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
 
   public sortReleases(releases: Release[]): Map<string, ReleaseNode[]>[] {
     const grouped = this.groupReleasesByBranch(releases);
@@ -200,7 +200,7 @@ export class ReleaseNodeService {
   }
 
   private positionMasterNodes(nodes: ReleaseNode[]): void {
-    const spacing = 125;
+    const spacing = 250;
     for (const [index, node] of nodes.entries()) {
       node.position = { x: index * spacing, y: 0 };
     }
@@ -217,12 +217,10 @@ export class ReleaseNodeService {
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
-    const xSpacing = 125;
     const ySpacing = 75;
 
     for (const [index, [branch, subNodes]] of subBranches.entries()) {
       if (subNodes.length === 0) continue;
-
       if (subNodes.every((n) => this.isUnsupported(n))) continue;
 
       const firstSub = subNodes[0];
@@ -234,15 +232,34 @@ export class ReleaseNodeService {
       );
       if (!synthetic) continue;
 
-      const baseX = synthetic.position.x + 75;
+      const baseX = synthetic.position.x + 35;
       const baseY = (index + 1) * ySpacing;
 
-      const positioned = subNodes.map((n, index_) => ({
-        ...n,
-        position: { x: baseX + index_ * xSpacing, y: baseY },
-      }));
+      const positioned = this.positionSubBranchNodes(subNodes, baseX);
+
+      for (const node of positioned) {
+        node.position.y = baseY;
+      }
 
       positionedNodes.set(branch, positioned);
     }
+  }
+
+  private positionSubBranchNodes(subNodes: ReleaseNode[], baseX: number): ReleaseNode[] {
+    const baseXSpacing = 125;
+    let previousExtraSpacing = 0;
+    return subNodes.map((n, index_) => {
+      const extraSpacing = n.label ? n.label.length * 5 : 0;
+      const halfPrevious = previousExtraSpacing / 2;
+      const halfThis = extraSpacing / 3;
+      const x = baseX + index_ * baseXSpacing + halfPrevious + halfThis;
+      previousExtraSpacing = extraSpacing;
+
+      return {
+        ...n,
+        position: { x, y: 0 },
+        extraSpacing,
+      } as ReleaseNode;
+    });
   }
 }

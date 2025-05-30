@@ -75,6 +75,7 @@ public class PullRequestServiceTest {
     private Branch testBranch;
     private PullRequestDTO masterPR, subBranchPR;
     private PullRequest mockPullRequest;
+	private LabelDTO mockLabelDTO;
 
     @BeforeEach
     public void setUp() {

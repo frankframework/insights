@@ -1,0 +1,13 @@
+.off-canvas-body {
+  position: relative;
+  height: 100%;
+  max-height: 100vh;
+  gap: 1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.off-canvas-body::-webkit-scrollbar {
+  display: none;
+}

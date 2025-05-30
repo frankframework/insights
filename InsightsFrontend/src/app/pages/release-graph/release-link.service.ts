@@ -9,7 +9,7 @@ export interface ReleaseLink {
 
 @Injectable({ providedIn: 'root' })
 export class ReleaseLinkService {
-  private static readonly GITHUB_MASTER_BRANCH = 'master';
+  private static readonly GITHUB_MASTER_BRANCH: string = 'master';
 
   createLinks(sortedGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
     if (sortedGroups.length === 0) return [];
