@@ -33,10 +33,10 @@ export default [
 			sonarjs
 		},
 		rules: {
-			...(tsPlugin.configs.recommended?.rules ?? {}),
-			...(tsPlugin.configs.stylistic?.rules ?? {}),
-			...(angularPlugin.configs.recommended?.rules ?? {}),
-			...(eslintConfigPrettier?.rules ?? {}),
+			...tsPlugin.configs.recommended?.rules,
+			...tsPlugin.configs.stylistic?.rules,
+			...angularPlugin.configs.recommended?.rules,
+			...eslintConfigPrettier?.rules,
 
 			'@typescript-eslint/explicit-function-return-type': 'error',
 			'@typescript-eslint/triple-slash-reference': 'warn',
@@ -65,9 +65,9 @@ export default [
 			prettier: prettierPlugin,
 		},
 		rules: {
-			...(angularTemplate.configs.recommended?.rules ?? {}),
-			...(angularTemplate.configs.accessibility?.rules ?? {}),
-			...(eslintConfigPrettier?.rules ?? {}),
+			...angularTemplate.configs.recommended?.rules,
+			...angularTemplate.configs.accessibility?.rules,
+			...eslintConfigPrettier?.rules,
 
 			'@angular-eslint/template/prefer-self-closing-tags': 'error',
 			'@angular-eslint/template/no-interpolation-in-attributes': 'error',
@@ -97,12 +97,13 @@ export default [
 			unicorn,
 		},
 		rules: {
-			...(unicorn.configs.recommended?.rules ?? {}),
+			...unicorn.configs.recommended?.rules,
 			'unicorn/prevent-abbreviations': 'warn',
 			'unicorn/no-array-reduce': 'off',
 			'unicorn/prefer-ternary': 'warn',
 			'unicorn/no-null': 'off',
 			'unicorn/prefer-dom-node-text-content': 'warn',
+      'unicorn/consistent-function-scoping': 'warn',
 		},
 	},
 ];

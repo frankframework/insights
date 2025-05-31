@@ -258,37 +258,48 @@ public class IssueService {
 
 	/**
 	 * Finds root parent issues from a set of issues.
-	 * @param issues the set of issues to search through
-	 * @return a set of root parent issues that have no parent and at least one child
+	 * @param issues the set of issues to search for root parents
+	 * @return a set of root parent issues that do not have any children in the provided set
 	 */
 	private Set<Issue> findRootParentIssues(Set<Issue> issues) {
-		Map<String, Issue> issueMap = issues.stream()
-				.collect(Collectors.toMap(Issue::getId, Function.identity()));
+		Set<String> childIds = getChildIssueIds(issues);
+		Set<Issue> rootCandidates = getRootCandidates(issues);
+		return filterNonDuplicatedRoots(rootCandidates, childIds);
+	}
+
+	/**
+	 * Collects the IDs of all child issues from a set of issues.
+	 * @param issues the set of issues to search for child IDs
+	 * @return a set of IDs representing the child issues
+	 */
+	private Set<String> getChildIssueIds(Set<Issue> issues) {
 		return issues.stream()
-				.filter(issue -> isRootParent(issue, issueMap))
+				.filter(issue -> issue.getParentIssue() != null)
+				.map(Issue::getId)
 				.collect(Collectors.toSet());
 	}
 
 	/**
-	 * Checks if an issue is a root parent, meaning it has no parent and has at least one child.
-	 * @param issue the issue to check
-	 * @param issueMap a map of issue IDs to issues for quick lookup
-	 * @return true if the issue is a root parent, false otherwise
+	 * Filters the provided set of issues to find root candidates, which are issues without a parent.
+	 * @param issues the set of issues to filter
+	 * @return a set of issues that are root candidates (i.e., they do not have a parent issue)
 	 */
-	private boolean isRootParent(Issue issue, Map<String, Issue> issueMap) {
-		return issue.getParentIssue() == null && hasChildren(issue, issueMap);
+	private Set<Issue> getRootCandidates(Set<Issue> issues) {
+		return issues.stream()
+				.filter(issue -> issue.getParentIssue() == null)
+				.collect(Collectors.toSet());
 	}
 
 	/**
-	 * Checks if an issue has any children in the provided issue map.
-	 * @param issue the issue to check for children
-	 * @param issueMap a map of issue IDs to issues for quick lookup
-	 * @return true if the issue has children, false otherwise
+	 * Filters out issues that are not root issues by checking against a set of child IDs.
+	 * @param rootCandidates the set of candidate root issues to filter
+	 * @param childIds the set of IDs representing child issues
+	 * @return a set of root issues that do not have any children in the provided set
 	 */
-	private boolean hasChildren(Issue issue, Map<String, Issue> issueMap) {
-		return issueMap.values().stream()
-				.anyMatch(child -> child.getParentIssue() != null &&
-						issue.getId().equals(child.getParentIssue().getId()));
+	private Set<Issue> filterNonDuplicatedRoots(Set<Issue> rootCandidates, Set<String> childIds) {
+		return rootCandidates.stream()
+				.filter(issue -> !childIds.contains(issue.getId()))
+				.collect(Collectors.toSet());
 	}
 
     /**
