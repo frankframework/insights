@@ -8,9 +8,8 @@ describe('IssueTreeBranchComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [IssueTreeBranchComponent]
-    })
-    .compileComponents();
+      imports: [IssueTreeBranchComponent],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(IssueTreeBranchComponent);
     component = fixture.componentInstance;
