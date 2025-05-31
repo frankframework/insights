@@ -1,12 +1,30 @@
-<div>
-  <div class="issue-row" [style.padding-left]="getIndent()">
+<div class="issue-tree-branch" [class.expanded]="expanded">
+  <div class="issue-row" [style.margin-left]="getIndent()">
+    @if (issue.subIssues?.length) {
+      <button
+        type="button"
+        class="issue-fold-icon"
+        aria-label="Toggle sub-issues"
+        [class.expanded]="expanded"
+        [attr.aria-expanded]="expanded"
+        (click)="toggleExpand()"
+      >
+        ›
+      </button>
+    }
     <a class="issue-number" [routerLink]="issue.url">#{{ issue.number }}</a>
     @if (issue.issueType) {
-      <span class="issue-type">{{ issue.issueType.name }}</span>
+      <span
+        class="issue-type"
+        [style.background]="issue.issueType.color"
+        [style.color]="getTypeTextColor(issue.issueType)"
+      >
+        {{ issue.issueType.name }}
+      </span>
     }
     <span class="issue-title">{{ issue.title }}</span>
   </div>
-  @if (issue.subIssues.length) {
+  @if (issue.subIssues?.length && this.expanded) {
     @for (sub of issue.subIssues; track sub.id) {
       <app-issue-tree-branch [issue]="sub" [depth]="depth + 1" />
     }

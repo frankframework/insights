@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, HostListener } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
 import { BehaviorSubject, catchError, map, of, tap } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
@@ -6,6 +6,8 @@ import { ReleaseLink, ReleaseLinkService } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseOffCanvasComponent } from './release-off-canvas/release-off-canvas.component';
 import { AsyncPipe } from '@angular/common';
+import { NavigationEnd, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-release-graph',
@@ -14,7 +16,7 @@ import { AsyncPipe } from '@angular/common';
   styleUrls: ['./release-graph.component.scss'],
   imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe],
 })
-export class ReleaseGraphComponent implements OnInit {
+export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public static readonly GITHUB_MASTER_BRANCH: string = 'master';
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
@@ -33,21 +35,28 @@ export class ReleaseGraphComponent implements OnInit {
 
   private minTranslateX = 0;
   private maxTranslateX = 0;
+  private routerSubscription!: Subscription;
 
   constructor(
     private releaseService: ReleaseService,
     private nodeService: ReleaseNodeService,
     private linkService: ReleaseLinkService,
+    private router: Router,
   ) {}
-
-  @HostListener('window:resize')
-  onResize(): void {
-    this.centerGraph();
-  }
 
   ngOnInit(): void {
     this.isLoading = true;
     this.getAllReleases();
+
+    this.routerSubscription = this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd && this.router.url.includes('/graph')) {
+        setTimeout(() => this.centerGraph(), 0);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.routerSubscription?.unsubscribe();
   }
 
   public onWheel(event: WheelEvent): void {
@@ -119,9 +128,7 @@ export class ReleaseGraphComponent implements OnInit {
   }
 
   private centerGraph(): void {
-    console.log(this.svgElement);
-    console.log(this.releaseNodes.length);
-    if (!this.svgElement || this.releaseNodes.length === 0) return;
+    if (!this.svgElement || !this.svgElement.nativeElement || this.releaseNodes.length === 0) return;
     this.viewBox = this.calculateViewBox(this.releaseNodes);
   }
 
@@ -165,7 +172,7 @@ export class ReleaseGraphComponent implements OnInit {
 
       setTimeout(() => {
         this.centerGraph();
-      }, 0);
+      }, 10);
     }
   }
 }

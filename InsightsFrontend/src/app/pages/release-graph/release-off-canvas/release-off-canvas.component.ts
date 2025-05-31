@@ -36,6 +36,23 @@ export class ReleaseOffCanvasComponent implements OnChanges {
     }
   }
 
+  public colorNameToRgba(color: string): string {
+    const temporaryElement = document.createElement('div');
+    temporaryElement.style.color = color;
+    document.body.append(temporaryElement);
+
+    const rgb = getComputedStyle(temporaryElement).color;
+    temporaryElement.remove();
+
+    const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (match) {
+      const [, r, g, b] = match;
+      return `rgba(${r},${g},${b},${0.75})`;
+    }
+
+    return color;
+  }
+
   private getHighlightedLabelsByReleaseId(releaseId: string): void {
     this.labelService
       .getHighLightsByReleaseId(releaseId)
