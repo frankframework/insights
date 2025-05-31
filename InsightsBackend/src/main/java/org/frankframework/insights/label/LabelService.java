@@ -1,10 +1,13 @@
 package org.frankframework.insights.label;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
@@ -32,6 +35,9 @@ public class LabelService {
     private final ReleaseIssueHelperService releaseIssueHelperService;
     private final IssueLabelRepository issueLabelRepository;
     private final List<String> priorityLabels;
+	private final List<String> ignoredLabels;
+
+	private static final int MAX_HIGHLIGHTED_LABELS = 15;
 
     public LabelService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -48,6 +54,7 @@ public class LabelService {
         this.releaseIssueHelperService = releaseIssueHelperService;
         this.issueLabelRepository = issueLabelRepository;
         this.priorityLabels = gitHubProperties.getPriorityLabels();
+		this.ignoredLabels = gitHubProperties.getIgnoredLabels();
     }
 
     /**
@@ -85,11 +92,18 @@ public class LabelService {
      * @throws ReleaseNotFoundException if the release is not found
      * @throws MappingException if an error occurs during mapping
      */
-    Set<LabelResponse> getHighlightsByReleaseId(String releaseId) throws ReleaseNotFoundException, MappingException {
-        List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
-        Set<Label> filteredLabels = filterLabelsByPriority(releaseLabels);
-        return mapper.toDTO(filteredLabels, LabelResponse.class);
-    }
+	public Set<LabelResponse> getHighlightsByReleaseId(String releaseId) throws ReleaseNotFoundException, MappingException {
+		List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
+		Map<String, Long> labelCountMap = countLabelOccurrences(releaseLabels);
+		Map<String, Label> uniqueLabelMap = mapUniqueLabels(releaseLabels);
+
+		List<Label> priorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap);
+		List<Label> nonPriorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap);
+
+		List<Label> highlightLabels = selectTopLabels(priorityLabelsList, nonPriorityLabelsList);
+
+		return mapper.toDTO(new LinkedHashSet<>(highlightLabels), LabelResponse.class);
+	}
 
     /**
      * Fetches labels associated with a specific release ID.
@@ -106,18 +120,57 @@ public class LabelService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Filters labels based on priority defined in the GitHub properties.
-     * @param labels the list of labels to filter
-     * @return a set of labels that match the priority criteria
-     */
-    private Set<Label> filterLabelsByPriority(List<Label> labels) {
-        return labels.stream()
-                .filter(label -> priorityLabels.contains(label.getColor()))
-                .collect(Collectors.toSet());
-    }
+	/**
+	 * Counts occurrences of each label in the provided list.
+	 * @param labels the list of labels to count
+	 * @return a map of label IDs to their occurrence counts
+	 */
+	private Map<String, Long> countLabelOccurrences(List<Label> labels) {
+		return labels.stream()
+				.collect(Collectors.groupingBy(Label::getId, Collectors.counting()));
+	}
 
-    /**
+	/**
+	 * Maps unique labels from the provided list to a map.
+	 * @param labels the list of labels to map
+	 * @return a map of label IDs to Label objects, ensuring uniqueness
+	 */
+	private Map<String, Label> mapUniqueLabels(List<Label> labels) {
+		return labels.stream()
+				.collect(Collectors.toMap(Label::getId, Function.identity(), (l1, _) -> l1));
+	}
+
+	/**
+	 * Filters and sorts labels based on priority and count.
+	 * @param uniqueLabelMap the map of unique labels
+	 * @param labelCountMap the map of label counts
+	 * @return a sorted list of labels that are either priority labels or not ignored
+	 */
+	private List<Label> getSortedLabelsByPriorityAndCount(
+			Map<String, Label> uniqueLabelMap,
+			Map<String, Long> labelCountMap) {
+		return uniqueLabelMap.values().stream()
+				.filter(label -> priorityLabels.contains(label.getColor()) || !ignoredLabels.contains(label.getColor()))
+				.sorted((l1, l2) -> Long.compare(labelCountMap.getOrDefault(l2.getId(), 0L),
+						labelCountMap.getOrDefault(l1.getId(), 0L)))
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Selects the top labels from both primary and secondary lists,
+	 * @param primaryList the list of primary labels (e.g., priority labels)
+	 * @param secondaryList the list of secondary labels (e.g., non-priority labels)
+	 * @return a list of selected labels, limited to a maximum number
+	 */
+	private List<Label> selectTopLabels(List<Label> primaryList, List<Label> secondaryList) {
+		return Stream.concat(primaryList.stream(), secondaryList.stream())
+				.collect(Collectors.toCollection(LinkedHashSet::new))
+				.stream()
+				.limit(MAX_HIGHLIGHTED_LABELS)
+				.collect(Collectors.toList());
+	}
+
+	/**
      * Fetches all labels from the database and returns them as a map.
      * @return Map of label IDs to Label objects
      */

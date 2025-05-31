@@ -1,0 +1,14 @@
+.off-canvas-body {
+  position: relative;
+  height: calc(100% - 3rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.off-canvas-body::-webkit-scrollbar {
+  display: none;
+}

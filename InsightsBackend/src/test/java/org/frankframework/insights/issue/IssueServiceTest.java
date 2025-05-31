@@ -11,6 +11,7 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.*;
 import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.*;
 import org.frankframework.insights.milestone.*;
@@ -266,6 +267,9 @@ public class IssueServiceTest {
         when(mapper.toDTO(eq(issue2), eq(IssueResponse.class))).thenReturn(ir2);
         when(labelService.getLabelsByIssueId(anyString())).thenReturn(Set.of(label));
         when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
+
+		when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
+				.thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
 
         Set<IssueResponse> resp = issueService.getIssuesByTimespan(now.minusDays(5), now.plusDays(5));
 

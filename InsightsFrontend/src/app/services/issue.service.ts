@@ -9,13 +9,20 @@ export interface Issue {
   number: number;
   title: string;
   state: GitHubState;
-  closedAt: Date;
+  closedAt?: Date;
   url: string;
-  businessValue: string;
-  milestone: Milestone;
-  labels: Label[];
-  parentIssue: Issue;
-  subIssues: Issue[];
+  businessValue?: string;
+  milestone?: Milestone;
+  issueType?: IssueType;
+  labels?: Label[];
+  subIssues?: Issue[];
+}
+
+export interface IssueType {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
 }
 
 export interface TimeSpanParameters {

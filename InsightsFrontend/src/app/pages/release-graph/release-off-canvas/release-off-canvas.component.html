@@ -1,0 +1,10 @@
+<app-off-canvas [title]="release.name" (closeCanvas)="closeCanvas.emit()">
+  <div class="off-canvas-body">
+    @if (!isLoading) {
+      <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
+      <app-release-important-issues [releaseIssues]="releaseIssues" />
+    } @else {
+      <app-loader />
+    }
+  </div>
+</app-off-canvas>
