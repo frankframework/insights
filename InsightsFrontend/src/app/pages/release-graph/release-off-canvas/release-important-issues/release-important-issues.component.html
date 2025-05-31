@@ -1,10 +1,21 @@
-<div class="release-important-issues">
-  <h2>Important issues</h2>
-  @if (releaseIssues?.length) {
-    @for (issue of releaseIssues; track issue.id) {
-      <app-issue-tree-branch [issue]="issue" [depth]="0" />
+<div>
+  <div class="important-issues-header">
+    <h2>Important issues</h2>
+    <label>
+      <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)">
+        @for (type of issueTypeOptions(); track type.value) {
+          <option [ngValue]="type.value">{{ type.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+  <div class="important-issues-container">
+    @if (sortedAndFilteredIssues().length) {
+      @for (issue of sortedAndFilteredIssues(); track issue.id) {
+        <app-issue-tree-branch [issue]="issue" [depth]="0" />
+      }
+    } @else {
+      <p>No important issues found for this release.</p>
     }
-  } @else {
-    <p>No important issues found for this release.</p>
-  }
+  </div>
 </div>
