@@ -13,9 +13,16 @@ export interface Issue {
   url: string;
   businessValue: string;
   milestone: Milestone;
+  issueType: IssueType;
   labels: Label[];
-  parentIssue: Issue;
   subIssues: Issue[];
+}
+
+export interface IssueType {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
 }
 
 export interface TimeSpanParameters {

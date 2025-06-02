@@ -13,5 +13,6 @@ public class GitHubProperties {
     private String secret;
     private List<String> branchProtectionRegexes;
     private List<String> priorityLabels;
+	private List<String> ignoredLabels;
     private Boolean fetch;
 }
