@@ -244,14 +244,63 @@ public class IssueService {
         return mapIssuesToResponses(issues);
     }
 
-    /**
-     * Maps a set of issues to a set of IssueResponse objects.
-     * @param issues the set of issues to map
-     * @return a set of IssueResponse objects containing the mapped issues with their labels, milestone, issue type and subIssues
-     */
-    private Set<IssueResponse> mapIssuesToResponses(Set<Issue> issues) {
-        return issues.stream().map(this::mapIssueTree).collect(Collectors.toSet());
-    }
+	/**
+	 * Maps a set of issues to a set of IssueResponse objects.
+	 * @param issues the set of issues to map
+	 * @return a set of IssueResponse objects representing the mapped issues
+	 */
+	public Set<IssueResponse> mapIssuesToResponses(Set<Issue> issues) {
+		Set<Issue> parentIssues = findRootParentIssues(issues);
+		return parentIssues.stream()
+				.map(this::mapIssueTree)
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Finds root parent issues from a set of issues.
+	 * @param issues the set of issues to search for root parents
+	 * @return a set of root parent issues that do not have any children in the provided set
+	 */
+	private Set<Issue> findRootParentIssues(Set<Issue> issues) {
+		Set<String> childIds = getChildIssueIds(issues);
+		Set<Issue> rootCandidates = getRootCandidates(issues);
+		return filterNonDuplicatedRoots(rootCandidates, childIds);
+	}
+
+	/**
+	 * Collects the IDs of all child issues from a set of issues.
+	 * @param issues the set of issues to search for child IDs
+	 * @return a set of IDs representing the child issues
+	 */
+	private Set<String> getChildIssueIds(Set<Issue> issues) {
+		return issues.stream()
+				.filter(issue -> issue.getParentIssue() != null)
+				.map(Issue::getId)
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Filters the provided set of issues to find root candidates, which are issues without a parent.
+	 * @param issues the set of issues to filter
+	 * @return a set of issues that are root candidates (i.e., they do not have a parent issue)
+	 */
+	private Set<Issue> getRootCandidates(Set<Issue> issues) {
+		return issues.stream()
+				.filter(issue -> issue.getParentIssue() == null)
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Filters out issues that are not root issues by checking against a set of child IDs.
+	 * @param rootCandidates the set of candidate root issues to filter
+	 * @param childIds the set of IDs representing child issues
+	 * @return a set of root issues that do not have any children in the provided set
+	 */
+	private Set<Issue> filterNonDuplicatedRoots(Set<Issue> rootCandidates, Set<String> childIds) {
+		return rootCandidates.stream()
+				.filter(issue -> !childIds.contains(issue.getId()))
+				.collect(Collectors.toSet());
+	}
 
     /**
      * Maps an issue to an IssueResponse object, including its labels, milestone, issue type and subIssues.

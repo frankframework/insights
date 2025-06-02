@@ -4,6 +4,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { Label } from '../../../../services/label.service';
 import { Issue } from '../../../../services/issue.service';
+import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -36,13 +37,16 @@ export class ReleaseHighlightsComponent implements OnChanges {
       },
     },
   };
+
   public doughnutChartPlugins = [];
+
+  constructor(private releaseOffCanvasComponent: ReleaseOffCanvasComponent) {}
 
   ngOnChanges(): void {
     this.generatePieData();
   }
 
-  getDotColor(color: string): string {
+  public getDotColor(color: string): string {
     return color?.startsWith('#') ? color : `#${color}`;
   }
 
@@ -55,7 +59,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
       if (!issue.issueType) continue;
       const issueTypeName = issue.issueType.name;
       let issueTypeColor = issue.issueType.color;
-      issueTypeColor = this.colorNameToRgba(issueTypeColor, 0.8);
+      issueTypeColor = this.releaseOffCanvasComponent.colorNameToRgba(issueTypeColor);
 
       if (pieDataMap.has(issueTypeName)) {
         pieDataMap.get(issueTypeName)!.count += 1;
@@ -77,22 +81,5 @@ export class ReleaseHighlightsComponent implements OnChanges {
         },
       ],
     };
-  }
-
-  private colorNameToRgba(color: string, alpha: number): string {
-    const temporaryElement = document.createElement('div');
-    temporaryElement.style.color = color;
-    document.body.append(temporaryElement);
-
-    const rgb = getComputedStyle(temporaryElement).color;
-    temporaryElement.remove();
-
-    const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-    if (match) {
-      const [, r, g, b] = match;
-      return `rgba(${r},${g},${b},${alpha})`;
-    }
-
-    return color;
   }
 }

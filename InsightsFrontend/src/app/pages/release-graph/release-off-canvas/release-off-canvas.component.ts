@@ -6,11 +6,12 @@ import { catchError, of } from 'rxjs';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { Issue, IssueService } from '../../../services/issue.service';
 import { LoaderComponent } from '../../../components/loader/loader.component';
+import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 
 @Component({
   selector: 'app-release-off-canvas',
   standalone: true,
-  imports: [LoaderComponent, OffCanvasComponent, ReleaseHighlightsComponent, ReleaseHighlightsComponent],
+  imports: [LoaderComponent, OffCanvasComponent, ReleaseHighlightsComponent, ReleaseImportantIssuesComponent],
   templateUrl: './release-off-canvas.component.html',
   styleUrl: './release-off-canvas.component.scss',
 })
@@ -33,6 +34,23 @@ export class ReleaseOffCanvasComponent implements OnChanges {
       this.getHighlightedLabelsByReleaseId(this.release.id);
       this.getIssuesByReleaseId(this.release.id);
     }
+  }
+
+  public colorNameToRgba(color: string): string {
+    const temporaryElement = document.createElement('div');
+    temporaryElement.style.color = color;
+    document.body.append(temporaryElement);
+
+    const rgb = getComputedStyle(temporaryElement).color;
+    temporaryElement.remove();
+
+    const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (match) {
+      const [, r, g, b] = match;
+      return `rgba(${r},${g},${b},${0.75})`;
+    }
+
+    return color;
   }
 
   private getHighlightedLabelsByReleaseId(releaseId: string): void {
