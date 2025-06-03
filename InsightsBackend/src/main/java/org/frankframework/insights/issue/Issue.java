@@ -8,6 +8,7 @@ import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.issuePriority.IssuePriority;
 import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.milestone.Milestone;
 
@@ -43,6 +44,12 @@ public class Issue {
     @ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference("issueType-issue")
     private IssueType issueType;
+
+	@ManyToOne(cascade = CascadeType.MERGE)
+	@JsonBackReference("issuePriority-issue")
+	private IssuePriority issuePriority;
+
+	private double points;
 
     @ManyToOne
     @JsonIgnore

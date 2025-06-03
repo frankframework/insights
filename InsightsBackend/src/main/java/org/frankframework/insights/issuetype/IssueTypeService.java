@@ -49,10 +49,10 @@ public class IssueTypeService {
         try {
             log.info("Amount of issueTypes found in database: {}", issueTypeRepository.count());
             log.info(
-                    "Amount of labels found in GitHub: {}",
+                    "Amount of issue types found in GitHub: {}",
                     gitHubRepositoryStatisticsService
                             .getGitHubRepositoryStatisticsDTO()
-                            .getGitHubLabelCount());
+                            .getGitHubIssueTypeCount());
 
             log.info("Start injecting GitHub issue types");
             Set<IssueTypeDTO> issueTypeDTOS = gitHubClient.getIssueTypes();

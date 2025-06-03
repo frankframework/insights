@@ -1,16 +1,20 @@
 package org.frankframework.insights.github;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.graphql.GraphQLClient;
 import org.frankframework.insights.issue.IssueDTO;
+import org.frankframework.insights.issuePriority.IssuePriorityDTO;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
@@ -30,18 +34,6 @@ public class GitHubClient extends GraphQLClient {
     public GitHubClient(GitHubProperties gitHubProperties, ObjectMapper objectMapper) {
         super(gitHubProperties.getUrl(), gitHubProperties.getSecret());
         this.objectMapper = objectMapper;
-    }
-
-    /**
-     * Fetches repository statistics from GitHub.
-     * @return GitHubRepositoryStatisticsDTO containing repository statistics
-     * @throws GitHubClientException if an error occurs during the request
-     */
-    public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
-        GitHubRepositoryStatisticsDTO repositoryStatistics = fetchSingleEntity(
-                GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
-        log.info("Fetched repository statistics from GitHub");
-        return repositoryStatistics;
     }
 
     /**
@@ -78,6 +70,32 @@ public class GitHubClient extends GraphQLClient {
         log.info("Successfully fetched {} issue types from GitHub", issueTypes.size());
         return issueTypes;
     }
+
+	/**
+	 * Fetches issue priorities from GitHub.
+	 * @param projectId the ID of the project for which to fetch issue priorities
+	 * @return Set of GitHubSingleSelectDTO containing issue priorities
+	 * @throws GitHubClientException if an error occurs during the request
+	 */
+	public Set<GitHubSingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> getIssuePriorities(String projectId) throws GitHubClientException {
+		HashMap<String, Object> variables = new HashMap<>();
+		variables.put("projectId", projectId);
+		log.info("Started fetching issue priorities from GitHub for project with id: [{}]", projectId);
+
+		Set<GitHubSingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> issuePriorities =  getNodes(
+				GitHubQueryConstants.ISSUE_PRIORITIES,
+				variables,
+				new ParameterizedTypeReference<GitHubSingleSelectDTO<IssuePriorityDTO>>() {},
+				GitHubSingleSelectDTO.SingleSelectObject.class
+		);
+
+		log.info(
+				"Successfully fetched {} issue priorities from GitHub for project with id: [{}]",
+				issuePriorities.size(),
+				projectId);
+
+		return issuePriorities;
+	}
 
     /**
      * Fetches branches from GitHub.
@@ -132,70 +150,123 @@ public class GitHubClient extends GraphQLClient {
         return releases;
     }
 
-    /**
-     * Fetches entities from GitHub using a paginated GraphQL query.
-     * @param query the GraphQL query to execute
-     * @param queryVariables the variables for the query
-     * @param entityType the type of entity to fetch
-     * @return a Set of entities of the specified type
-     * @param <T> the type of entity
-     * @throws GitHubClientException if an error occurs during the request
-     */
-    private <T> Set<T> getEntities(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
-            throws GitHubClientException {
-        Set<T> allEntities = new HashSet<>();
-        String cursor = null;
-        boolean hasNextPage = true;
 
-        while (hasNextPage) {
-            queryVariables.put("after", cursor);
+	/**
+	 * Fetches entities from GitHub using a GraphQL query.
+	 * @param query the GraphQL query to execute
+	 * @param queryVariables the variables for the query
+	 * @param entityType the type of entity to fetch
+	 * @return Set of entities of the specified type
+	 * @param <T> the type of entity
+	 * @throws GitHubClientException if an error occurs during the request
+	 */
+	private <T> Set<T> getEntities(GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType) throws GitHubClientException {
+		return getPaginatedEntities(
+				query,
+				queryVariables,
+				new ParameterizedTypeReference<GitHubPaginationDTO<T>>() {},
+				dto -> dto.edges == null ? Set.of() : dto.edges.stream()
+						.map(edge -> objectMapper.convertValue(edge.node, entityType))
+						.collect(Collectors.toSet()),
+				dto -> dto.pageInfo
+		);
+	}
 
-            GitHubPaginationDTO<T> response = fetchEntityPage(query, queryVariables, entityType);
+	/**
+	 * Fetches nodes from GitHub using a GraphQL query.
+	 * @param query the GraphQL query to execute
+	 * @param queryVariables the variables for the query
+	 * @param responseType the type of the response to expect
+	 * @param nodeType the type of the node to fetch
+	 * @return Set of GitHubSingleSelectDTO.SingleSelectObject containing nodes
+	 * @param <T> the type of entity to fetch
+	 * @param <RAW> the raw	 response type
+	 * @throws GitHubClientException if an error occurs during the request
+	 */
+	private <T, RAW extends GitHubSingleSelectDTO<T>> Set<GitHubSingleSelectDTO.SingleSelectObject<T>> getNodes(
+			GitHubQueryConstants query,
+			Map<String, Object> queryVariables,
+			ParameterizedTypeReference<RAW> responseType,
+			Class<?> nodeType
+	) throws GitHubClientException {
+		return getPaginatedEntities(
+				query,
+				queryVariables,
+				responseType,
+				dto -> dto.nodes == null ? Set.of() : new HashSet<>(dto.nodes),
+				dto -> dto.pageInfo
+		);
+	}
 
-            if (response == null || response.edges == null || response.edges.isEmpty()) {
-                log.warn("Received empty response for query: {}", query);
-                break;
-            }
+	/**
+	 * Executes a GraphQL query to fetch paginated entities from GitHub.
+	 * @param query the GraphQL query to execute
+	 * @param queryVariables the variables for the query
+	 * @param responseType the type of the response to expect
+	 * @param entityExtractor a function to extract entities from the response
+	 * @param pageInfoExtractor a function to extract pagination information from the response
+	 * @return Set of entities of the specified type
+	 * @param <RAW> the raw response type
+	 * @param <T> the type of entity to fetch
+	 * @throws GitHubClientException if an error occurs during the request
+	 */
+	private <RAW, T> Set<T> getPaginatedEntities(
+			GitHubQueryConstants query,
+			Map<String, Object> queryVariables,
+			ParameterizedTypeReference<RAW> responseType,
+			Function<RAW, Collection<T>> entityExtractor,
+			Function<RAW, GitHubPageInfo> pageInfoExtractor) throws GitHubClientException {
 
-            Set<T> entities = response.edges.stream()
-                    .map(edge -> objectMapper.convertValue(edge.node, entityType))
-                    .collect(Collectors.toSet());
+		try {
+			Set<T> allEntities = new HashSet<>();
+			String cursor = null;
+			boolean hasNextPage = true;
 
-            allEntities.addAll(entities);
-            log.info("Fetched {} additional entities with query: {}", entities.size(), query);
+			while (hasNextPage) {
+				queryVariables.put("after", cursor);
 
-            hasNextPage = response.pageInfo != null && response.pageInfo.hasNextPage;
-            cursor = (response.pageInfo != null) ? response.pageInfo.endCursor : null;
-        }
-        return allEntities;
-    }
+				RAW response = getGraphQlClient()
+						.documentName(query.getDocumentName())
+						.variables(queryVariables)
+						.retrieve(query.getRetrievePath())
+						.toEntity(responseType)
+						.block();
 
-    /**
-     * Executes paginated GraphQL query on external GitHub server.
-     * @param query the GraphQL query to execute
-     * @param queryVariables the variables for the query
-     * @param entityType the type of entity to fetch
-     * @return a GitHubPaginationDTO containing the paginated response
-     * @param <T> the type of entity
-     * @throws GitHubClientException if an error occurs during the request
-     */
-    protected <T> GitHubPaginationDTO<T> fetchEntityPage(
-            GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
-            throws GitHubClientException {
-        try {
-            GitHubPaginationDTO<T> response = getGraphQlClient()
-                    .documentName(query.getDocumentName())
-                    .variables(queryVariables)
-                    .retrieve(query.getRetrievePath())
-                    .toEntity(new ParameterizedTypeReference<GitHubPaginationDTO<T>>() {})
-                    .block();
+				if (response == null) {
+					log.warn("Received null response for query: {}", query);
+					break;
+				}
 
-            log.info("Successfully executed paginated GraphQL query: {}", query);
-            return response;
-        } catch (Exception e) {
-            throw new GitHubClientException("Failed to execute GraphQL request for " + query, e);
-        }
-    }
+				Collection<T> entities = entityExtractor.apply(response);
+				if (entities == null || entities.isEmpty()) {
+					log.warn("Received empty entities for query: {}", query);
+					break;
+				}
+
+				allEntities.addAll(entities);
+				log.info("Fetched {} entities with query: {}", entities.size(), query);
+
+				GitHubPageInfo pageInfo = pageInfoExtractor.apply(response);
+				hasNextPage = pageInfo != null && pageInfo.hasNextPage;
+				cursor = (pageInfo != null) ? pageInfo.endCursor : null;
+			}
+			return allEntities;
+		} catch (Exception e) {
+			throw new GitHubClientException("Failed to execute GraphQL request for " + query, e);
+		}
+	}
+
+	/**
+	 * Fetches repository statistics from GitHub.
+	 * @return GitHubRepositoryStatisticsDTO containing repository statistics
+	 * @throws GitHubClientException if an error occurs during the request
+	 */
+	public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
+		GitHubRepositoryStatisticsDTO repositoryStatistics = fetchSingleEntity(
+				GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
+		log.info("Fetched repository statistics from GitHub");
+		return repositoryStatistics;
+	}
 
     /**
      * Executes a GraphQL query to fetch a single entity from GitHub.
