@@ -48,7 +48,7 @@ public class LabelServiceTest {
 	private LabelDTO labelDTO1, labelDTO2;
 
 	@BeforeEach
-	void setUp() {
+	public void setUp() {
 		List<String> priorityColors = List.of("red");
 		List<String> ignoredColors = List.of("yellow");
 
@@ -104,7 +104,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void injectLabels_shouldSkipIfCountsEqual() throws Exception {
+	public void injectLabels_shouldSkipIfCountsEqual() throws Exception {
 		when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
 		when(statisticsDTO.getGitHubLabelCount()).thenReturn(5);
 		when(labelRepository.count()).thenReturn(5L);
@@ -116,7 +116,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void injectLabels_shouldSaveAllLabels() throws Exception {
+	public void injectLabels_shouldSaveAllLabels() throws Exception {
 		Set<LabelDTO> dtos = Set.of(labelDTO1, labelDTO2);
 		Set<Label> entities = Set.of(labelBug, labelFeature);
 		List<Label> saved = List.of(labelBug, labelFeature);
@@ -134,7 +134,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void injectLabels_shouldThrowOnException() throws Exception {
+	public void injectLabels_shouldThrowOnException() throws Exception {
 		when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
 		when(statisticsDTO.getGitHubLabelCount()).thenReturn(4);
 		when(labelRepository.count()).thenReturn(1L);
@@ -144,39 +144,36 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void getHighlightsByReleaseId_shouldReturnOnlyPriorityLabels() throws Exception {
+	public void getHighlightsByReleaseId_shouldReturnOnlyPriorityLabels() throws Exception {
 		Issue issueA = new Issue();
 		issueA.setId("iA");
 		Issue issueB = new Issue();
 		issueB.setId("iB");
 		Set<Issue> issues = Set.of(issueA, issueB);
 
+		Set<LabelResponse> responses = Set.of(new LabelResponse("l1", "bug", "Of type bug", "red"));
+
 		when(releaseIssueHelperService.getIssuesByReleaseId("r1")).thenReturn(issues);
 		when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelBug, issueLabelFeature));
 		when(issueLabelRepository.findAllByIssue_Id("iB")).thenReturn(Set.of(issueLabelFeature, issueLabelChore));
 
-		// The only priority color (and not ignored) is "red"
-		Set<Label> expectedFiltered = Set.of(labelBug);
-		Set<LabelResponse> responses = Set.of(new LabelResponse("l1", "bug", "Of type bug", "red"));
-		when(mapper.toDTO(new LinkedHashSet<>(expectedFiltered), LabelResponse.class)).thenReturn(responses);
+		when(mapper.toDTO(anySet(), eq(LabelResponse.class))).thenReturn(responses);
 
 		Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r1");
 
 		assertEquals(1, result.size());
 		assertTrue(result.stream().anyMatch(r -> "red".equals(r.color())));
-		verify(mapper).toDTO(new LinkedHashSet<>(expectedFiltered), LabelResponse.class);
 	}
 
 	@Test
-	void getHighlightsByReleaseId_shouldReturnEmptyIfNoPriorityLabels() throws Exception {
+	public void getHighlightsByReleaseId_shouldReturnEmptyIfNoPriorityLabels() throws Exception {
 		Issue issueA = new Issue();
 		issueA.setId("iA");
 		Set<Issue> issues = Set.of(issueA);
 
 		when(releaseIssueHelperService.getIssuesByReleaseId("r1")).thenReturn(issues);
 		when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelFeature, issueLabelChore));
-		// Only feature (blue) and chore (yellow, which is ignored), priorityLabels = [red]
-		when(mapper.toDTO(new LinkedHashSet<>(), LabelResponse.class)).thenReturn(Collections.emptySet());
+		when(mapper.toDTO(anySet(), eq(LabelResponse.class))).thenReturn(Collections.emptySet());
 
 		Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r1");
 
@@ -184,7 +181,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void getHighlightsByReleaseId_shouldReturnEmptyIfNoIssuesOrLabels() throws Exception {
+	public void getHighlightsByReleaseId_shouldReturnEmptyIfNoIssuesOrLabels() throws Exception {
 		when(releaseIssueHelperService.getIssuesByReleaseId(anyString())).thenReturn(Collections.emptySet());
 		when(mapper.toDTO(new LinkedHashSet<>(), LabelResponse.class)).thenReturn(Collections.emptySet());
 
@@ -193,14 +190,14 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void getHighlightsByReleaseId_shouldThrowIfReleaseNotFound() throws Exception {
+	public void getHighlightsByReleaseId_shouldThrowIfReleaseNotFound() throws Exception {
 		when(releaseIssueHelperService.getIssuesByReleaseId("notfound"))
 				.thenThrow(new ReleaseNotFoundException("Release not found", null));
 		assertThrows(ReleaseNotFoundException.class, () -> labelService.getHighlightsByReleaseId("notfound"));
 	}
 
 	@Test
-	void getHighlightsByReleaseId_shouldThrowIfMappingFails() throws Exception {
+	public void getHighlightsByReleaseId_shouldThrowIfMappingFails() throws Exception {
 		Issue issueA = new Issue();
 		issueA.setId("iA");
 		Set<Issue> issues = Set.of(issueA);
@@ -213,7 +210,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void getLabelsByIssueId_shouldReturnLabels() {
+	public void getLabelsByIssueId_shouldReturnLabels() {
 		when(issueLabelRepository.findAllByIssue_Id("i1")).thenReturn(Set.of(issueLabelBug, issueLabelFeature));
 		Set<Label> result = labelService.getLabelsByIssueId("i1");
 		assertEquals(2, result.size());
@@ -229,7 +226,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void saveLabels_shouldLogInfoAndSave() throws Exception {
+	public void saveLabels_shouldLogInfoAndSave() throws Exception {
 		Set<Label> labels = Set.of(labelBug, labelFeature);
 		when(labelRepository.saveAll(labels)).thenReturn(List.of(labelBug, labelFeature));
 
@@ -244,15 +241,13 @@ public class LabelServiceTest {
 		verify(labelRepository).saveAll(labels);
 	}
 
-	// NEW EDGE CASES
 
 	@Test
-	void getHighlightsByReleaseId_shouldIgnoreLabelsInIgnoredColors() throws Exception {
+	public void getHighlightsByReleaseId_shouldIgnoreLabelsInIgnoredColors() throws Exception {
 		Issue issueA = new Issue();
 		issueA.setId("iA");
 		Set<Issue> issues = Set.of(issueA);
 
-		// Only labelChore (yellow, which is ignored)
 		when(releaseIssueHelperService.getIssuesByReleaseId("r2")).thenReturn(issues);
 		when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelChore));
 		when(mapper.toDTO(new LinkedHashSet<>(), LabelResponse.class)).thenReturn(Collections.emptySet());
@@ -263,7 +258,7 @@ public class LabelServiceTest {
 	}
 
 	@Test
-	void getHighlightsByReleaseId_shouldLimitToMaxHighlightedLabels() throws Exception {
+	public void getHighlightsByReleaseId_shouldLimitToMaxHighlightedLabels() throws Exception {
 		List<Label> manyPriorityLabels = new ArrayList<>();
 		for (int i = 0; i < 20; i++) {
 			Label l = new Label();

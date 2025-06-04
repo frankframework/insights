@@ -1,21 +1,21 @@
-version: '3.8'
-
 services:
   frontend:
-    build: /InsightsFrontend
-    image: ghcr.io/frankframework/insights:${VERSION:-frontend}
+    build: ./InsightsFrontend
+    # image: ghcr.io/frankframework/insights:${VERSION:-frontend}
     restart: always
+    volumes:
+      - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
     networks:
       - FFInsightsNetwork
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "80:80"
     container_name: frontend
 
   backend:
-    build: /InsightsBackend
-    image: ghcr.io/frankframework/insights:${VERSION:-backend}
+    build: ./InsightsBackend
+    # image: ghcr.io/frankframework/insights:${VERSION:-backend}
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: production
@@ -34,7 +34,7 @@ services:
     container_name: backend
 
   db:
-    image: postgres:17-alphine3.22
+    image: postgres:17
     restart: always
     environment:
       POSTGRES_DB: insights
