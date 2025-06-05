@@ -24,8 +24,8 @@ public class IssueResponse {
     public String businessValue;
     public MilestoneResponse milestone;
     public IssueTypeResponse issueType;
-	public IssuePriorityResponse issuePriority;
-	public double points;
+    public IssuePriorityResponse issuePriority;
+    public double points;
     public Set<LabelResponse> labels;
     public Set<IssueResponse> subIssues;
 }

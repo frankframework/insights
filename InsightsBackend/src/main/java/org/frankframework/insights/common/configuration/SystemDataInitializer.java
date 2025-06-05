@@ -24,7 +24,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final LabelService labelService;
     private final MilestoneService milestoneService;
     private final IssueTypeService issueTypeService;
-	private final IssuePriorityService issuePriorityService;
+    private final IssuePriorityService issuePriorityService;
     private final BranchService branchService;
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
@@ -36,7 +36,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             LabelService labelService,
             MilestoneService milestoneService,
             IssueTypeService issueTypeService,
-			IssuePriorityService issuePriorityService,
+            IssuePriorityService issuePriorityService,
             BranchService branchService,
             IssueService issueService,
             PullRequestService pullRequestService,
@@ -46,7 +46,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.labelService = labelService;
         this.milestoneService = milestoneService;
         this.issueTypeService = issueTypeService;
-		this.issuePriorityService = issuePriorityService;
+        this.issuePriorityService = issuePriorityService;
         this.branchService = branchService;
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
@@ -110,7 +110,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             labelService.injectLabels();
             milestoneService.injectMilestones();
             issueTypeService.injectIssueTypes();
-			issuePriorityService.injectIssuePriorities();
+            issuePriorityService.injectIssuePriorities();
             branchService.injectBranches();
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();

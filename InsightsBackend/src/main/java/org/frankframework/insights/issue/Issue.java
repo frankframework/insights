@@ -45,11 +45,11 @@ public class Issue {
     @JsonBackReference("issueType-issue")
     private IssueType issueType;
 
-	@ManyToOne(cascade = CascadeType.MERGE)
-	@JsonBackReference("issuePriority-issue")
-	private IssuePriority issuePriority;
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("issuePriority-issue")
+    private IssuePriority issuePriority;
 
-	private double points;
+    private Double points;
 
     @ManyToOne
     @JsonIgnore

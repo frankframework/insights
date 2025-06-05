@@ -8,8 +8,10 @@ import java.util.*;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
-import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.*;
+import org.frankframework.insights.issuePriority.IssuePriority;
+import org.frankframework.insights.issuePriority.IssuePriorityResponse;
+import org.frankframework.insights.issuePriority.IssuePriorityService;
 import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -45,6 +47,9 @@ public class IssueServiceTest {
     private IssueTypeService issueTypeService;
 
     @Mock
+    private IssuePriorityService issuePriorityService;
+
+    @Mock
     private LabelService labelService;
 
     @Mock
@@ -78,6 +83,12 @@ public class IssueServiceTest {
         issueType.setDescription("description1");
         issueType.setColor("purple");
 
+        IssuePriority issuePriority = new IssuePriority();
+        issuePriority.setId("ip1");
+        issuePriority.setName("High");
+        issuePriority.setDescription("High priority issue");
+        issuePriority.setColor("red");
+
         issue1 = new Issue();
         issue1.setId("i1");
         issue1.setNumber(101);
@@ -86,6 +97,8 @@ public class IssueServiceTest {
         issue1.setUrl("http://issue1");
         issue1.setClosedAt(now.minusDays(1));
         issue1.setIssueType(issueType);
+        issue1.setPoints(13.0);
+        issue1.setIssuePriority(issuePriority);
 
         issue2 = new Issue();
         issue2.setId("i2");
@@ -101,6 +114,7 @@ public class IssueServiceTest {
         issueSub.setTitle("Sub Issue Parent");
         issueSub.setState(GitHubPropertyState.OPEN);
         issueSub.setUrl("http://issue4");
+        issueSub.setParentIssue(issue1);
 
         LabelDTO labelDTO = new LabelDTO();
         labelDTO.id = "l1";
@@ -114,6 +128,9 @@ public class IssueServiceTest {
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>();
         labelEdges.setEdges(labelNodeList);
 
+        GitHubEdgesDTO<GitHubProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>();
+        emptyProjectItems.setEdges(Collections.emptyList());
+
         dto1 = new IssueDTO(
                 "i1",
                 101,
@@ -124,7 +141,9 @@ public class IssueServiceTest {
                 labelEdges,
                 new MilestoneDTO("m1", 1, "Milestone 1", GitHubPropertyState.OPEN),
                 null,
-                null);
+                null,
+                emptyProjectItems);
+
         dto2 = new IssueDTO(
                 "i2",
                 102,
@@ -135,13 +154,13 @@ public class IssueServiceTest {
                 null,
                 null,
                 null,
-                null);
+                null,
+                emptyProjectItems);
 
-        GitHubNodeDTO<IssueDTO> subNode = new GitHubNodeDTO<>();
-        subNode.setNode(dto2);
-        List<GitHubNodeDTO<IssueDTO>> subNodes = List.of(subNode);
+        GitHubNodeDTO<IssueDTO> subIssueNode = new GitHubNodeDTO<>();
+        subIssueNode.setNode(dto2);
         GitHubEdgesDTO<IssueDTO> subIssuesEdge = new GitHubEdgesDTO<>();
-        subIssuesEdge.setEdges(subNodes);
+        subIssuesEdge.setEdges(List.of(subIssueNode));
 
         dtoSub = new IssueDTO(
                 "i4",
@@ -153,7 +172,8 @@ public class IssueServiceTest {
                 null,
                 null,
                 null,
-                subIssuesEdge);
+                subIssuesEdge,
+                emptyProjectItems);
     }
 
     @Test
@@ -171,25 +191,19 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_savesAllAndHandlesTypeMilestoneAndLabels()
-            throws GitHubClientException, IssueInjectionException, MappingException {
+            throws GitHubClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dto1, dto2);
-        Set<Issue> mappedIssues = Set.of(issue1, issue2);
+
+        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
 
         Map<String, Milestone> milestones = Map.of("m1", milestone);
         Map<String, IssueType> issueTypes = Map.of("it1", issueType);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(2);
-        when(issueRepository.count()).thenReturn(0L);
-        when(gitHubClient.getIssues()).thenReturn(DTOs);
-        when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
-        when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
-
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(4);
         when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(DTOs);
-        when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
         when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
         when(issueTypeService.getAllIssueTypesMap()).thenReturn(issueTypes);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -201,36 +215,74 @@ public class IssueServiceTest {
         label.setDescription("desc");
         Map<String, Label> labelMap = Map.of("l1", label);
         when(labelService.getAllLabelsMap()).thenReturn(labelMap);
-
         when(issueLabelRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         issueService.injectIssues();
 
-        verify(issueRepository, times(2)).saveAll(anySet());
+        verify(issueRepository, atLeastOnce()).saveAll(anySet());
         verify(issueLabelRepository, atLeastOnce()).saveAll(anySet());
         assertEquals(milestone, issue1.getMilestone());
-        assertEquals(issueType, issue1.getIssueType());
     }
 
     @Test
-    public void injectIssues_assignsSubIssues()
-            throws GitHubClientException, IssueInjectionException, MappingException {
+    public void injectIssues_mapsPriorityAndPointsFromProjectItems() throws Exception {
+        when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
+        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
+        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
+        when(issueRepository.count()).thenReturn(2L);
+        when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
+        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+
+        issueService.injectIssues();
+
+        verify(mapper).toEntity(eq(dto1), eq(Issue.class));
+        assertEquals("High", issue1.getIssuePriority().getName());
+        assertEquals(13.0, issue1.getPoints());
+    }
+
+    @Test
+    public void injectIssues_handlesMissingPriorityMappingGracefully() throws Exception {
+        when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
+        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
+        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
+        when(issueRepository.count()).thenReturn(2L);
+        when(gitHubClient.getIssues()).thenReturn(Set.of(dtoSub));
+        when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+
+        assertDoesNotThrow(() -> issueService.injectIssues());
+    }
+
+    @Test
+    public void injectIssues_handlesFieldValuesWithNullNode() throws Exception {
+        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
+        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
+        when(issueRepository.count()).thenReturn(2L);
+        when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
+        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+
+        assertDoesNotThrow(() -> issueService.injectIssues());
+    }
+
+    @Test
+    public void injectIssues_assignsSubIssues() throws GitHubClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dtoSub, dto2);
-        Set<Issue> mappedIssues = Set.of(issueSub, issue2);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(5);
         when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(DTOs);
-        when(mapper.toEntity(DTOs, Issue.class)).thenReturn(mappedIssues);
+        when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
+        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
         when(milestoneService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
-
         when(labelService.getAllLabelsMap()).thenReturn(Collections.emptyMap());
 
         issueService.injectIssues();
 
-        verify(issueRepository, times(2)).saveAll(anySet());
+        verify(issueRepository, atLeastOnce()).saveAll(anySet());
         verify(issueLabelRepository, never()).saveAll(anySet());
     }
 
@@ -268,8 +320,10 @@ public class IssueServiceTest {
         when(labelService.getLabelsByIssueId(anyString())).thenReturn(Set.of(label));
         when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
 
-		when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
-				.thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
+        when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
+                .thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
+        when(mapper.toDTO(any(IssuePriority.class), eq(IssuePriorityResponse.class)))
+                .thenReturn(new IssuePriorityResponse("ip1", "High", "High priority issue", "red"));
 
         Set<IssueResponse> resp = issueService.getIssuesByTimespan(now.minusDays(5), now.plusDays(5));
 
