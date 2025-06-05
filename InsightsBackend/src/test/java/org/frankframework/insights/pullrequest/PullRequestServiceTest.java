@@ -75,7 +75,6 @@ public class PullRequestServiceTest {
     private Branch testBranch;
     private PullRequestDTO masterPR, subBranchPR;
     private PullRequest mockPullRequest;
-	private LabelDTO mockLabelDTO;
 
     @BeforeEach
     public void setUp() {
@@ -257,7 +256,8 @@ public class PullRequestServiceTest {
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>();
         labelEdges.setEdges(labelNodeList);
 
-        IssueDTO issue = new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null);
+        IssueDTO issue =
+                new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
         GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>();
         issueNode.setNode(issue);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>();
@@ -282,7 +282,6 @@ public class PullRequestServiceTest {
         Map<String, Label> labelMap = Map.of("l1", label);
         when(labelService.getAllLabelsMap()).thenReturn(labelMap);
 
-        // Make sure the issue service returns a map of issue id to Issue, not IssueDTO
         Issue issueEntity = new Issue();
         issueEntity.setId("i1");
         Map<String, Issue> issueMap = Map.of("i1", issueEntity);

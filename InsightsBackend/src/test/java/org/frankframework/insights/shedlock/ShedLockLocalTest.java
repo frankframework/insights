@@ -10,6 +10,7 @@ import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
+import org.frankframework.insights.issuePriority.IssuePriorityService;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
@@ -41,6 +42,9 @@ public class ShedLockLocalTest {
     private IssueTypeService issueTypeService;
 
     @Mock
+    private IssuePriorityService issuePriorityService;
+
+    @Mock
     private BranchService branchService;
 
     @Mock
@@ -66,6 +70,7 @@ public class ShedLockLocalTest {
                 labelService,
                 milestoneService,
                 issueTypeService,
+                issuePriorityService,
                 branchService,
                 issueService,
                 pullRequestService,
@@ -82,6 +87,8 @@ public class ShedLockLocalTest {
         verifyNoInteractions(gitHubRepositoryStatisticsService);
         verifyNoInteractions(labelService);
         verifyNoInteractions(milestoneService);
+        verifyNoInteractions(issueTypeService);
+        verifyNoInteractions(issuePriorityService);
         verifyNoInteractions(branchService);
         verifyNoInteractions(issueService);
         verifyNoInteractions(pullRequestService);

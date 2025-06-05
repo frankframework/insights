@@ -1,7 +1,6 @@
 package org.frankframework.insights.github;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +8,7 @@ import java.util.*;
 import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.issue.IssueDTO;
+import org.frankframework.insights.issuePriority.IssuePriorityDTO;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
@@ -17,6 +17,9 @@ import org.frankframework.insights.release.ReleaseDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.graphql.client.HttpGraphQlClient;
+import reactor.core.publisher.Mono;
 
 public class GitHubClientTest {
 
@@ -26,336 +29,578 @@ public class GitHubClientTest {
     @Mock
     private GitHubProperties gitHubProperties;
 
-    @Spy
-    @InjectMocks
+    @Mock
+    private HttpGraphQlClient httpGraphQlClient;
+
     private GitHubClient gitHubClient;
+
+    private static class TestableGitHubClient extends GitHubClient {
+        private final HttpGraphQlClient testClient;
+
+        public TestableGitHubClient(GitHubProperties props, ObjectMapper om, HttpGraphQlClient client) {
+            super(props, om);
+            this.testClient = client;
+        }
+
+        @Override
+        protected HttpGraphQlClient getGraphQlClient() {
+            return testClient;
+        }
+    }
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         when(gitHubProperties.getUrl()).thenReturn("https://api.github.com");
         when(gitHubProperties.getSecret()).thenReturn("secret");
-        gitHubClient = spy(new GitHubClient(gitHubProperties, objectMapper));
     }
 
     @Test
-    void getRepositoryStatistics_success() throws GitHubClientException {
-        GitHubTotalCountDTO totalCountDTO = new GitHubTotalCountDTO(1);
-
-        List<GitHubRefsDTO.GitHubBranchNodeDTO> nodes = List.of(new GitHubRefsDTO.GitHubBranchNodeDTO(
-                "branch1", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(1))));
-        GitHubRefsDTO refsDTO = new GitHubRefsDTO(nodes);
-
-        GitHubRepositoryStatisticsDTO dto = new GitHubRepositoryStatisticsDTO(
-                totalCountDTO, totalCountDTO, totalCountDTO, refsDTO, totalCountDTO, totalCountDTO);
-
-        doReturn(dto).when(gitHubClient).fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
-        GitHubRepositoryStatisticsDTO result = gitHubClient.getRepositoryStatistics();
-
-        assertEquals(dto, result);
-    }
-
-    @Test
-    public void getRepositoryStatistics_shouldWrapException() {
-        try {
-            doThrow(new GitHubClientException("fail", null))
-                    .when(gitHubClient)
-                    .fetchSingleEntity(any(), anyMap(), eq(GitHubRepositoryStatisticsDTO.class));
-        } catch (Exception ignored) {
-        }
-        assertThrows(GitHubClientException.class, () -> gitHubClient.getRepositoryStatistics());
-    }
-
-    @Test
-    public void getLabels_success() throws Exception {
-        LabelDTO label = new LabelDTO();
-        List<GitHubPaginationDTO.Edge<LabelDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<LabelDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = label;
-        edges.add(edge);
-        GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-
-        doReturn(page)
-                .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-        when(objectMapper.convertValue(label, LabelDTO.class)).thenReturn(label);
-
+    public void getLabels_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        LabelDTO label1 = new LabelDTO();
+        LabelDTO label2 = new LabelDTO();
+        Set<LabelDTO> labels = Set.of(label1, label2);
+        doReturn(labels).when(gitHubClient).getEntities(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
         Set<LabelDTO> result = gitHubClient.getLabels();
-        assertEquals(Set.of(label), result);
+        assertEquals(labels, result);
     }
 
     @Test
-    public void getLabels_emptyResponse() throws Exception {
-        GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
-        page.edges = Collections.emptyList();
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-        doReturn(page)
+    public void getLabels_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-
-        Set<LabelDTO> result = gitHubClient.getLabels();
-        assertTrue(result.isEmpty());
+                .getEntities(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        assertTrue(gitHubClient.getLabels().isEmpty());
     }
 
     @Test
-    public void getLabels_nullResponse() throws Exception {
-        doReturn(null)
-                .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-        Set<LabelDTO> result = gitHubClient.getLabels();
-        assertTrue(result.isEmpty());
+    public void getLabels_nullReturned() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(null).when(gitHubClient).getEntities(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+        assertThrows(NullPointerException.class, () -> gitHubClient.getLabels());
     }
 
     @Test
-    public void getLabels_shouldWrapException() throws Exception {
+    public void getLabels_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
+                .getEntities(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getLabels());
     }
 
     @Test
     public void getMilestones_success() throws Exception {
-        MilestoneDTO dto = new MilestoneDTO("id", 1, null, GitHubPropertyState.OPEN);
-        List<GitHubPaginationDTO.Edge<MilestoneDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<MilestoneDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = dto;
-        edges.add(edge);
-        GitHubPaginationDTO<MilestoneDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-
-        doReturn(page)
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        MilestoneDTO m1 = new MilestoneDTO("id", 1, null, GitHubPropertyState.OPEN);
+        Set<MilestoneDTO> milestones = Set.of(m1);
+        doReturn(milestones)
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
-        when(objectMapper.convertValue(dto, MilestoneDTO.class)).thenReturn(dto);
-
-        Set<MilestoneDTO> result = gitHubClient.getMilestones();
-        assertEquals(Set.of(dto), result);
+                .getEntities(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
+        assertEquals(milestones, gitHubClient.getMilestones());
     }
 
     @Test
-    public void getMilestones_shouldWrapException() throws Exception {
+    public void getMilestones_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
+                .when(gitHubClient)
+                .getEntities(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
+        assertTrue(gitHubClient.getMilestones().isEmpty());
+    }
+
+    @Test
+    public void getMilestones_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
+                .getEntities(eq(GitHubQueryConstants.MILESTONES), anyMap(), eq(MilestoneDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getMilestones());
     }
 
     @Test
-    public void getIssueTypes_success() throws Exception {
-        IssueTypeDTO issueType = new IssueTypeDTO();
-        List<GitHubPaginationDTO.Edge<IssueTypeDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<IssueTypeDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = issueType;
-        edges.add(edge);
-        GitHubPaginationDTO<IssueTypeDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-
-        doReturn(page)
+    public void getIssueTypes_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        IssueTypeDTO t1 = new IssueTypeDTO();
+        Set<IssueTypeDTO> set = Set.of(t1);
+        doReturn(set)
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
-        when(objectMapper.convertValue(issueType, IssueTypeDTO.class)).thenReturn(issueType);
-
-        Set<IssueTypeDTO> result = gitHubClient.getIssueTypes();
-        assertEquals(Set.of(issueType), result);
+                .getEntities(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
+        assertEquals(set, gitHubClient.getIssueTypes());
     }
 
     @Test
-    public void getIssueTypes_shouldWrapException() throws Exception {
+    public void getIssueTypes_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
+                .when(gitHubClient)
+                .getEntities(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
+        assertTrue(gitHubClient.getIssueTypes().isEmpty());
+    }
+
+    @Test
+    public void getIssueTypes_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
+                .getEntities(eq(GitHubQueryConstants.ISSUE_TYPES), anyMap(), eq(IssueTypeDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getIssueTypes());
     }
 
     @Test
-    public void getBranches_success() throws Exception {
-        BranchDTO dto = new BranchDTO();
-        dto.setName("main");
-        List<GitHubPaginationDTO.Edge<BranchDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<BranchDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = dto;
-        edges.add(edge);
-        GitHubPaginationDTO<BranchDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
+    public void getIssuePriorities_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        String projectId = "pid";
+        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> obj =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> set = Set.of(obj);
 
-        doReturn(page)
+        doReturn(set)
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
-        when(objectMapper.convertValue(dto, BranchDTO.class)).thenReturn(dto);
-
-        Set<BranchDTO> result = gitHubClient.getBranches();
-        assertEquals(Set.of(dto), result);
+                .getNodes(
+                        eq(GitHubQueryConstants.ISSUE_PRIORITIES),
+                        anyMap(),
+                        any(ParameterizedTypeReference.class),
+                        eq(GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+        assertEquals(set, gitHubClient.getIssuePriorities(projectId));
     }
 
     @Test
-    public void getBranches_shouldWrapException() throws Exception {
+    public void getIssuePriorities_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        String projectId = "pid";
+        doReturn(Collections.emptySet())
+                .when(gitHubClient)
+                .getNodes(
+                        eq(GitHubQueryConstants.ISSUE_PRIORITIES),
+                        anyMap(),
+                        any(ParameterizedTypeReference.class),
+                        eq(GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+        assertTrue(gitHubClient.getIssuePriorities(projectId).isEmpty());
+    }
+
+    @Test
+    public void getIssuePriorities_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        String projectId = "pid";
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
+                .getNodes(
+                        eq(GitHubQueryConstants.ISSUE_PRIORITIES),
+                        anyMap(),
+                        any(ParameterizedTypeReference.class),
+                        eq(GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getIssuePriorities(projectId));
+    }
+
+    @Test
+    public void getBranches_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        BranchDTO branch = new BranchDTO();
+        branch.setName("main");
+        Set<BranchDTO> set = Set.of(branch);
+        doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
+        assertEquals(set, gitHubClient.getBranches());
+    }
+
+    @Test
+    public void getBranches_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
+                .when(gitHubClient)
+                .getEntities(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
+        assertTrue(gitHubClient.getBranches().isEmpty());
+    }
+
+    @Test
+    public void getBranches_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doThrow(new GitHubClientException("fail", null))
+                .when(gitHubClient)
+                .getEntities(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getBranches());
     }
 
     @Test
-    public void getIssues_success() throws Exception {
-        IssueDTO dto = mock(IssueDTO.class);
-        List<GitHubPaginationDTO.Edge<IssueDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<IssueDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = dto;
-        edges.add(edge);
-        GitHubPaginationDTO<IssueDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-
-        doReturn(page)
-                .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
-        when(objectMapper.convertValue(dto, IssueDTO.class)).thenReturn(dto);
-
-        Set<IssueDTO> result = gitHubClient.getIssues();
-        assertEquals(Set.of(dto), result);
+    public void getIssues_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        IssueDTO dto = new IssueDTO(
+                "id",
+                1,
+                "Test Issue",
+                GitHubPropertyState.OPEN,
+                null,
+                "http://example.com",
+                new GitHubEdgesDTO<>(),
+                null,
+                null,
+                new GitHubEdgesDTO<>(),
+                new GitHubEdgesDTO<>());
+        Set<IssueDTO> set = Set.of(dto);
+        doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
+        assertEquals(set, gitHubClient.getIssues());
     }
 
     @Test
-    public void getIssues_shouldWrapException() throws Exception {
+    public void getIssues_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
+                .when(gitHubClient)
+                .getEntities(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
+        assertTrue(gitHubClient.getIssues().isEmpty());
+    }
+
+    @Test
+    public void getIssues_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
+                .getEntities(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getIssues());
     }
 
     @Test
-    public void getBranchPullRequests_success() throws Exception {
-        PullRequestDTO dto = mock(PullRequestDTO.class);
-        List<GitHubPaginationDTO.Edge<PullRequestDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<PullRequestDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = dto;
-        edges.add(edge);
-        GitHubPaginationDTO<PullRequestDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-
-        doReturn(page)
+    public void getBranchPullRequests_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        PullRequestDTO pr =
+                new PullRequestDTO("id", 1, "Test PR", GitHubPropertyState.OPEN.name(), null, null, null, null);
+        Set<PullRequestDTO> prs = Set.of(pr);
+        doReturn(prs)
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
-        when(objectMapper.convertValue(dto, PullRequestDTO.class)).thenReturn(dto);
-
-        Set<PullRequestDTO> result = gitHubClient.getBranchPullRequests("main");
-        assertEquals(Set.of(dto), result);
+                .getEntities(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
+        assertEquals(prs, gitHubClient.getBranchPullRequests("main"));
     }
 
     @Test
-    public void getBranchPullRequests_shouldWrapException() throws Exception {
+    public void getBranchPullRequests_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
+                .when(gitHubClient)
+                .getEntities(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
+        assertTrue(gitHubClient.getBranchPullRequests("main").isEmpty());
+    }
+
+    @Test
+    public void getBranchPullRequests_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
-        assertThrows(GitHubClientException.class, () -> gitHubClient.getBranches());
+                .getEntities(eq(GitHubQueryConstants.BRANCH_PULLS), anyMap(), eq(PullRequestDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getBranchPullRequests("main"));
     }
 
     @Test
-    public void getReleases_success() throws Exception {
-        ReleaseDTO dto = mock(ReleaseDTO.class);
-        List<GitHubPaginationDTO.Edge<ReleaseDTO>> edges = new ArrayList<>();
-        GitHubPaginationDTO.Edge<ReleaseDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = dto;
-        edges.add(edge);
-        GitHubPaginationDTO<ReleaseDTO> page = new GitHubPaginationDTO<>();
-        page.edges = edges;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
+    public void getReleases_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        ReleaseDTO dto = new ReleaseDTO();
+        Set<ReleaseDTO> set = Set.of(dto);
+        doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
+        assertEquals(set, gitHubClient.getReleases());
+    }
 
-        doReturn(page)
+    @Test
+    public void getReleases_empty() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(Collections.emptySet())
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
-        when(objectMapper.convertValue(dto, ReleaseDTO.class)).thenReturn(dto);
-
-        Set<ReleaseDTO> result = gitHubClient.getReleases();
-        assertEquals(Set.of(dto), result);
+                .getEntities(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
+        assertTrue(gitHubClient.getReleases().isEmpty());
     }
 
     @Test
-    public void getReleases_shouldWrapException() throws Exception {
+    public void getReleases_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
+                .getEntities(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
         assertThrows(GitHubClientException.class, () -> gitHubClient.getReleases());
     }
 
     @Test
-    public void paginatedQuery_shouldHandleMultiplePages() throws Exception {
-        LabelDTO label1 = new LabelDTO();
-        LabelDTO label2 = new LabelDTO();
-
-        GitHubPaginationDTO.Edge<LabelDTO> edge1 = new GitHubPaginationDTO.Edge<>();
-        edge1.node = label1;
-        GitHubPaginationDTO.Edge<LabelDTO> edge2 = new GitHubPaginationDTO.Edge<>();
-        edge2.node = label2;
-
-        GitHubPaginationDTO<LabelDTO> page1 = new GitHubPaginationDTO<>();
-        page1.edges = List.of(edge1);
-        page1.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page1.pageInfo.hasNextPage = true;
-        page1.pageInfo.endCursor = "cursor1";
-
-        GitHubPaginationDTO<LabelDTO> page2 = new GitHubPaginationDTO<>();
-        page2.edges = List.of(edge2);
-        page2.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page2.pageInfo.hasNextPage = false;
-        page2.pageInfo.endCursor = null;
-
-        doReturn(page1)
-                .doReturn(page2)
+    public void getRepositoryStatistics_success() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null, null, null, null);
+        doReturn(stats)
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-
-        when(objectMapper.convertValue(label1, LabelDTO.class)).thenReturn(label1);
-        when(objectMapper.convertValue(label2, LabelDTO.class)).thenReturn(label2);
-
-        Set<LabelDTO> result = gitHubClient.getLabels();
-        assertEquals(Set.of(label1, label2), result);
+                .fetchSingleEntity(
+                        eq(GitHubQueryConstants.REPOSITORY_STATISTICS),
+                        anyMap(),
+                        eq(GitHubRepositoryStatisticsDTO.class));
+        assertEquals(stats, gitHubClient.getRepositoryStatistics());
     }
 
     @Test
-    public void paginatedQuery_shouldReturnEmptySetOnNullEdges() throws Exception {
-        GitHubPaginationDTO<LabelDTO> page = new GitHubPaginationDTO<>();
-        page.edges = null;
-        page.pageInfo = new GitHubPaginationDTO.PageInfo();
-        page.pageInfo.hasNextPage = false;
-
-        doReturn(page)
-                .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-
-        Set<LabelDTO> result = gitHubClient.getLabels();
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    public void paginatedQuery_shouldReturnEmptySetOnNullResponse() throws Exception {
-        doReturn(null)
-                .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-        Set<LabelDTO> result = gitHubClient.getLabels();
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    public void paginatedQuery_shouldPropagateExceptionFromFetchEntityPage() throws Exception {
+    public void getRepositoryStatistics_exception() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .fetchEntityPage(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
-        assertThrows(GitHubClientException.class, () -> gitHubClient.getLabels());
+                .fetchSingleEntity(
+                        eq(GitHubQueryConstants.REPOSITORY_STATISTICS),
+                        anyMap(),
+                        eq(GitHubRepositoryStatisticsDTO.class));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getRepositoryStatistics());
+    }
+
+    @Test
+    public void getEntities_handlesNullEdgeCollection() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(null).when(gitHubClient).getEntities(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
+        assertThrows(NullPointerException.class, () -> gitHubClient.getBranches());
+    }
+
+    @Test
+    public void getEntities_handlesNullQueryVariables() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        BranchDTO branch = new BranchDTO();
+        Set<BranchDTO> set = Set.of(branch);
+        doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.BRANCHES), isNull(), eq(BranchDTO.class));
+    }
+
+    @Test
+    public void getNodes_handlesNullResult() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(null).when(gitHubClient).getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(), any());
+        assertThrows(NullPointerException.class, () -> gitHubClient.getIssuePriorities("pid"));
+    }
+
+    @Test
+    public void fetchSingleEntity_nullResponse() throws GitHubClientException {
+        gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
+        doReturn(null)
+                .when(gitHubClient)
+                .fetchSingleEntity(
+                        eq(GitHubQueryConstants.REPOSITORY_STATISTICS),
+                        anyMap(),
+                        eq(GitHubRepositoryStatisticsDTO.class));
+        assertNull(gitHubClient.fetchSingleEntity(
+                GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class));
+    }
+
+    @Test
+    public void getEntities_success() throws GitHubClientException {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        LabelDTO label = new LabelDTO();
+        GitHubPaginationDTO.Edge<LabelDTO> edge = new GitHubPaginationDTO.Edge<>();
+        edge.node = label;
+        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>();
+        dto.edges = List.of(edge);
+        dto.pageInfo = new GitHubPageInfo();
+        dto.pageInfo.hasNextPage = false;
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+        when(objectMapper.convertValue(label, LabelDTO.class)).thenReturn(label);
+
+        Set<LabelDTO> result = gitHubClient.getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
+        assertEquals(1, result.size());
+        assertTrue(result.contains(label));
+    }
+
+    @Test
+    public void getEntities_emptyEdges() throws GitHubClientException {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>();
+        dto.edges = new ArrayList<>();
+        dto.pageInfo = new GitHubPageInfo();
+        dto.pageInfo.hasNextPage = false;
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+
+        Set<LabelDTO> result = gitHubClient.getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void getEntities_nullEdges() throws GitHubClientException {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>();
+        dto.edges = null;
+        dto.pageInfo = new GitHubPageInfo();
+        dto.pageInfo.hasNextPage = false;
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+        when(objectMapper.convertValue(null, LabelDTO.class)).thenReturn(null);
+
+        Set<LabelDTO> result = gitHubClient.getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void getEntities_graphQLThrowsException() {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenThrow(RuntimeException.class);
+
+        assertThrows(
+                GitHubClientException.class,
+                () -> gitHubClient.getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class));
+    }
+
+    @Test
+    public void getNodes_success() throws GitHubClientException {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> obj =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
+        GitHubPrioritySingleSelectDTO<IssuePriorityDTO> dto = new GitHubPrioritySingleSelectDTO<>();
+        dto.nodes = List.of(obj);
+        dto.pageInfo = new GitHubPageInfo();
+        dto.pageInfo.hasNextPage = false;
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> result = gitHubClient.getNodes(
+                GitHubQueryConstants.ISSUE_PRIORITIES,
+                new HashMap<>(),
+                new ParameterizedTypeReference<>() {},
+                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    public void getNodes_emptyNodes() throws GitHubClientException {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        GitHubPrioritySingleSelectDTO<IssuePriorityDTO> dto = new GitHubPrioritySingleSelectDTO<>();
+        dto.nodes = new ArrayList<>();
+        dto.pageInfo = new GitHubPageInfo();
+        dto.pageInfo.hasNextPage = false;
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> result = gitHubClient.getNodes(
+                GitHubQueryConstants.ISSUE_PRIORITIES,
+                new HashMap<>(),
+                new ParameterizedTypeReference<>() {},
+                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void getNodes_nullResponse() throws Exception {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.empty());
+
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> result = gitHubClient.getNodes(
+                GitHubQueryConstants.ISSUE_PRIORITIES,
+                new HashMap<>(),
+                new ParameterizedTypeReference<>() {},
+                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void getNodes_graphQLThrowsException() {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenThrow(RuntimeException.class);
+
+        assertThrows(
+                GitHubClientException.class,
+                () -> gitHubClient.getNodes(
+                        GitHubQueryConstants.ISSUE_PRIORITIES,
+                        new HashMap<>(),
+                        new ParameterizedTypeReference<GitHubPrioritySingleSelectDTO<IssuePriorityDTO>>() {},
+                        GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+    }
+
+    @Test
+    public void fetchSingleEntity_success() throws GitHubClientException {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        GitHubRepositoryStatisticsDTO statistics = new GitHubRepositoryStatisticsDTO(
+                new GitHubTotalCountDTO(10),
+                new GitHubTotalCountDTO(5),
+                new GitHubTotalCountDTO(3),
+                new GitHubRefsDTO(List.of(new GitHubRefsDTO.GitHubBranchNodeDTO(
+                        "main", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(2))))),
+                new GitHubTotalCountDTO(1),
+                new GitHubTotalCountDTO(0));
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(Class.class))).thenReturn(Mono.just(statistics));
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(statistics));
+
+        GitHubRepositoryStatisticsDTO result = gitHubClient.fetchSingleEntity(
+                GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
+
+        assertEquals(statistics, result);
+    }
+
+    @Test
+    public void fetchSingleEntity_graphQLThrowsException() {
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
+
+        HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
+        HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
+
+        when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
+        when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
+        when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenThrow(RuntimeException.class);
+
+        assertThrows(
+                GitHubClientException.class,
+                () -> gitHubClient.fetchSingleEntity(
+                        GitHubQueryConstants.REPOSITORY_STATISTICS,
+                        new HashMap<>(),
+                        GitHubRepositoryStatisticsDTO.class));
     }
 }

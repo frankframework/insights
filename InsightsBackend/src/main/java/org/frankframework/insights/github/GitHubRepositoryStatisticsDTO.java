@@ -10,7 +10,8 @@ public record GitHubRepositoryStatisticsDTO(
         @JsonProperty("issueTypes") GitHubTotalCountDTO issueTypes,
         @JsonProperty("refs") GitHubRefsDTO branches,
         @JsonProperty("releases") GitHubTotalCountDTO releases,
-        @JsonProperty("issues") GitHubTotalCountDTO issues) {
+        @JsonProperty("issues") GitHubTotalCountDTO issues
+	) {
 
     public int getGitHubLabelCount() {
         return labels.totalCount();

@@ -14,6 +14,9 @@ import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
 import org.frankframework.insights.issue.IssueService;
+import org.frankframework.insights.issuePriority.IssuePriorityInjectionException;
+import org.frankframework.insights.issuePriority.IssuePriorityService;
+import org.frankframework.insights.issuetype.IssueTypeInjectionException;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelInjectionException;
 import org.frankframework.insights.label.LabelService;
@@ -49,6 +52,9 @@ public class ShedLockProductionTest {
     private IssueTypeService issueTypeService;
 
     @Mock
+    private IssuePriorityService issuePriorityService;
+
+    @Mock
     private BranchService branchService;
 
     @Mock
@@ -74,6 +80,7 @@ public class ShedLockProductionTest {
                 labelService,
                 milestoneService,
                 issueTypeService,
+                issuePriorityService,
                 branchService,
                 issueService,
                 pullRequestService,
@@ -87,12 +94,14 @@ public class ShedLockProductionTest {
     public void should_FetchGitHubData_when_ProductionProfileIsActive()
             throws LabelInjectionException, GitHubClientException, MilestoneInjectionException,
                     BranchInjectionException, ReleaseInjectionException, IssueInjectionException,
-                    PullRequestInjectionException {
+                    PullRequestInjectionException, IssueTypeInjectionException, IssuePriorityInjectionException {
         systemDataInitializer.run();
 
         verify(gitHubRepositoryStatisticsService, times(1)).fetchRepositoryStatistics();
         verify(labelService, times(1)).injectLabels();
         verify(milestoneService, times(1)).injectMilestones();
+        verify(issueTypeService, times(1)).injectIssueTypes();
+        verify(issuePriorityService, times(1)).injectIssuePriorities();
         verify(branchService, times(1)).injectBranches();
         verify(issueService, times(1)).injectIssues();
         verify(pullRequestService, times(1)).injectBranchPullRequests();
