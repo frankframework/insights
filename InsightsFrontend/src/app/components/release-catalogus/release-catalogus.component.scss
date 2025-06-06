@@ -1,0 +1,42 @@
+circle {
+  stroke: #EFEFEF;
+  stroke-width: 5;
+}
+
+.release-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  cursor: pointer;
+  position: fixed;
+  top: 1.25rem;
+  z-index: 10001;
+}
+
+.release-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+
+  p {
+    margin: 0;
+    border-left: #444444 3px solid;
+    padding-left: 1rem;
+
+  }
+}
+
+.release-content-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+
+  p {
+    border: none;
+    padding: .5rem;
+  }
+}
+

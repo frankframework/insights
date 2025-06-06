@@ -1,0 +1,22 @@
+<div
+  class="modal-backdrop"
+  tabindex="0"
+  role="button"
+  aria-label="Sluit modal"
+  (click)="close()"
+  (keydown.enter)="close()"
+  (keydown.space)="close()"
+>
+  <div
+    #modalContent
+    class="modal-content"
+    tabindex="0"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Modal venster"
+    (click)="$event.stopPropagation()"
+  >
+    <ng-content />
+    <button class="close-btn" type="button" aria-label="Sluit modal" (click)="close()">✕</button>
+  </div>
+</div>
