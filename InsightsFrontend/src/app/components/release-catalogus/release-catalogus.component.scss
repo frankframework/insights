@@ -11,8 +11,14 @@ circle {
   box-shadow: none;
   cursor: pointer;
   position: fixed;
-  top: 1.25rem;
-  z-index: 10001;
+
+  @media (min-width: 540px) {
+    top: 1.5rem;
+  }
+
+  @media (max-width: 540px) {
+    bottom: 1.25rem;
+  }
 }
 
 .release-modal-content {
@@ -32,11 +38,22 @@ circle {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 1rem;
+  gap: .5rem;
+
+  .release-content-item-icon {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
   p {
     border: none;
     padding: .5rem;
+    overflow-x: auto;
+    margin: 0;
   }
 }
-

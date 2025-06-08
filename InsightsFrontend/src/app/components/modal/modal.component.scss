@@ -8,11 +8,17 @@
   outline: none;
 }
 
+.modal-title {
+  position: absolute;
+  top: 0;
+  left: 1.3rem;
+}
+
 .modal-content {
   max-width: 375px;
   background: white;
   border-radius: .7rem;
-  padding: 3rem 2.5rem 1rem 2.5rem;
+  padding: 4rem 2rem 1rem 2rem;
   position: relative;
   box-shadow: 0 2px 18px #0002;
   outline: none;
@@ -20,7 +26,7 @@
 
 .close-btn {
   position: absolute;
-  top: 0.5rem;
+  top: 1rem;
   right: 0.75rem;
   background: none;
   border: none;

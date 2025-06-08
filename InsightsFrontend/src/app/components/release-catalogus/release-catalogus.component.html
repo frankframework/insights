@@ -3,7 +3,10 @@
   type="button"
   title="Show release info"
   aria-label="Show release info"
-  [ngStyle]="{ right: selectedRelease ? '35vw' : '1.5rem' }"
+  [ngStyle]="{
+    right: isSmallScreen ? 'auto' : selectedRelease ? '36.5vw' : '1.5rem',
+    left: isSmallScreen ? '1.25rem' : 'auto',
+  }"
   (click)="toggleModal()"
 >
   <svg width="36" height="36">
@@ -15,31 +18,39 @@
 </button>
 
 @if (modalOpen) {
-  <app-modal (closed)="toggleModal()">
+  <app-modal [title]="'Release Support'" (closed)="toggleModal()">
     <ng-container>
       <div class="release-modal-content">
         <div class="release-content-item">
-          <svg width="40" height="40">
-            <circle cx="20" cy="20" r="15" fill="darkblue" stroke="#EFEFEF" stroke-width="5" />
-          </svg>
+          <div class="release-content-item-icon">
+            <svg width="40" height="40">
+              <circle cx="20" cy="20" r="15" fill="darkblue" stroke="#EFEFEF" stroke-width="5" />
+            </svg>
+          </div>
           <p>Nightly build, always supported, may contain bugs</p>
         </div>
         <div class="release-content-item">
-          <svg width="40" height="40">
-            <circle cx="20" cy="20" r="15" fill="#30A102" stroke="#EFEFEF" stroke-width="5" />
-          </svg>
+          <div class="release-content-item-icon">
+            <svg width="40" height="40">
+              <circle cx="20" cy="20" r="15" fill="#30A102" stroke="#EFEFEF" stroke-width="5" />
+            </svg>
+          </div>
           <p>Fully supported</p>
         </div>
         <div class="release-content-item">
-          <svg width="40" height="40">
-            <circle cx="20" cy="20" r="15" fill="#EF9302" stroke="#EFEFEF" stroke-width="5" />
-          </svg>
+          <div class="release-content-item-icon">
+            <svg width="40" height="40">
+              <circle cx="20" cy="20" r="15" fill="#EF9302" stroke="#EFEFEF" stroke-width="5" />
+            </svg>
+          </div>
           <p>Only security support, no technical support</p>
         </div>
         <div class="release-content-item">
-          <svg width="40" height="40">
-            <circle cx="20" cy="20" r="15" fill="#FD230E" stroke="#EFEFEF" stroke-width="5" />
-          </svg>
+          <div class="release-content-item-icon">
+            <svg width="40" height="40">
+              <circle cx="20" cy="20" r="15" fill="#FD230E" stroke="#EFEFEF" stroke-width="5" />
+            </svg>
+          </div>
           <p>Not supported, no exceptions</p>
         </div>
         <hr />

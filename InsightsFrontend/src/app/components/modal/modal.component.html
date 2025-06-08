@@ -13,10 +13,13 @@
     tabindex="0"
     role="dialog"
     aria-modal="true"
-    aria-label="Modal venster"
+    [attr.aria-label]="title || 'Modal venster'"
     (click)="$event.stopPropagation()"
   >
-    <ng-content />
+    @if (title.length > 0) {
+      <h2 class="modal-title">{{ title }}</h2>
+    }
     <button class="close-btn" type="button" aria-label="Sluit modal" (click)="close()">✕</button>
+    <ng-content />
   </div>
 </div>

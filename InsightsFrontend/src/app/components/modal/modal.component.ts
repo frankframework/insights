@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 
 @Component({
   selector: 'app-modal',
@@ -8,6 +8,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild }
   styleUrl: './modal.component.scss',
 })
 export class ModalComponent implements AfterViewInit {
+  @Input() title = '';
   @Output() closed = new EventEmitter<void>();
   @ViewChild('modalContent') modalContent!: ElementRef<HTMLDivElement>;
 
