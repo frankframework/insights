@@ -202,8 +202,9 @@ public class PullRequestService {
         for (PullRequest pr : pullRequests) {
             PullRequestDTO dto = pullRequestDtoMap.get(pr.getId());
             if (dto != null && dto.hasLabels()) {
-                dto.labels().getEdges().stream()
-                        .map(labelDTO -> new PullRequestLabel(pr, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+                dto.labels().edges().stream()
+                        .map(labelDTO -> new PullRequestLabel(
+                                pr, labelMap.getOrDefault(labelDTO.node().id(), null)))
                         .filter(prLabel -> prLabel.getLabel() != null)
                         .forEach(allLabels::add);
             }
@@ -224,11 +225,11 @@ public class PullRequestService {
         for (PullRequest pr : pullRequests) {
             PullRequestDTO dto = pullRequestDtoMap.get(pr.getId());
             if (dto != null && dto.hasClosingIssuesReferences()) {
-                dto.closingIssuesReferences().getEdges().stream()
+                dto.closingIssuesReferences().edges().stream()
                         .filter(Objects::nonNull)
-                        .filter(edge -> edge.getNode() != null)
+                        .filter(edge -> edge.node() != null)
                         .map(edge -> new PullRequestIssue(
-                                pr, issueMap.getOrDefault(edge.getNode().id(), null)))
+                                pr, issueMap.getOrDefault(edge.node().id(), null)))
                         .filter(prIssue -> prIssue.getIssue() != null)
                         .forEach(allIssues::add);
             }

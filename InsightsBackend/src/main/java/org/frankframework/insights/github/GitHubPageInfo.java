@@ -1,6 +1,3 @@
 package org.frankframework.insights.github;
 
-public class GitHubPageInfo {
-    public boolean hasNextPage;
-    public String endCursor;
-}
+public record GitHubPageInfo(boolean hasNextPage, String endCursor) {}

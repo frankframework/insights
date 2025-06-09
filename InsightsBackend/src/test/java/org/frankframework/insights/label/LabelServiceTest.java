@@ -98,15 +98,8 @@ public class LabelServiceTest {
         issueLabelChore = new IssueLabel();
         issueLabelChore.setLabel(labelChore);
 
-        labelDTO1 = new LabelDTO();
-        labelDTO1.id = "l1";
-        labelDTO1.name = "bug";
-        labelDTO1.color = "red";
-
-        labelDTO2 = new LabelDTO();
-        labelDTO2.id = "l2";
-        labelDTO2.name = "feature";
-        labelDTO2.color = "blue";
+        labelDTO1 = new LabelDTO("l1", "bug", "Of type bug", "red");
+        labelDTO2 = new LabelDTO("l2", "feature", "Feature", "blue");
     }
 
     @Test

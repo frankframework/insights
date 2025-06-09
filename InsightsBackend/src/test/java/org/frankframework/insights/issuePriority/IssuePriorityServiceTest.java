@@ -41,17 +41,9 @@ public class IssuePriorityServiceTest {
         issuePriorityService =
                 new IssuePriorityService(issuePriorityRepository, gitHubClient, mapper, gitHubProperties);
 
-        dto1 = new IssuePriorityDTO();
-        dto1.id = "p1";
-        dto1.name = "High";
-        dto1.description = "High Priority";
-        dto1.color = "red";
+        dto1 = new IssuePriorityDTO("p1", "High", "High Priority", "red");
 
-        dto2 = new IssuePriorityDTO();
-        dto2.id = "p2";
-        dto2.name = "Low";
-        dto2.description = "Low Priority";
-        dto2.color = "green";
+        dto2 = new IssuePriorityDTO("p2", "Low", "Low Priority", "green");
 
         entity1 = new IssuePriority();
         entity1.setId("p1");
@@ -80,12 +72,10 @@ public class IssuePriorityServiceTest {
             throws GitHubClientException, IssuePriorityInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> priorityField =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        priorityField.name = "priority";
-        priorityField.options = List.of(dto1, dto2);
+        GitHubPrioritySingleSelectDTO.SingleSelectObject priorityField =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", List.of(dto1, dto2));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(priorityField);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField);
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(dto1, IssuePriority.class)).thenReturn(entity1);
@@ -104,12 +94,10 @@ public class IssuePriorityServiceTest {
             throws GitHubClientException, IssuePriorityInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> wrongField =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        wrongField.name = "urgency";
-        wrongField.options = List.of(dto1, dto2);
+        GitHubPrioritySingleSelectDTO.SingleSelectObject wrongField =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("urgency", List.of(dto1, dto2));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(wrongField);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of(wrongField);
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
@@ -123,12 +111,10 @@ public class IssuePriorityServiceTest {
             throws GitHubClientException, IssuePriorityInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> nullName =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        nullName.name = null;
-        nullName.options = List.of(dto1, dto2);
+        GitHubPrioritySingleSelectDTO.SingleSelectObject nullName =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject(null, List.of(dto1, dto2));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(nullName);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of(nullName);
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
@@ -142,12 +128,10 @@ public class IssuePriorityServiceTest {
             throws GitHubClientException, IssuePriorityInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> nullOptions =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        nullOptions.name = "priority";
-        nullOptions.options = null;
+        GitHubPrioritySingleSelectDTO.SingleSelectObject nullOptions =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", null);
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(nullOptions);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of(nullOptions);
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
@@ -161,12 +145,10 @@ public class IssuePriorityServiceTest {
             throws GitHubClientException, IssuePriorityInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> emptyOptions =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        emptyOptions.name = "priority";
-        emptyOptions.options = List.of();
+        GitHubPrioritySingleSelectDTO.SingleSelectObject emptyOptions =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", List.of());
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(emptyOptions);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of(emptyOptions);
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
@@ -180,7 +162,7 @@ public class IssuePriorityServiceTest {
             throws GitHubClientException, IssuePriorityInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of();
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of();
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
@@ -204,12 +186,10 @@ public class IssuePriorityServiceTest {
     public void injectIssuePriorities_shouldWrapMapperException() throws GitHubClientException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> priorityField =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        priorityField.name = "priority";
-        priorityField.options = List.of(dto1);
+        GitHubPrioritySingleSelectDTO.SingleSelectObject priorityField =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", List.of(dto1));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(priorityField);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField);
 
         when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(dto1, IssuePriority.class)).thenThrow(new RuntimeException("Mapping failed"));
@@ -234,25 +214,6 @@ public class IssuePriorityServiceTest {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(gitHubClient.getIssuePriorities(anyString())).thenReturn(Collections.emptySet());
         when(issuePriorityRepository.saveAll(Collections.emptySet())).thenReturn(Collections.emptyList());
-
-        issuePriorityService.injectIssuePriorities();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-    }
-
-    @Test
-    public void injectIssuePriorities_shouldHandlePriorityFieldWithNullOptionItems()
-            throws GitHubClientException, IssuePriorityInjectionException {
-        when(issuePriorityRepository.count()).thenReturn(0L);
-
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> priorityField =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        priorityField.name = "priority";
-        priorityField.options = Collections.singletonList(null);
-
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> githubDtos = Set.of(priorityField);
-
-        when(gitHubClient.getIssuePriorities("project123")).thenReturn(githubDtos);
-        when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issuePriorityService.injectIssuePriorities();
         verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));

@@ -13,7 +13,6 @@ import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.graphql.GraphQLClient;
 import org.frankframework.insights.issue.IssueDTO;
-import org.frankframework.insights.issuePriority.IssuePriorityDTO;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
@@ -76,17 +75,17 @@ public class GitHubClient extends GraphQLClient {
      * @return Set of GitHubSingleSelectDTO containing issue priorities
      * @throws GitHubClientException if an error occurs during the request
      */
-    public Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> getIssuePriorities(String projectId)
+    public Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> getIssuePriorities(String projectId)
             throws GitHubClientException {
         HashMap<String, Object> variables = new HashMap<>();
         variables.put("projectId", projectId);
         log.info("Started fetching issue priorities from GitHub for project with id: [{}]", projectId);
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> issuePriorities = getNodes(
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> issuePriorities = getNodes(
                 GitHubQueryConstants.ISSUE_PRIORITIES,
                 variables,
-                new ParameterizedTypeReference<>() {},
-                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+                new ParameterizedTypeReference<>() {}
+		);
 
         log.info(
                 "Successfully fetched {} issue priorities from GitHub for project with id: [{}]",
@@ -165,12 +164,12 @@ public class GitHubClient extends GraphQLClient {
                 query,
                 queryVariables,
                 new ParameterizedTypeReference<GitHubPaginationDTO<T>>() {},
-                dto -> dto.edges == null
+                dto -> dto.edges() == null
                         ? Set.of()
-                        : dto.edges.stream()
-                                .map(edge -> objectMapper.convertValue(edge.node, entityType))
+                        : dto.edges().stream()
+                                .map(edge -> objectMapper.convertValue(edge.node(), entityType))
                                 .collect(Collectors.toSet()),
-                dto -> dto.pageInfo);
+                GitHubPaginationDTO::pageInfo);
     }
 
     /**
@@ -178,25 +177,22 @@ public class GitHubClient extends GraphQLClient {
      * @param query the GraphQL query to execute
      * @param queryVariables the variables for the query
      * @param responseType the type of the response to expect
-     * @param nodeType the type of the node to fetch
      * @return Set of GitHubSingleSelectDTO.SingleSelectObject containing nodes
-     * @param <T> the type of entity to fetch
      * @param <RAW> the raw	 response type
      * @throws GitHubClientException if an error occurs during the request
      */
-    protected <T, RAW extends GitHubPrioritySingleSelectDTO<T>>
-            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<T>> getNodes(
+    protected <RAW extends GitHubPrioritySingleSelectDTO>
+            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> getNodes(
                     GitHubQueryConstants query,
                     Map<String, Object> queryVariables,
-                    ParameterizedTypeReference<RAW> responseType,
-                    Class<?> nodeType)
+                    ParameterizedTypeReference<RAW> responseType)
                     throws GitHubClientException {
         return getPaginatedEntities(
                 query,
                 queryVariables,
                 responseType,
-                dto -> dto.nodes == null ? Set.of() : new HashSet<>(dto.nodes),
-                dto -> dto.pageInfo);
+                dto -> dto.nodes() == null ? Set.of() : new HashSet<>(dto.nodes()),
+                GitHubPrioritySingleSelectDTO::pageInfo);
     }
 
     /**
@@ -249,8 +245,8 @@ public class GitHubClient extends GraphQLClient {
                 log.info("Fetched {} entities with query: {}", entities.size(), query);
 
                 GitHubPageInfo pageInfo = pageInfoExtractor.apply(response);
-                hasNextPage = pageInfo != null && pageInfo.hasNextPage;
-                cursor = (pageInfo != null) ? pageInfo.endCursor : null;
+                hasNextPage = pageInfo != null && pageInfo.hasNextPage();
+                cursor = (pageInfo != null) ? pageInfo.endCursor() : null;
             }
             return allEntities;
         } catch (Exception e) {

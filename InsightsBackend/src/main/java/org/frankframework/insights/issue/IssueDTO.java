@@ -26,11 +26,11 @@ public record IssueDTO(
         GitHubEdgesDTO<IssueDTO> subIssues,
         GitHubEdgesDTO<GitHubProjectItemDTO> projectItems) {
 
-    public static final String PRIORITY_FIELD_NAME = "Priority";
-    public static final String POINTS_FIELD_NAME = "Points";
+    private static final String PRIORITY_FIELD_NAME = "Priority";
+    private static final String POINTS_FIELD_NAME = "Points";
 
     public boolean hasLabels() {
-        return labels != null && labels.getEdges() != null && !labels.getEdges().isEmpty();
+        return labels != null && labels.edges() != null && !labels.edges().isEmpty();
     }
 
     public boolean hasMilestone() {
@@ -38,39 +38,40 @@ public record IssueDTO(
     }
 
     public boolean hasIssueType() {
-        return issueType != null && issueType.id != null;
+        return issueType != null && issueType.id() != null;
     }
 
     public boolean hasSubIssues() {
         return subIssues != null
-                && subIssues.getEdges() != null
-                && !subIssues.getEdges().isEmpty();
+                && subIssues.edges() != null
+                && !subIssues.edges().isEmpty();
     }
 
     public Optional<String> findPriorityOptionId() {
-        return findProjectField(IssueDTO.PRIORITY_FIELD_NAME, fv -> fv.optionId);
+        return findProjectField(IssueDTO.PRIORITY_FIELD_NAME, GitHubProjectItemDTO.FieldValue::optionId);
     }
 
     public Optional<Double> findPoints() {
-        return findProjectField(IssueDTO.POINTS_FIELD_NAME, fv -> fv.number);
+        return findProjectField(IssueDTO.POINTS_FIELD_NAME, GitHubProjectItemDTO.FieldValue::number);
     }
 
     private <T> Optional<T> findProjectField(
             String fieldName, java.util.function.Function<GitHubProjectItemDTO.FieldValue, T> extractor) {
-        if (projectItems.getEdges().isEmpty()) {
+        if (projectItems.edges().isEmpty()) {
             return Optional.empty();
         }
 
-        return projectItems.getEdges().stream()
-                .map(GitHubNodeDTO::getNode)
-                .map(item -> item.fieldValues)
+        return projectItems.edges().stream()
+                .map(GitHubNodeDTO::node)
+                .map(GitHubProjectItemDTO::fieldValues)
                 .flatMap(fv -> {
-                    if (fv.getEdges() == null || fv.getEdges().isEmpty()) return java.util.stream.Stream.empty();
-                    return fv.getEdges().stream();
+                    if (fv.edges() == null || fv.edges().isEmpty()) return java.util.stream.Stream.empty();
+                    return fv.edges().stream();
                 })
-                .map(GitHubNodeDTO::getNode)
+                .map(GitHubNodeDTO::node)
                 .filter(Objects::nonNull)
-                .filter(fv -> fv.field != null && fieldName.equalsIgnoreCase(fv.field.name))
+                .filter(fv -> fv.field() != null
+                        && fieldName.equalsIgnoreCase(fv.field().name()))
                 .map(extractor)
                 .filter(Objects::nonNull)
                 .findFirst();

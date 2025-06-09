@@ -3,7 +3,6 @@ package org.frankframework.insights.issuePriority;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -43,12 +42,9 @@ public class IssuePriorityService {
         }
 
         try {
-            log.info("Amount of issuePriority found in database: {}", issuePriorityRepository.count());
-
             log.info("Start injecting GitHub issue priorities");
-            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> singleSelectDTOS =
+            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> singleSelectDTOS =
                     gitHubClient.getIssuePriorities(projectId);
-            System.out.println(objectMapper.writeValueAsString(singleSelectDTOS));
             Set<IssuePriority> issuePriorities = fetchAndMapGithubPriorityOptions(singleSelectDTOS);
             System.out.println(objectMapper.writeValueAsString(issuePriorities));
             saveIssuePriorities(issuePriorities);
@@ -58,23 +54,21 @@ public class IssuePriorityService {
     }
 
     private Set<IssuePriority> fetchAndMapGithubPriorityOptions(
-            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> singleSelectObjects) {
+            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> singleSelectObjects) {
         return singleSelectObjects.stream()
-                .filter(dto -> dto.name != null)
-                .filter(dto -> PRIORITY_FIELD_NAME.equalsIgnoreCase(dto.name))
-                .filter(dto -> dto.options != null && !dto.options.isEmpty())
+                .filter(dto -> dto.name() != null)
+                .filter(dto -> PRIORITY_FIELD_NAME.equalsIgnoreCase(dto.name()))
+                .filter(dto -> dto.options() != null && !dto.options().isEmpty())
                 .findFirst()
                 .map(this::mapPriorityOptionsToEntities)
                 .orElseGet(Set::of);
     }
 
     private Set<IssuePriority> mapPriorityOptionsToEntities(
-            GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> priorityDTO) {
-        if (priorityDTO.options == null) return Set.of();
-        return priorityDTO.options.stream()
-                .filter(Objects::nonNull)
+            GitHubPrioritySingleSelectDTO.SingleSelectObject priorityDTO) {
+        if (priorityDTO.options() == null) return Set.of();
+        return priorityDTO.options().stream()
                 .map(option -> mapper.toEntity(option, IssuePriority.class))
-                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 

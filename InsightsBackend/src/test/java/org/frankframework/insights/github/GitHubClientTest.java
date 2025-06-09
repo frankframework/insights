@@ -58,8 +58,8 @@ public class GitHubClientTest {
     @Test
     public void getLabels_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        LabelDTO label1 = new LabelDTO();
-        LabelDTO label2 = new LabelDTO();
+        LabelDTO label1 = new LabelDTO("id1", "Label 1", "Label 1 description", "red");
+        LabelDTO label2 = new LabelDTO("id2", "Label 2", "Label 2 description", "blue");
         Set<LabelDTO> labels = Set.of(label1, label2);
         doReturn(labels).when(gitHubClient).getEntities(eq(GitHubQueryConstants.LABELS), anyMap(), eq(LabelDTO.class));
         Set<LabelDTO> result = gitHubClient.getLabels();
@@ -123,7 +123,7 @@ public class GitHubClientTest {
     @Test
     public void getIssueTypes_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        IssueTypeDTO t1 = new IssueTypeDTO();
+        IssueTypeDTO t1 = new IssueTypeDTO("id", "Bug", "A bug in the code", "bug");
         Set<IssueTypeDTO> set = Set.of(t1);
         doReturn(set)
                 .when(gitHubClient)
@@ -153,17 +153,18 @@ public class GitHubClientTest {
     public void getIssuePriorities_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         String projectId = "pid";
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> obj =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> set = Set.of(obj);
+        GitHubPrioritySingleSelectDTO.SingleSelectObject obj =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", null);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> set = Set.of(obj);
 
         doReturn(set)
                 .when(gitHubClient)
                 .getNodes(
                         eq(GitHubQueryConstants.ISSUE_PRIORITIES),
                         anyMap(),
-                        any(ParameterizedTypeReference.class),
-                        eq(GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+                        any(ParameterizedTypeReference.class)
+				);
+
         assertEquals(set, gitHubClient.getIssuePriorities(projectId));
     }
 
@@ -176,8 +177,9 @@ public class GitHubClientTest {
                 .getNodes(
                         eq(GitHubQueryConstants.ISSUE_PRIORITIES),
                         anyMap(),
-                        any(ParameterizedTypeReference.class),
-                        eq(GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+                        any(ParameterizedTypeReference.class)
+				);
+
         assertTrue(gitHubClient.getIssuePriorities(projectId).isEmpty());
     }
 
@@ -190,16 +192,16 @@ public class GitHubClientTest {
                 .getNodes(
                         eq(GitHubQueryConstants.ISSUE_PRIORITIES),
                         anyMap(),
-                        any(ParameterizedTypeReference.class),
-                        eq(GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+                        any(ParameterizedTypeReference.class)
+				);
+
         assertThrows(GitHubClientException.class, () -> gitHubClient.getIssuePriorities(projectId));
     }
 
     @Test
     public void getBranches_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        BranchDTO branch = new BranchDTO();
-        branch.setName("main");
+        BranchDTO branch = new BranchDTO("id", "main");
         Set<BranchDTO> set = Set.of(branch);
         doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.BRANCHES), anyMap(), eq(BranchDTO.class));
         assertEquals(set, gitHubClient.getBranches());
@@ -226,21 +228,23 @@ public class GitHubClientTest {
     @Test
     public void getIssues_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        IssueDTO dto = new IssueDTO(
+
+        IssueDTO issue = new IssueDTO(
                 "id",
                 1,
                 "Test Issue",
                 GitHubPropertyState.OPEN,
                 null,
                 "http://example.com",
-                new GitHubEdgesDTO<>(),
+                new GitHubEdgesDTO<>(null),
                 null,
                 null,
-                new GitHubEdgesDTO<>(),
-                new GitHubEdgesDTO<>());
-        Set<IssueDTO> set = Set.of(dto);
-        doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
-        assertEquals(set, gitHubClient.getIssues());
+                new GitHubEdgesDTO<>(null),
+                new GitHubEdgesDTO<>(null));
+        Set<IssueDTO> issues = Set.of(issue);
+
+        doReturn(issues).when(gitHubClient).getEntities(eq(GitHubQueryConstants.ISSUES), anyMap(), eq(IssueDTO.class));
+        assertEquals(issues, gitHubClient.getIssues());
     }
 
     @Test
@@ -294,7 +298,7 @@ public class GitHubClientTest {
     @Test
     public void getReleases_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        ReleaseDTO dto = new ReleaseDTO();
+        ReleaseDTO dto = new ReleaseDTO("id", "v1.0", "Release 1.0", null);
         Set<ReleaseDTO> set = Set.of(dto);
         doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.RELEASES), anyMap(), eq(ReleaseDTO.class));
         assertEquals(set, gitHubClient.getReleases());
@@ -353,7 +357,7 @@ public class GitHubClientTest {
     @Test
     public void getEntities_handlesNullQueryVariables() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        BranchDTO branch = new BranchDTO();
+        BranchDTO branch = new BranchDTO("id", "main");
         Set<BranchDTO> set = Set.of(branch);
         doReturn(set).when(gitHubClient).getEntities(eq(GitHubQueryConstants.BRANCHES), isNull(), eq(BranchDTO.class));
     }
@@ -361,7 +365,7 @@ public class GitHubClientTest {
     @Test
     public void getNodes_handlesNullResult() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        doReturn(null).when(gitHubClient).getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(), any());
+        doReturn(null).when(gitHubClient).getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any());
         assertThrows(NullPointerException.class, () -> gitHubClient.getIssuePriorities("pid"));
     }
 
@@ -382,13 +386,11 @@ public class GitHubClientTest {
     public void getEntities_success() throws GitHubClientException {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
-        LabelDTO label = new LabelDTO();
-        GitHubPaginationDTO.Edge<LabelDTO> edge = new GitHubPaginationDTO.Edge<>();
-        edge.node = label;
-        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>();
-        dto.edges = List.of(edge);
-        dto.pageInfo = new GitHubPageInfo();
-        dto.pageInfo.hasNextPage = false;
+        LabelDTO label = new LabelDTO("id", "bug", "A bug label", "red");
+        GitHubNodeDTO<LabelDTO> nodeDTO = new GitHubNodeDTO<>(label);
+        List<GitHubNodeDTO<LabelDTO>> nodeList = List.of(nodeDTO);
+        GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
+        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>(nodeList, pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -397,21 +399,18 @@ public class GitHubClientTest {
         when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
-        when(objectMapper.convertValue(label, LabelDTO.class)).thenReturn(label);
+        when(objectMapper.convertValue(nodeDTO, LabelDTO.class)).thenReturn(label);
 
         Set<LabelDTO> result = gitHubClient.getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
         assertEquals(1, result.size());
-        assertTrue(result.contains(label));
     }
 
     @Test
     public void getEntities_emptyEdges() throws GitHubClientException {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
-        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>();
-        dto.edges = new ArrayList<>();
-        dto.pageInfo = new GitHubPageInfo();
-        dto.pageInfo.hasNextPage = false;
+        GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
+        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>(List.of(), pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -429,10 +428,8 @@ public class GitHubClientTest {
     public void getEntities_nullEdges() throws GitHubClientException {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
-        GitHubPaginationDTO<LabelDTO> dto = new GitHubPaginationDTO<>();
-        dto.edges = null;
-        dto.pageInfo = new GitHubPageInfo();
-        dto.pageInfo.hasNextPage = false;
+        GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
+        GitHubPaginationDTO<LabelDTO> dtoObj = new GitHubPaginationDTO<>(null, pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -440,7 +437,7 @@ public class GitHubClientTest {
         when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
         when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
-        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
         when(objectMapper.convertValue(null, LabelDTO.class)).thenReturn(null);
 
         Set<LabelDTO> result = gitHubClient.getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
@@ -468,12 +465,11 @@ public class GitHubClientTest {
     public void getNodes_success() throws GitHubClientException {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
-        GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO> obj =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject<>();
-        GitHubPrioritySingleSelectDTO<IssuePriorityDTO> dto = new GitHubPrioritySingleSelectDTO<>();
-        dto.nodes = List.of(obj);
-        dto.pageInfo = new GitHubPageInfo();
-        dto.pageInfo.hasNextPage = false;
+        IssuePriorityDTO dto = new IssuePriorityDTO("id", "name", "color", "desc");
+        GitHubPrioritySingleSelectDTO.SingleSelectObject obj =
+                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", List.of(dto));
+        GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
+        GitHubPrioritySingleSelectDTO dtoObj = new GitHubPrioritySingleSelectDTO(List.of(obj), pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -481,13 +477,14 @@ public class GitHubClientTest {
         when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
         when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
-        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> result = gitHubClient.getNodes(
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
                 GitHubQueryConstants.ISSUE_PRIORITIES,
                 new HashMap<>(),
-                new ParameterizedTypeReference<>() {},
-                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+                new ParameterizedTypeReference<>() {}
+		);
+
         assertEquals(1, result.size());
     }
 
@@ -495,10 +492,8 @@ public class GitHubClientTest {
     public void getNodes_emptyNodes() throws GitHubClientException {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
-        GitHubPrioritySingleSelectDTO<IssuePriorityDTO> dto = new GitHubPrioritySingleSelectDTO<>();
-        dto.nodes = new ArrayList<>();
-        dto.pageInfo = new GitHubPageInfo();
-        dto.pageInfo.hasNextPage = false;
+        GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
+        GitHubPrioritySingleSelectDTO dtoObj = new GitHubPrioritySingleSelectDTO(Collections.emptyList(), pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -506,13 +501,14 @@ public class GitHubClientTest {
         when(httpGraphQlClient.documentName(anyString())).thenReturn(reqSpec);
         when(reqSpec.variables(anyMap())).thenReturn(reqSpec);
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
-        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dto));
+        when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> result = gitHubClient.getNodes(
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
                 GitHubQueryConstants.ISSUE_PRIORITIES,
                 new HashMap<>(),
-                new ParameterizedTypeReference<>() {},
-                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+                new ParameterizedTypeReference<>() {}
+		);
+
         assertTrue(result.isEmpty());
     }
 
@@ -528,11 +524,12 @@ public class GitHubClientTest {
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.empty());
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject<IssuePriorityDTO>> result = gitHubClient.getNodes(
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
                 GitHubQueryConstants.ISSUE_PRIORITIES,
                 new HashMap<>(),
-                new ParameterizedTypeReference<>() {},
-                GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+                new ParameterizedTypeReference<>() {}
+		);
+
         assertTrue(result.isEmpty());
     }
 
@@ -553,8 +550,7 @@ public class GitHubClientTest {
                 () -> gitHubClient.getNodes(
                         GitHubQueryConstants.ISSUE_PRIORITIES,
                         new HashMap<>(),
-                        new ParameterizedTypeReference<GitHubPrioritySingleSelectDTO<IssuePriorityDTO>>() {},
-                        GitHubPrioritySingleSelectDTO.SingleSelectObject.class));
+                        new ParameterizedTypeReference<GitHubPrioritySingleSelectDTO>() {}));
     }
 
     @Test

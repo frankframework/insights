@@ -15,17 +15,17 @@ import org.frankframework.insights.milestone.MilestoneResponse;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class IssueResponse {
-    public String id;
-    public int number;
-    public String title;
-    public GitHubPropertyState state;
-    public OffsetDateTime closedAt;
-    public String url;
-    public String businessValue;
-    public MilestoneResponse milestone;
-    public IssueTypeResponse issueType;
-    public IssuePriorityResponse issuePriority;
-    public double points;
-    public Set<LabelResponse> labels;
-    public Set<IssueResponse> subIssues;
+    private String id;
+    private int number;
+    private String title;
+    private GitHubPropertyState state;
+    private OffsetDateTime closedAt;
+    private String url;
+    private String businessValue;
+    private MilestoneResponse milestone;
+    private IssueTypeResponse issueType;
+    private IssuePriorityResponse issuePriority;
+    private double points;
+    private Set<LabelResponse> labels;
+    private Set<IssueResponse> subIssues;
 }

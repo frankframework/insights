@@ -155,14 +155,13 @@ public class LabelService {
 
     /**
      * Selects the top labels from both primary and secondary lists,
-     * @param primaryList the list of primary labels (e.g., priority labels)
-     * @param secondaryList the list of secondary labels (e.g., non-priority labels)
-     * @return a list of selected labels, limited to a maximum number
+     * @param primaryList the primary list of labels
+     * @param secondaryList the secondary list of labels
+     * @return a list of the top labels, limited to MAX_HIGHLIGHTED_LABELS
      */
     private List<Label> selectTopLabels(List<Label> primaryList, List<Label> secondaryList) {
         return Stream.concat(primaryList.stream(), secondaryList.stream())
-                .collect(Collectors.toCollection(LinkedHashSet::new))
-                .stream()
+                .distinct()
                 .limit(MAX_HIGHLIGHTED_LABELS)
                 .collect(Collectors.toList());
     }

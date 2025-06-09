@@ -48,13 +48,8 @@ public class IssueTypeServiceTest {
         type2.setId("it2");
         type2.setName("Type 2");
 
-        dto1 = new IssueTypeDTO();
-        dto1.id = "it1";
-        dto1.name = "Type 1";
-
-        dto2 = new IssueTypeDTO();
-        dto2.id = "it2";
-        dto2.name = "Type 2";
+        dto1 = new IssueTypeDTO("it1", "Type 1", null, null);
+        dto2 = new IssueTypeDTO("it2", "Type 2", null, null);
     }
 
     @Test

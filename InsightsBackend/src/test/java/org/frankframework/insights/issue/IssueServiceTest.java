@@ -116,20 +116,13 @@ public class IssueServiceTest {
         issueSub.setUrl("http://issue4");
         issueSub.setParentIssue(issue1);
 
-        LabelDTO labelDTO = new LabelDTO();
-        labelDTO.id = "l1";
-        labelDTO.name = "bug";
-        labelDTO.description = "desc";
-        labelDTO.color = "red";
+        LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>();
-        labelNode.setNode(labelDTO);
+        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
         List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
-        GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>();
-        labelEdges.setEdges(labelNodeList);
+        GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
-        GitHubEdgesDTO<GitHubProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>();
-        emptyProjectItems.setEdges(Collections.emptyList());
+        GitHubEdgesDTO<GitHubProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>(Collections.emptyList());
 
         dto1 = new IssueDTO(
                 "i1",
@@ -157,10 +150,8 @@ public class IssueServiceTest {
                 null,
                 emptyProjectItems);
 
-        GitHubNodeDTO<IssueDTO> subIssueNode = new GitHubNodeDTO<>();
-        subIssueNode.setNode(dto2);
-        GitHubEdgesDTO<IssueDTO> subIssuesEdge = new GitHubEdgesDTO<>();
-        subIssuesEdge.setEdges(List.of(subIssueNode));
+        GitHubNodeDTO<IssueDTO> subIssueNode = new GitHubNodeDTO<>(dto2);
+        GitHubEdgesDTO<IssueDTO> subIssuesEdge = new GitHubEdgesDTO<>(List.of(subIssueNode));
 
         dtoSub = new IssueDTO(
                 "i4",
@@ -310,10 +301,11 @@ public class IssueServiceTest {
 
         IssueResponse ir1 = new IssueResponse();
         ir1.setId("i1");
-        ir1.setClosedAt(now);
+        ir1.setLabels(Set.of(lr));
+
         IssueResponse ir2 = new IssueResponse();
         ir2.setId("i2");
-        ir2.setClosedAt(now);
+        ir2.setLabels(Set.of(lr));
 
         when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir1);
         when(mapper.toDTO(eq(issue2), eq(IssueResponse.class))).thenReturn(ir2);

@@ -111,19 +111,29 @@ public class IssueService {
     /**
      * Maps a set of IssueDTOs to a set of Issue entities.
      * @param issueDTOs the set of IssueDTOs to map
-     * @return a set of Issue entities with their priorities, points
+     * @return a set of Issue entities containing the mapped issues with their priorities, points, and other properties
      */
     private Set<Issue> mapIssueDTOs(Set<IssueDTO> issueDTOs) {
         Map<String, IssuePriority> issuePriorityMap = issuePriorityService.getAllIssuePrioritiesMap();
 
         return issueDTOs.stream()
-                .map(dto -> {
-                    Issue issue = mapper.toEntity(dto, Issue.class);
-                    dto.findPriorityOptionId().map(issuePriorityMap::get).ifPresent(issue::setIssuePriority);
-                    dto.findPoints().ifPresent(issue::setPoints);
-                    return issue;
-                })
+                .map(dto -> mapDtoToIssue(dto, issuePriorityMap))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Maps an IssueDTO to an Issue entity, setting the issue priority and points if available.
+     * @param dto the IssueDTO to map
+     * @param issuePriorityMap a map of issue priority IDs to IssuePriority entities
+     * @return an Issue entity containing the mapped issue with its priority and points
+     */
+    private Issue mapDtoToIssue(IssueDTO dto, Map<String, IssuePriority> issuePriorityMap) {
+        Issue issue = mapper.toEntity(dto, Issue.class);
+
+        dto.findPriorityOptionId().map(issuePriorityMap::get).ifPresent(issue::setIssuePriority);
+        dto.findPoints().ifPresent(issue::setPoints);
+
+        return issue;
     }
 
     /**
@@ -144,7 +154,7 @@ public class IssueService {
                     issue.setMilestone(milestone);
                 }
                 if (issueDTO.hasIssueType()) {
-                    IssueType issueType = issueTypeMap.get(issueDTO.issueType().id);
+                    IssueType issueType = issueTypeMap.get(issueDTO.issueType().id());
                     issue.setIssueType(issueType);
                 }
             }
@@ -165,9 +175,9 @@ public class IssueService {
             IssueDTO issueDTO = issueDTOMap.get(issue.getId());
             if (issueDTO == null || !issueDTO.hasSubIssues()) continue;
 
-            issueDTO.subIssues().getEdges().stream()
+            issueDTO.subIssues().edges().stream()
                     .filter(Objects::nonNull)
-                    .map(GitHubNodeDTO::getNode)
+                    .map(GitHubNodeDTO::node)
                     .map(node -> issueMap.get(node.id()))
                     .filter(Objects::nonNull)
                     .forEach(subIssue -> subIssue.setParentIssue(issue));
@@ -215,8 +225,9 @@ public class IssueService {
         IssueDTO dto = issueDTOMap.get(issue.getId());
 
         if (dto.hasLabels()) {
-            return dto.labels().getEdges().stream()
-                    .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+            return dto.labels().edges().stream()
+                    .map(labelDTO -> new IssueLabel(
+                            issue, labelMap.getOrDefault(labelDTO.node().id(), null)))
                     .filter(prLabel -> prLabel.getLabel() != null)
                     .toList();
         }
