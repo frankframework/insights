@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TimeSpanParameters } from './services/issue.service';
-import { environment } from '../environments/environment.development';
+import { environment } from '../environments/environment';
 
 export const GitHubStates = {
   OPEN: 0,
