@@ -135,7 +135,7 @@ jobs:
         run: ng build
         working-directory: InsightsFrontend
 
-    docker-dispatch:
+  docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [backend-lint, frontend-lint, backend-test, frontend-test]
     runs-on: ubuntu-latest
