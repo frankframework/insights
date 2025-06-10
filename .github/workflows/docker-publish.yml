@@ -1,4 +1,4 @@
-name: Docker
+name: Docker publish
 
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
@@ -6,8 +6,8 @@ name: Docker
 # documentation.
 
 on:
-  push:
-    branches: [ "master" ]
+  repository_dispatch:
+    types: [docker-publish]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -15,10 +15,8 @@ env:
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
