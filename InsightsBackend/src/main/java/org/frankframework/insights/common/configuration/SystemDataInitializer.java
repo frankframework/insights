@@ -7,6 +7,7 @@ import org.frankframework.insights.common.configuration.properties.GitHubPropert
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
+import org.frankframework.insights.issuePriority.IssuePriorityService;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
@@ -23,6 +24,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final LabelService labelService;
     private final MilestoneService milestoneService;
     private final IssueTypeService issueTypeService;
+    private final IssuePriorityService issuePriorityService;
     private final BranchService branchService;
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
@@ -34,6 +36,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             LabelService labelService,
             MilestoneService milestoneService,
             IssueTypeService issueTypeService,
+            IssuePriorityService issuePriorityService,
             BranchService branchService,
             IssueService issueService,
             PullRequestService pullRequestService,
@@ -43,6 +46,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.labelService = labelService;
         this.milestoneService = milestoneService;
         this.issueTypeService = issueTypeService;
+        this.issuePriorityService = issuePriorityService;
         this.branchService = branchService;
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
@@ -106,6 +110,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             labelService.injectLabels();
             milestoneService.injectMilestones();
             issueTypeService.injectIssueTypes();
+            issuePriorityService.injectIssuePriorities();
             branchService.injectBranches();
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();

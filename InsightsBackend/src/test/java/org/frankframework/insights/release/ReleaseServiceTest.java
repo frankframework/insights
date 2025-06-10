@@ -66,29 +66,20 @@ public class ReleaseServiceTest {
         noNameBranch.setId(UUID.randomUUID().toString());
         noNameBranch.setName(null);
 
-        dto1 = new ReleaseDTO();
-        dto1.setTagName("v1.0");
-        dto1.setName("v1.0");
-        dto1.setPublishedAt(OffsetDateTime.now().minusDays(10));
+        dto1 = new ReleaseDTO("id1", "v1.0", "v1.0", OffsetDateTime.now().minusDays(10));
+        dto2 = new ReleaseDTO("id2", "v1.1", "v1.1", OffsetDateTime.now());
 
-        dto2 = new ReleaseDTO();
-        dto2.setTagName("v1.1");
-        dto2.setName("v1.1");
-        dto2.setPublishedAt(OffsetDateTime.now());
-
-        dtoMalformed = new ReleaseDTO();
-        dtoMalformed.setTagName("foo_bar");
-        dtoMalformed.setName("foo_bar");
-        dtoMalformed.setPublishedAt(OffsetDateTime.now().minusDays(1));
+        dtoMalformed =
+                new ReleaseDTO("id3", "foo_bar", "foo_bar", OffsetDateTime.now().minusDays(1));
 
         rel1 = new Release();
         rel1.setTagName("v1.0");
-        rel1.setPublishedAt(dto1.getPublishedAt());
+        rel1.setPublishedAt(dto1.publishedAt());
         rel1.setBranch(masterBranch);
 
         rel2 = new Release();
         rel2.setTagName("v1.1");
-        rel2.setPublishedAt(dto2.getPublishedAt());
+        rel2.setPublishedAt(dto2.publishedAt());
         rel2.setBranch(masterBranch);
 
         pr1 = new PullRequest();
@@ -140,13 +131,11 @@ public class ReleaseServiceTest {
 
     @Test
     public void fallbackToMasterBranch_whenNoVersionBranchMatches() throws Exception {
-        ReleaseDTO dto = new ReleaseDTO();
-        dto.setTagName("v9.9");
-        dto.setName("v9.9");
-        dto.setPublishedAt(OffsetDateTime.now());
+        ReleaseDTO dto = new ReleaseDTO("id", "v9.9", "v9.9", OffsetDateTime.now());
+
         Release rel = new Release();
         rel.setTagName("v9.9");
-        rel.setPublishedAt(dto.getPublishedAt());
+        rel.setPublishedAt(dto.publishedAt());
         rel.setBranch(masterBranch);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
@@ -166,13 +155,11 @@ public class ReleaseServiceTest {
 
     @Test
     public void nullBranch_ifNoMatchAndNoMaster() throws Exception {
-        ReleaseDTO dto = new ReleaseDTO();
-        dto.setTagName("v999.999");
-        dto.setName("v999.999");
-        dto.setPublishedAt(OffsetDateTime.now());
+        ReleaseDTO dto = new ReleaseDTO("id", "v999.999", "v999.9990", OffsetDateTime.now());
+
         Release rel = new Release();
         rel.setTagName("v999.999");
-        rel.setPublishedAt(dto.getPublishedAt());
+        rel.setPublishedAt(dto.publishedAt());
         rel.setBranch(null);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
@@ -230,10 +217,7 @@ public class ReleaseServiceTest {
         relWithNull.setPublishedAt(OffsetDateTime.now());
         relWithNull.setBranch(noNameBranch);
 
-        ReleaseDTO dto = new ReleaseDTO();
-        dto.setTagName("vX.Y");
-        dto.setName("vX.Y");
-        dto.setPublishedAt(relWithNull.getPublishedAt());
+        ReleaseDTO dto = new ReleaseDTO("id", "vX.Y", "vX.Y", relWithNull.getPublishedAt());
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
         when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
@@ -294,7 +278,7 @@ public class ReleaseServiceTest {
     public void malformedTagName_fallsBackToMasterOrNull() throws Exception {
         Release relMalformed = new Release();
         relMalformed.setTagName("foo_bar");
-        relMalformed.setPublishedAt(dtoMalformed.getPublishedAt());
+        relMalformed.setPublishedAt(dtoMalformed.publishedAt());
         relMalformed.setBranch(masterBranch);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
@@ -346,22 +330,16 @@ public class ReleaseServiceTest {
 
     @Test
     public void extractMajorMinor_variousCases() throws Exception {
-        ReleaseDTO tagGood = new ReleaseDTO();
-        tagGood.setTagName("v3.5");
-        tagGood.setName("v3.5");
-        tagGood.setPublishedAt(OffsetDateTime.now());
+        ReleaseDTO tagGood = new ReleaseDTO("id", "v3.5", "v3.5", OffsetDateTime.now());
         Release relGood = new Release();
         relGood.setTagName("v3.5");
-        relGood.setPublishedAt(tagGood.getPublishedAt());
+        relGood.setPublishedAt(tagGood.publishedAt());
         relGood.setBranch(masterBranch);
 
-        ReleaseDTO tagBad = new ReleaseDTO();
-        tagBad.setTagName("vX.Y");
-        tagBad.setName("vX.Y");
-        tagBad.setPublishedAt(OffsetDateTime.now());
+        ReleaseDTO tagBad = new ReleaseDTO("id", "vX.Y", "vX.Y", OffsetDateTime.now());
         Release relBad = new Release();
         relBad.setTagName("vX.Y");
-        relBad.setPublishedAt(tagBad.getPublishedAt());
+        relBad.setPublishedAt(tagBad.publishedAt());
         relBad.setBranch(masterBranch);
 
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);

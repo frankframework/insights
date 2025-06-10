@@ -17,12 +17,12 @@ public record PullRequestDTO(
         GitHubEdgesDTO<IssueDTO> closingIssuesReferences) {
 
     public boolean hasLabels() {
-        return labels != null && labels.getEdges() != null && !labels.getEdges().isEmpty();
+        return labels != null && labels.edges() != null && !labels.edges().isEmpty();
     }
 
     public boolean hasClosingIssuesReferences() {
         return closingIssuesReferences != null
-                && closingIssuesReferences.getEdges() != null
-                && !closingIssuesReferences.getEdges().isEmpty();
+                && closingIssuesReferences.edges() != null
+                && !closingIssuesReferences.edges().isEmpty();
     }
 }
