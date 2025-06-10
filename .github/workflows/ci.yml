@@ -8,7 +8,6 @@ on:
 env:
   JDK_VERSION: 21
   NODE_VERSION: 23
-  POSTGRESQL_VERSION: 17
 
 jobs:
   backend-lint:
@@ -45,7 +44,7 @@ jobs:
     needs: [backend-lint]
     services:
       postgres:
-        image: postgres:${{ env.POSTGRESQL_VERSION }}
+        image: postgres:17
         env:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
