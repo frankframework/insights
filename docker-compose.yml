@@ -25,6 +25,7 @@ services:
       DATABASE_USERNAME: postgres
       DATABASE_PASSWORD: postgres
       GITHUB_API_SECRET: dummytoken
+      GITHUB_PROJECT_ID: projectId
     networks:
       - FFInsightsNetwork
     depends_on:
