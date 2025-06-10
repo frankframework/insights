@@ -18,7 +18,7 @@ export type GitHubState = (typeof GitHubStates)[keyof typeof GitHubStates];
 export class AppService {
   private static readonly API_BASE_URL: string = environment.backendUrl;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   /**
    * Performs a GET request to the given URL with optional query parameters.
