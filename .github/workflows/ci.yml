@@ -131,7 +131,7 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Build frontend
-        run: ng build
+        run: npm run build
         working-directory: InsightsFrontend
 
   docker-dispatch:
