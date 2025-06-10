@@ -8,6 +8,7 @@ import { ReleaseOffCanvasComponent } from './release-off-canvas/release-off-canv
 import { AsyncPipe } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-release-graph',
@@ -42,6 +43,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     private nodeService: ReleaseNodeService,
     private linkService: ReleaseLinkService,
     private router: Router,
+    private toastService: ToastrService,
   ) {}
 
   ngOnInit(): void {
@@ -107,13 +109,21 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       .pipe(
         map((record) => Object.values(record).flat()),
         tap((releases) => (this.releases = releases)),
+        tap((releases) => {
+          if (releases.length === 0) {
+            this.toastService.error('No releases found.');
+          }
+
+          this.checkReleaseGraphLoading();
+        }),
         map((releases) => this.nodeService.sortReleases(releases)),
         tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
         catchError((error) => {
           console.error('Failed to load releases:', error);
           this.releaseNodes = [];
           this.releaseLinks = [];
-          this.isLoading = false;
+          this.toastService.error('Failed to load releases. Please try again later.');
+          this.checkReleaseGraphLoading();
           return of([]);
         }),
       )
@@ -167,7 +177,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private checkReleaseGraphLoading(): void {
-    if (this.releaseNodes.length > 0 && this.releaseLinks.length > 0 && this.isLoading) {
+    if (this.isLoading) {
       this.isLoading = false;
 
       setTimeout(() => {

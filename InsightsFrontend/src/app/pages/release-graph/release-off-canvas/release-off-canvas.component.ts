@@ -7,6 +7,7 @@ import { ReleaseHighlightsComponent } from './release-highlights/release-highlig
 import { Issue, IssueService } from '../../../services/issue.service';
 import { LoaderComponent } from '../../../components/loader/loader.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-release-off-canvas',
@@ -26,6 +27,7 @@ export class ReleaseOffCanvasComponent implements OnChanges {
   constructor(
     private labelService: LabelService,
     private issueService: IssueService,
+    private toastService: ToastrService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -60,17 +62,19 @@ export class ReleaseOffCanvasComponent implements OnChanges {
         catchError((error) => {
           console.error('Failed to load highlights:', error);
           this.highlightedLabels = undefined;
-          this.checkOffCanvasLoading();
+          this.toastService.error('Failed to load release highlights. Please try again later.');
+          this.isLoading = false;
           return of();
         }),
       )
       .subscribe((highlightedLabels: Label[] | undefined) => {
-        if (!highlightedLabels) {
+        if (!highlightedLabels || highlightedLabels.length === 0) {
+          this.toastService.error('No release highlights found.');
           this.highlightedLabels = undefined;
-          return;
+        } else {
+          this.highlightedLabels = highlightedLabels;
         }
-        this.highlightedLabels = highlightedLabels;
-        this.checkOffCanvasLoading();
+        this.isLoading = false;
       });
   }
 
@@ -79,25 +83,21 @@ export class ReleaseOffCanvasComponent implements OnChanges {
       .getIssuesByReleaseId(releaseId)
       .pipe(
         catchError((error) => {
-          console.error('Failed to load release issues:', error);
+          console.error('Failed to load issues:', error);
           this.releaseIssues = undefined;
-          this.checkOffCanvasLoading();
+          this.toastService.error('Failed to load release issues. Please try again later.');
+          this.isLoading = false;
           return of();
         }),
       )
       .subscribe((releaseIssues: Issue[] | undefined) => {
-        if (!releaseIssues) {
+        if (!releaseIssues || releaseIssues.length === 0) {
+          this.toastService.error('No release issues found.');
           this.releaseIssues = undefined;
-          return;
+        } else {
+          this.releaseIssues = releaseIssues;
         }
-        this.releaseIssues = releaseIssues;
-        this.checkOffCanvasLoading();
+        this.isLoading = false;
       });
-  }
-
-  private checkOffCanvasLoading(): void {
-    if (this.highlightedLabels !== undefined && this.releaseIssues !== undefined) {
-      this.isLoading = false;
-    }
   }
 }
