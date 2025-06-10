@@ -35,7 +35,7 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Lint frontend
-        run: npm run lint --fix
+        run: npm run lint
         working-directory: InsightsFrontend
 
   backend-test:
