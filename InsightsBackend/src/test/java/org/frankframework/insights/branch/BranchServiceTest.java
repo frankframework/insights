@@ -57,14 +57,12 @@ public class BranchServiceTest {
         branchProtectionRegexes = List.of("release/.*", "main", "master");
         when(gitHubProperties.getBranchProtectionRegexes()).thenReturn(branchProtectionRegexes);
 
-        protectedBranchDTO = new BranchDTO();
-        protectedBranchDTO.setName("release/v1.2.3");
+        protectedBranchDTO = new BranchDTO("id1", "release/v1.2.3");
         protectedBranch = new Branch();
         protectedBranch.setId(UUID.randomUUID().toString());
         protectedBranch.setName("release/v1.2.3");
 
-        unprotectedBranchDTO = new BranchDTO();
-        unprotectedBranchDTO.setName("feature/test");
+        unprotectedBranchDTO = new BranchDTO("id2", "feature/test");
 
         mockPullRequest = new PullRequest();
         mockPullRequest.setId(UUID.randomUUID().toString());

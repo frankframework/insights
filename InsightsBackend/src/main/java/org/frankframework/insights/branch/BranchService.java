@@ -84,9 +84,9 @@ public class BranchService {
     private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
         log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()
-                .filter(branchDTO -> branchProtectionRegexes.stream().anyMatch(regex -> Pattern.compile(regex)
-                        .matcher(branchDTO.getName())
-                        .find()))
+                .filter(branchDTO -> branchProtectionRegexes.stream()
+                        .anyMatch(regex ->
+                                Pattern.compile(regex).matcher(branchDTO.name()).find()))
                 .map(branchDTO -> mapper.toEntity(branchDTO, Branch.class))
                 .collect(Collectors.toSet());
 

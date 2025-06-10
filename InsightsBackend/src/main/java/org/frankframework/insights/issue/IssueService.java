@@ -12,6 +12,9 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubNodeDTO;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.issuePriority.IssuePriority;
+import org.frankframework.insights.issuePriority.IssuePriorityResponse;
+import org.frankframework.insights.issuePriority.IssuePriorityService;
 import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -42,6 +45,7 @@ public class IssueService {
     private final IssueTypeService issueTypeService;
     private final LabelService labelService;
     private final ReleaseIssueHelperService releaseIssueHelperService;
+    private final IssuePriorityService issuePriorityService;
 
     public IssueService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -52,7 +56,8 @@ public class IssueService {
             MilestoneService milestoneService,
             IssueTypeService issueTypeService,
             LabelService labelService,
-            ReleaseIssueHelperService releaseIssueHelperService) {
+            ReleaseIssueHelperService releaseIssueHelperService,
+            IssuePriorityService issuePriorityService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
@@ -62,6 +67,7 @@ public class IssueService {
         this.issueTypeService = issueTypeService;
         this.labelService = labelService;
         this.releaseIssueHelperService = releaseIssueHelperService;
+        this.issuePriorityService = issuePriorityService;
     }
 
     /**
@@ -85,7 +91,8 @@ public class IssueService {
             log.info("Start injecting GitHub issues");
 
             Set<IssueDTO> issueDTOS = gitHubClient.getIssues();
-            Set<Issue> issues = mapper.toEntity(issueDTOS, Issue.class);
+
+            Set<Issue> issues = mapIssueDTOs(issueDTOS);
 
             Map<String, IssueDTO> issueDTOMap =
                     issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, Function.identity()));
@@ -99,6 +106,34 @@ public class IssueService {
         } catch (Exception e) {
             throw new IssueInjectionException("Error while injecting GitHub issues", e);
         }
+    }
+
+    /**
+     * Maps a set of IssueDTOs to a set of Issue entities.
+     * @param issueDTOs the set of IssueDTOs to map
+     * @return a set of Issue entities containing the mapped issues with their priorities, points, and other properties
+     */
+    private Set<Issue> mapIssueDTOs(Set<IssueDTO> issueDTOs) {
+        Map<String, IssuePriority> issuePriorityMap = issuePriorityService.getAllIssuePrioritiesMap();
+
+        return issueDTOs.stream()
+                .map(dto -> mapDtoToIssue(dto, issuePriorityMap))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Maps an IssueDTO to an Issue entity, setting the issue priority and points if available.
+     * @param dto the IssueDTO to map
+     * @param issuePriorityMap a map of issue priority IDs to IssuePriority entities
+     * @return an Issue entity containing the mapped issue with its priority and points
+     */
+    private Issue mapDtoToIssue(IssueDTO dto, Map<String, IssuePriority> issuePriorityMap) {
+        Issue issue = mapper.toEntity(dto, Issue.class);
+
+        dto.findPriorityOptionId().map(issuePriorityMap::get).ifPresent(issue::setIssuePriority);
+        dto.findPoints().ifPresent(issue::setPoints);
+
+        return issue;
     }
 
     /**
@@ -119,7 +154,7 @@ public class IssueService {
                     issue.setMilestone(milestone);
                 }
                 if (issueDTO.hasIssueType()) {
-                    IssueType issueType = issueTypeMap.get(issueDTO.issueType().id);
+                    IssueType issueType = issueTypeMap.get(issueDTO.issueType().id());
                     issue.setIssueType(issueType);
                 }
             }
@@ -140,12 +175,13 @@ public class IssueService {
             IssueDTO issueDTO = issueDTOMap.get(issue.getId());
             if (issueDTO == null || !issueDTO.hasSubIssues()) continue;
 
-            issueDTO.subIssues().getEdges().stream()
+            issueDTO.subIssues().edges().stream()
                     .filter(Objects::nonNull)
-                    .map(GitHubNodeDTO::getNode)
+                    .map(GitHubNodeDTO::node)
                     .map(node -> issueMap.get(node.id()))
+                    .filter(Objects::nonNull)
                     .forEach(subIssue -> subIssue.setParentIssue(issue));
-		}
+        }
 
         saveIssues(issues);
     }
@@ -163,35 +199,35 @@ public class IssueService {
         }
     }
 
-	/**
-	 * Builds a set of IssueLabel objects for all issues based on their labels.
-	 * @param issues the set of issues for which to build labels
-	 * @param issueDTOMap a map of issue IDs to their corresponding IssueDTOs
-	 * @return a set of IssueLabel objects representing the labels for all issues
-	 */
-    private Set<IssueLabel> buildAllIssueLabels(
-            Set<Issue> issues, Map<String, IssueDTO> issueDTOMap) {
-		Map<String, Label> labelMap = labelService.getAllLabelsMap();
-		return issues.stream()
+    /**
+     * Builds a set of IssueLabel objects for all issues based on their labels.
+     * @param issues the set of issues for which to build labels
+     * @param issueDTOMap a map of issue IDs to their corresponding IssueDTOs
+     * @return a set of IssueLabel objects representing the labels for all issues
+     */
+    private Set<IssueLabel> buildAllIssueLabels(Set<Issue> issues, Map<String, IssueDTO> issueDTOMap) {
+        Map<String, Label> labelMap = labelService.getAllLabelsMap();
+        return issues.stream()
                 .map(issue -> getLabelsForIssue(issue, issueDTOMap, labelMap))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
     }
 
-	/**
-	 * Retrieves the labels for a specific issue.
-	 * @param issue the issue for which to retrieve labels
-	 * @param issueDTOMap a map of issue IDs to their corresponding IssueDTOs
-	 * @param labelMap a map of label IDs to their corresponding Label objects
-	 * @return a list of IssueLabel objects representing the labels for the issue
-	 */
+    /**
+     * Retrieves the labels for a specific issue.
+     * @param issue the issue for which to retrieve labels
+     * @param issueDTOMap a map of issue IDs to their corresponding IssueDTOs
+     * @param labelMap a map of label IDs to their corresponding Label objects
+     * @return a list of IssueLabel objects representing the labels for the issue
+     */
     private List<IssueLabel> getLabelsForIssue(
             Issue issue, Map<String, IssueDTO> issueDTOMap, Map<String, Label> labelMap) {
         IssueDTO dto = issueDTOMap.get(issue.getId());
 
         if (dto.hasLabels()) {
-            return dto.labels().getEdges().stream()
-                    .map(labelDTO -> new IssueLabel(issue, labelMap.getOrDefault(labelDTO.getNode().id, null)))
+            return dto.labels().edges().stream()
+                    .map(labelDTO -> new IssueLabel(
+                            issue, labelMap.getOrDefault(labelDTO.node().id(), null)))
                     .filter(prLabel -> prLabel.getLabel() != null)
                     .toList();
         }
@@ -312,6 +348,7 @@ public class IssueService {
         response.setLabels(mapLabelsForIssue(issue));
         response.setMilestone(mapMilestoneForIssue(issue));
         response.setIssueType(mapIssueTypeForIssue(issue));
+        response.setIssuePriority(mapIssuePriorityForIssue(issue));
         response.setSubIssues(mapSubIssuesForIssue(issue));
         return response;
     }
@@ -346,6 +383,17 @@ public class IssueService {
     private IssueTypeResponse mapIssueTypeForIssue(Issue issue) {
         return Optional.ofNullable(issue.getIssueType())
                 .map(type -> mapper.toDTO(type, IssueTypeResponse.class))
+                .orElse(null);
+    }
+
+    /**
+     * Maps the issue priority for an issue, or null if none.
+     * @param issue the issue for which to map the issue priority
+     * @return an IssuePriorityResponse object representing the issue priority, or null if not present
+     */
+    private IssuePriorityResponse mapIssuePriorityForIssue(Issue issue) {
+        return Optional.ofNullable(issue.getIssuePriority())
+                .map(priority -> mapper.toDTO(priority, IssuePriorityResponse.class))
                 .orElse(null);
     }
 

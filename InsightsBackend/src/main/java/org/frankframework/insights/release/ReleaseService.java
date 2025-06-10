@@ -112,7 +112,7 @@ public class ReleaseService {
      * @return The mapped Release entity.
      */
     private Release mapToRelease(ReleaseDTO dto, List<Branch> branches) {
-        String releaseName = dto.getName();
+        String releaseName = dto.name();
 
         Optional<String> majorMinor = extractMajorMinor(releaseName);
         Optional<Branch> matchingBranch = majorMinor.flatMap(version -> findBranchByVersion(branches, version));

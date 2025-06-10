@@ -1,0 +1,23 @@
+query issuePriorities($projectId: ID!, $after: String) {
+	node(id: $projectId) {
+		... on ProjectV2 {
+			fields(first: 20, after: $after) {
+				nodes {
+					... on ProjectV2SingleSelectField {
+						name
+						options {
+							id
+							name
+							color
+							description
+						}
+					}
+				}
+				pageInfo {
+					hasNextPage
+					endCursor
+				}
+			}
+		}
+	}
+}
