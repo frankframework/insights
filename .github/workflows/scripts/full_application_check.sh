@@ -77,6 +77,20 @@ if ! curl --fail http://localhost:4200; then
 fi
 echo "Frontend reachable"
 
+echo "Triggering frontend in headless browser to cause real API call..."
+cd InsightsFrontend
+npx playwright install chromium
+npx playwright exec -- \
+  "const { chromium } = require('playwright');
+   (async () => {
+     const browser = await chromium.launch();
+     const page = await browser.newPage();
+     await page.goto('http://localhost:4200');
+     await page.waitForTimeout(5000);
+     await browser.close();
+   })()"
+cd ..
+
 echo "🔗 Checking frontend-backend communication via backend logs..."
 
 sleep 5

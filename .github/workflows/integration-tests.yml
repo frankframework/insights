@@ -45,6 +45,9 @@ jobs:
         run: mvn clean package -DskipTests
         working-directory: ./InsightsBackend
 
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
       - name: Full application check
         env:
           GITHUB_API_SECRET: ${{ secrets.GH_TOKEN }}
