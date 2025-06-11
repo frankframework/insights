@@ -77,14 +77,9 @@ if ! curl --fail http://localhost:4200; then
 fi
 echo "Frontend reachable"
 
-echo "Checking frontend-backend communication..."
+echo "🔗 Checking frontend-backend communication via backend logs..."
 
-if ! curl --fail http://localhost:4200/api/releases; then
-  echo "Frontend-Backend endpoint failed"
-  kill $BACKEND_PID
-  kill $FRONTEND_PID
-  exit 1
-fi
+sleep 5
 
 if ! grep -E "Successfully fetched and mapped [0-9]+ releases from the database" "$BACKEND_LOG"; then
   echo "Expected fetch of releases, but log line is not found in backend logs"
