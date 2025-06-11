@@ -42,7 +42,7 @@ jobs:
         working-directory: ./InsightsFrontend
 
       - name: Build Backend
-        run: ./mvn clean package -DskipTests
+        run: mvn clean package -DskipTests
         working-directory: ./InsightsBackend
 
       - name: Backend Health Check
