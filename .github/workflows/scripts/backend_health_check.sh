@@ -1,5 +1,5 @@
 #!/bin/bash
-BACKEND_JAR=./InsightsBackend/target/backend.jar
+BACKEND_JAR=./InsightsBackend/target/insights-0.0.1-SNAPSHOT.jar
 
 if [ ! -f "$BACKEND_JAR" ]; then
   echo "Backend JAR not found at $BACKEND_JAR"
