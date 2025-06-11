@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ./InsightsBackend
+cd InsightsBackend
 java -jar target/backend.jar > application.log &
 PID=$!
 sleep 10

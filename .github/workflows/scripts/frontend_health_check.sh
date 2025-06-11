@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ./InsightsFrontend
+cd InsightsFrontend
 npm start &
 PID=$!
 sleep 10

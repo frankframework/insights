@@ -1,9 +1,9 @@
 #!/bin/bash
-cd ./InsightsBackend
+cd InsightsBackend
 java -jar target/backend.jar > application.log &
 BACKEND_PID=$!
 
-cd ../frontend
+cd ../InsightsFrontend
 npm start &
 FRONTEND_PID=$!
 

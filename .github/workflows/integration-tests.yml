@@ -29,13 +29,13 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Install Maven
-        run: sudo apt-get update && sudo apt-get install -y maven
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '23'
+
+      - name: Install Maven
+        run: sudo apt-get update && sudo apt-get install -y maven
 
       - name: Install Frontend Dependencies
         run: npm install
@@ -47,32 +47,27 @@ jobs:
 
       - name: Backend Health Check
         run: |
-          chmod +x ./backend_health_check.sh
-          ./backend_health_check.sh
-        working-directory: ./.github/workflows/scripts
+          chmod +x .github/workflows/scripts/backend_health_check.sh
+          .github/workflows/scripts/backend_health_check.sh
 
       - name: Backend Database Connection Check
         run: |
-          chmod +x ./backend_database_check.sh
-          ./backend_database_check.sh
-        working-directory: ./.github/workflows/scripts
+          chmod +x .github/workflows/scripts/backend_database_check.sh
+          .github/workflows/scripts/backend_database_check.sh
 
       - name: Frontend Health Check
         run: |
-          chmod +x ./frontend_health_check.sh
-          ./frontend_health_check.sh
-        working-directory: ./.github/workflows/scripts
+          chmod +x .github/workflows/scripts/frontend_health_check.sh
+          .github/workflows/scripts/frontend_health_check.sh
 
       - name: Frontend-Backend Endpoint Check
         run: |
-          chmod +x ./frontend_backend_check.sh
-          ./frontend_backend_check.sh
-        working-directory: ./.github/workflows/scripts
+          chmod +x .github/workflows/scripts/frontend_backend_check.sh
+          .github/workflows/scripts/frontend_backend_check.sh
 
       - name: Backend GitHub API Check
         env:
           GITHUB_API_SECRET: ${{ secrets.GITHUB_SECRET }}
         run: |
-          chmod +x ./backend_github_api_check.sh
-          ./backend_github_api_check.sh
-        working-directory: ./.github/workflows/scripts
+          chmod +x .github/workflows/scripts/backend_github_api_check.sh
+          .github/workflows/scripts/backend_github_api_check.sh
