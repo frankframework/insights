@@ -48,26 +48,31 @@ jobs:
       - name: Backend Health Check
         run: |
           chmod +x ./scripts/backend_health_check.sh
-          ./scripts/backend_health_check.sh
+          ./backend_health_check.sh
+        working-directory: ./.github/workflows/scripts
 
       - name: Backend Database Connection Check
         run: |
           chmod +x ./scripts/backend_database_check.sh
-          ./scripts/backend_database_check.sh
+          ./backend_database_check.sh
+        working-directory: ./.github/workflows/scripts
 
       - name: Frontend Health Check
         run: |
           chmod +x ./scripts/frontend_health_check.sh
-          ./scripts/frontend_health_check.sh
+          ./frontend_health_check.sh
+        working-directory: ./.github/workflows/scripts
 
       - name: Frontend-Backend Endpoint Check
         run: |
           chmod +x ./scripts/frontend_backend_check.sh
-          ./scripts/frontend_backend_check.sh
+          ./frontend_backend_check.sh
+        working-directory: ./.github/workflows/scripts
 
       - name: Backend GitHub API Check
         env:
           GITHUB_API_SECRET: ${{ secrets.GITHUB_SECRET }}
         run: |
           chmod +x ./scripts/backend_github_api_check.sh
-          ./scripts/backend_github_api_check.sh
+          ./backend_github_api_check.sh
+        working-directory: ./.github/workflows/scripts
