@@ -78,7 +78,7 @@ echo "Frontend reachable"
 
 echo "Triggering frontend in headless browser to cause real API call..."
 cd InsightsFrontend
-node ../.github/workflows/scripts/trigger_frontend.mjs
+node trigger_frontend.mjs
 cd ..
 
 echo "🔗 Checking frontend-backend communication via backend logs..."
