@@ -86,9 +86,9 @@ if ! curl --fail http://localhost:4200/api/releases; then
   exit 1
 fi
 
-if ! grep "/api/releases" $BACKEND_LOG; then
-  echo "Backend did not log API request"
-  cat $BACKEND_LOG
+if ! grep -E "Successfully fetched and mapped [0-9]+ releases from the database" "$BACKEND_LOG"; then
+  echo "Expected fetch of releases, but log line is not found in backend logs"
+  cat "$BACKEND_LOG"
   kill $BACKEND_PID
   kill $FRONTEND_PID
   exit 1
