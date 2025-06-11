@@ -76,13 +76,10 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: testpass
         run: mvn test --file pom.xml
         working-directory: InsightsBackend
-      - name: SonarQube analysis (Backend)
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_BACKEND }} -Dsonar.qualitygate.wait=true
-        working-directory: InsightsBackend
+      - name: Update environment to run on SonarSource when JDK 21
+        if: ${{ matrix.java == '21' && env.USE_PROPRIETARY == 'true' }}
+        run: |
+          echo "MAVEN_GOALS=${{ env.MAVEN_GOALS }} org.sonarsource.scanner.maven:sonar-maven-plugin:sonar" >> $GITHUB_ENV
 
   frontend-test:
     name: Frontend Unit Test & SonarQube Analysis
