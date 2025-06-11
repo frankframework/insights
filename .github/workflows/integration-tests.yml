@@ -1,0 +1,70 @@
+name: Backend Integration Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+
+      - name: Install Frontend Dependencies
+        run: npm install
+        working-directory: ./InsightsFrontend
+
+      - name: Build Backend
+        run: ./mvnw clean package -DskipTests
+        working-directory: ./InsightsBackend
+
+      - name: Backend Health Check
+        run: |
+          chmod +x ./scripts/backend_health_check.sh
+          ./scripts/backend_health_check.sh
+
+      - name: Backend Database Connection Check
+        run: |
+          chmod +x ./scripts/backend_database_check.sh
+          ./scripts/backend_database_check.sh
+
+      - name: Frontend Health Check
+        run: |
+          chmod +x ./scripts/frontend_health_check.sh
+          ./scripts/frontend_health_check.sh
+
+      - name: Frontend-Backend Endpoint Check
+        run: |
+          chmod +x ./scripts/frontend_backend_check.sh
+          ./scripts/frontend_backend_check.sh
+
+      - name: Backend GitHub API Check
+        env:
+          GITHUB_API_SECRET: ${{ secrets.GITHUB_SECRET }}
+        run: |
+          chmod +x ./scripts/backend_github_api_check.sh
+          ./scripts/backend_github_api_check.sh
