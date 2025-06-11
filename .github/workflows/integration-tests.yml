@@ -47,7 +47,7 @@ jobs:
 
       - name: Full application check
         env:
-          GITHUB_API_SECRET: ${{ secrets.GITHUB_SECRET }}
+          GITHUB_API_SECRET: ${{ secrets.GH_TOKEN }}
         run: |
-          chmod +x .github/workflows/scripts/backend_full_check.sh
-          .github/workflows/scripts/backend_full_check.sh
+          chmod +x .github/workflows/scripts/full_application_check.sh
+          .github/workflows/scripts/full_application_check.sh

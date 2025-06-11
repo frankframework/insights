@@ -5,7 +5,7 @@ echo "Full stack integration test started"
 BACKEND_JAR=./InsightsBackend/target/insights-0.0.1-SNAPSHOT.jar
 BACKEND_LOG=backend.log
 FRONTEND_LOG=frontend.log
-GITHUB_API_SECRET="${GITHUB_API_SECRET:-dummy}"
+GITHUB_API_SECRET="${GITHUB_API_SECRET}"
 EXIT_CODE=0
 
 if [ ! -f "$BACKEND_JAR" ]; then
@@ -13,27 +13,27 @@ if [ ! -f "$BACKEND_JAR" ]; then
   exit 1
 fi
 
-echo "📦 Starting backend..."
+echo "Starting backend..."
+cd InsightsBackend
 java -Dspring.datasource.url=jdbc:postgresql://localhost:5432/test_db \
      -Dspring.datasource.username=user \
      -Dspring.datasource.password=password \
-     -Dspring.profiles.active=test \
-     -Dgithub.api.secret="$GITHUB_API_SECRET" \
+     -Dspring.profiles.active=local \
+     -Dgithub.secret="$GITHUB_API_SECRET" \
      -jar "$BACKEND_JAR" > $BACKEND_LOG 2>&1 &
 BACKEND_PID=$!
 
 sleep 15
 
 if ! kill -0 $BACKEND_PID 2>/dev/null; then
-  echo "❌ Backend failed to start"
+  echo "Backend failed to start"
   cat $BACKEND_LOG
   exit 1
 fi
 echo "Backend running (PID $BACKEND_PID)"
 
-# === Step 3: Check backend health ===
 if ! curl --fail http://localhost:8080/actuator/health; then
-  echo "❌ Backend health check failed"
+  echo "Backend health check failed"
   cat $BACKEND_LOG
   kill $BACKEND_PID
   exit 1
