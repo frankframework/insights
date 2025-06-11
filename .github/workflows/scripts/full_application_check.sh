@@ -38,7 +38,6 @@ if ! curl --fail http://localhost:8080/actuator/health; then
   exit 1
 fi
 
-# Validates Backend health check, database connection and GitHub API initialization
 for msg in \
   "Started InsightsApplication" \
   "Added connection org.postgresql.jdbc.PgConnection" \
@@ -78,10 +77,9 @@ fi
 echo "Frontend reachable"
 
 echo "Triggering frontend in headless browser to cause real API call..."
-node .github/workflows/scripts/trigger_frontend.mjs
+node --loader ts-node/esm .github/workflows/scripts/trigger_frontend.mjs || node .github/workflows/scripts/trigger_frontend.mjs
 
 echo "🔗 Checking frontend-backend communication via backend logs..."
-
 sleep 5
 
 if ! grep -E "Successfully fetched and mapped [0-9]+ releases from the database" "$BACKEND_LOG"; then
