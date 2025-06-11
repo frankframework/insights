@@ -14,10 +14,9 @@ if [ ! -f "$BACKEND_JAR" ]; then
 fi
 
 echo "Starting backend..."
-cd InsightsBackend
-java -Dspring.datasource.url=jdbc:postgresql://localhost:5432/test_db \
-     -Dspring.datasource.username=user \
-     -Dspring.datasource.password=password \
+java -Dspring.datasource.url=jdbc:postgresql://localhost:5432/insights \
+     -Dspring.datasource.username=postgres \
+     -Dspring.datasource.password=postgres \
      -Dspring.profiles.active=local \
      -Dgithub.secret="$GITHUB_API_SECRET" \
      -jar "$BACKEND_JAR" > $BACKEND_LOG 2>&1 &
