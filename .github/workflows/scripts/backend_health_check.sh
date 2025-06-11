@@ -1,11 +1,25 @@
 #!/bin/bash
-cd InsightsBackend
-java -jar target/backend.jar > application.log &
+BACKEND_JAR=./InsightsBackend/target/backend.jar
+
+if [ ! -f "$BACKEND_JAR" ]; then
+  echo "Backend JAR not found at $BACKEND_JAR"
+  exit 1
+fi
+
+java -jar "$BACKEND_JAR" > backend.log 2>&1 &
 PID=$!
 sleep 10
 
-curl --fail http://localhost:8080/actuator/health || (echo "Health endpoint unreachable" && kill $PID && exit 1)
+if ! curl --fail http://localhost:8080/actuator/health; then
+  echo "Health endpoint unreachable"
+  kill $PID || true
+  exit 1
+fi
 
-grep "Started InsightsApplication" application.log || (echo "InsightsApplication log missing" && kill $PID && exit 1)
+if ! grep "Started InsightsApplication" backend.log; then
+  echo "InsightsApplication log missing"
+  kill $PID || true
+  exit 1
+fi
 
 kill $PID
