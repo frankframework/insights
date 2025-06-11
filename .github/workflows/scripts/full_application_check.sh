@@ -77,10 +77,10 @@ fi
 echo "Frontend reachable"
 
 echo "Triggering frontend in headless browser to cause real API call..."
-node --loader ts-node/esm .github/workflows/scripts/trigger_frontend.mjs || node .github/workflows/scripts/trigger_frontend.mjs
+node .github/workflows/scripts/trigger_frontend.mjs
 
 echo "🔗 Checking frontend-backend communication via backend logs..."
-sleep 5
+sleep 5cd
 
 if ! grep -E "Successfully fetched and mapped [0-9]+ releases from the database" "$BACKEND_LOG"; then
   echo "Expected fetch of releases, but log line is not found in backend logs"
