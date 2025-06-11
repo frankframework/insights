@@ -46,7 +46,10 @@ jobs:
         working-directory: ./InsightsBackend
 
       - name: Install Playwright
-        run: npx playwright install --with-deps
+        run: |
+          npm install --save-dev @playwright/test
+          npx playwright install --with-deps
+        working-directory: ./InsightsFrontend
 
       - name: Full application check
         env:
