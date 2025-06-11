@@ -29,6 +29,9 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Install Maven
+        run: sudo apt-get update && sudo apt-get install -y maven
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -39,7 +42,7 @@ jobs:
         working-directory: ./InsightsFrontend
 
       - name: Build Backend
-        run: ./mvnw clean package -DskipTests
+        run: ./mvn clean package -DskipTests
         working-directory: ./InsightsBackend
 
       - name: Backend Health Check
