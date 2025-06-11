@@ -38,7 +38,7 @@ if ! curl --fail http://localhost:8080/actuator/health; then
   exit 1
 fi
 
-// validates backend health check, database connection and github api initialization
+# Validates Backend health check, database connection and GitHub API initialization
 for msg in \
   "Started InsightsApplication" \
   "Added connection org.postgresql.jdbc.PgConnection" \
