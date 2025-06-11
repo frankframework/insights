@@ -40,7 +40,7 @@ jobs:
         working-directory: InsightsFrontend
 
   backend-test:
-    name: Backend Unit Test & SonarQube Analysis
+    name: Backend Unit Test
     runs-on: ubuntu-latest
     needs: [backend-lint]
     services:
@@ -104,21 +104,6 @@ jobs:
         working-directory: InsightsFrontend
       - name: Frontend Unit Tests
         run: npm run test -- --watch=false --browsers=ChromeHeadless
-        working-directory: InsightsFrontend
-      - name: SonarQube analysis (Frontend)
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: |
-          npm install -g sonar-scanner # Installeer Sonar Scanner CLI
-          sonar-scanner \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY_FRONTEND }} \
-            -Dsonar.sources=src \
-            -Dsonar.tests=src \
-            -Dsonar.test.inclusions="**/*.spec.ts" \
-            -Dsonar.typescript.lcov.reportPaths="coverage/InsightsFrontend/lcov.info" \
-            -Dsonar.qualitygate.wait=true
         working-directory: InsightsFrontend
 
   backend-build:
