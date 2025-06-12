@@ -38,8 +38,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y maven
 
       - name: Install Frontend Dependencies
-        run: npm install
-        working-directory: ./InsightsFrontend
+        run: |
+          cd InsightsFrontend
+          npm install
+        shell: bash
 
       - name: Build Backend
         run: mvn clean package -DskipTests
@@ -47,9 +49,13 @@ jobs:
 
       - name: Start Backend
         run: |
-          java -Dspring.profiles.active=local \
+          mkdir -p logs
+          java -Dspring.datasource.url=jdbc:postgresql://localhost:5432/insights \
+               -Dspring.datasource.username=postgres \
+               -Dspring.datasource.password=postgres \
+               -Dspring.profiles.active=local \
                -Dgithub.secret="${{ secrets.GH_TOKEN }}" \
-               -jar InsightsBackend/target/*.jar > backend.log 2>&1 &
+               -jar InsightsBackend/target/*.jar > logs/backend.log 2>&1 &
           echo $! > backend.pid
           sleep 10
 
@@ -58,7 +64,7 @@ jobs:
 
       - name: Start Frontend (Dev)
         run: |
-          npm start --prefix InsightsFrontend > frontend.log 2>&1 &
+          npm start --prefix InsightsFrontend > logs/frontend.log 2>&1 &
           echo $! > frontend.pid
           sleep 10
 
@@ -70,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: full-logs
-          path: "*.log"
+          path: logs/*.log
 
       - name: Cleanup processes
         if: always()
