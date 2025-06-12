@@ -12,7 +12,7 @@
         ›
       </button>
     }
-    <a class="issue-number" [routerLink]="issue.url">#{{ issue.number }}</a>
+    <a class="issue-number" target="_blank" rel="noopener noreferrer" [href]="issue.url">#{{ issue.number }}</a>
     @if (issue.issueType) {
       <span
         class="issue-type"

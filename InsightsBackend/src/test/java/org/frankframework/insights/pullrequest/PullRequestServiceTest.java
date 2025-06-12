@@ -75,7 +75,6 @@ public class PullRequestServiceTest {
     private Branch testBranch;
     private PullRequestDTO masterPR, subBranchPR;
     private PullRequest mockPullRequest;
-	private LabelDTO mockLabelDTO;
 
     @BeforeEach
     public void setUp() {
@@ -245,23 +244,16 @@ public class PullRequestServiceTest {
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/labels");
 
-        LabelDTO labelDTO = new LabelDTO();
-        labelDTO.id = "l1";
-        labelDTO.name = "bug";
-        labelDTO.description = "desc";
-        labelDTO.color = "red";
+        LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>();
-        labelNode.setNode(labelDTO);
+        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
         List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
-        GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>();
-        labelEdges.setEdges(labelNodeList);
+        GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
-        IssueDTO issue = new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null);
-        GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>();
-        issueNode.setNode(issue);
-        GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>();
-        closingIssuesEdges.setEdges(List.of(issueNode));
+        IssueDTO issue =
+                new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
+        GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>(issue);
+        GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>(List.of(issueNode));
 
         PullRequestDTO prDto = new PullRequestDTO(
                 "id-x", 4, "pr labels", null, OffsetDateTime.now(), labelEdges, null, closingIssuesEdges);
@@ -282,7 +274,6 @@ public class PullRequestServiceTest {
         Map<String, Label> labelMap = Map.of("l1", label);
         when(labelService.getAllLabelsMap()).thenReturn(labelMap);
 
-        // Make sure the issue service returns a map of issue id to Issue, not IssueDTO
         Issue issueEntity = new Issue();
         issueEntity.setId("i1");
         Map<String, Issue> issueMap = Map.of("i1", issueEntity);

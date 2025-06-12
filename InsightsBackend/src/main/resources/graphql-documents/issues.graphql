@@ -29,6 +29,34 @@ query issues($after: String) {
 							}
 						}
 					}
+					projectItems(first: 10) {
+						edges {
+							node {
+								fieldValues(first: 20) {
+									edges {
+										node {
+											... on ProjectV2ItemFieldSingleSelectValue {
+												optionId
+												field {
+													... on ProjectV2FieldCommon {
+														name
+													}
+												}
+											}
+											... on ProjectV2ItemFieldNumberValue {
+												number
+												field {
+													... on ProjectV2FieldCommon {
+														name
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 			pageInfo {

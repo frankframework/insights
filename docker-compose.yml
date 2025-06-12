@@ -1,0 +1,56 @@
+services:
+  frontend:
+    build: ./InsightsFrontend
+    # image: ghcr.io/frankframework/insights:${VERSION:-frontend}
+    restart: always
+    volumes:
+      - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
+    networks:
+      - FFInsightsNetwork
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    container_name: frontend
+
+  backend:
+    build: ./InsightsBackend
+    # image: ghcr.io/frankframework/insights:${VERSION:-backend}
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: insights
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      GITHUB_API_SECRET: dummytoken
+      GITHUB_PROJECT_ID: projectId
+    networks:
+      - FFInsightsNetwork
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    container_name: backend
+
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_DB: insights
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    networks:
+      - FFInsightsNetwork
+    ports:
+      - "5432:5432"
+
+networks:
+  FFInsightsNetwork:
+    driver: bridge
+
+volumes:
+  pg-data:

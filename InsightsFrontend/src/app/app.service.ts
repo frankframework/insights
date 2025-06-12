@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { TimeSpanParameters } from './services/issue.service';
+import { environment } from '../environments/environment';
 
 export const GitHubStates = {
   OPEN: 0,
@@ -15,7 +16,7 @@ export type GitHubState = (typeof GitHubStates)[keyof typeof GitHubStates];
   providedIn: 'root',
 })
 export class AppService {
-  private static readonly API_BASE_URL: string = 'http://localhost:8080/api';
+  private static readonly API_BASE_URL: string = environment.backendUrl;
 
   constructor(private http: HttpClient) {}
 
