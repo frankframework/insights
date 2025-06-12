@@ -11,13 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
-import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.issue.Issue;
+import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.frankframework.insights.release.ReleaseService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,8 +31,8 @@ public class LabelService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final LabelRepository labelRepository;
-    private final ReleaseIssueHelperService releaseIssueHelperService;
     private final IssueLabelRepository issueLabelRepository;
+    private final ReleaseService releaseService;
     private final List<String> priorityLabels;
     private final List<String> ignoredLabels;
 
@@ -43,15 +43,15 @@ public class LabelService {
             GitHubClient gitHubClient,
             Mapper mapper,
             LabelRepository labelRepository,
-            ReleaseIssueHelperService releaseIssueHelperService,
             IssueLabelRepository issueLabelRepository,
-            GitHubProperties gitHubProperties) {
+            GitHubProperties gitHubProperties,
+            ReleaseService releaseService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.labelRepository = labelRepository;
-        this.releaseIssueHelperService = releaseIssueHelperService;
         this.issueLabelRepository = issueLabelRepository;
+        this.releaseService = releaseService;
         this.priorityLabels = gitHubProperties.getPriorityLabels();
         this.ignoredLabels = gitHubProperties.getIgnoredLabels();
     }
@@ -93,7 +93,8 @@ public class LabelService {
      */
     public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
-        List<Label> releaseLabels = getLabelsByReleaseId(releaseId);
+        Release release = releaseService.checkIfReleaseExists(releaseId);
+        List<Label> releaseLabels = labelRepository.findLabelsByReleaseId(release.getId());
         Map<String, Long> labelCountMap = countLabelOccurrences(releaseLabels);
         Map<String, Label> uniqueLabelMap = mapUniqueLabels(releaseLabels);
 
@@ -103,21 +104,6 @@ public class LabelService {
         List<Label> highlightLabels = selectTopLabels(priorityLabelsList, nonPriorityLabelsList);
 
         return mapper.toDTO(new LinkedHashSet<>(highlightLabels), LabelResponse.class);
-    }
-
-    /**
-     * Fetches labels associated with a specific release ID.
-     * @param releaseId the ID of the release
-     * @return a list of labels associated with the release
-     * @throws ReleaseNotFoundException if the release is not found
-     */
-    private List<Label> getLabelsByReleaseId(String releaseId) throws ReleaseNotFoundException {
-        Set<Issue> releaseIssues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
-
-        return releaseIssues.stream()
-                .flatMap(issue -> issueLabelRepository.findAllByIssue_Id(issue.getId()).stream()
-                        .map(IssueLabel::getLabel))
-                .collect(Collectors.toList());
     }
 
     /**

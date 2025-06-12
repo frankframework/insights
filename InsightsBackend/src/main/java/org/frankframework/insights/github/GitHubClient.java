@@ -81,11 +81,8 @@ public class GitHubClient extends GraphQLClient {
         variables.put("projectId", projectId);
         log.info("Started fetching issue priorities from GitHub for project with id: [{}]", projectId);
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> issuePriorities = getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES,
-                variables,
-                new ParameterizedTypeReference<>() {}
-		);
+        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> issuePriorities =
+                getNodes(GitHubQueryConstants.ISSUE_PRIORITIES, variables, new ParameterizedTypeReference<>() {});
 
         log.info(
                 "Successfully fetched {} issue priorities from GitHub for project with id: [{}]",

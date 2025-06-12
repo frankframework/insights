@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
@@ -37,21 +39,21 @@ public class Issue {
     @Lob
     private String businessValue;
 
-    @ManyToOne(cascade = CascadeType.MERGE)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JsonBackReference("milestone-issue")
     private Milestone milestone;
 
-    @ManyToOne(cascade = CascadeType.MERGE)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JsonBackReference("issueType-issue")
     private IssueType issueType;
 
-    @ManyToOne(cascade = CascadeType.MERGE)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JsonBackReference("issuePriority-issue")
     private IssuePriority issuePriority;
 
     private Double points;
 
-    @ManyToOne
+    @OneToMany(cascade = CascadeType.MERGE)
     @JsonIgnore
-    private Issue parentIssue;
+    private Set<Issue> subIssues = new HashSet<>();
 }

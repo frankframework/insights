@@ -5,8 +5,8 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
-import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.*;
 import org.frankframework.insights.issuePriority.IssuePriority;
@@ -17,6 +17,9 @@ import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.*;
 import org.frankframework.insights.milestone.*;
+import org.frankframework.insights.release.Release;
+import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.frankframework.insights.release.ReleaseService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -53,7 +56,7 @@ public class IssueServiceTest {
     private LabelService labelService;
 
     @Mock
-    private ReleaseIssueHelperService releaseIssueHelperService;
+    private ReleaseService releaseService;
 
     @InjectMocks
     private IssueService issueService;
@@ -89,6 +92,13 @@ public class IssueServiceTest {
         issuePriority.setDescription("High priority issue");
         issuePriority.setColor("red");
 
+        issueSub = new Issue();
+        issueSub.setId("i4");
+        issueSub.setNumber(104);
+        issueSub.setTitle("Sub Issue Parent");
+        issueSub.setState(GitHubPropertyState.OPEN);
+        issueSub.setUrl("http://issue4");
+
         issue1 = new Issue();
         issue1.setId("i1");
         issue1.setNumber(101);
@@ -99,6 +109,7 @@ public class IssueServiceTest {
         issue1.setIssueType(issueType);
         issue1.setPoints(13.0);
         issue1.setIssuePriority(issuePriority);
+        issue1.setSubIssues(Set.of(issueSub));
 
         issue2 = new Issue();
         issue2.setId("i2");
@@ -107,14 +118,6 @@ public class IssueServiceTest {
         issue2.setState(GitHubPropertyState.OPEN);
         issue2.setUrl("http://issue2");
         issue2.setClosedAt(now.minusDays(2));
-
-        issueSub = new Issue();
-        issueSub.setId("i4");
-        issueSub.setNumber(104);
-        issueSub.setTitle("Sub Issue Parent");
-        issueSub.setState(GitHubPropertyState.OPEN);
-        issueSub.setUrl("http://issue4");
-        issueSub.setParentIssue(issue1);
 
         LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
@@ -216,7 +219,8 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_mapsPriorityAndPointsFromProjectItems() throws Exception {
+    public void injectIssues_mapsPriorityAndPointsFromProjectItems()
+            throws GitHubClientException, IssueInjectionException {
         when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(5);
@@ -233,7 +237,7 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_handlesMissingPriorityMappingGracefully() throws Exception {
+    public void injectIssues_handlesMissingPriorityMappingGracefully() throws GitHubClientException {
         when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(5);
@@ -246,7 +250,7 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_handlesFieldValuesWithNullNode() throws Exception {
+    public void injectIssues_handlesFieldValuesWithNullNode() throws GitHubClientException {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
         when(statsDTO.getGitHubIssueCount()).thenReturn(5);
         when(issueRepository.count()).thenReturn(2L);
@@ -289,29 +293,25 @@ public class IssueServiceTest {
     @Test
     public void getIssuesByTimespan_returnsResponsesWithLabels() {
         Set<Issue> issues = Set.of(issue1, issue2);
-        when(issueRepository.findAllByClosedAtBetween(any(), any())).thenReturn(issues);
+        when(issueRepository.findRootIssuesByClosedAtBetween(any(), any())).thenReturn(issues);
 
         Label label = new Label();
         label.setId("l1");
         label.setName("bug");
         label.setColor("red");
         label.setDescription("desc");
-
         LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
 
-        IssueResponse ir1 = new IssueResponse();
-        ir1.setId("i1");
-        ir1.setLabels(Set.of(lr));
+        IssueLabel issueLabel = new IssueLabel(issue1, label);
+        when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Set.of(issueLabel));
 
-        IssueResponse ir2 = new IssueResponse();
-        ir2.setId("i2");
-        ir2.setLabels(Set.of(lr));
-
-        when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir1);
-        when(mapper.toDTO(eq(issue2), eq(IssueResponse.class))).thenReturn(ir2);
-        when(labelService.getLabelsByIssueId(anyString())).thenReturn(Set.of(label));
-        when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
-
+        when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
+            Issue issue = inv.getArgument(0);
+            IssueResponse ir = new IssueResponse();
+            ir.setId(issue.getId());
+            return ir;
+        });
+        when(mapper.toDTO(any(Label.class), eq(LabelResponse.class))).thenReturn(lr);
         when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
                 .thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
         when(mapper.toDTO(any(IssuePriority.class), eq(IssuePriorityResponse.class)))
@@ -325,20 +325,30 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void getIssuesByReleaseId_returnsResponsesWithLabels() throws Exception {
-        Set<Issue> issues = Set.of(issue1);
-        when(releaseIssueHelperService.getIssuesByReleaseId("rel123")).thenReturn(issues);
+    public void getIssuesByReleaseId_returnsResponsesWithLabels() throws ReleaseNotFoundException {
+        Release release = mock(Release.class);
+        when(release.getId()).thenReturn("rel123");
+        when(releaseService.checkIfReleaseExists("rel123")).thenReturn(release);
+        when(issueRepository.findRootIssuesByReleaseId("rel123")).thenReturn(Set.of(issue1));
+
         Label label = new Label();
         label.setId("l1");
-        label.setName("bug");
-        label.setColor("red");
-        label.setDescription("desc");
         LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
-        IssueResponse ir = new IssueResponse();
-        ir.setId("i1");
-        when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir);
-        when(labelService.getLabelsByIssueId("i1")).thenReturn(Set.of(label));
-        when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
+
+        IssueLabel issueLabel = new IssueLabel(issue1, label);
+        when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Set.of(issueLabel));
+
+        when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
+            Issue issue = inv.getArgument(0);
+            IssueResponse ir = new IssueResponse();
+            ir.setId(issue.getId());
+            return ir;
+        });
+        when(mapper.toDTO(any(Label.class), eq(LabelResponse.class))).thenReturn(lr);
+        when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
+                .thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
+        when(mapper.toDTO(any(IssuePriority.class), eq(IssuePriorityResponse.class)))
+                .thenReturn(new IssuePriorityResponse("ip1", "High", "High priority issue", "red"));
 
         Set<IssueResponse> resp = issueService.getIssuesByReleaseId("rel123");
         assertEquals(1, resp.size());
@@ -346,22 +356,35 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void getIssuesByMilestoneId_returnsResponsesWithLabels() throws Exception {
-        Set<Issue> issues = Set.of(issue1);
+    public void getIssuesByReleaseId_throwsIfNotFound() throws Exception {
+        when(releaseService.checkIfReleaseExists("notfound"))
+                .thenThrow(new ReleaseNotFoundException("Not found", null));
+        assertThrows(ReleaseNotFoundException.class, () -> issueService.getIssuesByReleaseId("notfound"));
+    }
+
+    @Test
+    public void getIssuesByMilestoneId_returnsResponsesWithLabels() throws MilestoneNotFoundException {
         when(milestoneService.checkIfMilestoneExists("m1")).thenReturn(milestone);
-        when(issueRepository.findAllByMilestone_Id("m1")).thenReturn(issues);
+        when(issueRepository.findRootIssuesByMilestoneId("m1")).thenReturn(Set.of(issue1));
 
         Label label = new Label();
         label.setId("l1");
-        label.setName("bug");
-        label.setColor("red");
-        label.setDescription("desc");
         LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
-        IssueResponse ir = new IssueResponse();
-        ir.setId("i1");
-        when(mapper.toDTO(eq(issue1), eq(IssueResponse.class))).thenReturn(ir);
-        when(labelService.getLabelsByIssueId("i1")).thenReturn(Set.of(label));
-        when(mapper.toDTO(eq(label), eq(LabelResponse.class))).thenReturn(lr);
+
+        IssueLabel issueLabel = new IssueLabel(issue1, label);
+        when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Set.of(issueLabel));
+
+        when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
+            Issue issue = inv.getArgument(0);
+            IssueResponse ir = new IssueResponse();
+            ir.setId(issue.getId());
+            return ir;
+        });
+        when(mapper.toDTO(any(Label.class), eq(LabelResponse.class))).thenReturn(lr);
+        when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
+                .thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
+        when(mapper.toDTO(any(IssuePriority.class), eq(IssuePriorityResponse.class)))
+                .thenReturn(new IssuePriorityResponse("ip1", "High", "High priority issue", "red"));
 
         Set<IssueResponse> resp = issueService.getIssuesByMilestoneId("m1");
         assertEquals(1, resp.size());
@@ -369,7 +392,7 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void getIssuesByMilestoneId_throwsIfNotFound() throws Exception {
+    public void getIssuesByMilestoneId_throwsIfNotFound() throws MilestoneNotFoundException {
         when(milestoneService.checkIfMilestoneExists("notfound"))
                 .thenThrow(new MilestoneNotFoundException("Not found", null));
         assertThrows(MilestoneNotFoundException.class, () -> issueService.getIssuesByMilestoneId("notfound"));
@@ -377,39 +400,31 @@ public class IssueServiceTest {
 
     @Test
     public void getIssuesByTimespan_mapsSubIssuesRecursively() {
-        Issue parent = new Issue();
-        parent.setId("parent");
-        parent.setTitle("Parent");
+        Issue grandChild = new Issue();
+        grandChild.setId("grandchild");
+        grandChild.setTitle("Grandchild");
 
         Issue child = new Issue();
         child.setId("child");
         child.setTitle("Child");
-        child.setParentIssue(parent);
+        child.setSubIssues(Set.of(grandChild));
 
-        Issue grandChild = new Issue();
-        grandChild.setId("grandchild");
-        grandChild.setTitle("Grandchild");
-        grandChild.setParentIssue(child);
+        Issue parent = new Issue();
+        parent.setId("parent");
+        parent.setTitle("Parent");
+        parent.setSubIssues(Set.of(child));
 
-        when(issueRepository.findAllByClosedAtBetween(any(), any())).thenReturn(Set.of(parent));
-        when(issueRepository.findAllByParentIssue_Id("parent")).thenReturn(Set.of(child));
-        when(issueRepository.findAllByParentIssue_Id("child")).thenReturn(Set.of(grandChild));
-        when(issueRepository.findAllByParentIssue_Id("grandchild")).thenReturn(Collections.emptySet());
+        when(issueRepository.findRootIssuesByClosedAtBetween(any(), any())).thenReturn(Set.of(parent));
 
-        IssueResponse parentResp = new IssueResponse();
-        parentResp.setId("parent");
-        parentResp.setTitle("Parent");
-        IssueResponse childResp = new IssueResponse();
-        childResp.setId("child");
-        childResp.setTitle("Child");
-        IssueResponse grandChildResp = new IssueResponse();
-        grandChildResp.setId("grandchild");
-        grandChildResp.setTitle("Grandchild");
-        when(mapper.toDTO(eq(parent), eq(IssueResponse.class))).thenReturn(parentResp);
-        when(mapper.toDTO(eq(child), eq(IssueResponse.class))).thenReturn(childResp);
-        when(mapper.toDTO(eq(grandChild), eq(IssueResponse.class))).thenReturn(grandChildResp);
+        when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Collections.emptySet());
 
-        when(labelService.getLabelsByIssueId(anyString())).thenReturn(Collections.emptySet());
+        when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
+            Issue issue = inv.getArgument(0);
+            IssueResponse resp = new IssueResponse();
+            resp.setId(issue.getId());
+            resp.setTitle(issue.getTitle());
+            return resp;
+        });
 
         Set<IssueResponse> responses = issueService.getIssuesByTimespan(
                 OffsetDateTime.now().minusDays(1), OffsetDateTime.now().plusDays(1));

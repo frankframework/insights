@@ -286,15 +286,17 @@ public class ReleaseService {
     }
 
     /**
-     * Checks if a release exists in the database by its ID.
-     *
-     * @param releaseId The ID of the release to check.
-     * @return The Release entity if found.
-     * @throws ReleaseNotFoundException if the release is not found.
+     * Checks if a release with the given ID exists in the database.
+     * @param releaseId the ID of the release to check
+     * @return the Release object if it exists
+     * @throws ReleaseNotFoundException if the release does not exist
      */
     public Release checkIfReleaseExists(String releaseId) throws ReleaseNotFoundException {
-        return releaseRepository
-                .findById(releaseId)
-                .orElseThrow(() -> new ReleaseNotFoundException("Release was not found.", null));
+        Optional<Release> release = releaseRepository.findById(releaseId);
+        if (release.isEmpty()) {
+            throw new ReleaseNotFoundException("Release with ID [" + releaseId + "] not found.", null);
+        }
+
+        return release.get();
     }
 }
