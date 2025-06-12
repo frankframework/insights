@@ -1,12 +1,10 @@
 import { Component, Input } from '@angular/core';
 import { Issue } from '../../services/issue.service';
-import { RouterLink } from '@angular/router';
 import { ReleaseOffCanvasComponent } from '../../pages/release-graph/release-off-canvas/release-off-canvas.component';
 
 @Component({
   selector: 'app-issue-tree-branch',
   standalone: true,
-  imports: [RouterLink],
   templateUrl: './issue-tree-branch.component.html',
   styleUrl: './issue-tree-branch.component.scss',
 })
