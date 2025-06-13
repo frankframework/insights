@@ -80,10 +80,3 @@ jobs:
         with:
           name: full-logs
           path: logs/*.log
-
-      - name: Cleanup processes
-        if: always()
-        run: |
-          kill $(cat backend.pid) || true
-          kill $(cat frontend.pid) || true
-        shell: bash
