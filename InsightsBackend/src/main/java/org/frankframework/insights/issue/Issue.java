@@ -39,15 +39,15 @@ public class Issue {
     @Lob
     private String businessValue;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+	@ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference("milestone-issue")
     private Milestone milestone;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+	@ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference("issueType-issue")
     private IssueType issueType;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+	@ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference("issuePriority-issue")
     private IssuePriority issuePriority;
 

@@ -21,7 +21,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
     Set<Issue> findRootIssuesByReleaseId(@Param("releaseId") String releaseId);
 
-    @EntityGraph(attributePaths = {"milestone", "issueType", "issuePriority", "subIssues"})
     @Query(
             """
    SELECT DISTINCT i
@@ -31,7 +30,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
     Set<Issue> findRootIssuesByMilestoneId(@Param("milestoneId") String milestoneId);
 
-    @EntityGraph(attributePaths = {"milestone", "issueType", "issuePriority", "subIssues"})
     @Query(
             """
    SELECT DISTINCT i
