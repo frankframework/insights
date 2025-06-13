@@ -159,11 +159,7 @@ public class GitHubClientTest {
 
         doReturn(set)
                 .when(gitHubClient)
-                .getNodes(
-                        eq(GitHubQueryConstants.ISSUE_PRIORITIES),
-                        anyMap(),
-                        any(ParameterizedTypeReference.class)
-				);
+                .getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(ParameterizedTypeReference.class));
 
         assertEquals(set, gitHubClient.getIssuePriorities(projectId));
     }
@@ -174,11 +170,7 @@ public class GitHubClientTest {
         String projectId = "pid";
         doReturn(Collections.emptySet())
                 .when(gitHubClient)
-                .getNodes(
-                        eq(GitHubQueryConstants.ISSUE_PRIORITIES),
-                        anyMap(),
-                        any(ParameterizedTypeReference.class)
-				);
+                .getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(ParameterizedTypeReference.class));
 
         assertTrue(gitHubClient.getIssuePriorities(projectId).isEmpty());
     }
@@ -189,11 +181,7 @@ public class GitHubClientTest {
         String projectId = "pid";
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .getNodes(
-                        eq(GitHubQueryConstants.ISSUE_PRIORITIES),
-                        anyMap(),
-                        any(ParameterizedTypeReference.class)
-				);
+                .getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(ParameterizedTypeReference.class));
 
         assertThrows(GitHubClientException.class, () -> gitHubClient.getIssuePriorities(projectId));
     }
@@ -480,10 +468,7 @@ public class GitHubClientTest {
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
 
         Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES,
-                new HashMap<>(),
-                new ParameterizedTypeReference<>() {}
-		);
+                GitHubQueryConstants.ISSUE_PRIORITIES, new HashMap<>(), new ParameterizedTypeReference<>() {});
 
         assertEquals(1, result.size());
     }
@@ -504,10 +489,7 @@ public class GitHubClientTest {
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
 
         Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES,
-                new HashMap<>(),
-                new ParameterizedTypeReference<>() {}
-		);
+                GitHubQueryConstants.ISSUE_PRIORITIES, new HashMap<>(), new ParameterizedTypeReference<>() {});
 
         assertTrue(result.isEmpty());
     }
@@ -525,10 +507,7 @@ public class GitHubClientTest {
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.empty());
 
         Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES,
-                new HashMap<>(),
-                new ParameterizedTypeReference<>() {}
-		);
+                GitHubQueryConstants.ISSUE_PRIORITIES, new HashMap<>(), new ParameterizedTypeReference<>() {});
 
         assertTrue(result.isEmpty());
     }

@@ -4,10 +4,10 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
-import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubNodeDTO;
@@ -25,7 +25,9 @@ import org.frankframework.insights.milestone.Milestone;
 import org.frankframework.insights.milestone.MilestoneNotFoundException;
 import org.frankframework.insights.milestone.MilestoneResponse;
 import org.frankframework.insights.milestone.MilestoneService;
+import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.frankframework.insights.release.ReleaseService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -44,8 +46,8 @@ public class IssueService {
     private final MilestoneService milestoneService;
     private final IssueTypeService issueTypeService;
     private final LabelService labelService;
-    private final ReleaseIssueHelperService releaseIssueHelperService;
     private final IssuePriorityService issuePriorityService;
+    private final ReleaseService releaseService;
 
     public IssueService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -56,8 +58,8 @@ public class IssueService {
             MilestoneService milestoneService,
             IssueTypeService issueTypeService,
             LabelService labelService,
-            ReleaseIssueHelperService releaseIssueHelperService,
-            IssuePriorityService issuePriorityService) {
+            IssuePriorityService issuePriorityService,
+            ReleaseService releaseService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
@@ -66,8 +68,8 @@ public class IssueService {
         this.milestoneService = milestoneService;
         this.issueTypeService = issueTypeService;
         this.labelService = labelService;
-        this.releaseIssueHelperService = releaseIssueHelperService;
         this.issuePriorityService = issuePriorityService;
+        this.releaseService = releaseService;
     }
 
     /**
@@ -164,7 +166,7 @@ public class IssueService {
     }
 
     /**
-     * Assigns sub-issues to their parent issues based on the provided issue DTOs.
+     * Assigns sub-issues to issues based on the provided issue DTOs.
      * @param issues the set of issues to assign sub-issues to
      * @param issueDTOMap a map of issue IDs to their corresponding issue DTOs
      */
@@ -175,12 +177,14 @@ public class IssueService {
             IssueDTO issueDTO = issueDTOMap.get(issue.getId());
             if (issueDTO == null || !issueDTO.hasSubIssues()) continue;
 
-            issueDTO.subIssues().edges().stream()
+            Set<Issue> subIssues = issueDTO.subIssues().edges().stream()
                     .filter(Objects::nonNull)
                     .map(GitHubNodeDTO::node)
                     .map(node -> issueMap.get(node.id()))
                     .filter(Objects::nonNull)
-                    .forEach(subIssue -> subIssue.setParentIssue(issue));
+                    .collect(Collectors.toSet());
+
+            issue.setSubIssues(subIssues);
         }
 
         saveIssues(issues);
@@ -247,166 +251,151 @@ public class IssueService {
     }
 
     /**
-     * Retrieves all issues from the database.
-     * @param start the start date of the timespan
-     * @param end the end date of the timespan
-     * @return a set of issue responses
-     */
-    public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
-        Set<Issue> issues = issueRepository.findAllByClosedAtBetween(start, end);
-        return mapIssuesToResponses(issues);
-    }
-
-    /**
-     * Retrieves all issues from the database that are closed.
-     * @param releaseId the release ID
-     * @return a set of issue responses
-     * @throws ReleaseNotFoundException if the release is not found
+     * Fetches all issues associated with a specific release ID.
+     * @param releaseId the ID of the release to fetch issues for
+     * @return Set of issues associated with the release, including sub-issues and labels
      */
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
-        Set<Issue> issues = releaseIssueHelperService.getIssuesByReleaseId(releaseId);
-        return mapIssuesToResponses(issues);
+        Release release = releaseService.checkIfReleaseExists(releaseId);
+        Set<Issue> rootIssues = issueRepository.findRootIssuesByReleaseId(release.getId());
+        return buildIssueResponseTree(rootIssues);
     }
 
     /**
-     * Retrieves all issues from the database that are associated with a specific milestone.
-     * @param milestoneId the milestone ID
-     * @return a set of issue responses
-     * @throws MilestoneNotFoundException if the milestone is not found
+     * Fetches all issues associated with a specific milestone ID.
+     * @param milestoneId the ID of the milestone to fetch issues for
+     * @return Set of issues associated with the milestone, including sub-issues and labels
+     * @throws MilestoneNotFoundException if the milestone does not exist
      */
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
-        Set<Issue> issues = issueRepository.findAllByMilestone_Id(milestone.getId());
-        return mapIssuesToResponses(issues);
-    }
-
-	/**
-	 * Maps a set of issues to a set of IssueResponse objects.
-	 * @param issues the set of issues to map
-	 * @return a set of IssueResponse objects representing the mapped issues
-	 */
-	public Set<IssueResponse> mapIssuesToResponses(Set<Issue> issues) {
-		Set<Issue> parentIssues = findRootParentIssues(issues);
-		return parentIssues.stream()
-				.map(this::mapIssueTree)
-				.collect(Collectors.toSet());
-	}
-
-	/**
-	 * Finds root parent issues from a set of issues.
-	 * @param issues the set of issues to search for root parents
-	 * @return a set of root parent issues that do not have any children in the provided set
-	 */
-	private Set<Issue> findRootParentIssues(Set<Issue> issues) {
-		Set<String> childIds = getChildIssueIds(issues);
-		Set<Issue> rootCandidates = getRootCandidates(issues);
-		return filterNonDuplicatedRoots(rootCandidates, childIds);
-	}
-
-	/**
-	 * Collects the IDs of all child issues from a set of issues.
-	 * @param issues the set of issues to search for child IDs
-	 * @return a set of IDs representing the child issues
-	 */
-	private Set<String> getChildIssueIds(Set<Issue> issues) {
-		return issues.stream()
-				.filter(issue -> issue.getParentIssue() != null)
-				.map(Issue::getId)
-				.collect(Collectors.toSet());
-	}
-
-	/**
-	 * Filters the provided set of issues to find root candidates, which are issues without a parent.
-	 * @param issues the set of issues to filter
-	 * @return a set of issues that are root candidates (i.e., they do not have a parent issue)
-	 */
-	private Set<Issue> getRootCandidates(Set<Issue> issues) {
-		return issues.stream()
-				.filter(issue -> issue.getParentIssue() == null)
-				.collect(Collectors.toSet());
-	}
-
-	/**
-	 * Filters out issues that are not root issues by checking against a set of child IDs.
-	 * @param rootCandidates the set of candidate root issues to filter
-	 * @param childIds the set of IDs representing child issues
-	 * @return a set of root issues that do not have any children in the provided set
-	 */
-	private Set<Issue> filterNonDuplicatedRoots(Set<Issue> rootCandidates, Set<String> childIds) {
-		return rootCandidates.stream()
-				.filter(issue -> !childIds.contains(issue.getId()))
-				.collect(Collectors.toSet());
-	}
-
-    /**
-     * Maps an issue to an IssueResponse object, including its labels, milestone, issue type and subIssues.
-     * @param issue the issue to map
-     * @return an IssueResponse object containing the mapped issue with its labels, milestone, issue type and subIssues
-     */
-    private IssueResponse mapIssueTree(Issue issue) {
-        IssueResponse response = mapper.toDTO(issue, IssueResponse.class);
-        response.setLabels(mapLabelsForIssue(issue));
-        response.setMilestone(mapMilestoneForIssue(issue));
-        response.setIssueType(mapIssueTypeForIssue(issue));
-        response.setIssuePriority(mapIssuePriorityForIssue(issue));
-        response.setSubIssues(mapSubIssuesForIssue(issue));
-        return response;
+        Set<Issue> rootIssues = issueRepository.findRootIssuesByMilestoneId(milestone.getId());
+        return buildIssueResponseTree(rootIssues);
     }
 
     /**
-     * Maps the labels for an issue to a set of LabelResponse objects.
-     * @param issue the issue for which to map the labels
-     * @return a set of LabelResponse objects representing the labels for the issue
+     * Fetches all issues made between the given timestamps.
+     * @param start the start date of the timespan
+     * @param end the end date of the timespan
+     * @return Set of issues made between the given timestamps
      */
-    private Set<LabelResponse> mapLabelsForIssue(Issue issue) {
-        return labelService.getLabelsByIssueId(issue.getId()).stream()
-                .map(label -> mapper.toDTO(label, LabelResponse.class))
+    public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
+        Set<Issue> rootIssues = issueRepository.findRootIssuesByClosedAtBetween(start, end);
+        return buildIssueResponseTree(rootIssues);
+    }
+
+    /**
+     * Builds a tree of IssueResponse objects from the given set of root issues,
+     * @param rootIssues the set of root issues to build the tree from
+     * @return a set of IssueResponse objects representing the root issues and their sub-issues, with labels included
+     */
+    private Set<IssueResponse> buildIssueResponseTree(Set<Issue> rootIssues) {
+        Set<String> allIds = collectAllIssueIdsRecursively(rootIssues);
+        Map<String, Set<LabelResponse>> labelsMap = fetchLabelsForIssueIds(allIds);
+        return rootIssues.stream()
+                .map(issue -> mapIssueTreeWithLabels(issue, labelsMap))
                 .collect(Collectors.toSet());
     }
 
     /**
-     * Maps the milestone for an issue, or null if none.
-     * @param issue the issue for which to map the milestone
-     * @return a MilestoneResponse object representing the milestone, or null if not present
+     * Recursively collects all issue IDs from a set of issues and their sub-issues.
+     * @param issues the set of issues to collect IDs from
+     * @return a set of all issue IDs, including those from sub-issues
      */
-    private MilestoneResponse mapMilestoneForIssue(Issue issue) {
-        return Optional.ofNullable(issue.getMilestone())
-                .map(milestone -> mapper.toDTO(milestone, MilestoneResponse.class))
-                .orElse(null);
+    private Set<String> collectAllIssueIdsRecursively(Set<Issue> issues) {
+        return issues.stream().flatMap(this::flattenIssueIds).collect(Collectors.toSet());
     }
 
     /**
-     * Maps the issue type for an issue, or null if none.
-     * @param issue the issue for which to map the issue type
-     * @return an IssueTypeResponse object representing the issue type, or null if not present
+     * Recursively flattens an issue and its sub-issues into a stream of issue IDs.
+     * @param issue the issue to flatten
+     * @return a stream of issue IDs, including the ID of the issue itself and those of its sub-issues
      */
-    private IssueTypeResponse mapIssueTypeForIssue(Issue issue) {
-        return Optional.ofNullable(issue.getIssueType())
-                .map(type -> mapper.toDTO(type, IssueTypeResponse.class))
-                .orElse(null);
+    private Stream<String> flattenIssueIds(Issue issue) {
+        return Stream.concat(
+                Stream.of(issue.getId()),
+                issue.getSubIssues() == null
+                        ? Stream.empty()
+                        : issue.getSubIssues().stream().flatMap(this::flattenIssueIds));
     }
 
     /**
-     * Maps the issue priority for an issue, or null if none.
-     * @param issue the issue for which to map the issue priority
-     * @return an IssuePriorityResponse object representing the issue priority, or null if not present
+     * Fetches labels for a set of issue IDs.
+     * @param issueIds the set of issue IDs to fetch labels for
+     * @return a map of issue IDs to sets of LabelResponse objects
      */
-    private IssuePriorityResponse mapIssuePriorityForIssue(Issue issue) {
-        return Optional.ofNullable(issue.getIssuePriority())
-                .map(priority -> mapper.toDTO(priority, IssuePriorityResponse.class))
-                .orElse(null);
+    private Map<String, Set<LabelResponse>> fetchLabelsForIssueIds(Set<String> issueIds) {
+        Set<IssueLabel> labels = issueLabelRepository.findAllByIssue_IdIn(new ArrayList<>(issueIds));
+        return labels.stream()
+                .collect(Collectors.groupingBy(
+                        l -> l.getIssue().getId(),
+                        Collectors.mapping(l -> mapper.toDTO(l.getLabel(), LabelResponse.class), Collectors.toSet())));
     }
 
     /**
-     * Maps the sub-issues for an issue, or returns an empty set if none.
-     * @param issue the issue for which to map sub-issues
-     * @return a set of IssueResponse objects representing the sub-issues
+     * Maps an issue and its sub-issues to an IssueResponse object,
+     * @param issue the issue to map
+     * @param labelsMap a map of issue IDs to sets of LabelResponse objects
+     * @return an IssueResponse object representing the issue, including its labels and sub-issues
      */
-    private Set<IssueResponse> mapSubIssuesForIssue(Issue issue) {
-        Set<Issue> subIssues = issueRepository.findAllByParentIssue_Id(issue.getId());
-        return subIssues.isEmpty()
-                ? Collections.emptySet()
-                : subIssues.stream().map(this::mapIssueTree).collect(Collectors.toSet());
+    private IssueResponse mapIssueTreeWithLabels(Issue issue, Map<String, Set<LabelResponse>> labelsMap) {
+        IssueResponse response = mapper.toDTO(issue, IssueResponse.class);
+        mapMilestoneToResponse(issue, response);
+        mapIssueTypeToResponse(issue, response);
+        mapIssuePriorityToResponse(issue, response);
+
+        response.setLabels(labelsMap.getOrDefault(issue.getId(), Set.of()));
+        response.setSubIssues(mapSubIssuesToResponses(issue, labelsMap));
+        return response;
+    }
+
+    /**
+     * Maps the milestone of an issue to the response.
+     * @param issue the issue to map
+     * @param response the response to set the milestone on
+     */
+    private void mapMilestoneToResponse(Issue issue, IssueResponse response) {
+        if (issue.getMilestone() != null) {
+            response.setMilestone(mapper.toDTO(issue.getMilestone(), MilestoneResponse.class));
+        }
+    }
+
+    /**
+     * Maps the issue type of an issue to the response.
+     * @param issue the issue to map
+     * @param response the response to set the issue type on
+     */
+    private void mapIssueTypeToResponse(Issue issue, IssueResponse response) {
+        if (issue.getIssueType() != null) {
+            response.setIssueType(mapper.toDTO(issue.getIssueType(), IssueTypeResponse.class));
+        }
+    }
+
+    /**
+     * Maps the issue priority of an issue to the response.
+     * @param issue the issue to map
+     * @param response the response to set the issue priority on
+     */
+    private void mapIssuePriorityToResponse(Issue issue, IssueResponse response) {
+        if (issue.getIssuePriority() != null) {
+            response.setIssuePriority(mapper.toDTO(issue.getIssuePriority(), IssuePriorityResponse.class));
+        }
+    }
+
+    /**
+     * Maps the sub-issues of an issue to a set of IssueResponse objects,
+     * @param issue the issue whose sub-issues are to be mapped
+     * @param labelsMap a map of issue IDs to sets of LabelResponse objects
+     * @return a set of IssueResponse objects representing the sub-issues of the issue
+     */
+    private Set<IssueResponse> mapSubIssuesToResponses(Issue issue, Map<String, Set<LabelResponse>> labelsMap) {
+        if (issue.getSubIssues() != null && !issue.getSubIssues().isEmpty()) {
+            return issue.getSubIssues().stream()
+                    .map(sub -> mapIssueTreeWithLabels(sub, labelsMap))
+                    .collect(Collectors.toSet());
+        } else {
+            return Set.of();
+        }
     }
 
     /**
