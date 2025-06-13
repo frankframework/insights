@@ -280,10 +280,13 @@ public class ReleaseService {
      * @return A set of ReleaseResponse DTOs representing all releases.
      */
     public Set<ReleaseResponse> getAllReleases() {
-        return releaseRepository.findAll().stream()
+        Set<ReleaseResponse> releaseResponses = releaseRepository.findAll().stream()
                 .map(r -> mapper.toDTO(r, ReleaseResponse.class))
                 .collect(Collectors.toSet());
-    }
+
+		log.info("Successfully fetched and mapped {} releases from the database", releaseResponses.size());
+		return releaseResponses;
+	}
 
     /**
      * Checks if a release with the given ID exists in the database.
