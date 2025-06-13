@@ -52,6 +52,9 @@
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<puppycrawl.tools.version>10.23.1</puppycrawl.tools.version>
 		<jackson.version>2.19.0</jackson.version>
+
+		<sonar.organization>frank-framework</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 
 	<dependencies>
