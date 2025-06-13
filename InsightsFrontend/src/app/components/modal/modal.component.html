@@ -1,0 +1,25 @@
+<div
+  class="modal-backdrop"
+  tabindex="0"
+  role="button"
+  aria-label="Close modal"
+  (click)="close()"
+  (keydown.enter)="close()"
+  (keydown.space)="close()"
+>
+  <div
+    #modalContent
+    class="modal-content"
+    tabindex="0"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="title || 'Modal window'"
+    (click)="$event.stopPropagation()"
+  >
+    @if (title.length > 0) {
+      <h2 class="modal-title">{{ title }}</h2>
+    }
+    <button class="close-btn" type="button" aria-label="Close modal" (click)="close()">✕</button>
+    <ng-content />
+  </div>
+</div>

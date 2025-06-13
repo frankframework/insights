@@ -23,6 +23,8 @@
     @if (selectedRelease$ | async; as release) {
       <app-release-off-canvas [release]="release" (closeCanvas)="closeReleaseDetails()" />
     }
+
+    <app-release-catalogus [selectedRelease]="selectedRelease$ | async" />
   } @else {
     <app-loader />
   }
