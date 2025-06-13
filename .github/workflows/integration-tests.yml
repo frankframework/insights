@@ -38,10 +38,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y maven
 
       - name: Install Frontend Dependencies
-        run: |
-          cd InsightsFrontend
-          npm install
-        shell: bash
+        run: npm install
+        working-directory: ./InsightsFrontend
 
       - name: Build Backend
         run: mvn clean package -DskipTests
@@ -50,26 +48,31 @@ jobs:
       - name: Start Backend
         run: |
           mkdir -p logs
-          java -Dspring.datasource.url=jdbc:postgresql://localhost:5432/insights \
-               -Dspring.datasource.username=postgres \
-               -Dspring.datasource.password=postgres \
-               -Dspring.profiles.active=local \
+          java -Dspring.profiles.active=local \
                -Dgithub.secret="${{ secrets.GH_TOKEN }}" \
                -jar InsightsBackend/target/*.jar > logs/backend.log 2>&1 &
           echo $! > backend.pid
-          sleep 10
+        shell: bash
 
-      - name: Check Backend Health
-        run: curl --fail http://localhost:8080/actuator/health
-
-      - name: Start Frontend (Dev)
+      - name: Start Frontend (Dev Mode)
         run: |
           npm start --prefix InsightsFrontend > logs/frontend.log 2>&1 &
           echo $! > frontend.pid
-          sleep 10
+        shell: bash
+
+      - name: Check Backend Health
+        uses: jtalk/url-health-check-action@v4
+        with:
+          url: http://localhost:8080/actuator/health
+          max-attempts: 5
+          retry-delay: 5s
 
       - name: Check Frontend Health
-        run: curl --fail http://localhost:4200
+        uses: jtalk/url-health-check-action@v4
+        with:
+          url: http://localhost:4200
+          max-attempts: 5
+          retry-delay: 5s
 
       - name: Upload All Logs
         if: always()
@@ -83,3 +86,4 @@ jobs:
         run: |
           kill $(cat backend.pid) || true
           kill $(cat frontend.pid) || true
+        shell: bash
