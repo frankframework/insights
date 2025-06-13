@@ -1,21 +1,22 @@
 package org.frankframework.insights.label;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
-import org.frankframework.insights.common.helper.ReleaseIssueHelperService;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.issue.Issue;
+import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.frankframework.insights.release.ReleaseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,10 +39,10 @@ public class LabelServiceTest {
     private LabelRepository labelRepository;
 
     @Mock
-    private ReleaseIssueHelperService releaseIssueHelperService;
+    private IssueLabelRepository issueLabelRepository;
 
     @Mock
-    private IssueLabelRepository issueLabelRepository;
+    private ReleaseService releaseService;
 
     @Mock
     private GitHubRepositoryStatisticsDTO statisticsDTO;
@@ -50,7 +51,7 @@ public class LabelServiceTest {
 
     private Label labelBug;
     private Label labelFeature;
-    private IssueLabel issueLabelBug, issueLabelFeature, issueLabelChore;
+    private Label labelChore;
     private LabelDTO labelDTO1, labelDTO2;
 
     @BeforeEach
@@ -67,9 +68,9 @@ public class LabelServiceTest {
                 gitHubClient,
                 mapper,
                 labelRepository,
-                releaseIssueHelperService,
                 issueLabelRepository,
-                gitHubProperties);
+                gitHubProperties,
+                releaseService);
 
         labelBug = new Label();
         labelBug.setId("l1");
@@ -83,20 +84,11 @@ public class LabelServiceTest {
         labelFeature.setDescription("Feature");
         labelFeature.setColor("blue");
 
-        Label labelChore = new Label();
+        labelChore = new Label();
         labelChore.setId("l3");
         labelChore.setName("chore");
         labelChore.setDescription("Chore");
         labelChore.setColor("yellow");
-
-        issueLabelBug = new IssueLabel();
-        issueLabelBug.setLabel(labelBug);
-
-        issueLabelFeature = new IssueLabel();
-        issueLabelFeature.setLabel(labelFeature);
-
-        issueLabelChore = new IssueLabel();
-        issueLabelChore.setLabel(labelChore);
 
         labelDTO1 = new LabelDTO("l1", "bug", "Of type bug", "red");
         labelDTO2 = new LabelDTO("l2", "feature", "Feature", "blue");
@@ -146,15 +138,12 @@ public class LabelServiceTest {
     @Test
     public void getHighlightsByReleaseId_shouldReturnOnlyPriorityLabels()
             throws ReleaseNotFoundException, MappingException {
-        Issue issueA = new Issue();
-        issueA.setId("iA");
-        Issue issueB = new Issue();
-        issueB.setId("iB");
-        Set<Issue> issues = Set.of(issueA, issueB);
+        Release release = new Release();
+        release.setId("r1");
+        when(releaseService.checkIfReleaseExists("r1")).thenReturn(release);
 
-        when(releaseIssueHelperService.getIssuesByReleaseId("r1")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelBug, issueLabelFeature));
-        when(issueLabelRepository.findAllByIssue_Id("iB")).thenReturn(Set.of(issueLabelFeature, issueLabelChore));
+        List<Label> labels = List.of(labelBug, labelFeature);
+        when(labelRepository.findLabelsByReleaseId("r1")).thenReturn(labels);
 
         Set<LabelResponse> responses = Set.of(new LabelResponse("l1", "bug", "Of type bug", "red"));
         when(mapper.toDTO(anySet(), eq(LabelResponse.class))).thenReturn(responses);
@@ -169,23 +158,27 @@ public class LabelServiceTest {
     @Test
     public void getHighlightsByReleaseId_shouldReturnEmptyIfNoPriorityLabels()
             throws ReleaseNotFoundException, MappingException {
-        Issue issueA = new Issue();
-        issueA.setId("iA");
-        Set<Issue> issues = Set.of(issueA);
+        Release release = new Release();
+        release.setId("r2");
+        when(releaseService.checkIfReleaseExists("r2")).thenReturn(release);
 
-        when(releaseIssueHelperService.getIssuesByReleaseId("r1")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelFeature, issueLabelChore));
+        List<Label> labels = List.of(labelFeature, labelChore);
+        when(labelRepository.findLabelsByReleaseId("r2")).thenReturn(labels);
+
         when(mapper.toDTO(anySet(), eq(LabelResponse.class))).thenReturn(Collections.emptySet());
 
-        Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r1");
-
+        Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r2");
         assertTrue(result.isEmpty());
     }
 
     @Test
-    public void getHighlightsByReleaseId_shouldReturnEmptyIfNoIssuesOrLabels()
+    public void getHighlightsByReleaseId_shouldReturnEmptyIfNoLabels()
             throws ReleaseNotFoundException, MappingException {
-        when(releaseIssueHelperService.getIssuesByReleaseId(anyString())).thenReturn(Collections.emptySet());
+        Release release = new Release();
+        release.setId("relX");
+        when(releaseService.checkIfReleaseExists("relX")).thenReturn(release);
+
+        when(labelRepository.findLabelsByReleaseId("relX")).thenReturn(Collections.emptyList());
         when(mapper.toDTO(new LinkedHashSet<>(), LabelResponse.class)).thenReturn(Collections.emptySet());
 
         Set<LabelResponse> result = labelService.getHighlightsByReleaseId("relX");
@@ -194,19 +187,19 @@ public class LabelServiceTest {
 
     @Test
     public void getHighlightsByReleaseId_shouldThrowIfReleaseNotFound() throws ReleaseNotFoundException {
-        when(releaseIssueHelperService.getIssuesByReleaseId("notfound"))
+        when(releaseService.checkIfReleaseExists("notfound"))
                 .thenThrow(new ReleaseNotFoundException("Release not found", null));
         assertThrows(ReleaseNotFoundException.class, () -> labelService.getHighlightsByReleaseId("notfound"));
     }
 
     @Test
     public void getHighlightsByReleaseId_shouldThrowIfMappingFails() throws Exception {
-        Issue issueA = new Issue();
-        issueA.setId("iA");
-        Set<Issue> issues = Set.of(issueA);
+        Release release = new Release();
+        release.setId("failMap");
+        when(releaseService.checkIfReleaseExists("failMap")).thenReturn(release);
 
-        when(releaseIssueHelperService.getIssuesByReleaseId("failMap")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelBug));
+        List<Label> labels = List.of(labelBug);
+        when(labelRepository.findLabelsByReleaseId("failMap")).thenReturn(labels);
         when(mapper.toDTO(anySet(), eq(LabelResponse.class))).thenThrow(new MappingException("Mapping failed", null));
 
         assertThrows(MappingException.class, () -> labelService.getHighlightsByReleaseId("failMap"));
@@ -214,7 +207,13 @@ public class LabelServiceTest {
 
     @Test
     public void getLabelsByIssueId_shouldReturnLabels() {
-        when(issueLabelRepository.findAllByIssue_Id("i1")).thenReturn(Set.of(issueLabelBug, issueLabelFeature));
+        IssueLabel il1 = new IssueLabel();
+        il1.setLabel(labelFeature);
+
+        IssueLabel il2 = new IssueLabel();
+        il2.setLabel(labelBug);
+
+        when(issueLabelRepository.findAllByIssue_Id("i1")).thenReturn(Set.of(il1, il2));
         Set<Label> result = labelService.getLabelsByIssueId("i1");
         assertEquals(2, result.size());
         assertTrue(result.contains(labelBug));
@@ -248,22 +247,25 @@ public class LabelServiceTest {
     @Test
     public void getHighlightsByReleaseId_shouldIgnoreLabelsInIgnoredColors()
             throws ReleaseNotFoundException, MappingException {
-        Issue issueA = new Issue();
-        issueA.setId("iA");
-        Set<Issue> issues = Set.of(issueA);
+        Release release = new Release();
+        release.setId("r3");
+        when(releaseService.checkIfReleaseExists("r3")).thenReturn(release);
 
-        when(releaseIssueHelperService.getIssuesByReleaseId("r2")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(Set.of(issueLabelChore));
+        List<Label> labels = List.of(labelChore);
+        when(labelRepository.findLabelsByReleaseId("r3")).thenReturn(labels);
         when(mapper.toDTO(new LinkedHashSet<>(), LabelResponse.class)).thenReturn(Collections.emptySet());
 
-        Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r2");
-
+        Set<LabelResponse> result = labelService.getHighlightsByReleaseId("r3");
         assertTrue(result.isEmpty());
     }
 
     @Test
     public void getHighlightsByReleaseId_shouldLimitToMaxHighlightedLabels()
-            throws GitHubClientException, ReleaseNotFoundException, MappingException {
+            throws ReleaseNotFoundException, MappingException {
+        Release release = new Release();
+        release.setId("max");
+        when(releaseService.checkIfReleaseExists("max")).thenReturn(release);
+
         List<Label> manyPriorityLabels = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             Label l = new Label();
@@ -273,19 +275,7 @@ public class LabelServiceTest {
             l.setColor("red");
             manyPriorityLabels.add(l);
         }
-        Set<Issue> issues = Set.of(new Issue() {
-            {
-                setId("iA");
-            }
-        });
-        Set<IssueLabel> issueLabels = new HashSet<>();
-        for (Label l : manyPriorityLabels) {
-            IssueLabel il = new IssueLabel();
-            il.setLabel(l);
-            issueLabels.add(il);
-        }
-        when(releaseIssueHelperService.getIssuesByReleaseId("max")).thenReturn(issues);
-        when(issueLabelRepository.findAllByIssue_Id("iA")).thenReturn(issueLabels);
+        when(labelRepository.findLabelsByReleaseId("max")).thenReturn(manyPriorityLabels);
 
         Set<Label> expectedFiltered = new LinkedHashSet<>(manyPriorityLabels.subList(0, 15));
         Set<LabelResponse> responses = new HashSet<>();

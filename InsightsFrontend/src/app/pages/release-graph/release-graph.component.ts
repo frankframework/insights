@@ -9,13 +9,14 @@ import { AsyncPipe } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+import { ReleaseCatalogusComponent } from '../../components/release-catalogus/release-catalogus.component';
 
 @Component({
   selector: 'app-release-graph',
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe],
+  imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe, ReleaseCatalogusComponent],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public static readonly GITHUB_MASTER_BRANCH: string = 'master';

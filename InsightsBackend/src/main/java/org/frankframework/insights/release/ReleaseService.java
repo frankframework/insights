@@ -280,21 +280,26 @@ public class ReleaseService {
      * @return A set of ReleaseResponse DTOs representing all releases.
      */
     public Set<ReleaseResponse> getAllReleases() {
-        return releaseRepository.findAll().stream()
+        Set<ReleaseResponse> releaseResponses = releaseRepository.findAll().stream()
                 .map(r -> mapper.toDTO(r, ReleaseResponse.class))
                 .collect(Collectors.toSet());
-    }
+
+		log.info("Successfully fetched and mapped {} releases from the database", releaseResponses.size());
+		return releaseResponses;
+	}
 
     /**
-     * Checks if a release exists in the database by its ID.
-     *
-     * @param releaseId The ID of the release to check.
-     * @return The Release entity if found.
-     * @throws ReleaseNotFoundException if the release is not found.
+     * Checks if a release with the given ID exists in the database.
+     * @param releaseId the ID of the release to check
+     * @return the Release object if it exists
+     * @throws ReleaseNotFoundException if the release does not exist
      */
     public Release checkIfReleaseExists(String releaseId) throws ReleaseNotFoundException {
-        return releaseRepository
-                .findById(releaseId)
-                .orElseThrow(() -> new ReleaseNotFoundException("Release was not found.", null));
+        Optional<Release> release = releaseRepository.findById(releaseId);
+        if (release.isEmpty()) {
+            throw new ReleaseNotFoundException("Release with ID [" + releaseId + "] not found.", null);
+        }
+
+        return release.get();
     }
 }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
@@ -51,7 +53,7 @@ public class Issue {
 
     private Double points;
 
-    @ManyToOne
+    @OneToMany(cascade = CascadeType.MERGE)
     @JsonIgnore
-    private Issue parentIssue;
+    private Set<Issue> subIssues = new HashSet<>();
 }
