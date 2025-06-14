@@ -33,14 +33,14 @@ jobs:
             -e SPRING_PROFILES_ACTIVE=local \
             -e GITHUB_SECRET=${{ secrets.GH_TOKEN }} \
             -p 8080:8080 \
-            ghcr.io/${{ github.repository }}-backend
+            ghcr.io/${{ github.repository }}-backend:master
 
       - name: Run Frontend Container
         run: |
           docker run -d \
             --name frontend \
             -p 80:80 \
-            ghcr.io/${{ github.repository }}-frontend
+            ghcr.io/${{ github.repository }}-frontend:master
 
       - name: Wait for services to startup
         run: sleep 15
