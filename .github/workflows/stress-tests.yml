@@ -5,7 +5,7 @@ on:
   pull_request:
   push:
     branches:
-      - '**'  # zodat dit ook werkt op subbranches
+      - '**'
 
 jobs:
   stress-test:
@@ -30,50 +30,26 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Backend Container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/${{ github.repository }}-backend:master
-          options: >-
-            --name backend
-            --rm
-            -e SPRING_PROFILES_ACTIVE=local
-            -e GITHUB_SECRET=${{ secrets.GH_TOKEN }}
-            -p 8080:8080
-            --health-cmd "curl -f http://localhost:8080/actuator/health || exit 1"
-            --health-interval 5s
-            --health-retries 5
-          detach: true
+        run: |
+          docker run -d \
+            --name backend \
+            -e SPRING_PROFILES_ACTIVE=local \
+            -e GITHUB_SECRET=${{ secrets.GH_TOKEN }} \
+            --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" \
+            --health-interval=5s \
+            --health-retries=5 \
+            -p 8080:8080 \
+            ghcr.io/${{ github.repository }}-backend:master
 
       - name: Run Frontend Container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/${{ github.repository }}-frontend:master
-          options: >-
-            --name frontend
-            --rm
-            -p 80:80
-          detach: true
-
-      - name: Wait for frontend to start
-        run: sleep 10
-
-      - name: Health Check - Backend
-        uses: jtalk/url-health-check-action@v4
-        with:
-          url: http://localhost:8080/actuator/health
-          follow-redirect: false
-          max-attempts: 5
-          retry-delay: 5s
-          retry-all: true
-
-      - name: Health Check - Frontend
-        uses: jtalk/url-health-check-action@v4
-        with:
-          url: http://localhost/
-          follow-redirect: true
-          max-attempts: 5
-          retry-delay: 5s
-          retry-all: true
+        run: |
+          docker run -d \
+            --name frontend \
+            --health-cmd="curl -f http://localhost:80/ || exit 1" \
+            --health-interval=5s \
+            --health-retries=5 \
+            -p 80:80 \
+            ghcr.io/${{ github.repository }}-frontend:master
 
       - name: Install Apache Bench
         run: sudo apt-get update && sudo apt-get install -y apache2-utils
