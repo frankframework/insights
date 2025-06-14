@@ -55,10 +55,10 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y apache2-utils
 
       - name: Stress test Backend (Apache Bench)
-        run: ab -n 1000 -c 50 http://localhost:8080/api/releases > backend.log || true
+        run: ab -r -n 1000 -c 50 http://localhost:8080/api/releases > backend.log || true
 
       - name: Stress test Frontend (Apache Bench)
-        run: ab -n 1000 -c 50 http://localhost/ > frontend.log || true
+        run: ab -r -n 1000 -c 50 http://localhost/ > frontend.log || true
 
       - name: Upload Apache Bench logs
         uses: actions/upload-artifact@v4
