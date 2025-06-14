@@ -26,6 +26,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create Docker Network
+        run: docker network create insights-net
+
       - name: Run Backend Container
         uses: addnab/docker-run-action@v3
         with:
@@ -35,7 +38,7 @@ jobs:
             -e SPRING_PROFILES_ACTIVE=local
             -e GITHUB_SECRET=${{ secrets.GH_TOKEN }}
             -p 8080:8080
-            --network host
+            --network insights-net
           detach: true
 
       - name: Run Frontend Container
@@ -45,7 +48,7 @@ jobs:
           options: >-
             --name frontend
             -p 80:80
-            --network host
+            --network insights-net
           detach: true
 
       - name: Install Apache Bench
