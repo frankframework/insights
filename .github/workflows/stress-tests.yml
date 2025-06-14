@@ -45,6 +45,24 @@ jobs:
       - name: Wait for services to startup
         run: sleep 15
 
+      - name: Check Backend Health
+        uses: jtalk/url-health-check-action@v4
+        with:
+          url: http://localhost:8080/actuator/health
+          follow-redirect: false
+          max-attempts: 5
+          retry-delay: 5s
+          retry-all: true
+
+      - name: Check Frontend Health
+        uses: jtalk/url-health-check-action@v4
+        with:
+          url: http://localhost/
+          follow-redirect: false
+          max-attempts: 5
+          retry-delay: 5s
+          retry-all: true
+
       - name: Install Apache Bench
         run: sudo apt-get update && sudo apt-get install -y apache2-utils
 
