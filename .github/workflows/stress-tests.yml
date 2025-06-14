@@ -26,45 +26,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Docker Network
-        run: docker network create insights-net
-
       - name: Run Backend Container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/${{ github.repository }}-backend
-          options: >-
-            --name backend
-            -e SPRING_PROFILES_ACTIVE=local
-            -e GITHUB_SECRET=${{ secrets.GH_TOKEN }}
-            -p 8080:8080
-            --network insights-net
-          detach: true
+        run: |
+          docker run -d \
+            --name backend \
+            -e SPRING_PROFILES_ACTIVE=local \
+            -e GITHUB_SECRET=${{ secrets.GH_TOKEN }} \
+            -p 8080:8080 \
+            ghcr.io/${{ github.repository }}-backend
 
       - name: Run Frontend Container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/${{ github.repository }}-frontend
-          options: >-
-            --name frontend
-            -p 80:80
-            --network insights-net
-          detach: true
+        run: |
+          docker run -d \
+            --name frontend \
+            -p 80:80 \
+            ghcr.io/${{ github.repository }}-frontend
+
+      - name: Wait for services to startup
+        run: sleep 15
 
       - name: Install Apache Bench
         run: sudo apt-get update && sudo apt-get install -y apache2-utils
 
-      - name: Wait for services to startup
-        run: | 
-          sleep(10)
-
       - name: Stress test Backend (Apache Bench)
-        run: |
-          ab -n 1000 -c 50 http://localhost:8080/api/releases > backend.log || true
+        run: ab -n 1000 -c 50 http://localhost:8080/api/releases > backend.log || true
 
       - name: Stress test Frontend (Apache Bench)
-        run: |
-          ab -n 1000 -c 50 http://localhost/ > frontend.log || true
+        run: ab -n 1000 -c 50 http://localhost/ > frontend.log || true
 
       - name: Upload Apache Bench logs
         uses: actions/upload-artifact@v4
