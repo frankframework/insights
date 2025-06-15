@@ -6,12 +6,11 @@ export interface Release {
   id: string;
   tagName: string;
   name: string;
-  publishedAt: Date;
-  commitSha: string;
+  publishedAt: Date | string;
   branch: Branch;
 }
 
-interface Branch {
+export interface Branch {
   id: string;
   name: string;
 }
