@@ -19,7 +19,6 @@ import { ReleaseCatalogusComponent } from '../../components/release-catalogus/re
   imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe, ReleaseCatalogusComponent],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
-
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
   public _selectedRelease = new BehaviorSubject<Release | null>(null);

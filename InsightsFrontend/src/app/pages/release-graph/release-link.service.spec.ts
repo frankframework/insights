@@ -42,6 +42,7 @@ describe('ReleaseLinkService', () => {
   describe('createLinks() - Edge Cases', () => {
     it('should return an empty array if the input structuredGroups is empty', () => {
       const links = service.createLinks([]);
+
       expect(links).toEqual([]);
     });
 
@@ -60,11 +61,13 @@ describe('ReleaseLinkService', () => {
       // Scenario 1: No master branch map
       const noMasterGroups = [new Map([['release/9.0', [subNode9_1]]])];
       const links1 = service.createLinks(noMasterGroups);
+
       expect(links1).toEqual([]);
 
       // Scenario 2: Master branch exists but has no nodes
       const emptyMasterGroups = [new Map([[MASTER_BRANCH_NAME, []]])];
       const links2 = service.createLinks(emptyMasterGroups);
+
       expect(links2).toEqual([]);
     });
 
@@ -72,6 +75,7 @@ describe('ReleaseLinkService', () => {
       const masterNodes = [masterNode1, masterNode2];
       const subGroups = [new Map([['empty-branch', []]])];
       const links = (service as any).createSubBranchLinks(subGroups, masterNodes);
+
       expect(links.length).toBe(0);
     });
   });
@@ -91,6 +95,7 @@ describe('ReleaseLinkService', () => {
 
     it('should create all expected links for a full graph structure', () => {
       const links = service.createLinks(structuredGroups);
+
       expect(links.length).toBe(6);
     });
 
@@ -119,6 +124,7 @@ describe('ReleaseLinkService', () => {
       const links = service.createLinks(groups);
 
       const missingAnchorLink = links.find(link => link.target === 'sub-9.0-1');
+
       expect(missingAnchorLink).toBeUndefined();
     });
   });
@@ -127,17 +133,20 @@ describe('ReleaseLinkService', () => {
     it('should return an empty array for a branch with 0 nodes', () => {
       // Accessing private method for dedicated unit test
       const links = (service as any).createIntraBranchLinks([]);
+
       expect(links).toEqual([]);
     });
 
     it('should return an empty array for a branch with only 1 node', () => {
       const links = (service as any).createIntraBranchLinks([masterNode1]);
+
       expect(links).toEqual([]);
     });
 
     it('should create N-1 links for a branch with N nodes', () => {
       const nodes = [masterNode1, masterNode2, masterNode3];
       const links = (service as any).createIntraBranchLinks(nodes);
+
       expect(links.length).toBe(2);
       expect(links[0].id).toBe('master-1-master-2');
       expect(links[1].id).toBe('master-2-master-3');

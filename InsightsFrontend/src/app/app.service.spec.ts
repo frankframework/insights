@@ -40,11 +40,12 @@ describe('AppService', () => {
         expect(data).toEqual(mockData);
       });
 
-      const req = httpTestingController.expectOne(testUrl);
-      expect(req.request.method).toBe('GET');
-      expect(req.request.params.keys().length).toBe(0);
+      const request = httpTestingController.expectOne(testUrl);
 
-      req.flush(mockData);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.keys().length).toBe(0);
+
+      request.flush(mockData);
     });
 
     it('should make a GET request with correct string and number parameters', () => {
@@ -52,13 +53,14 @@ describe('AppService', () => {
 
       service.get(testUrl, parameters).subscribe();
 
-      const req = httpTestingController.expectOne(r => r.url === testUrl);
-      expect(req.request.method).toBe('GET');
+      const request = httpTestingController.expectOne(r => r.url === testUrl);
 
-      expect(req.request.params.get('name')).toBe('frank');
-      expect(req.request.params.get('version')).toBe('8');
+      expect(request.request.method).toBe('GET');
 
-      req.flush(mockData);
+      expect(request.request.params.get('name')).toBe('frank');
+      expect(request.request.params.get('version')).toBe('8');
+
+      request.flush(mockData);
     });
 
     it('should filter out null, undefined, and empty string parameters', () => {
@@ -71,15 +73,15 @@ describe('AppService', () => {
 
       service.get(testUrl, parameters as any).subscribe();
 
-      const req = httpTestingController.expectOne(r => r.url === testUrl);
+      const request = httpTestingController.expectOne(r => r.url === testUrl);
 
-      expect(req.request.params.keys().length).toBe(1);
-      expect(req.request.params.has('name')).toBe(true);
-      expect(req.request.params.has('status')).toBe(false);
-      expect(req.request.params.has('branch')).toBe(false);
-      expect(req.request.params.has('tag')).toBe(false);
+      expect(request.request.params.keys().length).toBe(1);
+      expect(request.request.params.has('name')).toBe(true);
+      expect(request.request.params.has('status')).toBe(false);
+      expect(request.request.params.has('branch')).toBe(false);
+      expect(request.request.params.has('tag')).toBe(false);
 
-      req.flush(mockData);
+      request.flush(mockData);
     });
 
     it('should convert a complex object parameter to "[object Object]"', () => {
@@ -87,10 +89,11 @@ describe('AppService', () => {
 
       service.get(testUrl, parameters).subscribe();
 
-      const req = httpTestingController.expectOne(r => r.url === testUrl);
-      expect(req.request.params.get('time')).toBe('[object Object]');
+      const request = httpTestingController.expectOne(r => r.url === testUrl);
 
-      req.flush(mockData);
+      expect(request.request.params.get('time')).toBe('[object Object]');
+
+      request.flush(mockData);
     });
   });
 
@@ -104,18 +107,21 @@ describe('AppService', () => {
     it('should correctly construct an API URL from the environment', () => {
       const endpoint = 'releases';
       const expectedUrl = `${actualBaseUrl}/releases`;
+
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });
 
     it('should construct a URL even if the endpoint is empty', () => {
       const endpoint = '';
       const expectedUrl = `${actualBaseUrl}/`;
+
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });
 
     it('should create a double slash if the endpoint starts with a slash (current behavior)', () => {
       const endpoint = '/users';
       const expectedUrl = `${actualBaseUrl}//users`;
+
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });
   });
@@ -123,26 +129,31 @@ describe('AppService', () => {
   describe('isValidISODate()', () => {
     it('should return true for a valid ISO 8601 date string with time', () => {
       const validDate = '2025-06-15T16:59:59';
+
       expect(service.isValidISODate(validDate)).toBe(true);
     });
 
     it('should return true for a valid ISO 8601 date string with Z-suffix', () => {
       const validDate = '2025-06-15T16:59:59Z';
+
       expect(service.isValidISODate(validDate)).toBe(true);
     });
 
     it('should return false for a date string without the "T" separator', () => {
       const invalidDate = '2025-06-15 16:59:59';
+
       expect(service.isValidISODate(invalidDate)).toBe(false);
     });
 
     it('should return false for a date-only string', () => {
       const invalidDate = '2025-06-15';
+
       expect(service.isValidISODate(invalidDate)).toBe(false);
     });
 
     it('should return false for a non-standard date format', () => {
       const invalidDate = '15-06-2025';
+
       expect(service.isValidISODate(invalidDate)).toBe(false);
     });
 

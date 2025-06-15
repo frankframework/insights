@@ -158,6 +158,7 @@ describe('ReleaseNodeService', () => {
     it('should sort sub-branches by version number (descending), not by date', () => {
       const positionedMap = service.calculateReleaseCoordinates(structuredData);
       const branchOrder = [...positionedMap.keys()].filter((b) => b !== MASTER_BRANCH_NAME);
+
       expect(branchOrder).toEqual(['release/9.0', 'release/8.4']);
     });
 

@@ -73,6 +73,11 @@ export default [
         afterEach: 'readonly',
         jasmine: 'readonly',
         fail: 'readonly',
+        spyOn: 'readonly',
+        spyOnProperty: 'readonly',
+        document: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
       },
     },
     plugins: {
@@ -131,6 +136,7 @@ export default [
 		},
 		rules: {
 			...unicorn.configs.recommended?.rules,
+      'unicorn/no-empty-file': 'warn',
 			'unicorn/prevent-abbreviations': 'warn',
 			'unicorn/no-array-reduce': 'off',
 			'unicorn/prefer-ternary': 'warn',
