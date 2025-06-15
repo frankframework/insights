@@ -1,7 +1,6 @@
 services:
   frontend:
     build: ./InsightsFrontend
-    # image: ghcr.io/frankframework/insights:${VERSION:-frontend}
     restart: always
     volumes:
       - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
@@ -13,19 +12,28 @@ services:
       - "80:80"
     container_name: frontend
 
+  dataloader:
+    image: postgres:17
+    depends_on:
+      - backend
+    networks:
+      - FFInsightsNetwork
+    volumes:
+      - ./data-e2e.sql:/data-e2e.sql
+    entrypoint: >
+      sh -c "
+        sleep 30;
+        psql -h db -U postgres -d insights -f /data-e2e.sql
+      "
+    environment:
+      PGPASSWORD: postgres
+
   backend:
     build: ./InsightsBackend
-    # image: ghcr.io/frankframework/insights:${VERSION:-backend}
     restart: always
     environment:
-      SPRING_PROFILES_ACTIVE: production
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_NAME: insights
-      DATABASE_USERNAME: postgres
-      DATABASE_PASSWORD: postgres
-      GITHUB_API_SECRET: dummytoken
-      GITHUB_PROJECT_ID: projectId
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/insights
     networks:
       - FFInsightsNetwork
     depends_on:

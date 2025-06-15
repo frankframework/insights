@@ -11,66 +11,65 @@ export interface ReleaseLink {
 export class ReleaseLinkService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
 
-  createLinks(sortedGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
-    if (sortedGroups.length === 0) return [];
+  /**
+   * Creëert alle links voor de graaf: zowel binnen branches als tussen de master en sub-branches.
+   */
+  createLinks(structuredGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
+    if (structuredGroups.length === 0) return [];
 
-    const masterBranch = ReleaseLinkService.GITHUB_MASTER_BRANCH;
-    const masterNodes = sortedGroups[0].get(masterBranch) ?? [];
+    const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
 
     return [
-      ...this.createReleaseNodeLinks(masterNodes),
-      ...this.createSubBranchLinks(sortedGroups.slice(1), masterNodes),
+      ...this.createIntraBranchLinks(masterNodes),
+      ...this.createSubBranchLinks(structuredGroups.slice(1), masterNodes),
     ];
   }
 
+  /**
+   * Creëert links voor alle sub-branches, inclusief de cruciale link van de master-branch naar de sub-branch.
+   */
   private createSubBranchLinks(subGroups: Map<string, ReleaseNode[]>[], masterNodes: ReleaseNode[]): ReleaseLink[] {
-    const sortedSubGroups = this.sortSubGroupsByLatestRelease(subGroups);
     const links: ReleaseLink[] = [];
 
-    for (const subGroup of sortedSubGroups) {
-      const [branch, subNodes] = [...subGroup.entries()][0];
+    for (const subGroup of subGroups) {
+      const [branchName, subNodes] = [...subGroup.entries()][0];
       if (subNodes.length === 0) continue;
 
-      const syntheticLink = this.createSyntheticLinkIfExists(branch, subNodes[0], masterNodes);
-      if (syntheticLink) {
-        links.push(syntheticLink);
+      const anchorLink = this.createAnchorLink(branchName, subNodes[0], masterNodes);
+      if (anchorLink) {
+        links.push(anchorLink);
       }
 
-      links.push(...this.createReleaseNodeLinks(subNodes));
+      links.push(...this.createIntraBranchLinks(subNodes));
     }
 
     return links;
   }
 
-  private sortSubGroupsByLatestRelease(groups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]>[] {
-    return groups.sort((a, b) => {
-      const [, aNodes] = [...a.entries()][0];
-      const [, bNodes] = [...b.entries()][0];
-      return bNodes[0].publishedAt.getTime() - aNodes[0].publishedAt.getTime();
-    });
-  }
-
-  private createSyntheticLinkIfExists(
-    branch: string,
-    firstNode: ReleaseNode,
+  /**
+   * AANGEPAST: Deze functie vervangt de oude 'createSyntheticLinkIfExists'.
+   * Het zoekt de juiste anker-node op de master-branch (die we daarheen hebben verplaatst)
+   * en creëert een link naar de eerste node van de sub-branch.
+   */
+  private createAnchorLink(
+    branchName: string,
+    firstSubNode: ReleaseNode,
     masterNodes: ReleaseNode[],
   ): ReleaseLink | null {
-    const versionMatch = firstNode.label.match(/^v?(\d+)\.(\d+)/);
-    if (!versionMatch) return null;
+    const anchorNodeOnMaster = masterNodes.find((node) => node.originalBranch === branchName);
 
-    const syntheticId = `synthetic-${branch}-${firstNode.id}`;
-    const syntheticNode = masterNodes.find((n) => n.id === syntheticId);
+    if (!anchorNodeOnMaster) {
+      return null;
+    }
 
-    if (!syntheticNode) return null;
-
-    return {
-      id: `${syntheticNode.id}-${firstNode.id}`,
-      source: syntheticNode.id,
-      target: firstNode.id,
-    };
+    return this.buildLink(anchorNodeOnMaster, firstSubNode);
   }
 
-  private createReleaseNodeLinks(nodes: ReleaseNode[]): ReleaseLink[] {
+  /**
+   * Creëert de opeenvolgende links tussen nodes BINNEN een enkele branch.
+   * (Voorheen 'createReleaseNodeLinks')
+   */
+  private createIntraBranchLinks(nodes: ReleaseNode[]): ReleaseLink[] {
     const links: ReleaseLink[] = [];
     for (let index = 0; index < nodes.length - 1; index++) {
       links.push(this.buildLink(nodes[index], nodes[index + 1]));
@@ -78,6 +77,9 @@ export class ReleaseLinkService {
     return links;
   }
 
+  /**
+   * Een simpele helper-functie om een link-object te bouwen.
+   */
   private buildLink(source: ReleaseNode, target: ReleaseNode): ReleaseLink {
     return {
       id: `${source.id}-${target.id}`,

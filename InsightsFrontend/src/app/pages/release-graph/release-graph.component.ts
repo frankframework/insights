@@ -90,7 +90,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return [
       `M ${x1},${y1 + releaseNodeRadiusWithMargin}`,
       `L ${x1},${cornerY}`,
-      `A ${releaseNodeRadiusWithMargin},${releaseNodeRadiusWithMargin} 0 0,${horizontalSweep} ${x1 + (horizontalSweep ? -releaseNodeRadiusWithMargin : releaseNodeRadiusWithMargin)},${y2}`,
+      `A ${releaseNodeRadiusWithMargin},${releaseNodeRadiusWithMargin} 0 0,${horizontalSweep} ${
+        x1 + (horizontalSweep ? -releaseNodeRadiusWithMargin : releaseNodeRadiusWithMargin)
+      },${y2}`,
       `L ${x2 - releaseNodeRadiusWithMargin},${y2}`,
     ].join(' ');
   }
@@ -114,10 +116,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
           if (releases.length === 0) {
             this.toastService.error('No releases found.');
           }
-
           this.checkReleaseGraphLoading();
         }),
-        map((releases) => this.nodeService.sortReleases(releases)),
+        map((releases) => this.nodeService.structureReleaseData(releases)),
         tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
         catchError((error) => {
           console.error('Failed to load releases:', error);
@@ -150,29 +151,23 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const xs = nodes.map((n) => n.position.x);
     const ys = nodes.map((n) => n.position.y);
-    const minX = Math.min(...xs),
-      maxX = Math.max(...xs);
-    const minY = Math.min(...ys),
-      maxY = Math.max(...ys);
-    const graphW = maxX - minX;
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
     const graphH = maxY - minY;
 
-    this.scale = (H * 0.5) / graphH;
-    this.translateY = (H * 0.15) / this.scale - minY;
+    const contentHeightProportion = 0.65;
+    const targetHeight = H * contentHeightProportion;
+    this.scale = targetHeight / Math.max(graphH, 1);
+    const scaledGraphH = graphH * this.scale;
+    const topPadding = (H - scaledGraphH) / 2;
+    this.translateY = -minY * this.scale + topPadding;
 
-    const graph85X = minX + 0.8 * graphW;
+    this.maxTranslateX = -minX * this.scale + W * 0.25;
+    this.minTranslateX = W - maxX * this.scale - W * 0.5;
 
-    const centerGraphX = (W * 0.8) / this.scale;
-
-    const padPx = W * 0.25;
-    const padGraph = padPx / this.scale;
-
-    const initialTx = centerGraphX - graph85X;
-
-    this.maxTranslateX = padGraph / 2 - minX;
-    this.minTranslateX = W / this.scale - maxX * 1.25;
-
-    this.translateX = Math.min(this.maxTranslateX, Math.max(this.minTranslateX, initialTx));
+    this.translateX = this.minTranslateX + W * 0.3;
 
     return `0 0 ${W} ${H}`;
   }
@@ -183,7 +178,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
       setTimeout(() => {
         this.centerGraph();
-      }, 10);
+      }, 50);
     }
   }
 }
