@@ -16,7 +16,7 @@ export interface ReleaseNode {
   publishedAt: Date;
 }
 
-const SupportColors = {
+export const SupportColors = {
   FULL: '#30A102',
   SECURITY: '#EF9302',
   NONE: '#FD230E',

@@ -8,10 +8,11 @@ import unicorn from 'eslint-plugin-unicorn';
 import sonarjs from 'eslint-plugin-sonarjs';
 import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import jasminePlugin from 'eslint-plugin-jasmine';
 
 export default [
 	{
-		ignores: ['.cache/', '.git/', '.github/', 'node_modules/'],
+		ignores: ['.cache/', '.git/', '.github/', 'node_modules/', 'dist/'],
 	},
 
 	{
@@ -20,10 +21,12 @@ export default [
 
 	{
 		files: ['**/*.ts'],
+    ignores: ['**/*.spec.ts'],
 		languageOptions: {
 			parser: typescriptParser,
 			parserOptions: {
-				project: ['./tsconfig.json', './tsconfig.app.json', './tsconfig.spec.json'],
+				project: ['./tsconfig.json', './tsconfig.app.json'],
+        createDefaultProgram: true,
 			},
 		},
 		plugins: {
@@ -54,6 +57,36 @@ export default [
 			'sonarjs/no-duplicate-string': 'error',
 		},
 	},
+
+  {
+    files: ['**/*.spec.ts'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        project: ['./tsconfig.spec.json'],
+      },
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        jasmine: 'readonly',
+        fail: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+      prettier: prettierPlugin,
+      jasmine: jasminePlugin,
+    },
+    rules: {
+      ...jasminePlugin.configs.recommended.rules,
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'sonarjs/no-duplicate-string': 'off',
+    },
+  },
+
 	{
 		files: ['**/*.html'],
 		languageOptions: {

@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test",
+    "test:unit": "ng karma",
+    "test:e2e": "ng cypress",
     "lint": "ng lint"
   },
   "private": true,
@@ -42,6 +43,7 @@
     "@typescript-eslint/parser": "^8.32.1",
     "cypress": "^14.4.1",
     "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-jasmine": "^4.2.2",
     "eslint-plugin-prettier": "^5.4.0",
     "eslint-plugin-sonarjs": "^3.0.2",
     "eslint-plugin-unicorn": "^59.0.1",

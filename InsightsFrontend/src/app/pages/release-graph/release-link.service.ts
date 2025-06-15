@@ -14,7 +14,7 @@ export class ReleaseLinkService {
   /**
    * Creëert alle links voor de graaf: zowel binnen branches als tussen de master en sub-branches.
    */
-  createLinks(structuredGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
+  public createLinks(structuredGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
     if (structuredGroups.length === 0) return [];
 
     const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];

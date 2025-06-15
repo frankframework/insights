@@ -19,7 +19,6 @@ import { ReleaseCatalogusComponent } from '../../components/release-catalogus/re
   imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe, ReleaseCatalogusComponent],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
-  public static readonly GITHUB_MASTER_BRANCH: string = 'master';
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 

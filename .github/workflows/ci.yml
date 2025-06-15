@@ -130,6 +130,25 @@ jobs:
         run: npm run build
         working-directory: InsightsFrontend
 
+  e2e-test:
+    name: End-to-End Testing
+    runs-on: ubuntu-latest 
+    steps:      
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies (frontend)
+        run: npm ci
+        working-directory: InsightsFrontend
+      - name: Docker Compose Up
+        run: docker compose up -d
+      - name: Wait for services to be ready
+        run: sleep 30
+      - name: Cypress Run
+        run: npm run cypress:run
+        working-directory: InsightsFrontend
+
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [backend-lint, frontend-lint, backend-test, frontend-test]
