@@ -30,10 +30,10 @@ jobs:
         run: sleep 30
 
       - name: Stress test Backend (Apache Bench)
-        run: ab -r -n 100 -c 5 http://localhost:8080/api/releases > backend.log || true
+        run: ab -r -n 1000 -c 50 http://localhost:8080/api/releases > backend.log || true
 
       - name: Stress test Frontend (Apache Bench)
-        run: ab -r -n 100 -c 5 http://localhost/ > frontend.log || true
+        run: ab -r -n 1000 -c 50 http://localhost/ > frontend.log || true
 
       - name: Upload Apache Bench logs
         if: always()
