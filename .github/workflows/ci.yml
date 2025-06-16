@@ -21,8 +21,14 @@ jobs:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
       - name: Lint backend
-        run: mvn clean checkstyle:check
+        run: |
+          mvn clean checkstyle:check | tee backend-lint.log
         working-directory: InsightsBackend
+      - name: Upload Backend Lint Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-lint-log
+          path: InsightsBackend/backend-lint.log
 
   frontend-lint:
     name: Frontend Lint
@@ -36,8 +42,14 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Lint frontend
-        run: npm run lint
+        run: |
+          npm run lint | tee frontend-lint.log
         working-directory: InsightsFrontend
+      - name: Upload Frontend Lint Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-lint-log
+          path: InsightsFrontend/frontend-lint.log
 
   backend-test:
     name: Backend Unit Test
@@ -73,8 +85,16 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
           SPRING_DATASOURCE_USERNAME: testuser
           SPRING_DATASOURCE_PASSWORD: testpass
-        run: mvn test --file pom.xml
+        run: |
+          mvn test --file pom.xml | tee test.log
         working-directory: InsightsBackend
+      - name: Upload Backend Test Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-logs
+          path: |
+            InsightsBackend/target/surefire-reports/
+            InsightsBackend/test.log
 
   frontend-test:
     name: Frontend Unit Test
@@ -95,8 +115,14 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Frontend Unit Tests
-        run: npm run test -- --watch=false --browsers=ChromeHeadless
+        run: |
+          npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
         working-directory: InsightsFrontend
+      - name: Upload Frontend Test Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-logs
+          path: InsightsFrontend/test.log
 
   backend-build:
     name: Backend Build
@@ -110,8 +136,14 @@ jobs:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
       - name: Build backend
-        run: mvn package -DskipTests --file pom.xml
+        run: |
+          mvn package -DskipTests --file pom.xml | tee build.log
         working-directory: InsightsBackend
+      - name: Upload Backend Build Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build-logs
+          path: InsightsBackend/build.log
 
   frontend-build:
     name: Frontend Build
@@ -127,8 +159,14 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Build frontend
-        run: npm run build
+        run: |
+          npm run build | tee build.log
         working-directory: InsightsFrontend
+      - name: Upload Frontend Build Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-logs
+          path: InsightsFrontend/build.log
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
