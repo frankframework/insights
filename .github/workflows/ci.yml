@@ -142,7 +142,7 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Docker Compose Up
-        run: docker compose up -d
+        run: docker compose up -d --build
       - name: Wait for services to be ready
         run: sleep 30
       - name: Cypress Run

@@ -62,3 +62,57 @@ INSERT INTO release (id, tag_name, name, published_at, branch_id) VALUES
 ('RE_kwDOAIg5ds4Lhg3o','v9.0.0','v9.0.0','2025-01-07T14:29:41Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
 ('RE_kwDOAIg5ds4MnUo_','v9.0.1','v9.0.1','2025-04-10T17:36:45Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
 ('RE_kwDOAIg5ds4LkXe7','release/9.0-nightly','v9.0.2-20250612.031144 (nightly)','2025-06-12T02:33:56Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w');
+
+INSERT INTO issue_type (id, name, description, color) VALUES
+('type-epic', 'Epic', 'A large body of work that can be broken down into a number of smaller stories', '9400D3'),
+('type-feature', 'Feature', 'A new feature or enhancement for the user', '4169E1'),
+('type-bug', 'Bug', 'A bug fix or correction of an error', 'B22222'),
+('type-task', 'Task', 'A technical task or chore', '778899')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO label (id, name, description, color) VALUES
+('label-perf', 'performance', 'Improvements related to performance', 'f29513'),
+('label-sec', 'security', 'Improvements related to security', 'bf251a'),
+('label-ui', 'ui/ux', 'Improvements related to user interface and experience', '0e8a16'),
+('label-ci', 'ci/cd', 'Changes related to continuous integration and deployment', '5319e7')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO issue (id, number, title, state, url, issue_type_id) VALUES
+('issue-epic-101', 101, 'Epic: Overhaul the Dashboard UI', 'CLOSED', 'http://example.com/issues/101', 'type-epic');
+
+INSERT INTO issue (id, number, title, state, url, issue_type_id) VALUES
+('issue-task-102', 102, 'Task: Create new icon set for dashboard widgets', 'CLOSED', 'http://example.com/issues/102', 'type-task'),
+('issue-feat-103', 103, 'Feature: Add real-time graphing widget', 'CLOSED', 'http://example.com/issues/103', 'type-feature'),
+('issue-bug-104', 104, 'Bug: Widget alignment is broken on Firefox', 'CLOSED', 'http://example.com/issues/104', 'type-bug');
+
+INSERT INTO issue (id, number, title, state, url, issue_type_id) VALUES
+('issue-feat-105', 105, 'Feature: Implement API key authentication for security', 'CLOSED', 'http://example.com/issues/105', 'type-feature');
+
+INSERT INTO issue_sub_issue (issue_id, sub_issue_id) VALUES
+('issue-epic-101', 'issue-task-102'),
+('issue-epic-101', 'issue-feat-103'),
+('issue-epic-101', 'issue-bug-104');
+
+INSERT INTO issue_label (issue_id, label_id) VALUES
+('issue-epic-101', 'label-ui'),
+('issue-task-102', 'label-ui'),
+('issue-feat-103', 'label-ui'),
+('issue-feat-103', 'label-perf'),
+('issue-bug-104', 'label-ui'),
+('issue-feat-105', 'label-sec');
+
+INSERT INTO pull_request (id, number, title, url, merged_at) VALUES
+('pr-501', 501, 'feat(ui): Add new graphing widget and icon set', 'http://example.com/pulls/501', '2025-04-08T10:00:00Z'),
+('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', '2025-04-09T11:00:00Z'),
+('pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', '2025-04-09T15:00:00Z');
+
+INSERT INTO pull_request_issue (pull_request_id, issue_id) VALUES
+('pr-501', 'issue-feat-103'),
+('pr-501', 'issue-task-102'),
+('pr-502', 'issue-bug-104'),
+('pr-503', 'issue-feat-105');
+
+INSERT INTO release_pull_request (release_id, pull_request_id) VALUES
+('RE_kwDOAIg5ds4MnUo_', 'pr-501'),
+('RE_kwDOAIg5ds4MnUo_', 'pr-502'),
+('RE_kwDOAIg5ds4MnUo_', 'pr-503');
