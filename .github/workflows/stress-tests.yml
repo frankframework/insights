@@ -15,8 +15,11 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: insights
-        ports:
-          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Log in to GitHub Container Registry
@@ -31,6 +34,7 @@ jobs:
           docker run -d \
             --name backend \
             -e SPRING_PROFILES_ACTIVE=local \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/insights \
             -p 8080:8080 \
             ghcr.io/${{ github.repository }}-backend:master
 
@@ -41,12 +45,27 @@ jobs:
             -p 80:80 \
             ghcr.io/${{ github.repository }}-frontend:master
 
-      - name: Install Apache Bench
-        run: sudo apt-get update && sudo apt-get install -y apache2-utils
+      - name: Install test tools
+        run: sudo apt-get update && sudo apt-get install -y apache2-utils curl
 
-      - name: Wait for Services to be running
-        run: sleep 30
+      - name: Wait for Backend to be healthy
+        run: |
+          echo "Waiting for backend..."
+          until curl --fail --silent --output /dev/null http://localhost:8080/actuator/health; do
+            echo -n '.'
+            sleep 5
+          done
+          echo "Backend is up!"
 
+      - name: Wait for Frontend to be healthy
+        run: |
+          echo "Waiting for frontend..."
+          until curl --fail --silent --output /dev/null http://localhost:80; do
+            echo -n '.'
+            sleep 5
+          done
+          echo "Frontend is up!"
+          
       - name: Stress test Backend (Apache Bench)
         run: ab -r -n 100 -c 5 http://localhost:8080/api/releases > backend.log || true
 
