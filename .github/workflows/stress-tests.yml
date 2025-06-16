@@ -31,10 +31,6 @@ jobs:
           docker run -d \
             --name backend \
             -e SPRING_PROFILES_ACTIVE=local \
-            -e GITHUB_SECRET=${{ secrets.GH_TOKEN }} \
-            --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1" \
-            --health-interval=5s \
-            --health-retries=5 \
             -p 8080:8080 \
             ghcr.io/${{ github.repository }}-backend:master
 
@@ -42,14 +38,14 @@ jobs:
         run: |
           docker run -d \
             --name frontend \
-            --health-cmd="curl -f http://localhost:80/ || exit 1" \
-            --health-interval=5s \
-            --health-retries=5 \
             -p 80:80 \
             ghcr.io/${{ github.repository }}-frontend:master
 
       - name: Install Apache Bench
         run: sudo apt-get update && sudo apt-get install -y apache2-utils
+
+      - name: Wait for Services to be running
+        run: sleep 30
 
       - name: Stress test Backend (Apache Bench)
         run: ab -r -n 100 -c 5 http://localhost:8080/api/releases > backend.log || true
