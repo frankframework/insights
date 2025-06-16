@@ -1,6 +1,8 @@
 package org.frankframework.insights.pullrequest;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
@@ -345,4 +347,58 @@ public class PullRequestServiceTest {
         pullRequestService.injectBranchPullRequests();
         verifyNoInteractions(branchPullRequestRepository);
     }
+
+	@Test
+	void injectBranchPullRequests_shouldNotSaveExistingPullRequests() throws GitHubClientException, PullRequestInjectionException {
+		when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
+		PullRequestDTO prDto = mock(PullRequestDTO.class);
+
+		when(gitHubClient.getBranchPullRequests(anyString())).thenReturn(Set.of(prDto));
+		when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(1);
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(pullRequestRepository, never()).saveAll(anySet());
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
+	}
+
+	@Test
+	void injectBranchPullRequests_shouldDoNothingIfNoBranchesExist() throws PullRequestInjectionException {
+		when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+
+		pullRequestService.injectBranchPullRequests();
+
+		verifyNoInteractions(pullRequestRepository, branchPullRequestRepository,
+				pullRequestLabelRepository, pullRequestIssueRepository, mapper,
+				milestoneService, labelService, issueService);
+	}
+
+	@Test
+	void injectBranchPullRequests_shouldSkipBranchOnMappingError() throws PullRequestInjectionException, GitHubClientException, MappingException {
+		when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
+		PullRequestDTO prDto = mock(PullRequestDTO.class);
+
+		when(gitHubClient.getBranchPullRequests(anyString())).thenReturn(Set.of(prDto));
+		when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
+		when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenThrow(new MappingException("Mapping failed", null));
+
+		pullRequestService.injectBranchPullRequests();
+
+		verify(pullRequestRepository, never()).saveAll(anySet());
+		verify(branchPullRequestRepository, never()).saveAll(anySet());
+	}
+
+	@Test
+	void injectBranchPullRequests_shouldThrowPullRequestInjectionException_whenMasterPullRequestFails() throws GitHubClientException {
+		when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
+		when(gitHubClient.getBranchPullRequests("master"))
+				.thenThrow(new RuntimeException("GitHub API failure"));
+
+		PullRequestInjectionException exception = assertThrows(
+				PullRequestInjectionException.class,
+				() -> pullRequestService.injectBranchPullRequests()
+		);
+
+		assertTrue(exception.getMessage().contains("Error while injecting GitHub pull requests of branch master"));
+	}
 }
