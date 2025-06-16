@@ -48,6 +48,44 @@ jobs:
       - name: Install test tools
         run: sudo apt-get update && sudo apt-get install -y apache2-utils curl
 
+
+
+        
+
+      - name: Wait a moment for containers to initialize
+        run: sleep 15
+
+      - name: Check status of all running containers
+        run: docker ps -a
+
+      - name: Inspect Backend Logs (CRUCIAAL VOOR DEBUGGING)
+        run: docker logs backend
+
+      - name: Wait for Backend to be healthy (met Verbose Output)
+        run: |
+          echo "Waiting for backend..."
+          # We veranderen de curl-check om meer output te geven
+          # We proberen het 10 keer (10 * 6s = 60 seconden max) en falen dan de build
+          n=0
+          until [ "$n" -ge 10 ]; do
+            # We gebruiken -v (verbose) om precies te zien wat de response is
+            if curl -v --fail http://localhost:8080/actuator/health; then
+              echo "Backend is up!"
+              exit 0
+            fi
+            n=$((n+1))
+            echo "Attempt $n/10 failed. Waiting 6 seconds..."
+            sleep 6
+          done
+          echo "::error::Backend did not become healthy after 60 seconds."
+          # Nogmaals de logs tonen na de mislukte pogingen
+          echo "Final backend logs:"
+          docker logs backend
+          exit 1
+
+
+
+
       - name: Wait for Backend to be healthy
         run: |
           echo "Waiting for backend..."
