@@ -23,41 +23,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Backend image
-        working-directory: InsightsBackend
-        run: docker build -t local-backend:latest .
+      - name: Docker compose up
+        run: docker compose up -d --build
 
-      - name: Run Backend Container
-        run: |
-          docker run -d \
-            --name backend \
-            -p 8080:8080 \
-            -e SPRING_PROFILES_ACTIVE=local \
-            -e SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/insights \
-            local-backend:latest
-
-      - name: Build Frontend image
-        working-directory: InsightsBackend
-        run: docker build -t local-frontend:latest .
-
-      - name: Run Frontend Container
-        run: |
-          docker run -d \
-            --name frontend \
-            -p 80:80 \
-            local-frontend:latest
-
-      - name: Install test tools
-        run: sudo apt-get update && sudo apt-get install -y apache2-utils curl
-
-      - name: Wait for Backend to be ready
-        run: |
-          echo "Waiting for backend..."
-          until curl --fail --silent --output /dev/null http://localhost:8080/actuator/health; do
-            echo -n '.'
-            sleep 5
-          done
-          echo "Backend is up!"
+      - name: Wait for services to be ready
+        run: sleep 30
 
       - name: Stress test Backend (Apache Bench)
         run: ab -r -n 100 -c 5 http://localhost:8080/api/releases > backend.log || true
