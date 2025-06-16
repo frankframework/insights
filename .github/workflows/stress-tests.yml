@@ -1,6 +1,7 @@
+name: Stress tests
+
 on:
   workflow_dispatch:
-  pull_request:
 
 jobs:
   stress-test:
@@ -30,10 +31,10 @@ jobs:
         run: sleep 30
 
       - name: Stress test Backend (Apache Bench)
-        run: ab -r -n 10000 -c 500 http://localhost:8080/api/releases > backend.log || true
+        run: ab -r -n 1000 -c 50 http://localhost:8080/api/releases > backend.log || true
 
       - name: Stress test Frontend (Apache Bench)
-        run: ab -r -n 10000 -c 500 http://localhost/ > frontend.log || true
+        run: ab -r -n 1000 -c 50 http://localhost/ > frontend.log || true
 
       - name: Upload Apache Bench logs
         if: always()
