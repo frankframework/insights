@@ -182,10 +182,15 @@ jobs:
       - name: Docker Compose Up
         run: docker compose up -d --build
       - name: Wait for services to be ready
-        run: sleep 30
+        run: sleep 70
       - name: Cypress Run
         run: npm run cypress:run
         working-directory: InsightsFrontend
+      - name: Upload Frontend Build Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-logs
+          path: InsightsFrontend/e2e.log
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
