@@ -172,25 +172,45 @@ jobs:
     name: End-to-End Testing
     runs-on: ubuntu-latest 
     steps:      
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - name: Install dependencies (frontend)
-        run: npm ci
-        working-directory: InsightsFrontend
-      - name: Docker Compose Up
-        run: docker compose up -d --build
-      - name: Wait for services to be ready
-        run: sleep 70
-      - name: Cypress Run
-        run: npm run cypress:run
-        working-directory: InsightsFrontend
-      - name: Upload Frontend Build Logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-logs
-          path: InsightsFrontend/e2e.log
+     - name: Checkout
+       uses: actions/checkout@v4
+
+     - name: Start Docker Compose
+       run: docker-compose up -d --build
+
+     - name: Wait for Backend Health
+       run: |
+         echo "Pinging backend health endpoint..."
+         RETRY_COUNT=10
+         MAX_RETRIES=30
+         RETRY_INTERVAL=5
+ 
+         until [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/releases)" -eq 200 ]; do
+           if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
+             echo "Health check failed after ${MAX_RETRIES} retries. Backend is not healthy."
+             docker-compose logs backend
+             exit 1
+           fi
+           RETRY_COUNT=$((RETRY_COUNT + 1))
+           echo "Backend not ready yet. Retrying in ${RETRY_INTERVAL}s... (Attempt ${RETRY_COUNT}/${MAX_RETRIES})"
+           sleep ${RETRY_INTERVAL}
+         done
+
+         echo "Backend is healthy! Proceeding with Cypress tests."
+
+     - name: Run Cypress tests
+       working-directory: ./InsightsFrontend
+       run: npm run cypress:run
+ 
+     - name: Stop Docker Compose on failure
+       if: ${{ failure() }}
+       run: docker-compose down
+       working-directory: InsightsFrontend
+     - name: Upload Frontend Build Logs
+       uses: actions/upload-artifact@v4
+       with:
+         name: e2e-test-logs
+         path: InsightsFrontend/e2e.log
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
