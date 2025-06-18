@@ -184,6 +184,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: CI Install
+        run: npm ci
+        working-directory: InsightsFrontend
+
       - name: Start Docker Compose
         run: docker compose up -d --build
 
