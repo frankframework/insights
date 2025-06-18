@@ -1,9 +1,6 @@
 services:
   frontend:
-    build:
-      context: ./InsightsFrontend
-      args:
-        BUILD_ENV: development
+    build: ./InsightsFrontend
     restart: always
     volumes:
       - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
