@@ -2,8 +2,6 @@ services:
   frontend:
     build: ./InsightsFrontend
     restart: always
-    volumes:
-      - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
     networks:
       - FFInsightsNetwork
     depends_on:
