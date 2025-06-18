@@ -1,6 +1,9 @@
 services:
   frontend:
-    build: ./InsightsFrontend
+    build:
+      context: ./InsightsFrontend
+      args:
+        BUILD_ENV: development
     restart: always
     volumes:
       - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
@@ -9,7 +12,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "4200:80"
     container_name: frontend
 
   dataloader:

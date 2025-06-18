@@ -1,8 +1,8 @@
 describe('Graph Rendering and Interaction', () => {
   beforeEach(() => {
     cy.visit('/');
-    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
-    cy.get('app-release-graph svg').should('be.visible').as('graphSvg');
+    cy.get('app-loader', { timeout: 5000 }).should('not.exist');
+    cy.get('.graph-container > svg').as('graphSvg');
   });
 
   context('Initial State', () => {
@@ -23,18 +23,34 @@ describe('Graph Rendering and Interaction', () => {
   });
 
   context('Graph Interaction', () => {
-    it('should pan the graph horizontally on mouse wheel scroll', () => {
+    it('should pan the graph on mouse wheel scroll', () => {
       let initialTransform: string | undefined;
 
-      cy.get('@graphSvg').find('> g').invoke('attr', 'transform').then((transform) => {
+      cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').then((transform) => {
         initialTransform = transform;
       });
 
-      cy.get('@graphSvg').trigger('wheel', { deltaY: 500, bubbles: true });
+      cy.get('@graphSvg').first().trigger('wheel', { deltaY: 500, bubbles: true });
 
-      cy.get('@graphSvg').find('> g').invoke('attr', 'transform').should((newTransform) => {
+      cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
         expect(newTransform).not.to.equal(initialTransform);
       });
+    });
+
+    it('should open and close the release support info modal', () => {
+      cy.get('app-modal').should('not.exist');
+
+      cy.get('button[aria-label="Show release info"]').should('be.visible').click();
+
+      cy.get('app-modal').should('be.visible').as('infoModal');
+
+      cy.get('@infoModal').contains('h2', 'Release Support');
+      cy.get('@infoModal').find('.release-content-item').should('have.length', 4);
+      cy.get('@infoModal').contains('p', 'Major versions currently receive one year of security support');
+
+      cy.get('@infoModal').find('button[aria-label="Close modal"]').click();
+
+      cy.get('app-modal').should('not.exist');
     });
   });
 });

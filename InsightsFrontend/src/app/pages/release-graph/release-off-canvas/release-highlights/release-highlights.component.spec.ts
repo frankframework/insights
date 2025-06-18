@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseHighlightsComponent } from './release-highlights.component';
 import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
 import { Issue } from '../../../../services/issue.service';
-import { Label } from '../../../../services/label.service';
 
 const mockReleaseOffCanvasComponent = {
   colorNameToRgba: (color: string) => `rgba(${color},0.75)`,
@@ -43,7 +42,7 @@ describe('ReleaseHighlightsComponent', () => {
       component.releaseIssues = mockIssues;
       component.ngOnChanges();
 
-      expect((component as any).generatePieData).toHaveBeenCalled();
+      expect((component as any).generatePieData).toHaveBeenCalledWith();
     });
 
     it('should correctly aggregate issue types into doughnut chart data', () => {
@@ -76,14 +75,13 @@ describe('ReleaseHighlightsComponent', () => {
       component.ngOnChanges();
 
       const chartData = component.doughnutChartData;
+
       expect(chartData.labels).not.toContain('No Type D');
     });
   });
 
   describe('getDotColor', () => {
-
-
-      ould return the color as-is if it already starts with #', () => {
+    it('should return the color as-is if it already starts with #', () => {
       expect(component.getDotColor('#abcdef')).toBe('#abcdef');
     });
 
