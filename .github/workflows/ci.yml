@@ -201,11 +201,11 @@ jobs:
       - name: Wait for Backend Application
         run: |
           echo "Waiting for backend application to be healthy..."
-          sleep 10
-          RETRY_COUNT=10
+          sleep 15
+          RETRY_COUNT=20
           MAX_RETRIES=20
           RETRY_INTERVAL=5
-          until curl -s -f http://localhost:8080/actuator/info > /dev/null; do
+          until curl -s -f http://localhost:8080/actuator/health > /dev/null; do
             if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
               echo "Error: Timed out waiting for backend."
               exit 1
@@ -220,7 +220,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
-          psql -h db -p 5432 -U postgres -d insights -f ./data-e2e.sql
+          psql -h localhost -p 5432 -U postgres -d insights -f ./data-e2e.sql
           echo "Data successfully loaded."
       - name: Run Cypress E2E Tests
         run: npm run cypress:run | tee e2e.log
@@ -230,7 +230,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-logs
-          path: InsightsFrontend/e2e.log
+          path: |
+            InsightsFrontend/cypress/videos/
+            InsightsFrontend/cypress/screenshots/
+            InsightsFrontend/e2e.log
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
