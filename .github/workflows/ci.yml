@@ -140,8 +140,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
         working-directory: InsightsFrontend
-      - name: Build frontend
-        run: npm run build
+      - name: Build frontend (development config for E2E)
+        run: npm run build -- --configuration=development
         working-directory: InsightsFrontend
       - name: Upload Frontend Artifact
         uses: actions/upload-artifact@v4
@@ -191,9 +191,7 @@ jobs:
       - name: Install Cypress Dependencies
         run: npm ci
         working-directory: ./InsightsFrontend
-      - name: Start Backend and Frontend Services
-        env:
-          SPRING_PROFILES_ACTIVE: local
+      - name: Start Backend and Frontend Services   
         run: |
           java -jar ./backend-artifact/*.jar &
           npm install -g http-server
@@ -205,7 +203,7 @@ jobs:
           RETRY_COUNT=20
           MAX_RETRIES=20
           RETRY_INTERVAL=5
-          until curl -s -f http://localhost:8080/actuator/health > /dev/null; do
+          until curl -s -f http://localhost:8080/actuator/info > /dev/null; do
             if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
               echo "Error: Timed out waiting for backend."
               exit 1
@@ -223,17 +221,16 @@ jobs:
           psql -h localhost -p 5432 -U postgres -d insights -f ./data-e2e.sql
           echo "Data successfully loaded."
       - name: Run Cypress E2E Tests
-        run: npm run cypress:run | tee e2e.log
+        run: npm run cypress:run
         working-directory: ./InsightsFrontend
-      - name: Upload E2E Test Logs
+      - name: Upload E2E Test Logs and Videos
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-test-logs
+          name: e2e-test-artifacts
           path: |
             InsightsFrontend/cypress/videos/
             InsightsFrontend/cypress/screenshots/
-            InsightsFrontend/e2e.log
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
