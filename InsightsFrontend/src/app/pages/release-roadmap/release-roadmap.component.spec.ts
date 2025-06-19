@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RoadmapComponent } from './roadmap.component';
+import { ReleaseRoadmapComponent } from './release-roadmap.component';
 
-describe('RoadmapComponent', () => {
-  let component: RoadmapComponent;
-  let fixture: ComponentFixture<RoadmapComponent>;
+describe('ReleaseRoadmapComponent', () => {
+  let component: ReleaseRoadmapComponent;
+  let fixture: ComponentFixture<ReleaseRoadmapComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RoadmapComponent],
+      imports: [ReleaseRoadmapComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(RoadmapComponent);
+    fixture = TestBed.createComponent(ReleaseRoadmapComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
