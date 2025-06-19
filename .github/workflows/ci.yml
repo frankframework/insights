@@ -194,7 +194,6 @@ jobs:
       - name: Start Backend and Frontend Services
         env:
           SPRING_PROFILES_ACTIVE: local
-          SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/insights
         run: |
           java -jar ./backend-artifact/*.jar &
           npm install -g http-server
