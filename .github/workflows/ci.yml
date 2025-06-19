@@ -175,7 +175,7 @@ jobs:
       - name: Download Frontend Artifact
         uses: actions/download-artifact@v4
         with:
-          name: frontend-dist
+          name: frontend-dist-dev
           path: frontend-artifact
       - name: Set up Java
         uses: actions/setup-java@v4
