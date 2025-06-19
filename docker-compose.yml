@@ -13,15 +13,20 @@ services:
   dataloader:
     image: postgres:17
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - FFInsightsNetwork
     volumes:
       - ./data-e2e.sql:/data-e2e.sql
     entrypoint: >
       sh -c "
-        sleep 30;
-        psql -h db -U postgres -d insights -f /data-e2e.sql
+        echo 'Backend is healthy, database schema is aangemaakt. Wachten voor de zekerheid...' &&
+        until pg_isready -h db -p 5432 -U postgres; do
+          sleep 2;
+        done &&
+        echo 'Database accepteert verbindingen. Data wordt nu geladen...' &&
+        psql -h db -U postgres -d insights -v ON_ERROR_STOP=1 -f /data-e2e.sql
       "
     environment:
       PGPASSWORD: postgres
@@ -32,13 +37,21 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/insights
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create
     networks:
       - FFInsightsNetwork
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
     container_name: backend
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   db:
     image: postgres:17
@@ -53,6 +66,11 @@ services:
       - FFInsightsNetwork
     ports:
       - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready", "-U", "postgres", "-d", "insights" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   FFInsightsNetwork:
