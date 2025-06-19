@@ -46,7 +46,8 @@ services:
       - "8080:8080"
     container_name: backend
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      # DEZE REGEL IS AANGEPAST
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/info" ]
       interval: 15s
       timeout: 5s
       retries: 10
