@@ -5,6 +5,7 @@
         @for (releaseNode of releaseNodes; track releaseNode) {
           <g
             id="node"
+            [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
             (click)="openReleaseDetails(releaseNode)"
           >
@@ -15,7 +16,7 @@
           </g>
         }
         @for (releaseLink of releaseLinks; track releaseLink) {
-          <path [attr.d]="getCustomPath(releaseLink)" />
+          <path [attr.data-cy]="'link-' + releaseLink.id" [attr.d]="getCustomPath(releaseLink)" />
         }
       </g>
     </svg>

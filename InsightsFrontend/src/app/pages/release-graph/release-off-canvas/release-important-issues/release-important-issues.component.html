@@ -2,7 +2,7 @@
   <div class="important-issues-header">
     <h2>Important issues</h2>
     <label>
-      <select [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)">
+      <select data-cy="issue-type-filter" [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)">
         @for (type of issueTypeOptions(); track type.value) {
           <option [ngValue]="type.value">{{ type.label }}</option>
         }
