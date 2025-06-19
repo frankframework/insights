@@ -193,7 +193,7 @@ jobs:
         working-directory: ./InsightsFrontend
       - name: Start Backend and Frontend Services
         env:
-          SPRING_PROFILE_ACTIVE: local
+          SPRING_PROFILES_ACTIVE: local
         run: |
           java -jar ./backend-artifact/*.jar &
           npm install -g http-server
