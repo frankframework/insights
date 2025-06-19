@@ -10,31 +10,12 @@ services:
       - "4200:80"
     container_name: frontend
 
-  dataloader:
-    image: postgres:17
-    depends_on:
-      - backend
-    networks:
-      - FFInsightsNetwork
-    volumes:
-      - ./data-e2e.sql:/data-e2e.sql
-    entrypoint: >
-      sh -c "
-        echo 'Backend is gestart. Wacht 30 seconden...' &&
-        sleep 30 &&
-        echo 'Data wordt nu geladen...' &&
-        psql -h db -U postgres -d insights -v ON_ERROR_STOP=1 -f /data-e2e.sql
-      "
-    environment:
-      PGPASSWORD: postgres
-
   backend:
     build: ./InsightsBackend
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/insights
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create
     networks:
       - FFInsightsNetwork
     depends_on:

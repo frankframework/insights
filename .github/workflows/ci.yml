@@ -55,19 +55,6 @@ jobs:
     name: Backend Unit Test
     runs-on: ubuntu-latest
     needs: [backend-lint]
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        ports: [5432:5432]
-        options: >-
-          --health-cmd="pg_isready"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -81,10 +68,6 @@ jobs:
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-${{ runner.os }}-
       - name: Backend Unit Tests
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
-          SPRING_DATASOURCE_USERNAME: testuser
-          SPRING_DATASOURCE_PASSWORD: testpass
         run: mvn test --file pom.xml | tee test.log
         working-directory: InsightsBackend
       - name: Upload Backend Test Logs
@@ -124,49 +107,125 @@ jobs:
           name: frontend-test-logs
           path: InsightsFrontend/test.log
 
+  backend-build:
+    name: Backend Build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [backend-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: 'temurin'
+      - name: Build backend
+        run: mvn package -DskipTests --file pom.xml
+        working-directory: InsightsBackend
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: InsightsBackend/target/*.jar
+
+  frontend-build:
+    name: Frontend Build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [frontend-test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies
+        run: npm ci
+        working-directory: InsightsFrontend
+      - name: Build frontend
+        run: npm run build
+        working-directory: InsightsFrontend
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: InsightsFrontend/dist/
+
   e2e-test:
     name: End-to-End Testing
     runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]
+    needs: [backend-build, frontend-build]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: insights
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
-      - uses: actions/checkout@v4
-      - name: Install jq
-        run: sudo apt-get -y install jq
-      - name: CI Install
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download Backend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: backend-artifact
+      - name: Download Frontend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-artifact
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: 'temurin'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install Cypress Dependencies
         run: npm ci
-        working-directory: InsightsFrontend
-      - name: Start Docker Compose
-        run: docker compose up -d --build
-      - name: Wait for Services and Data
+        working-directory: ./InsightsFrontend
+      - name: Start Backend and Frontend Services
+        env:
+          SPRING_PROFILES_ACTIVE: local
+          SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/insights
         run: |
-          echo "Waiting for backend to be available and data to be loaded..."
-          RETRY_COUNT=0
-          MAX_RETRIES=30
+          java -jar ./backend-artifact/*.jar &
+          npm install -g http-server
+          http-server ./frontend-artifact/insights-frontend/browser -p 4200 --cors &
+      - name: Wait for Backend Application
+        run: |
+          echo "Waiting for backend application to be healthy..."
+          sleep 10
+          RETRY_COUNT=10
+          MAX_RETRIES=20
           RETRY_INTERVAL=5
-          
-          until [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/releases)" -eq 200 ] && [ "$(curl -s http://localhost:8080/api/releases | jq 'length')" -gt 0 ]; do
+          until curl -s -f http://localhost:8080/actuator/info > /dev/null; do
             if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
-              echo "Error: Timed out waiting for services and data."
-              echo "--- Docker PS ---"
-              docker compose ps
-              echo "--- Backend Logs ---"
-              docker compose logs backend
-              echo "--- Dataloader Logs ---"
-              docker compose logs dataloader
+              echo "Error: Timed out waiting for backend."
               exit 1
             fi
             RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Services not ready or data not loaded yet. Retrying in ${RETRY_INTERVAL}s... (Attempt ${RETRY_COUNT}/${MAX_RETRIES})"
+            echo "Backend not ready. Retrying in ${RETRY_INTERVAL}s..."
             sleep ${RETRY_INTERVAL}
           done
-          
-          echo "Success! Backend is healthy and data is present."
-          echo "Final API Response:"
-          curl http://localhost:8080/api/releases
-
-      - name: Run Cypress tests
-        working-directory: ./InsightsFrontend
+          echo "Backend is up and healthy!"
+      - name: Load E2E Data into Database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql -h db -p 5432 -U postgres -d insights -f ./data-e2e.sql
+          echo "Data successfully loaded."
+      - name: Run Cypress E2E Tests
         run: npm run cypress:run | tee e2e.log
+        working-directory: ./InsightsFrontend
       - name: Upload E2E Test Logs
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
