@@ -84,7 +84,7 @@ jobs:
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
           SPRING_DATASOURCE_USERNAME: testuser
-          POSTGRES_PASSWORD: testpass
+          SPRING_DATASOURCE_PASSWORD: testpass
         run: mvn test --file pom.xml | tee test.log
         working-directory: InsightsBackend
       - name: Upload Backend Test Logs
@@ -125,68 +125,33 @@ jobs:
           path: InsightsFrontend/test.log
 
   e2e-test:
-    name: End-to-End Testing
+    name: End-to-End Testing (DEBUG MODE)
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-test]
     steps:
       - uses: actions/checkout@v4
-      - name: Install jq
-        run: sudo apt-get -y install jq
-      - name: CI Install
-        run: npm ci
-        working-directory: InsightsFrontend
-      - name: Start Docker Compose
+      - name: Start services and capture logs
         run: |
-          docker compose up -d --build 
+          echo "Attempting to start all services..."
+          # We starten de containers, maar als dit commando faalt, gaan we toch door
+          # dankzij '|| true'. Dit zorgt ervoor dat de stap niet onmiddellijk stopt.
+          docker compose up -d --build || true
+          
+          echo "Waiting 20 seconds to allow containers to initialize or fail..."
+          sleep 20
+          
+          echo "--- Final container status: ---"
+          docker compose ps
+          
+          echo "--- DUMPING BACKEND LOGS ---"
+          # Dit commando wordt nu gegarandeerd uitgevoerd.
+          # Hier zal de Java-foutmelding te zien zijn.
           docker compose logs backend
-          docker logs backend
-      - name: Wait for Backend Health
-        run: |
-          echo "Pinging backend health endpoint..."
-          RETRY_COUNT=10
-          MAX_RETRIES=30
-          RETRY_INTERVAL=5
-          until [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/releases)" -eq 200 ]; do
-            if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
-              echo "Health check failed after ${MAX_RETRIES} retries. Backend is not healthy."
-              docker compose logs
-              docker compose logs backend
-              exit 1
-            fi
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Backend not ready yet. Retrying in ${RETRY_INTERVAL}s... (Attempt ${RETRY_COUNT}/${MAX_RETRIES})"
-            sleep ${RETRY_INTERVAL}
-          done
-          echo "Backend is healthy!"
-      - name: Verify API Data
-        run: |
-          echo "Fetching data from /api/releases to verify data loading..."
-          RESPONSE=$(curl --silent --fail http://localhost:8080/api/releases)
-          COUNT=$(echo "$RESPONSE" | jq 'length')
-          if [ "$COUNT" -gt 0 ]; then
-            echo "Success! Found $COUNT releases in the database."
-            echo "Response JSON:"
-            echo "$RESPONSE"
-          else
-            echo "Error: Backend is up, but no data was found (/api/releases returned an empty array)."
-            echo "Dumping dataloader logs:"
-            docker compose logs dataloader
-            exit 1
-          fi
-      - name: additional sleep to wait for data loader
-        run: sleep 30
-      - name: Run Cypress tests
-        working-directory: ./InsightsFrontend
-        run: npm run cypress:run | tee e2e.log
-      - name: Stop Docker Compose on failure
-        if: ${{ failure() }}
-        run: docker compose down
-      - name: Upload E2E Test Logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-logs
-          path: InsightsFrontend/e2e.log
+          echo "--- END BACKEND LOGS ---"
+
+          # We laten de job hier opzettelijk falen om de logs makkelijk te kunnen bekijken.
+          echo "Intentionally failing job to capture debug logs."
+          exit 1
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
