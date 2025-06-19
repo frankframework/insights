@@ -194,7 +194,7 @@ jobs:
       - name: Wait for Backend Health
         run: |
           echo "Pinging backend health endpoint..."
-          RETRY_COUNT=0
+          RETRY_COUNT=20
           MAX_RETRIES=30
           RETRY_INTERVAL=5
     
