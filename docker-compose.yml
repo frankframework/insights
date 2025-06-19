@@ -37,7 +37,6 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/insights
-      SPRING_JPA_HIBERNATE_DDL_AUTO: create
     networks:
       - FFInsightsNetwork
     depends_on:

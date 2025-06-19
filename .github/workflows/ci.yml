@@ -137,6 +137,7 @@ jobs:
         working-directory: InsightsFrontend
       - name: Start Docker Compose
         run: docker compose up -d --build
+        run: docker logs backend
       - name: Wait for Backend Health
         run: |
           echo "Pinging backend health endpoint..."
@@ -147,6 +148,7 @@ jobs:
             if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
               echo "Health check failed after ${MAX_RETRIES} retries. Backend is not healthy."
               docker compose logs
+              docker compose logs backend
               exit 1
             fi
             RETRY_COUNT=$((RETRY_COUNT + 1))
