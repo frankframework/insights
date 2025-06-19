@@ -201,11 +201,11 @@ jobs:
       - name: Wait for Backend Application
         run: |
           echo "Waiting for backend application to be healthy..."
-          sleep 15
-          RETRY_COUNT=20
+          sleep 30
+          RETRY_COUNT=0
           MAX_RETRIES=20
           RETRY_INTERVAL=5
-          until curl -s -f http://localhost:8080/actuator/info > /dev/null; do
+          until curl -s -f http://localhost:8080/actuator/health > /dev/null; do
             if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
               echo "Error: Timed out waiting for backend."
               exit 1
