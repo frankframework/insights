@@ -136,8 +136,10 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Start Docker Compose
-        run: docker compose up -d --build
-        run: docker logs backend
+        run: |
+          docker compose up -d --build 
+          docker compose logs backend
+          docker logs backend
       - name: Wait for Backend Health
         run: |
           echo "Pinging backend health endpoint..."
