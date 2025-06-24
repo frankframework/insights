@@ -135,7 +135,7 @@ public class IssueServiceTest {
                 now.minusDays(1),
                 "http://issue1",
                 labelEdges,
-                new MilestoneDTO("m1", 1, "Milestone 1", GitHubPropertyState.OPEN),
+                new MilestoneDTO("m1", 1, "Milestone 1", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0),
                 null,
                 null,
                 emptyProjectItems);

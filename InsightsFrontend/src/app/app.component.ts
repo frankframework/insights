@@ -7,7 +7,7 @@ import {
   NavigationError,
   NavigationStart,
 } from '@angular/router';
-import { TabHeaderComponent } from './components/tab-header/tab-header.component';
+import { TabHeaderComponent } from './pages/tab-header/tab-header.component';
 import { LoaderComponent } from './components/loader/loader.component';
 
 @Component({

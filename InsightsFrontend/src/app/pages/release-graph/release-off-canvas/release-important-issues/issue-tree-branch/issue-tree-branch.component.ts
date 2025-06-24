@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
-import { Issue } from '../../services/issue.service';
-import { ReleaseOffCanvasComponent } from '../../pages/release-graph/release-off-canvas/release-off-canvas.component';
+import { Issue } from '../../../../../services/issue.service';
+import { ReleaseOffCanvasComponent } from '../../release-off-canvas.component';
 
 @Component({
   selector: 'app-issue-tree-branch',

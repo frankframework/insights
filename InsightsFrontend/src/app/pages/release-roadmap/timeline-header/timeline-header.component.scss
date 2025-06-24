@@ -1,0 +1,48 @@
+.timeline-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timeline-header__row {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.timeline-header__milestone-title-cell {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  color: #475569;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-header__grid-area {
+  display: grid;
+}
+
+.timeline-header__row--quarters .timeline-header__grid-area {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.timeline-header__quarter-cell {
+  padding: 0.5rem 0;
+  font-weight: 600;
+  color: #334155;
+  border-right: 1px solid #e2e8f0;
+  text-align: center;
+  &:last-child { border-right-width: 0; }
+}
+
+.timeline-header__month-cell {
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  border-right: 1px solid #e2e8f0;
+  text-align: center;
+  &:last-child { border-right-width: 0; }
+}

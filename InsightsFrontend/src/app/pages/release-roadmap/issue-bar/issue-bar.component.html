@@ -1,0 +1,5 @@
+<div class="issue-bar" [ngStyle]="issueStyle">
+  <div class="issue-bar__inner" [ngStyle]="priorityStyle" [title]="issue.title">
+    <span class="issue-bar__number" [class.issue-bar__number--closed]="isClosed">#{{ issue.number }}</span>
+  </div>
+</div>
