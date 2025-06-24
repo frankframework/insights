@@ -55,8 +55,8 @@ public class MilestoneServiceTest {
         milestone2.setTitle("Milestone 2");
         milestone2.setState(GitHubPropertyState.CLOSED);
 
-        milestoneDTO1 = new MilestoneDTO("m1", 1, "First", GitHubPropertyState.OPEN);
-        milestoneDTO2 = new MilestoneDTO("m2", 2, "Second", GitHubPropertyState.CLOSED);
+        milestoneDTO1 = new MilestoneDTO("m1", 1, "First", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
+        milestoneDTO2 = new MilestoneDTO("m2", 2, "Second", "https//example.com", GitHubPropertyState.CLOSED, null, 0, 0);
     }
 
     @Test
@@ -103,7 +103,7 @@ public class MilestoneServiceTest {
     @Test
     public void getAllOpenMilestones_shouldReturnMappedSet() throws MappingException {
         Set<Milestone> openMilestones = Set.of(milestone1);
-        Set<MilestoneResponse> responses = Set.of(new MilestoneResponse("m1", 1, "First", GitHubPropertyState.OPEN));
+        Set<MilestoneResponse> responses = Set.of(new MilestoneResponse("m1", 1, "First", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0));
         when(milestoneRepository.findAllByState(GitHubPropertyState.OPEN)).thenReturn(openMilestones);
         when(mapper.toDTO(openMilestones, MilestoneResponse.class)).thenReturn(responses);
 

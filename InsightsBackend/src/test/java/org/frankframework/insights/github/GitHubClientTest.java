@@ -94,7 +94,7 @@ public class GitHubClientTest {
     @Test
     public void getMilestones_success() throws Exception {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        MilestoneDTO m1 = new MilestoneDTO("id", 1, null, GitHubPropertyState.OPEN);
+        MilestoneDTO m1 = new MilestoneDTO("id", 1, null, "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
         Set<MilestoneDTO> milestones = Set.of(m1);
         doReturn(milestones)
                 .when(gitHubClient)

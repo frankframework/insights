@@ -1,0 +1,53 @@
+<div class="milestone-row" [class.milestone-row--last]="isLast">
+  <div class="milestone-row__title-cell">
+    <a target="_blank" class="milestone-row__title-link" [href]="milestone.url">{{ milestone.title }}</a>
+    @if (milestone.dueOn) {
+      <p class="milestone-row__detail">
+        Due: {{ milestone.dueOn | date: 'dd-MM-yyyy' }}
+        @if (milestone.isEstimated) {
+          <span class="milestone-row__estimated-icon" title="Geschatte datum">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </span>
+        }
+      </p>
+    } @else {
+      <p class="milestone-row__detail milestone-row__detail--unplanned">Ongepland</p>
+    }
+    <div class="milestone-row__progress-bar-container">
+      <div
+        class="milestone-row__progress-bar"
+        [style.width.%]="progressPercentage"
+        [title]="progressPercentage + '% voltooid'"
+      ></div>
+    </div>
+    <div class="milestone-row__counts">
+      <span>{{ milestone.openIssueCount }} open</span>
+      <span>/</span>
+      <span>{{ milestone.closedIssueCount }} gesloten</span>
+    </div>
+  </div>
+  <div class="milestone-row__issue-track-area">
+    @if (milestone.dueOn) {
+      @for (trackNumber of getTracks(); track trackNumber) {
+        <div class="milestone-row__issue-track">
+          @for (posIssue of getIssuesForTrack(trackNumber); track posIssue.issue.id) {
+            <app-issue-bar [issue]="posIssue.issue" [issueStyle]="posIssue.style" />
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

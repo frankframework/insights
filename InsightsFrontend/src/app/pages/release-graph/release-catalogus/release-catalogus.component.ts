@@ -1,7 +1,7 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Release } from '../../services/release.service';
+import { Release } from '../../../services/release.service';
 import { NgStyle } from '@angular/common';
-import { ModalComponent } from '../modal/modal.component';
+import { ModalComponent } from '../../../components/modal/modal.component';
 
 @Component({
   selector: 'app-release-catalogus',

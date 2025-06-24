@@ -14,6 +14,8 @@ export interface Issue {
   businessValue?: string;
   milestone?: Milestone;
   issueType?: IssueType;
+  issuePriority?: IssuePriority;
+  points?: number;
   labels?: Label[];
   subIssues?: Issue[];
 }
@@ -25,9 +27,11 @@ export interface IssueType {
   color: string;
 }
 
-export interface TimeSpanParameters {
-  startDate?: string;
-  endDate?: string;
+export interface IssuePriority {
+  id: string;
+  name: string;
+  color: string;
+  description: string;
 }
 
 @Injectable({
@@ -42,21 +46,5 @@ export class IssueService {
 
   public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
     return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
-  }
-
-  public getIssuesByTimeSpan({ startDate, endDate }: TimeSpanParameters = {}): Observable<Issue[]> {
-    const url = this.appService.createAPIUrl('issues/timespan');
-
-    const queryParameters: Record<string, string> = {};
-
-    if (startDate && this.appService.isValidISODate(startDate)) {
-      queryParameters['startDate'] = startDate;
-    }
-
-    if (endDate && this.appService.isValidISODate(endDate)) {
-      queryParameters['endDate'] = endDate;
-    }
-
-    return this.appService.get<Issue[]>(url, queryParameters);
   }
 }
