@@ -60,7 +60,6 @@ export class MilestoneRowComponent implements OnInit {
   private runAdvancedLayoutAlgorithm(): void {
     if (!this.milestone.dueOn) return;
 
-    // 1. SETUP: Definieer tijdvensters en sorteer issues
     const due = new Date(this.milestone.dueOn);
     const year = due.getFullYear();
     const quarterIndex = Math.floor(due.getMonth() / 3);
@@ -81,20 +80,14 @@ export class MilestoneRowComponent implements OnInit {
     const finalPositionedIssues: PositionedIssue[] = [];
     let tracks: TrackInfo[] = [];
 
-    // 2. PLAATS GESLOTEN ISSUES
     tracks = this.distributeIssuesInBlock(closedIssues, closedWindow, tracks, finalPositionedIssues);
 
-    // 3. PLAATS OPEN ISSUES
     tracks = this.distributeIssuesInBlock(openIssues, openWindow, tracks, finalPositionedIssues);
 
-    // 4. FINALIZEER
     this.positionedIssues = finalPositionedIssues;
     this.trackCount = Math.max(1, tracks.length);
   }
 
-  /**
-   * AANGEPAST: De berekening van benodigde tracks en de tussenruimte is verfijnd.
-   */
   private distributeIssuesInBlock(
     issues: Issue[],
     window: { start: number; end: number },
@@ -105,10 +98,8 @@ export class MilestoneRowComponent implements OnInit {
       return tracks;
     }
 
-    // Stap 1: Bereken het benodigde aantal tracks voor dit blok robuuster.
     const totalDurationMs = issues.reduce((sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue), 0);
     const windowDurationMs = window.end - window.start;
-    // We gebruiken 98% van de tijd om een buffer te hebben voor imperfecte packing.
     const effectiveWindowMs = windowDurationMs * 0.98;
     const numberTracksForBlock = effectiveWindowMs > 0 ? Math.ceil(totalDurationMs / effectiveWindowMs) || 1 : 1;
 
