@@ -7,12 +7,12 @@ import {
   NavigationError,
   NavigationStart,
 } from '@angular/router';
-import { TabHeaderComponent } from './pages/tab-header/tab-header.component';
 import { LoaderComponent } from './components/loader/loader.component';
+import { HeaderComponent } from './pages/header/header.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, TabHeaderComponent, LoaderComponent],
+  imports: [RouterOutlet, LoaderComponent, HeaderComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

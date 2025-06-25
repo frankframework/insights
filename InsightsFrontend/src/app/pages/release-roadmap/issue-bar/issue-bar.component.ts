@@ -23,10 +23,10 @@ export class IssueBarComponent implements OnInit {
     'border-color': '#d8b4fe',
   };
 
-  private readonly DEFAULT_STYLE: Record<string, string> = {
-    'background-color': '#e5e7eb',
-    color: '#4b5563',
-    'border-color': '#d1d5db',
+  private readonly OPEN_STYLE: Record<string, string> = {
+    'background-color': '#f0fdf4',
+    color: '#166534',
+    'border-color': '#86efac',
   };
 
   ngOnInit(): void {
@@ -44,12 +44,12 @@ export class IssueBarComponent implements OnInit {
       return this.getPriorityStyles(priorityColor!);
     }
 
-    return this.DEFAULT_STYLE;
+    return this.OPEN_STYLE;
   }
 
   private getPriorityStyles(color: string): Record<string, string> {
     return {
-      'background-color': `#${color}25`, // Add alpha transparency
+      'background-color': `#${color}25`,
       color: `#${color}`,
       'border-color': `#${color}`,
     };

@@ -1,14 +1,13 @@
 .timeline-header {
-  position: sticky;
+  position: relative;
   top: 0;
-  background-color: rgba(239, 246, 255, 0.85);
-  backdrop-filter: blur(4px);
-  min-width: 1800px;
+  min-width: 1260px;
 }
 
 .timeline-header__row {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
+
   @media (min-width: 1024px) {
     grid-template-columns: 300px minmax(0, 1fr);
   }
@@ -18,20 +17,28 @@
   padding: 1rem 1rem;
   font-weight: 600;
   color: #374151;
-  border-right: 1px solid #dbeafe;
+  border-right: 1px solid #e2e8f0;
+
+  position: relative;
+  left: 0;
+  z-index: 3;
+  background-color: #f8fafc;
 }
 
 .timeline-header__row--quarters {
-  border-bottom: 1px solid #dbeafe;
+  /* AANGEPAST: Border kleur consistent gemaakt. */
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .timeline-header__grid-area {
   display: grid;
+  background-color: #f8fafc;
 }
 
 .timeline-header__quarter-cell, .timeline-header__month-cell {
-  text-align: center; padding: 0.5rem 0;
-  border-right: 1px solid #dbeafe;
+  text-align: center;
+  padding: 0.5rem 0;
+  border-right: 1px solid #e2e8f0;
 }
 
 .timeline-header__quarter-cell:last-child, .timeline-header__month-cell:last-child {
@@ -39,10 +46,13 @@
 }
 
 .timeline-header__quarter-cell {
-  font-weight: 600; color: #1e3a8a;
+  font-weight: 600;
+  color: #1e3a8a;
 }
 
 .timeline-header__month-cell {
-  font-size: 0.875rem; font-weight: 500; color: #1d4ed8;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1d4ed8;
   background-color: #eff6ff;
 }
