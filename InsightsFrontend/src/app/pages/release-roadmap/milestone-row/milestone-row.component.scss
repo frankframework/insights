@@ -1,8 +1,14 @@
 .milestone-row {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   border-bottom: 1px solid #e2e8f0;
   &:hover { background-color: #f8fafc; }
+  @media (min-width: 1024px) {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+}
+.milestone-row--last {
+  border-bottom: none;
 }
 .milestone-row__title-cell {
   position: sticky; left: 0; padding: 1rem;
@@ -17,6 +23,10 @@
 .milestone-row__detail {
   font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;
   display: flex; align-items: center; gap: 0.5rem;
+}
+.milestone-row__detail--unplanned {
+  color: #94a3b8;
+  font-style: italic;
 }
 .milestone-row__estimated-icon { color: #f59e0b; cursor: help; }
 .milestone-row__progress-bar-container {

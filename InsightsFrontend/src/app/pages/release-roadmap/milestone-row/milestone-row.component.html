@@ -39,12 +39,12 @@
       <span>{{ milestone.closedIssueCount }} gesloten</span>
     </div>
   </div>
-  <div class="milestone-row__issue-track-area">
+  <div class="milestone-row__issue-track-area" [style.height.rem]="trackCount * 2.25">
     @if (milestone.dueOn) {
       @for (trackNumber of getTracks(); track trackNumber) {
         <div class="milestone-row__issue-track">
-          @for (posIssue of getIssuesForTrack(trackNumber); track posIssue.issue.id) {
-            <app-issue-bar [issue]="posIssue.issue" [issueStyle]="posIssue.style" />
+          @for (positionedIssue of getIssuesForTrack(trackNumber); track positionedIssue.issue.id) {
+            <app-issue-bar [issue]="positionedIssue.issue" [issueStyle]="positionedIssue.style" />
           }
         </div>
       }

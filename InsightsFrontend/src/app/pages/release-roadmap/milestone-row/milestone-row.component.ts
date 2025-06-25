@@ -5,10 +5,22 @@ import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
 
-export interface PositionedIssue {
+interface PositionedIssue {
   issue: Issue;
   style: Record<string, string>;
   track: number;
+}
+
+interface IssuePlan {
+  issue: Issue;
+  startDate: Date;
+  endDate: Date;
+  start: number;
+  end: number;
+}
+
+interface TrackInfo {
+  intervals: { start: number; end: number }[];
 }
 
 @Component({
@@ -28,8 +40,9 @@ export class MilestoneRowComponent implements OnInit {
   public positionedIssues: PositionedIssue[] = [];
   public trackCount = 1;
   public progressPercentage = 0;
-
   private readonly DEFAULT_POINTS = 3;
+  private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 2.5;
+  private readonly GAP_BUFFER_MS = 12 * 60 * 60 * 1000; // 12 uur
 
   ngOnInit(): void {
     this.calculateProgress();
@@ -52,61 +65,120 @@ export class MilestoneRowComponent implements OnInit {
   }
 
   private planAndLayoutIssues(): void {
-    const closedIssues = this.sortIssuesByPriority(this.issues.filter((issue) => issue.state === GitHubStates.CLOSED));
-    const openIssues = this.sortIssuesByPriority(this.issues.filter((issue) => issue.state === GitHubStates.OPEN));
-    const allSortedIssues = [...closedIssues, ...openIssues];
-
     if (!this.milestone.dueOn) return;
 
-    const totalDuration = allSortedIssues.reduce(
-      (accumulator, issue) => accumulator + (issue.points ?? this.DEFAULT_POINTS),
-      0,
-    );
-    const workBlockStartDate = new Date(this.milestone.dueOn);
-    workBlockStartDate.setDate(workBlockStartDate.getDate() - totalDuration);
+    const due = new Date(this.milestone.dueOn);
+    const year = due.getFullYear();
+    const quarterIndex = Math.floor(due.getMonth() / 3);
+    const quarterStartDate = new Date(year, quarterIndex * 3, 1);
+    const quarterEndDate = new Date(year, quarterIndex * 3 + 3, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const issuePlans: { issue: Issue; startDate: Date; endDate: Date }[] = [];
-    let currentPlanningDate = new Date(workBlockStartDate);
-
-    for (const issue of allSortedIssues) {
-      const duration = issue.points ?? this.DEFAULT_POINTS;
-      const issueStartDate = new Date(currentPlanningDate);
-      const issueEndDate = new Date(issueStartDate);
-      issueEndDate.setDate(issueStartDate.getDate() + duration);
-      issuePlans.push({ issue, startDate: issueStartDate, endDate: issueEndDate });
-      currentPlanningDate = issueEndDate;
-    }
+    const openIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.OPEN));
+    const closedIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.CLOSED));
 
     const finalLayout: PositionedIssue[] = [];
-    const trackEndTimes: number[] = [];
+    const tracks: TrackInfo[] = [];
 
-    for (const plan of issuePlans) {
-      let placed = false;
-      for (let index = 0; index < trackEndTimes.length; index++) {
-        if (plan.startDate.getTime() >= trackEndTimes[index]!) {
-          trackEndTimes[index] = plan.endDate.getTime();
-          finalLayout.push({
-            issue: plan.issue,
-            track: index,
-            style: this.calculateBarPosition(plan.startDate, plan.issue.points ?? this.DEFAULT_POINTS),
-          });
-          placed = true;
-          break;
-        }
-      }
+    const closedIssuesTimeWindowMs = Math.max(0, today.getTime() - quarterStartDate.getTime());
+    const totalClosedIssuesDurationMs = closedIssues.reduce(
+      (sum, issue) => sum + (issue.points ?? this.DEFAULT_POINTS) * 24 * 60 * 60 * 1000,
+      0,
+    );
+    const closedFreeSpaceMs = Math.max(0, closedIssuesTimeWindowMs - totalClosedIssuesDurationMs);
+    const closedGapMs = closedIssues.length > 0 ? closedFreeSpaceMs / closedIssues.length : 0;
+    let pastDateCursor = new Date(quarterStartDate.getTime() + closedGapMs / 2);
 
-      if (!placed) {
-        trackEndTimes.push(plan.endDate.getTime());
-        finalLayout.push({
-          issue: plan.issue,
-          track: trackEndTimes.length - 1,
-          style: this.calculateBarPosition(plan.startDate, plan.issue.points ?? this.DEFAULT_POINTS),
-        });
+    for (const issue of closedIssues) {
+      const durationDays = issue.points ?? this.DEFAULT_POINTS;
+      const startDate = new Date(pastDateCursor);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + durationDays);
+
+      if (endDate > today) endDate.setTime(today.getTime());
+      if (startDate > endDate) startDate.setTime(endDate.getTime());
+
+      this.placeIssueOnTrack(
+        { issue, startDate, endDate, start: startDate.getTime(), end: endDate.getTime() },
+        tracks,
+        finalLayout,
+      );
+      pastDateCursor.setTime(endDate.getTime() + closedGapMs);
+    }
+
+    // 4. Plan de openstaande "to-do" issues
+    // Spreid de issues terug vanaf het einde van het kwartaal tot vandaag.
+    const openIssuesTimeWindowMs = Math.max(0, quarterEndDate.getTime() - today.getTime());
+    const totalOpenIssuesDurationMs = openIssues.reduce(
+      (sum, issue) => sum + (issue.points ?? this.DEFAULT_POINTS) * 24 * 60 * 60 * 1000,
+      0,
+    );
+    const openFreeSpaceMs = Math.max(0, openIssuesTimeWindowMs - totalOpenIssuesDurationMs);
+    const openGapMs = openIssues.length > 0 ? openFreeSpaceMs / openIssues.length : 0;
+    let futureDateCursor = new Date(quarterEndDate.getTime() - openGapMs / 2);
+
+    for (const issue of [...openIssues].reverse()) {
+      // Laagste prio eerst, zodat ze het verst in de toekomst komen
+      const durationDays = issue.points ?? this.DEFAULT_POINTS;
+      const endDate = new Date(futureDateCursor);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - durationDays);
+
+      if (startDate < today) startDate.setTime(today.getTime());
+      if (endDate < startDate) endDate.setTime(startDate.getTime());
+
+      this.placeIssueOnTrack(
+        { issue, startDate, endDate, start: startDate.getTime(), end: endDate.getTime() },
+        tracks,
+        finalLayout,
+      );
+      futureDateCursor.setTime(startDate.getTime() - openGapMs);
+    }
+
+    this.trackCount = Math.max(1, tracks.length);
+    this.positionedIssues = finalLayout;
+  }
+
+  private placeIssueOnTrack(plan: IssuePlan, tracks: TrackInfo[], finalLayout: PositionedIssue[]): void {
+    const minDurationInDays = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100);
+    const minDurationInMs = minDurationInDays * 24 * 60 * 60 * 1000;
+
+    if (plan.end <= plan.start) {
+      plan.end = plan.start + minDurationInMs;
+    }
+
+    const actualDurationInMs = plan.end - plan.start;
+    const effectiveDurationInMs = Math.max(actualDurationInMs, minDurationInMs);
+
+    const visualInterval = {
+      start: plan.start,
+      end: plan.start + effectiveDurationInMs + this.GAP_BUFFER_MS,
+    };
+
+    let bestTrackIndex = -1;
+
+    for (const [index, track] of tracks.entries()) {
+      const hasOverlap = track.intervals.some(
+        (existing) => visualInterval.start < existing.end && visualInterval.end > existing.start,
+      );
+      if (!hasOverlap) {
+        bestTrackIndex = index;
+        break;
       }
     }
 
-    this.trackCount = Math.max(1, trackEndTimes.length);
-    this.positionedIssues = finalLayout;
+    if (bestTrackIndex === -1) {
+      tracks.push({ intervals: [] });
+      bestTrackIndex = tracks.length - 1;
+    }
+
+    tracks[bestTrackIndex].intervals.push(visualInterval);
+    finalLayout.push({
+      issue: plan.issue,
+      track: bestTrackIndex,
+      style: this.calculateBarPosition(plan.startDate, plan.issue.points ?? this.DEFAULT_POINTS),
+    });
   }
 
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
@@ -121,22 +193,23 @@ export class MilestoneRowComponent implements OnInit {
     const clampedEndTime = Math.min(endDate.getTime(), timelineEndDate.getTime());
 
     const startDays = (clampedStartTime - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
-    const duration = Math.max(1, (clampedEndTime - clampedStartTime) / (1000 * 3600 * 24));
+    const durationInDays = (clampedEndTime - clampedStartTime) / (1000 * 3600 * 24);
+
+    const widthPercentage = (durationInDays / this.totalTimelineDays) * 100;
 
     return {
       left: `${(startDays / this.totalTimelineDays) * 100}%`,
-      width: `${(duration / this.totalTimelineDays) * 100}%`,
+      width: `${Math.max(widthPercentage, this.MIN_ISSUE_WIDTH_PERCENTAGE)}%`,
     };
   }
 
   private sortIssuesByPriority(issues: Issue[]): Issue[] {
     const priorityOrder: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4, no: 5 };
     return [...issues].sort((a, b) => {
-      const priorityAKey = a.issuePriority?.name.toLowerCase() ?? 'no';
-      const priorityBKey = b.issuePriority?.name.toLowerCase() ?? 'no';
-      const orderA = priorityOrder[priorityAKey] ?? 6;
-      const orderB = priorityOrder[priorityBKey] ?? 6;
-      return orderA - orderB;
+      const priorityA = priorityOrder[a.issuePriority?.name.toLowerCase() ?? 'no'] ?? 5;
+      const priorityB = priorityOrder[b.issuePriority?.name.toLowerCase() ?? 'no'] ?? 5;
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return b.number - a.number;
     });
   }
 }

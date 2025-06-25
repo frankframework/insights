@@ -9,6 +9,13 @@ import { LoaderComponent } from '../../components/loader/loader.component';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
 
+interface Version {
+  major: number;
+  minor: number;
+  patch: number;
+  source: string;
+}
+
 @Component({
   selector: 'app-release-roadmap',
   standalone: true,
@@ -23,14 +30,13 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   public openMilestones: Milestone[] = [];
   public milestoneIssues = new Map<string, Issue[]>();
   public timelineStartDate!: Date;
+  public timelineEndDate!: Date;
   public months: Date[] = [];
   public quarters: { name: string; monthCount: number }[] = [];
   public totalDays = 0;
-
   public displayDate!: Date;
   protected todayOffsetPercentage = 0;
   private viewInitialized = false;
-  private readonly DEFAULT_POINTS_ESTIMATE = 3;
 
   constructor(
     private milestoneService: MilestoneService,
@@ -65,27 +71,26 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   private generateTimelineFromPeriod(): void {
     if (!this.displayDate) return;
-
     const startMonth = this.displayDate.getMonth() < 6 ? 0 : 6;
     const year = this.displayDate.getFullYear();
     const startDate = new Date(year, startMonth, 1);
-    const endDate = new Date(year, startMonth + 6, 1);
+    const endDate = new Date(year, startMonth + 6, 0); // Laatste dag van de periode
 
     this.timelineStartDate = startDate;
+    this.timelineEndDate = endDate;
 
     this.months = [];
-    let currentDate = new Date(this.timelineStartDate);
-    while (currentDate < endDate) {
+    let currentDate = new Date(startDate);
+    while (currentDate.getMonth() !== endDate.getMonth() || currentDate.getFullYear() !== endDate.getFullYear()) {
       this.months.push(new Date(currentDate));
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
+    this.months.push(new Date(currentDate)); // Voeg de laatste maand toe
 
     this.generateQuarters();
-
     this.totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
-
     const today = new Date();
-    const daysFromStart = (today.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
+    const daysFromStart = (today.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
     this.todayOffsetPercentage = (daysFromStart / this.totalDays) * 100;
 
     this.loadRoadmapData();
@@ -100,7 +105,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
         switchMap((parsedMilestones) => {
           if (parsedMilestones.length === 0) {
             this.openMilestones = [];
-            return of({ milestones: [], issues: [] });
+            return of({ milestones: [] });
           }
           const issueRequests = parsedMilestones.map((m) =>
             this.issueService.getIssuesByMilestoneId(m.id).pipe(
@@ -110,13 +115,16 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
           );
           return forkJoin(issueRequests).pipe(
             map((issueResults) => {
+              this.milestoneIssues.clear();
               for (const result of issueResults) this.milestoneIssues.set(result.milestoneId, result.issues);
               return { milestones: parsedMilestones };
             }),
           );
         }),
-        map(({ milestones }) => this.estimateDueDates(milestones)),
+        // AANGEPAST: Nieuwe planningslogica wordt hier toegepast.
+        map(({ milestones }) => this.scheduleMilestones(milestones)),
         map((finalMilestones) => this.sortMilestones(finalMilestones)),
+        map((sortedMilestones) => this.filterMilestonesInView(sortedMilestones)),
         tap((finalMilestones) => (this.openMilestones = finalMilestones)),
         catchError((error) => {
           this.toastrService.error('Kon roadmap data niet laden.', 'Fout');
@@ -132,80 +140,120 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       .subscribe();
   }
 
-  private estimateDueDates(milestones: Milestone[]): Milestone[] {
-    const { withDate, withoutDate } = milestones.reduce(
-      (accumulator, m) => {
-        (m.dueOn ? accumulator.withDate : accumulator.withoutDate).push(m);
-        return accumulator;
-      },
-      { withDate: [] as Milestone[], withoutDate: [] as Milestone[] },
-    );
+  /**
+   * NIEUW: parseert een versiestring naar een object.
+   */
+  private parseVersion(title: string): Version | null {
+    const match = title.match(/(\d+)\.(\d+)\.(\d+)/);
+    if (!match) return null;
+    return {
+      major: Number.parseInt(match[1], 10),
+      minor: Number.parseInt(match[2], 10),
+      patch: Number.parseInt(match[3], 10),
+      source: title,
+    };
+  }
 
-    // eslint-disable-next-line unicorn/prefer-math-min-max
-    let lastDueDate = withDate.reduce((latest, m) => (m.dueOn! > latest ? m.dueOn! : latest), new Date(1970, 0, 1));
+  /**
+   * NIEUW: De kern van de nieuwe planningslogica.
+   * Herverdeelt milestones over kwartalen op basis van versienummers.
+   */
+  private scheduleMilestones(milestones: Milestone[]): Milestone[] {
+    const sortedByVersion = milestones
+      .map((m) => ({ milestone: m, version: this.parseVersion(m.title) }))
+      .filter((item) => item.version !== null)
+      .sort((a, b) => {
+        const vA = a.version!;
+        const vB = b.version!;
+        if (vA.major !== vB.major) return vA.major - vB.major;
+        if (vA.minor !== vB.minor) return vA.minor - vB.minor;
+        return vA.patch - vB.patch;
+      });
 
-    if (lastDueDate.getFullYear() === 1970) {
-      lastDueDate = new Date();
+    const scheduledMilestones: Milestone[] = [];
+    const planningStartDate = new Date(); // Start planning vanaf vandaag
+    let quarterCursor = new Date(planningStartDate);
+
+    const isMajorRelease = (v: Version) => v.patch === 0;
+
+    const majors = sortedByVersion.filter((m) => isMajorRelease(m.version!));
+    const minors = sortedByVersion.filter((m) => !isMajorRelease(m.version!));
+
+    // Plan eerst de majors, 1 per kwartaal
+    for (const item of majors) {
+      const year = quarterCursor.getFullYear();
+      const quarterIndex = Math.floor(quarterCursor.getMonth() / 3);
+      // Zet due date op het einde van het kwartaal
+      const dueDate = new Date(year, quarterIndex * 3 + 3, 0);
+
+      item.milestone.dueOn = dueDate;
+      scheduledMilestones.push(item.milestone);
+
+      // Schuif cursor naar volgend kwartaal
+      quarterCursor.setMonth(quarterCursor.getMonth() + 3);
     }
 
-    const estimatedMilestones = withoutDate.map((milestone) => {
-      const issues = this.milestoneIssues.get(milestone.id) || [];
-      const totalDuration = issues.reduce(
-        (accumulator, issue) => accumulator + (issue.points ?? this.DEFAULT_POINTS_ESTIMATE),
-        0,
-      );
+    // Reset cursor om minors te plannen
+    quarterCursor = new Date(planningStartDate);
+    let lastMinorSeries = '';
 
-      lastDueDate.setDate(lastDueDate.getDate() + 1);
-      const estimatedDueDate = new Date(lastDueDate);
-      estimatedDueDate.setDate(estimatedDueDate.getDate() + totalDuration);
+    // Plan vervolgens de minors
+    for (const item of minors) {
+      const series = `${item.version!.major}.${item.version!.minor}`;
+      if (series !== lastMinorSeries) {
+        // Nieuwe minor serie, reset de kwartaalcursor naar de start
+        quarterCursor = new Date(planningStartDate);
+      }
+      lastMinorSeries = series;
 
-      lastDueDate = estimatedDueDate;
+      const year = quarterCursor.getFullYear();
+      const quarterIndex = Math.floor(quarterCursor.getMonth() / 3);
+      const dueDate = new Date(year, quarterIndex * 3 + 3, 0);
 
-      return { ...milestone, dueOn: estimatedDueDate, isEstimated: true };
+      item.milestone.dueOn = dueDate;
+      scheduledMilestones.push(item.milestone);
+
+      quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+    }
+
+    return scheduledMilestones;
+  }
+
+  private filterMilestonesInView(milestones: Milestone[]): Milestone[] {
+    if (!this.timelineStartDate || !this.timelineEndDate) return milestones;
+    const viewStartTime = this.timelineStartDate.getTime();
+    const viewEndTime = this.timelineEndDate.getTime();
+
+    return milestones.filter((milestone) => {
+      if (!milestone.dueOn) return false;
+      const dueTime = milestone.dueOn.getTime();
+      // Toon milestone als de due date binnen de weergave valt.
+      return dueTime >= viewStartTime && dueTime <= viewEndTime;
     });
-
-    return [...withDate, ...estimatedMilestones];
   }
 
   private scrollToToday(): void {
     if (this.viewInitialized && this.scrollContainer?.nativeElement && this.todayOffsetPercentage > 0) {
       const container = this.scrollContainer.nativeElement;
-      const scrollWidth = container.scrollWidth;
-      const scrollTo = (this.todayOffsetPercentage / 100) * scrollWidth;
-      container.scrollLeft = scrollTo - container.clientWidth / 3;
+      container.scrollLeft = (this.todayOffsetPercentage / 100) * container.scrollWidth - container.clientWidth / 3;
     }
   }
 
   private parseMilestones(milestones: Milestone[]): Milestone[] {
-    return milestones.map((m) => ({
-      ...m,
-      dueOn: m.dueOn ? new Date(m.dueOn) : null,
-    }));
+    return milestones.map((m) => ({ ...m, dueOn: m.dueOn ? new Date(m.dueOn) : null }));
   }
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
-    return milestones.sort((a, b) => {
-      if (!a.dueOn) return 1;
-      if (!b.dueOn) return -1;
-      return a.dueOn.getTime() - b.dueOn.getTime();
-    });
+    return milestones.sort((a, b) => (a.dueOn?.getTime() ?? 0) - (b.dueOn?.getTime() ?? 0));
   }
 
   private generateQuarters(): void {
     this.quarters = [];
     if (this.months.length === 0) return;
-    let currentQuarter = -1;
-    for (const monthDate of this.months) {
-      const quarterIndex = Math.floor(monthDate.getMonth() / 3);
-      if (quarterIndex === currentQuarter) {
-        const lastQuarter = this.quarters.at(-1);
-        if (lastQuarter) {
-          lastQuarter.monthCount++;
-        }
-      } else {
-        currentQuarter = quarterIndex;
-        this.quarters.push({ name: `Q${quarterIndex + 1}`, monthCount: 1 });
-      }
-    }
+    const startQuarter = Math.floor(this.timelineStartDate.getMonth() / 3);
+    this.quarters.push(
+      { name: `Q${startQuarter + 1}`, monthCount: 3 },
+      { name: `Q${startQuarter + 2}`, monthCount: 3 },
+    );
   }
 }

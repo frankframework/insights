@@ -12,6 +12,9 @@ export interface Milestone {
   openIssueCount: number;
   closedIssueCount: number;
   isEstimated?: boolean;
+  major: number;
+  minor: number;
+  patch: number;
 }
 
 @Injectable({

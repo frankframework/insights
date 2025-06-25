@@ -9,7 +9,10 @@
   </div>
   <div class="timeline-header__row timeline-header__row--months">
     <div class="timeline-header__milestone-title-cell"></div>
-    <div class="timeline-header__grid-area" [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'">
+    <div
+      class="timeline-header__grid-area"
+      [style.grid-template-columns]="'repeat(' + months.length + ', minmax(0, 1fr))'"
+    >
       @for (month of months; track month.getTime()) {
         <div class="timeline-header__month-cell">{{ month | date: 'MMM' }}</div>
       }
