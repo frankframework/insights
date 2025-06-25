@@ -1,29 +1,39 @@
 .issue-bar {
   position: absolute;
   height: 1.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: help;
-  padding: 0 1px;
+  top: 0;
+  text-decoration: none;
+  // AANGEPAST: Padding toegevoegd zoals gevraagd.
+  padding: 0 0.5rem;
+  display: block;
+  z-index: 5;
+  // AANGEPAST: box-sizing zorgt ervoor dat de padding binnen de berekende breedte valt,
+  // wat helpt bij het voorkomen van onverwachte overlap.
+  box-sizing: border-box;
+
+  &:hover {
+    z-index: 20;
+  }
 }
+
 .issue-bar__inner {
+  position: relative;
   width: 100%;
   height: 100%;
   border-radius: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.5rem;
   border: 1px solid;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  overflow: hidden;
+  cursor: pointer;
 
-  &:hover {
-    transform: scale(1.05);
-    z-index: 10;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  &:hover .issue-bar__tooltip {
+    visibility: visible;
+    opacity: 1;
   }
 }
+
 .issue-bar__number {
   font-weight: 500;
   font-size: 0.75rem;
@@ -31,4 +41,41 @@
 }
 .issue-bar__number--closed {
   text-decoration: line-through;
+}
+
+.issue-bar__tooltip {
+  position: fixed;
+
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(0%, -75%);
+  margin-top: -10px;
+  z-index: 9999;
+  background-color: #1f2937;
+  color: #f9fafb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  padding: 1rem;
+  width: 300px;
+  max-width: 90vw;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+  white-space: normal;
+}
+.tooltip-detail {
+  font-size: 0.875rem;
+  color: #d1d5db;
+  margin: 0.25rem 0;
+}
+.tooltip-link {
+  display: block;
+  font-size: 0.75rem;
+  color: #93c5fd;
+  margin-top: 0.75rem;
 }
