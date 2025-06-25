@@ -1,7 +1,7 @@
 <div class="roadmap-container">
   <div class="roadmap-header">
     <app-roadmap-toolbar
-      [displayDate]="displayDate"
+      [periodLabel]="currentPeriodLabel"
       (changePeriod)="changePeriod($event)"
       (resetPeriod)="resetPeriod()"
     />
@@ -13,18 +13,20 @@
     <div class="roadmap-content">
       @if (openMilestones.length > 0) {
         <div #scrollContainer class="roadmap-content__scroll-container">
-          <app-timeline-header [months]="months" [quarters]="quarters" />
-          <div class="roadmap-body">
-            @if (todayOffsetPercentage > 0 && todayOffsetPercentage < 100) {
-              <div class="roadmap-body__today-marker" [style.left.%]="todayOffsetPercentage"></div>
-            }
-            <div
-              class="roadmap-body__grid-background"
-              [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'"
-            >
-              @for (month of months; track $index) {
-                <div class="roadmap-body__grid-line"></div>
+          <div class="roadmap-layout-grid">
+            <app-timeline-header [months]="months" [quarters]="quarters" />
+            <div class="roadmap-body">
+              @if (todayOffsetPercentage > 0 && todayOffsetPercentage < 100) {
+                <div class="roadmap-body__today-marker" [style.left.%]="todayOffsetPercentage"></div>
               }
+              <div
+                class="roadmap-body__grid-background"
+                [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'"
+              >
+                @for (month of months; track $index) {
+                  <div class="roadmap-body__grid-line"></div>
+                }
+              </div>
             </div>
             @for (milestone of openMilestones; track milestone.id; let isLast = $last) {
               <app-milestone-row

@@ -1,5 +1,5 @@
 <div class="pagination-controls">
-  <button class="control-button" title="Vorige 6 maanden" (click)="changePeriod.emit(-6)">
+  <button class="control-button" title="Vorig kwartaal" (click)="changePeriod.emit(-3)">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="18"
@@ -33,7 +33,7 @@
       <path d="m9 16 2 2 4-4" />
     </svg>
   </button>
-  <button class="control-button" title="Volgende 6 maanden" (click)="changePeriod.emit(6)">
+  <button class="control-button" title="Volgend kwartaal" (click)="changePeriod.emit(3)">
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="18"
@@ -48,5 +48,5 @@
       <path d="m9 18 6-6-6-6" />
     </svg>
   </button>
-  <span class="period-label">{{ currentPeriodLabel }}</span>
+  <span class="period-label">{{ periodLabel }}</span>
 </div>

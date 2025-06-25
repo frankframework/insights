@@ -9,15 +9,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./roadmap-toolbar.component.scss'],
 })
 export class RoadmapToolbarComponent {
-  @Input() displayDate!: Date;
+  @Input() periodLabel = '';
   @Output() changePeriod = new EventEmitter<number>();
   @Output() resetPeriod = new EventEmitter<void>();
-
-  get currentPeriodLabel(): string {
-    if (!this.displayDate) return '';
-    const year = this.displayDate.getFullYear();
-    const month = this.displayDate.getMonth();
-    const half = month < 6 ? 'H1' : 'H2';
-    return `${half} ${year}`;
-  }
 }

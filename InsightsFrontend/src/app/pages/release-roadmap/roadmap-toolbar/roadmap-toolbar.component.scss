@@ -2,6 +2,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  z-index: 2;
 }
 
 .control-button {
@@ -37,7 +38,6 @@
     bottom: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 50;
     padding-block: .5rem;
     padding-inline: 1.5rem;
     background-color: rgba(255, 255, 255, 0.9);

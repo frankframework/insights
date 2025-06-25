@@ -11,14 +11,6 @@ interface PositionedIssue {
   track: number;
 }
 
-interface IssuePlan {
-  issue: Issue;
-  startDate: Date;
-  endDate: Date;
-  start: number;
-  end: number;
-}
-
 interface TrackInfo {
   intervals: { start: number; end: number }[];
 }
@@ -40,14 +32,15 @@ export class MilestoneRowComponent implements OnInit {
   public positionedIssues: PositionedIssue[] = [];
   public trackCount = 1;
   public progressPercentage = 0;
+
   private readonly DEFAULT_POINTS = 3;
-  private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 2.5;
-  private readonly GAP_BUFFER_MS = 12 * 60 * 60 * 1000; // 12 uur
+  private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 3;
+  private readonly MINIMAL_GAP_MS = 60 * 60 * 1000;
 
   ngOnInit(): void {
     this.calculateProgress();
     if (this.milestone.dueOn) {
-      this.planAndLayoutIssues();
+      this.runAdvancedLayoutAlgorithm();
     }
   }
 
@@ -64,9 +57,10 @@ export class MilestoneRowComponent implements OnInit {
     this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
   }
 
-  private planAndLayoutIssues(): void {
+  private runAdvancedLayoutAlgorithm(): void {
     if (!this.milestone.dueOn) return;
 
+    // 1. SETUP: Definieer tijdvensters en sorteer issues
     const due = new Date(this.milestone.dueOn);
     const year = due.getFullYear();
     const quarterIndex = Math.floor(due.getMonth() / 3);
@@ -74,128 +68,127 @@ export class MilestoneRowComponent implements OnInit {
     const quarterEndDate = new Date(year, quarterIndex * 3 + 3, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const planningMidpoint = new Date(
+      Math.max(quarterStartDate.getTime(), Math.min(today.getTime(), quarterEndDate.getTime())),
+    );
 
-    const openIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.OPEN));
+    const closedWindow = { start: quarterStartDate.getTime(), end: planningMidpoint.getTime() };
+    const openWindow = { start: planningMidpoint.getTime(), end: quarterEndDate.getTime() };
+
     const closedIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.CLOSED));
+    const openIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.OPEN));
 
-    const finalLayout: PositionedIssue[] = [];
-    const tracks: TrackInfo[] = [];
+    const finalPositionedIssues: PositionedIssue[] = [];
+    let tracks: TrackInfo[] = [];
 
-    const closedIssuesTimeWindowMs = Math.max(0, today.getTime() - quarterStartDate.getTime());
-    const totalClosedIssuesDurationMs = closedIssues.reduce(
-      (sum, issue) => sum + (issue.points ?? this.DEFAULT_POINTS) * 24 * 60 * 60 * 1000,
-      0,
-    );
-    const closedFreeSpaceMs = Math.max(0, closedIssuesTimeWindowMs - totalClosedIssuesDurationMs);
-    const closedGapMs = closedIssues.length > 0 ? closedFreeSpaceMs / closedIssues.length : 0;
-    let pastDateCursor = new Date(quarterStartDate.getTime() + closedGapMs / 2);
+    // 2. PLAATS GESLOTEN ISSUES
+    tracks = this.distributeIssuesInBlock(closedIssues, closedWindow, tracks, finalPositionedIssues);
 
-    for (const issue of closedIssues) {
-      const durationDays = issue.points ?? this.DEFAULT_POINTS;
-      const startDate = new Date(pastDateCursor);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + durationDays);
+    // 3. PLAATS OPEN ISSUES
+    tracks = this.distributeIssuesInBlock(openIssues, openWindow, tracks, finalPositionedIssues);
 
-      if (endDate > today) endDate.setTime(today.getTime());
-      if (startDate > endDate) startDate.setTime(endDate.getTime());
-
-      this.placeIssueOnTrack(
-        { issue, startDate, endDate, start: startDate.getTime(), end: endDate.getTime() },
-        tracks,
-        finalLayout,
-      );
-      pastDateCursor.setTime(endDate.getTime() + closedGapMs);
-    }
-
-    // 4. Plan de openstaande "to-do" issues
-    // Spreid de issues terug vanaf het einde van het kwartaal tot vandaag.
-    const openIssuesTimeWindowMs = Math.max(0, quarterEndDate.getTime() - today.getTime());
-    const totalOpenIssuesDurationMs = openIssues.reduce(
-      (sum, issue) => sum + (issue.points ?? this.DEFAULT_POINTS) * 24 * 60 * 60 * 1000,
-      0,
-    );
-    const openFreeSpaceMs = Math.max(0, openIssuesTimeWindowMs - totalOpenIssuesDurationMs);
-    const openGapMs = openIssues.length > 0 ? openFreeSpaceMs / openIssues.length : 0;
-    let futureDateCursor = new Date(quarterEndDate.getTime() - openGapMs / 2);
-
-    for (const issue of [...openIssues].reverse()) {
-      // Laagste prio eerst, zodat ze het verst in de toekomst komen
-      const durationDays = issue.points ?? this.DEFAULT_POINTS;
-      const endDate = new Date(futureDateCursor);
-      const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - durationDays);
-
-      if (startDate < today) startDate.setTime(today.getTime());
-      if (endDate < startDate) endDate.setTime(startDate.getTime());
-
-      this.placeIssueOnTrack(
-        { issue, startDate, endDate, start: startDate.getTime(), end: endDate.getTime() },
-        tracks,
-        finalLayout,
-      );
-      futureDateCursor.setTime(startDate.getTime() - openGapMs);
-    }
-
+    // 4. FINALIZEER
+    this.positionedIssues = finalPositionedIssues;
     this.trackCount = Math.max(1, tracks.length);
-    this.positionedIssues = finalLayout;
   }
 
-  private placeIssueOnTrack(plan: IssuePlan, tracks: TrackInfo[], finalLayout: PositionedIssue[]): void {
-    const minDurationInDays = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100);
-    const minDurationInMs = minDurationInDays * 24 * 60 * 60 * 1000;
-
-    if (plan.end <= plan.start) {
-      plan.end = plan.start + minDurationInMs;
+  /**
+   * AANGEPAST: De berekening van benodigde tracks en de tussenruimte is verfijnd.
+   */
+  private distributeIssuesInBlock(
+    issues: Issue[],
+    window: { start: number; end: number },
+    tracks: TrackInfo[],
+    positionedIssues: PositionedIssue[],
+  ): TrackInfo[] {
+    if (issues.length === 0) {
+      return tracks;
     }
 
-    const actualDurationInMs = plan.end - plan.start;
-    const effectiveDurationInMs = Math.max(actualDurationInMs, minDurationInMs);
+    // Stap 1: Bereken het benodigde aantal tracks voor dit blok robuuster.
+    const totalDurationMs = issues.reduce((sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue), 0);
+    const windowDurationMs = window.end - window.start;
+    // We gebruiken 98% van de tijd om een buffer te hebben voor imperfecte packing.
+    const effectiveWindowMs = windowDurationMs * 0.98;
+    const numberTracksForBlock = effectiveWindowMs > 0 ? Math.ceil(totalDurationMs / effectiveWindowMs) || 1 : 1;
 
-    const visualInterval = {
-      start: plan.start,
-      end: plan.start + effectiveDurationInMs + this.GAP_BUFFER_MS,
-    };
+    // Stap 2: Verdeel de issues over de tracks (in-memory) voordat we plaatsen.
+    const issuesByTrack: Issue[][] = Array.from({ length: numberTracksForBlock }, () => []);
+    for (const [index, issue] of issues.entries()) {
+      const targetTrackIndex = index % numberTracksForBlock;
+      issuesByTrack[targetTrackIndex].push(issue);
+    }
 
-    let bestTrackIndex = -1;
+    // Stap 3: Plaats de issues per track, met evenredige verdeling van ruimte.
+    for (const [trackIndex, issuesOnThisTrack] of issuesByTrack.entries()) {
+      if (issuesOnThisTrack.length === 0) continue;
 
-    for (const [index, track] of tracks.entries()) {
-      const hasOverlap = track.intervals.some(
-        (existing) => visualInterval.start < existing.end && visualInterval.end > existing.start,
+      while (tracks.length <= trackIndex) {
+        tracks.push({ intervals: [] });
+      }
+
+      // AANGEPAST: De spacing is nu dynamisch en niet meer afhankelijk van een grote, vaste buffer.
+      const totalIssueDurationOnTrack = issuesOnThisTrack.reduce(
+        (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
+        0,
       );
-      if (!hasOverlap) {
-        bestTrackIndex = index;
-        break;
+      const totalFreeSpaceMs = windowDurationMs - totalIssueDurationOnTrack;
+      // Als er vrije ruimte is, verdeel die. Zo niet, gebruik een zeer kleine buffer.
+      const gapSize = totalFreeSpaceMs > 0 ? totalFreeSpaceMs / (issuesOnThisTrack.length + 1) : this.MINIMAL_GAP_MS;
+
+      let currentTime = window.start + gapSize;
+
+      for (const issue of issuesOnThisTrack) {
+        const durationMs = this.getIssueDurationMsWithMinWidth(issue);
+        this.commitPlacement(issue, currentTime, durationMs, trackIndex, tracks, positionedIssues);
+        currentTime += durationMs + gapSize;
       }
     }
 
-    if (bestTrackIndex === -1) {
-      tracks.push({ intervals: [] });
-      bestTrackIndex = tracks.length - 1;
-    }
+    return tracks;
+  }
 
-    tracks[bestTrackIndex].intervals.push(visualInterval);
+  private commitPlacement(
+    issue: Issue,
+    startTime: number,
+    durationMs: number,
+    trackIndex: number,
+    tracks: TrackInfo[],
+    finalLayout: PositionedIssue[],
+  ): void {
+    tracks[trackIndex].intervals.push({ start: startTime, end: startTime + durationMs });
     finalLayout.push({
-      issue: plan.issue,
-      track: bestTrackIndex,
-      style: this.calculateBarPosition(plan.startDate, plan.issue.points ?? this.DEFAULT_POINTS),
+      issue,
+      track: trackIndex,
+      style: this.calculateBarPosition(new Date(startTime), durationMs / (1000 * 3600 * 24)),
     });
   }
 
+  private getIssueDurationMs(issue: Issue): number {
+    const durationDays = issue.points ?? this.DEFAULT_POINTS;
+    return durationDays * 24 * 60 * 60 * 1000;
+  }
+
+  private getIssueDurationMsWithMinWidth(issue: Issue): number {
+    const durationMs = this.getIssueDurationMs(issue);
+    const minDurationInMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * 24 * 60 * 60 * 1000;
+    return Math.max(durationMs, minDurationInMs);
+  }
+
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + durationDays);
+    const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
     const timelineEndDate = new Date(this.timelineStartDate);
     timelineEndDate.setDate(timelineEndDate.getDate() + this.totalTimelineDays);
 
-    if (endDate < this.timelineStartDate || startDate > timelineEndDate) return { display: 'none' };
+    if (endDate < this.timelineStartDate || startDate > timelineEndDate) {
+      return { display: 'none' };
+    }
 
     const clampedStartTime = Math.max(startDate.getTime(), this.timelineStartDate.getTime());
     const clampedEndTime = Math.min(endDate.getTime(), timelineEndDate.getTime());
-
     const startDays = (clampedStartTime - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
-    const durationInDays = (clampedEndTime - clampedStartTime) / (1000 * 3600 * 24);
-
-    const widthPercentage = (durationInDays / this.totalTimelineDays) * 100;
+    const clampedDurationDays = (clampedEndTime - clampedStartTime) / (1000 * 3600 * 24);
+    const widthPercentage = (clampedDurationDays / this.totalTimelineDays) * 100;
 
     return {
       left: `${(startDays / this.totalTimelineDays) * 100}%`,
@@ -206,10 +199,27 @@ export class MilestoneRowComponent implements OnInit {
   private sortIssuesByPriority(issues: Issue[]): Issue[] {
     const priorityOrder: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4, no: 5 };
     return [...issues].sort((a, b) => {
-      const priorityA = priorityOrder[a.issuePriority?.name.toLowerCase() ?? 'no'] ?? 5;
-      const priorityB = priorityOrder[b.issuePriority?.name.toLowerCase() ?? 'no'] ?? 5;
-      if (priorityA !== priorityB) return priorityA - priorityB;
+      const priorityA = priorityOrder[this.getPriorityKey(a.issuePriority?.name)] ?? 5;
+      const priorityB = priorityOrder[this.getPriorityKey(b.issuePriority?.name)] ?? 5;
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+      const pointsA = a.points ?? this.DEFAULT_POINTS;
+      const pointsB = b.points ?? this.DEFAULT_POINTS;
+      if (pointsA !== pointsB) {
+        return pointsB - pointsA;
+      }
       return b.number - a.number;
     });
+  }
+
+  private getPriorityKey(priorityName: string | undefined): string {
+    if (!priorityName) return 'no';
+    const lowerCaseName = priorityName.toLowerCase();
+    const keys = ['critical', 'high', 'medium', 'low'];
+    for (const key of keys) {
+      if (lowerCaseName.includes(key)) return key;
+    }
+    return 'no';
   }
 }
