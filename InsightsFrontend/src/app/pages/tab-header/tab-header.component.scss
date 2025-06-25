@@ -6,6 +6,9 @@
   top: .5rem;
   left: 1rem;
   gap: 2rem;
+  padding: 0.5rem 0 0 1rem;
+  background-color: white;
+  z-index: 1000;
 
   @media (max-width: 540px) {
     gap: 1rem;

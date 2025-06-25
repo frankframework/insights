@@ -13,32 +13,52 @@ import { Issue } from '../../../services/issue.service';
 export class IssueBarComponent implements OnInit {
   @Input({ required: true }) issue!: Issue;
   @Input() issueStyle: Record<string, string> = {};
+
   public priorityStyle: Record<string, string> = {};
   public isClosed = false;
 
+  private readonly CLOSED_STYLE: Record<string, string> = {
+    'background-color': '#f3e8ff',
+    color: '#581c87',
+    'border-color': '#d8b4fe',
+  };
+
+  private readonly DEFAULT_STYLE: Record<string, string> = {
+    'background-color': '#e5e7eb',
+    color: '#4b5563',
+    'border-color': '#d1d5db',
+  };
+
   ngOnInit(): void {
     this.isClosed = this.issue.state === GitHubStates.CLOSED;
-    this.setPriorityStyle();
+    this.priorityStyle = this.getStyleForState();
   }
 
-  private setPriorityStyle(): void {
+  private getStyleForState(): Record<string, string> {
     if (this.isClosed) {
-      this.priorityStyle = {
-        'background-color': '#f3e8ff',
-        color: '#581c87',
-        'border-color': '#d8b4fe',
-      };
-      return;
+      return this.CLOSED_STYLE;
     }
-    const color = this.issue.issuePriority?.color;
-    const defaultStyles = { 'background-color': '#e5e7eb', color: '#4b5563', 'border-color': '#d1d5db' };
-    this.priorityStyle =
-      color && /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color)
-        ? {
-            'background-color': `#${color}25`,
-            color: `#${color}`,
-            'border-color': `#${color}`,
-          }
-        : defaultStyles;
+
+    const priorityColor = this.issue.issuePriority?.color;
+    if (this.isValidHexColor(priorityColor)) {
+      return this.getPriorityStyles(priorityColor!);
+    }
+
+    return this.DEFAULT_STYLE;
+  }
+
+  private getPriorityStyles(color: string): Record<string, string> {
+    return {
+      'background-color': `#${color}25`, // Add alpha transparency
+      color: `#${color}`,
+      'border-color': `#${color}`,
+    };
+  }
+
+  private isValidHexColor(color: string | undefined | null): color is string {
+    if (!color) {
+      return false;
+    }
+    return /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
   }
 }
