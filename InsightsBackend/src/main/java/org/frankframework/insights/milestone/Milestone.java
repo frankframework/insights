@@ -3,7 +3,6 @@ package org.frankframework.insights.milestone;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-
 import java.time.OffsetDateTime;
 import java.util.Set;
 import lombok.Getter;
@@ -25,16 +24,16 @@ public class Milestone {
     @Column(nullable = false, unique = true)
     private String title;
 
-	private String url;
+    private String url;
 
     @Column(nullable = false)
     private GitHubPropertyState state;
 
-	private OffsetDateTime dueOn;
+    private OffsetDateTime dueOn;
 
-	private int openIssueCount;
+    private int openIssueCount;
 
-	private int closedIssueCount;
+    private int closedIssueCount;
 
     @OneToMany(mappedBy = "milestone")
     @JsonManagedReference("milestone-issue")
