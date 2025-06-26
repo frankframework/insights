@@ -2,14 +2,12 @@ services:
   frontend:
     build: ./InsightsFrontend
     restart: always
-    volumes:
-      - ./InsightsFrontend/dist/insights-frontend/browser:/usr/share/nginx/html
     networks:
       - FFInsightsNetwork
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "4200:80"
     container_name: frontend
 
   backend:

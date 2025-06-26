@@ -21,10 +21,10 @@ jobs:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
       - name: Lint backend
-        run: |
-          mvn clean checkstyle:check | tee backend-lint.log
+        run: mvn clean checkstyle:check | tee backend-lint.log
         working-directory: InsightsBackend
       - name: Upload Backend Lint Logs
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: backend-lint-log
@@ -42,10 +42,10 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Lint frontend
-        run: |
-          npm run lint | tee frontend-lint.log
+        run: npm run lint | tee frontend-lint.log
         working-directory: InsightsFrontend
       - name: Upload Frontend Lint Logs
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: frontend-lint-log
@@ -55,19 +55,6 @@ jobs:
     name: Backend Unit Test
     runs-on: ubuntu-latest
     needs: [backend-lint]
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        ports: [5432:5432]
-        options: >-
-          --health-cmd="pg_isready"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -81,14 +68,10 @@ jobs:
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-${{ runner.os }}-
       - name: Backend Unit Tests
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/testdb
-          SPRING_DATASOURCE_USERNAME: testuser
-          SPRING_DATASOURCE_PASSWORD: testpass
-        run: |
-          mvn test --file pom.xml | tee test.log
+        run: mvn test --file pom.xml | tee test.log
         working-directory: InsightsBackend
       - name: Upload Backend Test Logs
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-logs
@@ -115,18 +98,17 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Frontend Unit Tests
-        run: |
-          npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
+        run: npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
         working-directory: InsightsFrontend
       - name: Upload Frontend Test Logs
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: frontend-test-logs
           path: InsightsFrontend/test.log
 
   backend-build:
-    name: Backend Build
-    if: github.event_name == 'pull_request'
+    name: Build Backend
     runs-on: ubuntu-latest
     needs: [backend-test]
     steps:
@@ -136,18 +118,16 @@ jobs:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
       - name: Build backend
-        run: |
-          mvn package -DskipTests --file pom.xml | tee build.log
+        run: mvn package -DskipTests --file pom.xml
         working-directory: InsightsBackend
-      - name: Upload Backend Build Logs
+      - name: Upload Backend Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: backend-build-logs
-          path: InsightsBackend/build.log
+          name: backend-jar
+          path: InsightsBackend/target/*.jar
 
   frontend-build:
-    name: Frontend Build
-    if: github.event_name == 'pull_request'
+    name: Build Frontend
     runs-on: ubuntu-latest
     needs: [frontend-test]
     steps:
@@ -158,19 +138,102 @@ jobs:
       - name: Install dependencies
         run: npm ci
         working-directory: InsightsFrontend
-      - name: Build frontend
-        run: |
-          npm run build | tee build.log
+      - name: Build frontend (development config)
+        run: npm run build -- --configuration=development
         working-directory: InsightsFrontend
-      - name: Upload Frontend Build Logs
+      - name: Upload Frontend Artifact for E2E
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-build-logs
-          path: InsightsFrontend/build.log
+          name: frontend-dist-dev
+          path: InsightsFrontend/dist/
+
+  e2e-test:
+    name: End-to-End Testing
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: insights
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Download Backend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: backend-artifact
+      - name: Download Frontend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist-dev
+          path: frontend-artifact
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JDK_VERSION }}
+          distribution: 'temurin'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install Cypress Dependencies
+        run: npm ci
+        working-directory: ./InsightsFrontend
+      - name: Start Backend and Frontend Services
+        env:
+          SPRING_PROFILES_ACTIVE: local
+        run: |
+          java -jar ./backend-artifact/*.jar &
+          npm install -g http-server
+          http-server ./frontend-artifact/insights-frontend/browser -p 4200 --cors &
+      - name: Wait for Backend Application
+        run: |
+          echo "Waiting for backend application to be healthy..."
+          RETRY_COUNT=0
+          MAX_RETRIES=20
+          RETRY_INTERVAL=5
+          until curl -s -f http://localhost:8080/actuator/health > /dev/null; do
+            if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
+              echo "Error: Timed out waiting for backend."
+              exit 1
+            fi
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Backend not ready. Retrying in ${RETRY_INTERVAL}s..."
+            sleep ${RETRY_INTERVAL}
+          done
+          echo "Backend is up and healthy!"
+      - name: Load E2E Data into Database
+        env:
+          PGPASSWORD: postgres
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql -h localhost -p 5432 -U postgres -d insights -f ./data-e2e.sql
+          echo "Data successfully loaded."
+      - name: Run Cypress E2E Tests
+        run: npm run cypress:run
+        working-directory: ./InsightsFrontend
+      - name: Upload E2E Test Logs and Videos
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-artifacts
+          path: |
+            InsightsFrontend/cypress/videos/
+            InsightsFrontend/cypress/screenshots/
 
   docker-dispatch:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    needs: [backend-lint, frontend-lint, backend-test, frontend-test]
+    needs: [e2e-test]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Docker Publish workflow

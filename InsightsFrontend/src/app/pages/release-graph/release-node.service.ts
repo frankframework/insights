@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { Release } from '../../services/release.service';
-import { ReleaseGraphComponent } from './release-graph.component';
 
 export interface Position {
   x: number;
@@ -13,14 +12,11 @@ export interface ReleaseNode {
   position: Position;
   color: string;
   branch: string;
+  originalBranch?: string;
   publishedAt: Date;
 }
 
-interface SyntheticNode extends ReleaseNode {
-  isSynthetic?: boolean;
-}
-
-const SupportColors = {
+export const SupportColors = {
   FULL: '#30A102',
   SECURITY: '#EF9302',
   NONE: '#FD230E',
@@ -28,54 +24,213 @@ const SupportColors = {
 
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
+  private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
 
-  public sortReleases(releases: Release[]): Map<string, ReleaseNode[]>[] {
-    const grouped = this.groupReleasesByBranch(releases);
-    this.sortGroupedReleases(grouped);
+  /**
+   * Structureert de release-data voor de graaf.
+   */
+  public structureReleaseData(releases: Release[]): Map<string, ReleaseNode[]>[] {
+    const hydratedReleases = releases.map((r) => ({
+      ...r,
+      publishedAt: new Date(r.publishedAt),
+    }));
 
-    const masterBranch = ReleaseGraphComponent.GITHUB_MASTER_BRANCH;
-    const masterReleases = this.createReleaseNodes(grouped.get(masterBranch) ?? []);
-    grouped.delete(masterBranch);
+    const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
+    this.sortGroupedReleases(groupedByBranch);
 
-    const otherGroups = this.createOtherReleaseGroups(grouped, masterReleases, masterBranch);
-    this.sortByDate(masterReleases);
+    const masterNodes = this.createReleaseNodes(groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? []);
+    groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
 
-    return [new Map([[masterBranch, masterReleases]]), ...otherGroups];
+    const subBranchMaps: Map<string, ReleaseNode[]>[] = [];
+
+    for (const [branchName, branchReleases] of groupedByBranch.entries()) {
+      if (branchReleases.length === 0) continue;
+
+      const subBranchNodes = this.createReleaseNodes(branchReleases);
+
+      const anchorNode = subBranchNodes.shift()!;
+      anchorNode.originalBranch = branchName;
+      masterNodes.push(anchorNode);
+
+      if (subBranchNodes.length > 0) {
+        subBranchMaps.push(new Map([[branchName, subBranchNodes]]));
+      }
+    }
+
+    this.sortByDate(masterNodes);
+
+    const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
+    return [masterMap, ...subBranchMaps];
   }
 
-  public calculateReleaseCoordinates(sortedGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
-    const nodeMap = this.flattenGroupMaps(sortedGroups);
+  /**
+   * Berekent de X- en Y-coördinaten voor elke release-node.
+   */
+  public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
+    if (structuredGroups.length === 0) {
+      return new Map();
+    }
 
-    const masterBranch = ReleaseGraphComponent.GITHUB_MASTER_BRANCH;
-    const masterNodes = nodeMap.get(masterBranch) ?? [];
+    const nodeMap = this.flattenGroupMaps(structuredGroups);
+    const masterNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
+
     this.positionMasterNodes(masterNodes);
 
     const positionedNodes = new Map<string, ReleaseNode[]>();
-    positionedNodes.set(masterBranch, masterNodes);
+    positionedNodes.set(ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes);
 
-    const subBranches = this.getSortedSubBranches(nodeMap, masterBranch);
+    const subBranches = this.getSortedSubBranches(nodeMap);
     this.positionSubBranches(subBranches, masterNodes, positionedNodes);
 
     return positionedNodes;
   }
 
+  /**
+   * Kent een kleur toe aan elke node op basis van de support-status.
+   */
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): ReleaseNode[] {
     const allNodes: ReleaseNode[] = [];
-
     for (const nodes of releaseGroups.values()) {
-      for (const release of nodes) {
-        release.color = this.determineColor(release);
-        allNodes.push(release);
+      for (const node of nodes) {
+        node.color = this.determineColor(node);
+        allNodes.push(node);
       }
     }
-
     return allNodes;
   }
 
+  private groupReleasesByBranch(
+    releases: (Release & { publishedAt: Date })[],
+  ): Map<string, (Release & { publishedAt: Date })[]> {
+    const grouped = new Map<string, (Release & { publishedAt: Date })[]>();
+    for (const release of releases) {
+      const branch = release.branch.name;
+      if (!grouped.has(branch)) {
+        grouped.set(branch, []);
+      }
+      grouped.get(branch)!.push(release);
+    }
+    return grouped;
+  }
+
+  private sortGroupedReleases(grouped: Map<string, { publishedAt: Date }[]>): void {
+    for (const releases of grouped.values()) {
+      this.sortByDate(releases);
+    }
+  }
+
+  private createReleaseNodes(releases: (Release & { publishedAt: Date })[]): ReleaseNode[] {
+    return releases.map((r) => ({
+      id: r.id,
+      label: r.name,
+      branch: r.branch.name,
+      publishedAt: r.publishedAt,
+      color: '',
+      position: { x: 0, y: 0 },
+    }));
+  }
+
+  private sortByDate(nodes: { publishedAt: Date }[]): void {
+    nodes.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
+  }
+
+  private flattenGroupMaps(groupMaps: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
+    const flatMap = new Map<string, ReleaseNode[]>();
+    for (const group of groupMaps) {
+      for (const [branch, nodes] of group.entries()) {
+        flatMap.set(branch, nodes);
+      }
+    }
+    return flatMap;
+  }
+
+  private positionMasterNodes(nodes: ReleaseNode[]): void {
+    const SPACING = 250;
+    for (const [index, node] of nodes.entries()) {
+      node.position = { x: index * SPACING, y: 0 };
+    }
+  }
+
+  private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
+    return [...nodeMap.entries()]
+      .filter(([branch]) => branch !== ReleaseNodeService.GITHUB_MASTER_BRANCH)
+      .sort(([branchA], [branchB]) => {
+        const versionA = this.getVersionFromBranchName(branchA);
+        const versionB = this.getVersionFromBranchName(branchB);
+
+        if (!versionA || !versionB) return 0;
+
+        if (versionB.major !== versionA.major) {
+          return versionB.major - versionA.major;
+        }
+
+        return versionB.minor - versionA.minor;
+      });
+  }
+
+  private getVersionFromBranchName(branchName: string): { major: number; minor: number } | null {
+    const match = branchName.match(/(\d+)\.(\d+)/);
+    if (match && match[1] && match[2]) {
+      return {
+        major: Number.parseInt(match[1], 10),
+        minor: Number.parseInt(match[2], 10),
+      };
+    }
+    return null;
+  }
+
+  private positionSubBranches(
+    subBranches: [string, ReleaseNode[]][],
+    masterNodes: ReleaseNode[],
+    positionedNodes: Map<string, ReleaseNode[]>,
+  ): void {
+    const Y_SPACING = 90;
+    let yLevel = 1;
+
+    for (const [branchName, subNodes] of subBranches) {
+      if (subNodes.every((n) => this.isUnsupported(n))) continue;
+
+      const anchorNode = masterNodes.find((n) => n.originalBranch === branchName);
+      if (!anchorNode) continue;
+
+      const baseX = anchorNode.position.x;
+      const baseY = yLevel * Y_SPACING;
+
+      this.positionSubBranchNodes(subNodes, baseX, baseY);
+
+      positionedNodes.set(branchName, subNodes);
+      yLevel++;
+    }
+  }
+
+  /**
+   * AANGEPAST: De initiële offset is nu een combinatie van een vaste waarde
+   * en een dynamische, op het label gebaseerde waarde.
+   */
+  private positionSubBranchNodes(subNodes: ReleaseNode[], baseX: number, baseY: number): void {
+    const firstNode = subNodes[0];
+
+    const BASE_X_SPACING = 102.5;
+    const INITIAL_OFFSET = 100;
+
+    const firstNodeLabelWidth = firstNode.label ? firstNode.label.length * 3 : 0;
+    const labelBasedOffset = firstNodeLabelWidth / 2;
+
+    const totalInitialOffset = INITIAL_OFFSET + labelBasedOffset;
+
+    let currentX = baseX + totalInitialOffset;
+
+    for (const node of subNodes) {
+      node.position = { x: currentX, y: baseY };
+
+      const labelWidth = node.label ? node.label.length * 8 : 0;
+      currentX += BASE_X_SPACING + labelWidth / 2;
+    }
+  }
+
   private determineColor(release: ReleaseNode): string {
-    const label = release.label.toLowerCase();
-    if (label.includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
       return 'darkblue';
     }
 
@@ -88,178 +243,25 @@ export class ReleaseNodeService {
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
-    const now = new Date();
     const { securitySupportEnd } = this.getSupportEndDates(release);
-    return now > securitySupportEnd;
+    return new Date() > securitySupportEnd;
   }
 
   private getSupportEndDates(release: ReleaseNode): { fullSupportEnd: Date; securitySupportEnd: Date } {
     const versionMatch = release.label.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?/i);
     const isMajor = versionMatch
-      ? Number.parseInt(versionMatch[3] ?? '0', 10) === 0 && !/rc|b/i.test(release.label.toLowerCase())
+      ? Number.parseInt(versionMatch[3] ?? '0', 10) === 0 && !/rc|b/i.test(release.label)
       : false;
 
     const fullSupportMonths = isMajor ? 12 : 3;
     const securitySupportMonths = isMajor ? 24 : 6;
 
     const published = new Date(release.publishedAt);
-
     const fullSupportEnd = new Date(published);
     fullSupportEnd.setMonth(published.getMonth() + fullSupportMonths);
-
     const securitySupportEnd = new Date(published);
     securitySupportEnd.setMonth(published.getMonth() + securitySupportMonths);
 
     return { fullSupportEnd, securitySupportEnd };
-  }
-
-  private groupReleasesByBranch(releases: Release[]): Map<string, Release[]> {
-    const grouped = new Map<string, Release[]>();
-    for (const release of releases) {
-      const branch = release.branch.name;
-      if (!grouped.has(branch)) grouped.set(branch, []);
-      grouped.get(branch)!.push(release);
-    }
-    return grouped;
-  }
-
-  private sortGroupedReleases(grouped: Map<string, Release[]>): void {
-    for (const [, releases] of grouped) {
-      releases.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
-    }
-  }
-
-  private createReleaseNodes(releases: Release[]): ReleaseNode[] {
-    return releases.map((r) => ({
-      id: r.id,
-      label: r.name,
-      branch: r.branch.name,
-      publishedAt: new Date(r.publishedAt),
-      color: '',
-      position: { x: 0, y: 0 },
-    }));
-  }
-
-  private createOtherReleaseGroups(
-    grouped: Map<string, Release[]>,
-    masterReleases: ReleaseNode[],
-    masterBranch: string,
-  ): Map<string, ReleaseNode[]>[] {
-    return [...grouped.entries()].map(([branch, group]) => {
-      const releaseNodes = this.createReleaseNodes(group);
-
-      const syntheticNode = this.createSyntheticNodeIfNeeded(releaseNodes[0], branch, masterBranch);
-      if (syntheticNode) {
-        this.insertSyntheticNode(masterReleases, syntheticNode);
-      }
-
-      return new Map([[branch, releaseNodes]]);
-    });
-  }
-
-  private createSyntheticNodeIfNeeded(
-    firstNode: ReleaseNode,
-    branch: string,
-    masterBranch: string,
-  ): SyntheticNode | null {
-    const versionMatch = firstNode.label.match(/^v?(\d+)\.(\d+)/);
-    if (!versionMatch) return null;
-
-    return {
-      id: `synthetic-${branch}-${firstNode.id}`,
-      label: `v${versionMatch[1]}.${versionMatch[2]}`,
-      position: { x: 0, y: 0 },
-      color: 'gray',
-      branch: masterBranch,
-      publishedAt: new Date(firstNode.publishedAt),
-      isSynthetic: true,
-    };
-  }
-
-  private insertSyntheticNode(masterReleases: ReleaseNode[], syntheticNode: SyntheticNode): void {
-    const insertIndex = masterReleases.findIndex((m) => m.publishedAt > syntheticNode.publishedAt);
-    if (insertIndex === -1) {
-      masterReleases.push(syntheticNode);
-    } else {
-      masterReleases.splice(insertIndex, 0, syntheticNode);
-    }
-  }
-
-  private sortByDate(nodes: ReleaseNode[]): void {
-    nodes.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
-  }
-
-  private flattenGroupMaps(groupMaps: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
-    const result = new Map<string, ReleaseNode[]>();
-    for (const group of groupMaps) {
-      for (const [branch, nodes] of group.entries()) {
-        result.set(branch, nodes);
-      }
-    }
-    return result;
-  }
-
-  private positionMasterNodes(nodes: ReleaseNode[]): void {
-    const spacing = 250;
-    for (const [index, node] of nodes.entries()) {
-      node.position = { x: index * spacing, y: 0 };
-    }
-  }
-
-  private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>, masterBranch: string): [string, ReleaseNode[]][] {
-    return [...nodeMap.entries()]
-      .filter(([branch]) => branch !== masterBranch)
-      .sort(([, a], [, b]) => b[0].publishedAt.getTime() - a[0].publishedAt.getTime());
-  }
-
-  private positionSubBranches(
-    subBranches: [string, ReleaseNode[]][],
-    masterNodes: ReleaseNode[],
-    positionedNodes: Map<string, ReleaseNode[]>,
-  ): void {
-    const ySpacing = 75;
-
-    for (const [index, [branch, subNodes]] of subBranches.entries()) {
-      if (subNodes.length === 0) continue;
-      if (subNodes.every((n) => this.isUnsupported(n))) continue;
-
-      const firstSub = subNodes[0];
-      const versionMatch = firstSub.label.match(/^v?(\d+)\.(\d+)/);
-      if (!versionMatch) continue;
-
-      const synthetic = masterNodes.find(
-        (n) => n.label === `v${versionMatch[1]}.${versionMatch[2]}` && (n as SyntheticNode).isSynthetic,
-      );
-      if (!synthetic) continue;
-
-      const baseX = synthetic.position.x + 35;
-      const baseY = (index + 1) * ySpacing;
-
-      const positioned = this.positionSubBranchNodes(subNodes, baseX);
-
-      for (const node of positioned) {
-        node.position.y = baseY;
-      }
-
-      positionedNodes.set(branch, positioned);
-    }
-  }
-
-  private positionSubBranchNodes(subNodes: ReleaseNode[], baseX: number): ReleaseNode[] {
-    const baseXSpacing = 125;
-    let previousExtraSpacing = 0;
-    return subNodes.map((n, index_) => {
-      const extraSpacing = n.label ? n.label.length * 5 : 0;
-      const halfPrevious = previousExtraSpacing / 2;
-      const halfThis = extraSpacing / 3;
-      const x = baseX + index_ * baseXSpacing + halfPrevious + halfThis;
-      previousExtraSpacing = extraSpacing;
-
-      return {
-        ...n,
-        position: { x, y: 0 },
-        extraSpacing,
-      } as ReleaseNode;
-    });
   }
 }

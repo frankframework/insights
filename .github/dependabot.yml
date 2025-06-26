@@ -1,0 +1,12 @@
+version: 2
+
+updates:
+  - package-ecosystem: "maven"
+    directory: "/InsightsBackend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/InsightsFrontend"
+    schedule:
+      interval: "weekly"
