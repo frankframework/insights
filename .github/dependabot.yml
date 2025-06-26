@@ -20,3 +20,4 @@ updates:
       angular-upgrade:
         patterns:
           - "@angular*"
+          - "typescript"
