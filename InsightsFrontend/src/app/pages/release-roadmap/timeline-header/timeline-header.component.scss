@@ -3,6 +3,7 @@
   top: 0;
   min-width: 1800px;
   z-index: 5;
+  border-bottom: 1px solid #e2e8f0;
 
   .row {
     display: grid;
@@ -16,17 +17,16 @@
   .title-cell {
     padding: 1rem;
     font-weight: 600;
-    color: #374151;
     border-right: 1px solid #e2e8f0;
+    background-color: #f7f8fb;
     position: relative;
     left: 0;
-    background-color: #f8fafc;
     z-index: 3;
   }
 
   .grid-area {
     display: grid;
-    background-color: #f8fafc;
+    background-color: #f7f8fb;
   }
 
   & .quarters-row {
@@ -40,14 +40,15 @@
 
   & .months-row {
     .grid-area {
-      background-color: #eff6ff;
+      background-color: #f7f8fb;
     }
   }
 
   .quarter-cell, .month-cell {
     text-align: center;
     padding: 0.5rem 0;
-    border-right: 1px solid #e2e8f0;
+    border-right: 1px solid #eef4fd;
+    background-color: #f7f8fb;
 
     &:last-child {
       border-right-width: 0;
@@ -56,12 +57,10 @@
 
   .quarter-cell {
     font-weight: 600;
-    color: #1e3a8a;
   }
 
   .month-cell {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1d4ed8;
   }
 }

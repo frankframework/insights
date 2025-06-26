@@ -1,9 +1,8 @@
 package org.frankframework.insights.common.entityconnection.branchpullrequest;
 
 import jakarta.persistence.*;
-import java.util.UUID;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -11,16 +10,15 @@ import org.frankframework.insights.pullrequest.PullRequest;
 @Entity
 @Getter
 @Setter
-@RequiredArgsConstructor
+@NoArgsConstructor
+@IdClass(BranchPullRequestId.class)
 public class BranchPullRequest {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
     @ManyToOne
     @JoinColumn(nullable = false)
     private Branch branch;
 
+    @Id
     @ManyToOne(cascade = {CascadeType.MERGE})
     @JoinColumn(nullable = false)
     private PullRequest pullRequest;

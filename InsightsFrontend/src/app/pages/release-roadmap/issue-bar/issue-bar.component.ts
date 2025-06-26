@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
@@ -14,8 +14,11 @@ export class IssueBarComponent implements OnInit {
   @Input({ required: true }) issue!: Issue;
   @Input() issueStyle: Record<string, string> = {};
 
+  @ViewChild('tooltipElement') tooltipRef!: ElementRef<HTMLDivElement>;
+
   public priorityStyle: Record<string, string> = {};
   public isClosed = false;
+  public tooltipTransformStyle = '';
 
   private readonly CLOSED_STYLE: Record<string, string> = {
     'background-color': '#f3e8ff',
@@ -32,6 +35,17 @@ export class IssueBarComponent implements OnInit {
   ngOnInit(): void {
     this.isClosed = this.issue.state === GitHubStates.CLOSED;
     this.priorityStyle = this.getStyleForState();
+  }
+
+  public updateTooltipPosition(): void {
+    setTimeout(() => {
+      if (this.tooltipRef?.nativeElement) {
+        const tooltipHeight = this.tooltipRef.nativeElement.offsetHeight;
+        const dynamicOffsetY = tooltipHeight / 2;
+
+        this.tooltipTransformStyle = `translate(0, calc(-125% + ${dynamicOffsetY}px))`;
+      }
+    }, 0);
   }
 
   private getStyleForState(): Record<string, string> {

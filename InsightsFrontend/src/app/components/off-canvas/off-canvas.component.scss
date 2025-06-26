@@ -9,7 +9,7 @@
   overflow: hidden;
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateX(0);
-  z-index: 10;
+  z-index: 25;
 
   &.closed {
     transform: translateX(100%);

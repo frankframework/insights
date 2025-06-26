@@ -11,7 +11,6 @@ import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubNodeDTO;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issuePriority.IssuePriority;
 import org.frankframework.insights.issuePriority.IssuePriorityResponse;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -38,7 +37,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class IssueService {
 
-    private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final IssueRepository issueRepository;
@@ -50,7 +48,6 @@ public class IssueService {
     private final ReleaseService releaseService;
 
     public IssueService(
-            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             IssueRepository issueRepository,
@@ -60,7 +57,6 @@ public class IssueService {
             LabelService labelService,
             IssuePriorityService issuePriorityService,
             ReleaseService releaseService) {
-        this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
@@ -77,19 +73,7 @@ public class IssueService {
      * @throws IssueInjectionException if an error occurs during the injection process
      */
     public void injectIssues() throws IssueInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubIssueCount()
-                == issueRepository.count()) {
-            log.info("Issues already found in the database");
-            return;
-        }
-
         try {
-            log.info("Amount of issues found in database: {}", issueRepository.count());
-            log.info(
-                    "Amount of issues found in GitHub: {}",
-                    gitHubRepositoryStatisticsService
-                            .getGitHubRepositoryStatisticsDTO()
-                            .getGitHubIssueCount());
             log.info("Start injecting GitHub issues");
 
             Set<IssueDTO> issueDTOS = gitHubClient.getIssues();
