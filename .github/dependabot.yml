@@ -10,3 +10,7 @@ updates:
     directory: "/InsightsFrontend"
     schedule:
       interval: "weekly"
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
