@@ -19,4 +19,12 @@ updates:
     groups:
       angular-upgrade:
         patterns:
-          - "@angular*"
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "@angular/cli"
+          - "@angular-eslint/*"
+          - "typescript"
+          - "zone.js"
+          - "rxjs"
+          - "ng2-charts"
+          - "ngx-toastr"
