@@ -1,8 +1,6 @@
 # Frank!Framework Insights
 
-**Live Application:** [**insights.frankframework.org**](https://insights.frankframework.org)
-
----
+[![Live Application](https://img.shields.io/badge/Live_Application-insights.frankframework.org-blue)](https://insights.frankframework.org)
 
 The Frank!Framework insights application is an open-source tool designed to provide in-depth insights into the development and release lifecycle of the [Frank!Framework](https://github.com/frankframework/frankframework).
 
@@ -28,9 +26,13 @@ By analyzing the ratios and connections between these elements, users can gain a
 ## System Architecture
 
 The backend fetches data from external APIs (currently primarily the GitHub API), processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
+
 This external API represents itself as any possible external API that can be connected to the Frank!Framework Insights application, which can retrieve data from this API for use in the application. The application is built to be highly scalable with these integrations, allowing all necessary external data sources to be connected.
 
-*[A component diagram will be added here to illustrate the data flow.]*
+![Insights-components-without-text](https://github.com/user-attachments/assets/278d03eb-d230-4246-93fe-705b0343dce6)
+<p align="start">
+  <em>A high-level overview of the data flow from external APIs to the user.</em>
+</p>
 
 ## Quick Local Setup with Docker
 
@@ -61,7 +63,7 @@ For active development, a manual setup provides more granular control over the i
 * Java Development Kit (JDK 21) & Apache Maven
 * Node.js & Angular CLI (`npm install -g @angular/cli`)
 * A PostgreSQL database instance.
-* **IDE:**
+* IDE:
     * For Frontend: **WebStorm** or **VS Code**.
     * For Backend: **IntelliJ IDEA**, **Eclipse**, or **VS Code**.
 * **(Optional)** A database tool like **pgAdmin** to manage your database.
@@ -88,7 +90,7 @@ For active development, a manual setup provides more granular control over the i
         ```
         -Dspring.profiles.active=local
         ```
-      This tells the application to load its settings from `application-local.properties`.
+        This tells the application to load its settings from `application-local.properties`.
 
     * **Create & Configure Database:**
         * Create a new, empty database in your PostgreSQL instance.
@@ -101,7 +103,7 @@ For active development, a manual setup provides more granular control over the i
             ```
 
     * **Configure GitHub API Access:**
-      The application needs a GitHub token to fetch data from the Frank!Framework organization.
+        The application needs a GitHub token to fetch data from the Frank!Framework organization.
         * Create a **GitHub Personal Access Token (PAT)** with the necessary permissions (e.g., `read:org`, `project`). Follow the official guide: [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
         * Add your GitHub Personal Access token and the GitHub Project ID to `application-local.properties`:
             ```properties
@@ -110,11 +112,11 @@ For active development, a manual setup provides more granular control over the i
             ```
 
     * **Initial Data Injection:**
-      To populate your database with data from GitHub for the first time, set the following property in `application-local.properties`:
+        To populate your database with data from GitHub for the first time, set the following property in `application-local.properties`:
         ```properties
         github.fetch=true
         ```
-      After the first successful run, it's recommended for development purposes to set this to `false` to avoid refetching all data on every application start.
+        After the first successful run, it's recommended for development purposes to set this to `false` to avoid refetching all data on every application start.
 
     * **Run Application:** Start the backend application directly from your IDE.
 
