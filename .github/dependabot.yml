@@ -4,13 +4,27 @@ updates:
   - package-ecosystem: "maven"
     directory: "/InsightsBackend"
     schedule:
-      interval: "weekly"
-
+      interval: "daily"
+    labels:
+      - "Dependencies"
+      - "Java"
+      
   - package-ecosystem: "npm"
     directory: "/InsightsFrontend"
     schedule:
       interval: "weekly"
+    labels:
+      - "Dependencies"
+      - "JavaScript"
     groups:
-      angular:
+      angular-upgrade:
         patterns:
-          - "@angular*"
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "@angular/cli"
+          - "typescript"
+          - "zone.js"
+          - "rxjs"
+          - "ng2-charts"
+          - "ngx-toastr"
+          - "@angular-eslint/*"
