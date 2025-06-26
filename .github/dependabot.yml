@@ -13,4 +13,4 @@ updates:
     groups:
       angular:
         patterns:
-          - "@angular/*"
+          - "@angular*"
