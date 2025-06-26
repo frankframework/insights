@@ -1,20 +1,17 @@
 <div class="timeline-header">
-  <div class="timeline-header__row timeline-header__row--quarters">
-    <div class="timeline-header__milestone-title-cell">Release</div>
-    <div class="timeline-header__grid-area" [style.grid-template-columns]="quartersGridStyle">
+  <div class="row quarters-row">
+    <div class="title-cell">Release</div>
+    <div class="grid-area" [style.grid-template-columns]="quartersGridStyle">
       @for (quarter of quarters; track quarter.name) {
-        <div class="timeline-header__quarter-cell">{{ quarter.name }}</div>
+        <div class="quarter-cell">{{ quarter.name }}</div>
       }
     </div>
   </div>
-  <div class="timeline-header__row timeline-header__row--months">
-    <div class="timeline-header__milestone-title-cell"></div>
-    <div
-      class="timeline-header__grid-area"
-      [style.grid-template-columns]="'repeat(' + months.length + ', minmax(0, 1fr))'"
-    >
-      @for (month of months; track month.getTime()) {
-        <div class="timeline-header__month-cell">{{ month | date: 'MMM' }}</div>
+  <div class="row months-row">
+    <div class="title-cell"></div>
+    <div class="grid-area" [style.grid-template-columns]="'repeat(' + months.length + ', minmax(0, 1fr))'">
+      @for (month of months; track month) {
+        <div class="month-cell">{{ month | date: 'MMM' }}</div>
       }
     </div>
   </div>

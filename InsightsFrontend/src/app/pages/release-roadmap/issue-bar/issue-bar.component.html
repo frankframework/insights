@@ -1,7 +1,7 @@
 <a target="_blank" class="issue-bar" [href]="issue.url" [ngStyle]="issueStyle" [title]="issue.title">
-  <div class="issue-bar-inner" [ngStyle]="priorityStyle">
-    <span class="issue-bar-number">{{ issue.number }}</span>
-    <div class="issue-bar-tooltip">
+  <div class="inner" [ngStyle]="priorityStyle">
+    <span class="number">{{ issue.number }}</span>
+    <div class="tooltip">
       <h4 class="tooltip-title">{{ issue.title }}</h4>
       @if (issue.issuePriority) {
         <p class="tooltip-detail"><strong>Priority:</strong> {{ issue.issuePriority.name }}</p>

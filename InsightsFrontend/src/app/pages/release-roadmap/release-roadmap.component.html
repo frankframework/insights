@@ -1,5 +1,5 @@
 <div class="roadmap-container">
-  <div class="roadmap-header">
+  <div class="header">
     <app-roadmap-toolbar
       [periodLabel]="currentPeriodLabel"
       (changePeriod)="changePeriod($event)"
@@ -10,27 +10,24 @@
   @if (isLoading) {
     <app-loader />
   } @else {
-    <div class="roadmap-content">
+    <div class="content">
       @if (openMilestones.length > 0) {
-        <div #scrollContainer class="roadmap-content__scroll-container">
+        <div #scrollContainer class="scroll-container">
           <app-timeline-header [months]="months" [quarters]="quarters" />
 
-          <div class="roadmap-body">
-            <div class="roadmap-body__background">
+          <div class="body">
+            <div class="background">
               @if (todayOffsetPercentage > 0 && todayOffsetPercentage < 100) {
-                <div class="roadmap-body__today-marker" [style.left.%]="todayOffsetPercentage"></div>
+                <div class="today-marker" [style.left.%]="todayOffsetPercentage"></div>
               }
-              <div
-                class="roadmap-body__grid-lines"
-                [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'"
-              >
+              <div class="grid-lines" [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'">
                 @for (month of months; track $index) {
-                  <div class="roadmap-body__grid-line"></div>
+                  <div class="grid-line"></div>
                 }
               </div>
             </div>
 
-            <div class="roadmap-body__milestone-lanes">
+            <div class="milestone-lanes">
               @for (milestone of openMilestones; track milestone.id; let isLast = $last) {
                 <app-milestone-row
                   [milestone]="milestone"
@@ -44,9 +41,9 @@
           </div>
         </div>
       } @else {
-        <div class="roadmap-empty-state">
-          <h3>Geen openstaande milestones</h3>
-          <p>Er zijn geen geplande releases om weer te geven in deze periode.</p>
+        <div class="empty-state">
+          <h3>No open milestones</h3>
+          <p>There are no scheduled releases to display in this period.</p>
         </div>
       }
     </div>
