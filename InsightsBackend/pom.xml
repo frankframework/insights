@@ -45,7 +45,7 @@
 		<spring.graphql.version>1.3.4</spring.graphql.version>
 		<spring.shedlock>6.9.0</spring.shedlock>
 		<postgresql.version>42.7.5</postgresql.version>
-		<lombok.version>1.18.36</lombok.version>
+		<lombok.version>1.18.38</lombok.version>
 		<spotless.version>2.44.2</spotless.version>
 		<junit.version>5.11.4</junit.version>
 		<mockito.version>5.15.2</mockito.version>
