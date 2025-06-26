@@ -29,9 +29,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class IssueServiceTest {
 
     @Mock
-    private GitHubRepositoryStatisticsService statisticsService;
-
-    @Mock
     private GitHubClient gitHubClient;
 
     @Mock
@@ -171,19 +168,6 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_skips_whenCountsEqual() throws GitHubClientException, IssueInjectionException {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(2);
-        when(issueRepository.count()).thenReturn(2L);
-
-        issueService.injectIssues();
-
-        verify(gitHubClient, never()).getIssues();
-        verify(issueRepository, never()).saveAll(anySet());
-        verify(issueLabelRepository, never()).saveAll(anySet());
-    }
-
-    @Test
     public void injectIssues_savesAllAndHandlesTypeMilestoneAndLabels()
             throws GitHubClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dto1, dto2);
@@ -194,9 +178,6 @@ public class IssueServiceTest {
         Map<String, Milestone> milestones = Map.of("m1", milestone);
         Map<String, IssueType> issueTypes = Map.of("it1", issueType);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(4);
-        when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(DTOs);
         when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
         when(issueTypeService.getAllIssueTypesMap()).thenReturn(issueTypes);
@@ -222,9 +203,6 @@ public class IssueServiceTest {
     public void injectIssues_mapsPriorityAndPointsFromProjectItems()
             throws GitHubClientException, IssueInjectionException {
         when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
-        when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -239,9 +217,6 @@ public class IssueServiceTest {
     @Test
     public void injectIssues_handlesMissingPriorityMappingGracefully() throws GitHubClientException {
         when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
-        when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(Set.of(dtoSub));
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -251,9 +226,6 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_handlesFieldValuesWithNullNode() throws GitHubClientException {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
-        when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -265,9 +237,6 @@ public class IssueServiceTest {
     public void injectIssues_assignsSubIssues() throws GitHubClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dtoSub, dto2);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(5);
-        when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenReturn(DTOs);
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
         when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
@@ -283,9 +252,6 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_catchesAndWrapsException() throws GitHubClientException {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statsDTO);
-        when(statsDTO.getGitHubIssueCount()).thenReturn(3);
-        when(issueRepository.count()).thenReturn(2L);
         when(gitHubClient.getIssues()).thenThrow(new GitHubClientException("fail", null));
         assertThrows(IssueInjectionException.class, () -> issueService.injectIssues());
     }

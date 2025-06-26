@@ -52,7 +52,8 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.viewInitialized = true;
-    this.scrollToToday();
+    // Use a small timeout to ensure the DOM has been fully painted after data load
+    setTimeout(() => this.scrollToToday(), 0);
   }
 
   public changePeriod(months: number): void {
@@ -102,8 +103,18 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   private calculateTodayMarkerPosition(): void {
     this.totalDays = (this.timelineEndDate.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24) + 1;
     const today = new Date();
-    const daysFromStart = (today.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
-    this.todayOffsetPercentage = (daysFromStart / this.totalDays) * 100;
+    if (today < this.timelineStartDate || today > this.timelineEndDate) {
+      this.todayOffsetPercentage = 0;
+      return;
+    }
+
+    const totalDuration = this.timelineEndDate.getTime() - this.timelineStartDate.getTime();
+    if (totalDuration <= 0) {
+      this.todayOffsetPercentage = 0;
+      return;
+    }
+    const todayOffset = today.getTime() - this.timelineStartDate.getTime();
+    this.todayOffsetPercentage = (todayOffset / totalDuration) * 100;
   }
 
   private generateQuarters(): void {
@@ -162,7 +173,8 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
         finalize(() => {
           this.isLoading = false;
           this.cdr.detectChanges();
-          this.scrollToToday();
+          // Defer scroll until after view has been updated
+          setTimeout(() => this.scrollToToday(), 0);
         }),
       )
       .subscribe();
@@ -245,7 +257,14 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   private scrollToToday(): void {
     if (this.viewInitialized && this.scrollContainer?.nativeElement && this.todayOffsetPercentage > 0) {
       const container = this.scrollContainer.nativeElement;
-      container.scrollLeft = (this.todayOffsetPercentage / 100) * container.scrollWidth - container.clientWidth / 3;
+      const titleWidth = window.innerWidth >= 1024 ? 300 : 150;
+
+      const scrollableWidth = container.scrollWidth - container.clientWidth;
+      const timelineAreaWidth = container.scrollWidth - titleWidth;
+      const todayMarkerAbsolutePosition = (this.todayOffsetPercentage / 100) * timelineAreaWidth;
+      const desiredScrollLeft = todayMarkerAbsolutePosition - container.clientWidth / 3;
+
+      container.scrollLeft = Math.max(0, Math.min(desiredScrollLeft, scrollableWidth));
     }
   }
 
