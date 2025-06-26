@@ -3,5 +3,9 @@
     "**/*.ts",
     "../cypress.config.ts"
   ],
-  "exclude": []
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ]
 }
