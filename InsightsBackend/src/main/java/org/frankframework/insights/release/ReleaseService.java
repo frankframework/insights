@@ -13,7 +13,6 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.pullrequest.PullRequest;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +24,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ReleaseService {
 
-    private final GitHubRepositoryStatisticsService statisticsService;
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final ReleaseRepository releaseRepository;
@@ -40,7 +38,6 @@ public class ReleaseService {
     /**
      * Constructor for ReleaseService.
      *
-     * @param statisticsService Service for GitHub repository statistics.
      * @param gitHubClient Client for interacting with GitHub API.
      * @param mapper Mapper for converting between DTOs and entities.
      * @param releaseRepository Repository for managing Release entities.
@@ -48,13 +45,11 @@ public class ReleaseService {
      * @param releasePullRequestRepository Repository for managing ReleasePullRequest entities.
      */
     public ReleaseService(
-            GitHubRepositoryStatisticsService statisticsService,
             GitHubClient gitHubClient,
             Mapper mapper,
             ReleaseRepository releaseRepository,
             BranchService branchService,
             ReleasePullRequestRepository releasePullRequestRepository) {
-        this.statisticsService = statisticsService;
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.releaseRepository = releaseRepository;
@@ -69,11 +64,6 @@ public class ReleaseService {
      * @throws ReleaseInjectionException if an error occurs during the injection process.
      */
     public void injectReleases() throws ReleaseInjectionException {
-        if (statisticsService.getGitHubRepositoryStatisticsDTO().getGitHubReleaseCount() == releaseRepository.count()) {
-            log.info("Releases already exist in the database.");
-            return;
-        }
-
         try {
             Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
             List<Branch> allBranches = branchService.getAllBranches();

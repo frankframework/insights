@@ -313,7 +313,7 @@ public class GitHubClientTest {
     @Test
     public void getRepositoryStatistics_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null, null);
+        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null);
         doReturn(stats)
                 .when(gitHubClient)
                 .fetchSingleEntity(
@@ -540,8 +540,7 @@ public class GitHubClientTest {
                 new GitHubTotalCountDTO(10),
                 new GitHubTotalCountDTO(5),
                 new GitHubRefsDTO(List.of(new GitHubRefsDTO.GitHubBranchNodeDTO(
-                        "main", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(2))))),
-                new GitHubTotalCountDTO(1));
+                        "main", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(2))))));
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
 
