@@ -1,11 +1,11 @@
 <div class="milestone-row" [class.milestone-row--last]="isLast">
-  <div class="milestone-row__title-cell">
-    <a target="_blank" class="milestone-row__title-link" [href]="milestone.url">{{ milestone.title }}</a>
+  <div class="title-cell">
+    <a target="_blank" class="title-link" [href]="milestone.url">{{ milestone.title }}</a>
     @if (milestone.dueOn) {
-      <p class="milestone-row__detail">
+      <p class="detail">
         Due: {{ milestone.dueOn | date: 'dd-MM-yyyy' }}
         @if (milestone.isEstimated) {
-          <span class="milestone-row__estimated-icon" title="Geschatte datum">
+          <span class="estimated-icon" title="Estimated date">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="14"
@@ -24,25 +24,21 @@
         }
       </p>
     } @else {
-      <p class="milestone-row__detail milestone-row__detail--unplanned">Ongepland</p>
+      <p class="detail unplanned">Unplanned</p>
     }
-    <div class="milestone-row__progress-bar-container">
-      <div
-        class="milestone-row__progress-bar"
-        [style.width.%]="progressPercentage"
-        [title]="progressPercentage + '% voltooid'"
-      ></div>
+    <div class="progress-bar-container">
+      <div class="progress-bar" [style.width.%]="progressPercentage" [title]="progressPercentage + '% completed'"></div>
     </div>
-    <div class="milestone-row__counts">
+    <div class="counts">
       <span>{{ milestone.openIssueCount }} open</span>
       <span>/</span>
-      <span>{{ milestone.closedIssueCount }} gesloten</span>
+      <span>{{ milestone.closedIssueCount }} closed</span>
     </div>
   </div>
-  <div class="milestone-row__issue-track-area" [style.height.rem]="trackCount * 2.25">
+  <div class="issue-track-area" [style.height.rem]="trackCount * 2.25">
     @if (milestone.dueOn) {
       @for (trackNumber of getTracks(); track trackNumber) {
-        <div class="milestone-row__issue-track">
+        <div class="issue-track">
           @for (positionedIssue of getIssuesForTrack(trackNumber); track positionedIssue.issue.id) {
             <app-issue-bar [issue]="positionedIssue.issue" [issueStyle]="positionedIssue.style" />
           }

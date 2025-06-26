@@ -22,7 +22,7 @@ export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.mediaQueryList = globalThis.matchMedia('(max-width: 540px)');
+    this.mediaQueryList = globalThis.matchMedia('(max-width: 992px)');
     this.isSmallScreen = this.mediaQueryList?.matches ?? false;
     this.mediaListener = (): void => {
       this.isSmallScreen = this.mediaQueryList?.matches ?? false;

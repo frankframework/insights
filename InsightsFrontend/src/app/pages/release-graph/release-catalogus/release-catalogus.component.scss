@@ -8,11 +8,11 @@
   position: fixed;
   z-index: 15;
 
-  @media (min-width: 540px) {
+  @media (min-width: 999px) {
     top: 1.5rem;
   }
 
-  @media (max-width: 540px) {
+  @media (max-width: 992px) {
     bottom: 1.25rem;
   }
 }

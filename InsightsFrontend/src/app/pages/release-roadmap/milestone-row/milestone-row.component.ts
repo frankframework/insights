@@ -1,9 +1,9 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
-import { Issue } from '../../../services/issue.service';
-import { GitHubStates } from '../../../app.service';
+import { Issue, IssuePriority } from '../../../services/issue.service';
+import { GitHubState, GitHubStates } from '../../../app.service';
 
 interface PositionedIssue {
   issue: Issue;
@@ -15,10 +15,15 @@ interface TrackInfo {
   intervals: { start: number; end: number }[];
 }
 
+interface PlanningWindow {
+  start: number;
+  end: number;
+}
+
 @Component({
   selector: 'app-milestone-row',
   standalone: true,
-  imports: [CommonModule, IssueBarComponent],
+  imports: [CommonModule, IssueBarComponent, DatePipe],
   templateUrl: './milestone-row.component.html',
   styleUrls: ['./milestone-row.component.scss'],
 })
@@ -52,13 +57,87 @@ export class MilestoneRowComponent implements OnInit {
     return Array.from({ length: this.trackCount }, (_, index) => index);
   }
 
-  private calculateProgress(): void {
-    const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
-    this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
+  private runAdvancedLayoutAlgorithm(): void {
+    const { closedWindow, openWindow } = this.getPlanningWindows();
+    if (!closedWindow || !openWindow) return;
+
+    const closedIssues = this.getSortedIssues(GitHubStates.CLOSED);
+    const openIssues = this.getSortedIssues(GitHubStates.OPEN);
+
+    const finalPositionedIssues: PositionedIssue[] = [];
+    let tracks: TrackInfo[] = [];
+
+    tracks = this.distributeIssuesInWindow(closedIssues, closedWindow, tracks, finalPositionedIssues);
+    tracks = this.distributeIssuesInWindow(openIssues, openWindow, tracks, finalPositionedIssues);
+
+    this.positionedIssues = finalPositionedIssues;
+    this.trackCount = Math.max(1, tracks.length);
   }
 
-  private runAdvancedLayoutAlgorithm(): void {
-    if (!this.milestone.dueOn) return;
+  private distributeIssuesInWindow(
+    issues: Issue[],
+    window: PlanningWindow,
+    tracks: TrackInfo[],
+    positionedIssues: PositionedIssue[],
+  ): TrackInfo[] {
+    if (issues.length === 0) return tracks;
+
+    const trackCount = this.estimateTrackCount(issues, window);
+    const issuesByTrack = this.groupIssuesIntoTracks(issues, trackCount);
+
+    for (const [trackIndex, issuesOnThisTrack] of issuesByTrack.entries()) {
+      this.placeIssuesForSingleTrack(issuesOnThisTrack, window, trackIndex, tracks, positionedIssues);
+    }
+
+    return tracks;
+  }
+
+  private estimateTrackCount(issues: Issue[], window: PlanningWindow): number {
+    const totalDurationMs = issues.reduce((sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue), 0);
+    const windowDurationMs = window.end - window.start;
+    const effectiveWindowMs = windowDurationMs * 0.98; // Use 98% of window for some margin
+    return effectiveWindowMs > 0 ? Math.ceil(totalDurationMs / effectiveWindowMs) || 1 : 1;
+  }
+
+  private groupIssuesIntoTracks(issues: Issue[], trackCount: number): Issue[][] {
+    const issuesByTrack: Issue[][] = Array.from({ length: trackCount }, () => []);
+    for (const [index, issue] of issues.entries()) {
+      issuesByTrack[index % trackCount].push(issue);
+    }
+    return issuesByTrack;
+  }
+
+  private placeIssuesForSingleTrack(
+    issuesOnTrack: Issue[],
+    window: PlanningWindow,
+    trackIndex: number,
+    tracks: TrackInfo[],
+    positionedIssues: PositionedIssue[],
+  ): void {
+    if (issuesOnTrack.length === 0) return;
+
+    while (tracks.length <= trackIndex) {
+      tracks.push({ intervals: [] });
+    }
+
+    const windowDurationMs = window.end - window.start;
+    const totalIssueDurationOnTrack = issuesOnTrack.reduce(
+      (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
+      0,
+    );
+    const totalFreeSpaceMs = windowDurationMs - totalIssueDurationOnTrack;
+    const gapSize = totalFreeSpaceMs > 0 ? totalFreeSpaceMs / (issuesOnTrack.length + 1) : this.MINIMAL_GAP_MS;
+
+    let currentTime = window.start + gapSize;
+    for (const issue of issuesOnTrack) {
+      const durationMs = this.getIssueDurationMsWithMinWidth(issue);
+      this.commitPlacement(issue, currentTime, durationMs, trackIndex, tracks, positionedIssues);
+      currentTime += durationMs + gapSize;
+    }
+  }
+
+  private getPlanningWindows(): { closedWindow: PlanningWindow; openWindow: PlanningWindow } | Record<string, never> {
+    if (!this.milestone.dueOn) return {};
 
     const due = new Date(this.milestone.dueOn);
     const year = due.getFullYear();
@@ -67,76 +146,20 @@ export class MilestoneRowComponent implements OnInit {
     const quarterEndDate = new Date(year, quarterIndex * 3 + 3, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     const planningMidpoint = new Date(
       Math.max(quarterStartDate.getTime(), Math.min(today.getTime(), quarterEndDate.getTime())),
     );
 
-    const closedWindow = { start: quarterStartDate.getTime(), end: planningMidpoint.getTime() };
-    const openWindow = { start: planningMidpoint.getTime(), end: quarterEndDate.getTime() };
-
-    const closedIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.CLOSED));
-    const openIssues = this.sortIssuesByPriority(this.issues.filter((index) => index.state === GitHubStates.OPEN));
-
-    const finalPositionedIssues: PositionedIssue[] = [];
-    let tracks: TrackInfo[] = [];
-
-    tracks = this.distributeIssuesInBlock(closedIssues, closedWindow, tracks, finalPositionedIssues);
-
-    tracks = this.distributeIssuesInBlock(openIssues, openWindow, tracks, finalPositionedIssues);
-
-    this.positionedIssues = finalPositionedIssues;
-    this.trackCount = Math.max(1, tracks.length);
+    return {
+      closedWindow: { start: quarterStartDate.getTime(), end: planningMidpoint.getTime() },
+      openWindow: { start: planningMidpoint.getTime(), end: quarterEndDate.getTime() },
+    };
   }
 
-  private distributeIssuesInBlock(
-    issues: Issue[],
-    window: { start: number; end: number },
-    tracks: TrackInfo[],
-    positionedIssues: PositionedIssue[],
-  ): TrackInfo[] {
-    if (issues.length === 0) {
-      return tracks;
-    }
-
-    const totalDurationMs = issues.reduce((sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue), 0);
-    const windowDurationMs = window.end - window.start;
-    const effectiveWindowMs = windowDurationMs * 0.98;
-    const numberTracksForBlock = effectiveWindowMs > 0 ? Math.ceil(totalDurationMs / effectiveWindowMs) || 1 : 1;
-
-    // Stap 2: Verdeel de issues over de tracks (in-memory) voordat we plaatsen.
-    const issuesByTrack: Issue[][] = Array.from({ length: numberTracksForBlock }, () => []);
-    for (const [index, issue] of issues.entries()) {
-      const targetTrackIndex = index % numberTracksForBlock;
-      issuesByTrack[targetTrackIndex].push(issue);
-    }
-
-    // Stap 3: Plaats de issues per track, met evenredige verdeling van ruimte.
-    for (const [trackIndex, issuesOnThisTrack] of issuesByTrack.entries()) {
-      if (issuesOnThisTrack.length === 0) continue;
-
-      while (tracks.length <= trackIndex) {
-        tracks.push({ intervals: [] });
-      }
-
-      // AANGEPAST: De spacing is nu dynamisch en niet meer afhankelijk van een grote, vaste buffer.
-      const totalIssueDurationOnTrack = issuesOnThisTrack.reduce(
-        (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
-        0,
-      );
-      const totalFreeSpaceMs = windowDurationMs - totalIssueDurationOnTrack;
-      // Als er vrije ruimte is, verdeel die. Zo niet, gebruik een zeer kleine buffer.
-      const gapSize = totalFreeSpaceMs > 0 ? totalFreeSpaceMs / (issuesOnThisTrack.length + 1) : this.MINIMAL_GAP_MS;
-
-      let currentTime = window.start + gapSize;
-
-      for (const issue of issuesOnThisTrack) {
-        const durationMs = this.getIssueDurationMsWithMinWidth(issue);
-        this.commitPlacement(issue, currentTime, durationMs, trackIndex, tracks, positionedIssues);
-        currentTime += durationMs + gapSize;
-      }
-    }
-
-    return tracks;
+  private calculateProgress(): void {
+    const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
+    this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
   }
 
   private commitPlacement(
@@ -153,17 +176,6 @@ export class MilestoneRowComponent implements OnInit {
       track: trackIndex,
       style: this.calculateBarPosition(new Date(startTime), durationMs / (1000 * 3600 * 24)),
     });
-  }
-
-  private getIssueDurationMs(issue: Issue): number {
-    const durationDays = issue.points ?? this.DEFAULT_POINTS;
-    return durationDays * 24 * 60 * 60 * 1000;
-  }
-
-  private getIssueDurationMsWithMinWidth(issue: Issue): number {
-    const durationMs = this.getIssueDurationMs(issue);
-    const minDurationInMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * 24 * 60 * 60 * 1000;
-    return Math.max(durationMs, minDurationInMs);
   }
 
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
@@ -187,26 +199,36 @@ export class MilestoneRowComponent implements OnInit {
     };
   }
 
-  private sortIssuesByPriority(issues: Issue[]): Issue[] {
+  private getIssueDurationMs(issue: Issue): number {
+    return (issue.points ?? this.DEFAULT_POINTS) * 24 * 60 * 60 * 1000;
+  }
+
+  private getIssueDurationMsWithMinWidth(issue: Issue): number {
+    const durationMs = this.getIssueDurationMs(issue);
+    const minDurationInMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * 24 * 60 * 60 * 1000;
+    return Math.max(durationMs, minDurationInMs);
+  }
+
+  private getSortedIssues(state: GitHubState): Issue[] {
+    const issues = this.issues.filter((issue) => issue.state === state);
     const priorityOrder: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4, no: 5 };
+
     return [...issues].sort((a, b) => {
-      const priorityA = priorityOrder[this.getPriorityKey(a.issuePriority?.name)] ?? 5;
-      const priorityB = priorityOrder[this.getPriorityKey(b.issuePriority?.name)] ?? 5;
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
+      const priorityA = priorityOrder[this.getPriorityKey(a.issuePriority)] ?? 5;
+      const priorityB = priorityOrder[this.getPriorityKey(b.issuePriority)] ?? 5;
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
       const pointsA = a.points ?? this.DEFAULT_POINTS;
       const pointsB = b.points ?? this.DEFAULT_POINTS;
-      if (pointsA !== pointsB) {
-        return pointsB - pointsA;
-      }
+      if (pointsA !== pointsB) return pointsB - pointsA;
+
       return b.number - a.number;
     });
   }
 
-  private getPriorityKey(priorityName: string | undefined): string {
-    if (!priorityName) return 'no';
-    const lowerCaseName = priorityName.toLowerCase();
+  private getPriorityKey(priority: IssuePriority | undefined | null): string {
+    if (!priority?.name) return 'no';
+    const lowerCaseName = priority.name.toLowerCase();
     const keys = ['critical', 'high', 'medium', 'low'];
     for (const key of keys) {
       if (lowerCaseName.includes(key)) return key;

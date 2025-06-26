@@ -55,18 +55,12 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     this.scrollToToday();
   }
 
-  /**
-   * AANGEPAST: Verschuift de periode met 3 maanden (een kwartaal).
-   */
   public changePeriod(months: number): void {
     this.displayDate.setMonth(this.displayDate.getMonth() + months);
-    this.displayDate = new Date(this.displayDate); // Forceer change detection
+    this.displayDate = new Date(this.displayDate); // Force change detection
     this.generateTimelineFromPeriod();
   }
 
-  /**
-   * AANGEPAST: Zet de weergave zodat het huidige kwartaal links begint.
-   */
   public resetPeriod(): void {
     const today = new Date();
     const currentQuarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
@@ -78,67 +72,59 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     return this.milestoneIssues.get(milestoneId) || [];
   }
 
-  /**
-   * VOLLEDIG HERSCHREVEN: Genereert een rollende timeline van 6 maanden
-   * gebaseerd op de `displayDate` als startpunt.
-   */
   private generateTimelineFromPeriod(): void {
     if (!this.displayDate) return;
 
-    // 1. Bepaal de start- en einddatum van de 6-maanden periode
+    this.calculateTimelineBoundaries();
+    this.generateMonths();
+    this.generateQuarters();
+    this.calculateTodayMarkerPosition();
+    this.loadRoadmapData();
+  }
+
+  private calculateTimelineBoundaries(): void {
     this.timelineStartDate = new Date(this.displayDate);
     const endDate = new Date(this.timelineStartDate);
     endDate.setMonth(endDate.getMonth() + 6);
-    endDate.setDate(0); // Ga naar de laatste dag van de vorige maand (einde van de 6e maand)
+    endDate.setDate(0);
     this.timelineEndDate = endDate;
+  }
 
-    // 2. Genereer de array van maanden voor de header
+  private generateMonths(): void {
     this.months = [];
     let currentDate = new Date(this.timelineStartDate);
     while (currentDate <= this.timelineEndDate) {
       this.months.push(new Date(currentDate));
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
+  }
 
-    // 3. Genereer de kwartalen en het label voor de toolbar
-    this.generateQuarters();
-
-    // 4. Bereken de totale duur en de positie van de 'vandaag'-marker
+  private calculateTodayMarkerPosition(): void {
     this.totalDays = (this.timelineEndDate.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24) + 1;
     const today = new Date();
     const daysFromStart = (today.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
     this.todayOffsetPercentage = (daysFromStart / this.totalDays) * 100;
-
-    // 5. Laad de data voor de nieuwe periode
-    this.loadRoadmapData();
   }
 
-  /**
-   * AANGEPAST: Genereert dynamisch de twee kwartalen die zichtbaar zijn in de 6-maanden view.
-   */
   private generateQuarters(): void {
     this.quarters = [];
     if (this.months.length === 0) return;
 
-    // Eerste kwartaal in de view
     const startYear = this.timelineStartDate.getFullYear();
     const startQuarterNumber = Math.floor(this.timelineStartDate.getMonth() / 3) + 1;
     const firstQuarterName = `Q${startQuarterNumber} ${startYear}`;
     this.quarters.push({ name: firstQuarterName, monthCount: 3 });
 
-    // Tweede kwartaal in de view (bereken via datum om jaarwisseling te ondervangen)
-    const secondQuarterStartDate = new Date(this.timelineStartDate);
-    secondQuarterStartDate.setMonth(secondQuarterStartDate.getMonth() + 3);
-    const endYear = secondQuarterStartDate.getFullYear();
-    const endQuarterNumber = Math.floor(secondQuarterStartDate.getMonth() / 3) + 1;
+    const nextQuarterStartDate = new Date(this.timelineStartDate);
+    nextQuarterStartDate.setMonth(nextQuarterStartDate.getMonth() + 3);
+    const endYear = nextQuarterStartDate.getFullYear();
+    const endQuarterNumber = Math.floor(nextQuarterStartDate.getMonth() / 3) + 1;
     const secondQuarterName = `Q${endQuarterNumber} ${endYear}`;
     this.quarters.push({ name: secondQuarterName, monthCount: 3 });
 
-    // Stel het label in voor de toolbar
     this.currentPeriodLabel = `${firstQuarterName} - ${secondQuarterName}`;
   }
 
-  // --- De rest van de functies (loadRoadmapData, scheduleMilestones, etc.) blijft ongewijzigd ---
   private loadRoadmapData(): void {
     this.isLoading = true;
     this.milestoneService
@@ -169,7 +155,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
         map((sortedMilestones) => this.filterMilestonesInView(sortedMilestones)),
         tap((finalMilestones) => (this.openMilestones = finalMilestones)),
         catchError((error) => {
-          this.toastrService.error('Kon roadmap data niet laden.', 'Fout');
+          this.toastrService.error('Could not load roadmap data.', 'Error');
           console.error(error);
           return of(null);
         }),
@@ -181,6 +167,58 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       )
       .subscribe();
   }
+
+  private scheduleMilestones(milestones: Milestone[]): Milestone[] {
+    const sortedByVersion = this.getMilestonesSortedByVersion(milestones);
+    const majors = sortedByVersion.filter((m) => m.version!.patch === 0);
+    const minors = sortedByVersion.filter((m) => m.version!.patch !== 0);
+
+    const scheduledMajors = this.planReleases(majors, new Date());
+    const scheduledMinors = this.planReleases(minors, new Date(), true);
+
+    return [...scheduledMajors, ...scheduledMinors];
+  }
+
+  private getMilestonesSortedByVersion(milestones: Milestone[]): { milestone: Milestone; version: Version | null }[] {
+    return milestones
+      .map((m) => ({ milestone: m, version: this.parseVersion(m.title) }))
+      .filter((item) => item.version !== null)
+      .sort((a, b) => {
+        const vA = a.version!;
+        const vB = b.version!;
+        if (vA.major !== vB.major) return vA.major - vB.major;
+        if (vA.minor !== vB.minor) return vA.minor - vB.minor;
+        return vA.patch - vB.patch;
+      });
+  }
+
+  private planReleases(
+    versionedItems: { milestone: Milestone; version: Version | null }[],
+    startDate: Date,
+    resetCursorForSeries = false,
+  ): Milestone[] {
+    const scheduled: Milestone[] = [];
+    let quarterCursor = new Date(startDate);
+    let lastSeries = '';
+
+    for (const item of versionedItems) {
+      if (resetCursorForSeries) {
+        const series = `${item.version!.major}.${item.version!.minor}`;
+        if (series !== lastSeries) {
+          quarterCursor = new Date(startDate);
+        }
+        lastSeries = series;
+      }
+
+      const year = quarterCursor.getFullYear();
+      const quarterIndex = Math.floor(quarterCursor.getMonth() / 3);
+      item.milestone.dueOn = new Date(year, quarterIndex * 3 + 3, 0); // End of quarter
+      scheduled.push(item.milestone);
+      quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+    }
+    return scheduled;
+  }
+
   private parseVersion(title: string): Version | null {
     const match = title.match(/(\d+)\.(\d+)\.(\d+)/);
     if (!match) return null;
@@ -191,62 +229,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       source: title,
     };
   }
-  private scheduleMilestones(milestones: Milestone[]): Milestone[] {
-    const sortedByVersion = milestones
-      .map((m) => ({ milestone: m, version: this.parseVersion(m.title) }))
-      .filter((item) => item.version !== null)
-      .sort((a, b) => {
-        const vA = a.version!;
-        const vB = b.version!;
-        if (vA.major !== vB.major) return vA.major - vB.major;
-        if (vA.minor !== vB.minor) return vA.minor - vB.minor;
-        return vA.patch - vB.patch;
-      });
 
-    const scheduledMilestones: Milestone[] = [];
-    const planningStartDate = new Date(); // Start planning vanaf vandaag
-    let quarterCursor = new Date(planningStartDate);
-
-    const isMajorRelease = (v: Version): boolean => v.patch === 0;
-
-    const majors = sortedByVersion.filter((m) => isMajorRelease(m.version!));
-    const minors = sortedByVersion.filter((m) => !isMajorRelease(m.version!));
-
-    // Plan eerst de majors, 1 per kwartaal
-    for (const item of majors) {
-      const year = quarterCursor.getFullYear();
-      const quarterIndex = Math.floor(quarterCursor.getMonth() / 3);
-      // Zet due date op het einde van het kwartaal
-      item.milestone.dueOn = new Date(year, quarterIndex * 3 + 3, 0);
-      scheduledMilestones.push(item.milestone);
-
-      // Schuif cursor naar volgend kwartaal
-      quarterCursor.setMonth(quarterCursor.getMonth() + 3);
-    }
-
-    // Reset cursor om minors te plannen
-    quarterCursor = new Date(planningStartDate);
-    let lastMinorSeries = '';
-
-    // Plan vervolgens de minors
-    for (const item of minors) {
-      const series = `${item.version!.major}.${item.version!.minor}`;
-      if (series !== lastMinorSeries) {
-        // Nieuwe minor serie, reset de kwartaalcursor naar de start
-        quarterCursor = new Date(planningStartDate);
-      }
-      lastMinorSeries = series;
-
-      const year = quarterCursor.getFullYear();
-      const quarterIndex = Math.floor(quarterCursor.getMonth() / 3);
-      item.milestone.dueOn = new Date(year, quarterIndex * 3 + 3, 0);
-      scheduledMilestones.push(item.milestone);
-
-      quarterCursor.setMonth(quarterCursor.getMonth() + 3);
-    }
-
-    return scheduledMilestones;
-  }
   private filterMilestonesInView(milestones: Milestone[]): Milestone[] {
     if (!this.timelineStartDate || !this.timelineEndDate) return milestones;
     const viewStartTime = this.timelineStartDate.getTime();
@@ -258,15 +241,18 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       return dueTime >= viewStartTime && dueTime <= viewEndTime;
     });
   }
+
   private scrollToToday(): void {
     if (this.viewInitialized && this.scrollContainer?.nativeElement && this.todayOffsetPercentage > 0) {
       const container = this.scrollContainer.nativeElement;
       container.scrollLeft = (this.todayOffsetPercentage / 100) * container.scrollWidth - container.clientWidth / 3;
     }
   }
+
   private parseMilestones(milestones: Milestone[]): Milestone[] {
     return milestones.map((m) => ({ ...m, dueOn: m.dueOn ? new Date(m.dueOn) : null }));
   }
+
   private sortMilestones(milestones: Milestone[]): Milestone[] {
     return milestones.sort((a, b) => (a.dueOn?.getTime() ?? 0) - (b.dueOn?.getTime() ?? 0));
   }
