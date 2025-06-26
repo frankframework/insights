@@ -27,7 +27,8 @@ By analyzing the ratios and connections between these elements, users can gain a
 
 ## System Architecture
 
-The backend fetches data from external APIs (primarily the GitHub API), processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
+The backend fetches data from external APIs (currently primarily the GitHub API), processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
+This external API represents itself as any possible external API that can be connected to the Frank!Framework Insights application, which can retrieve data from this API for use in the application. The application is built to be highly scalable with these integrations, allowing all necessary external data sources to be connected.
 
 *[A component diagram will be added here to illustrate the data flow.]*
 
