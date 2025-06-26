@@ -21,7 +21,7 @@
     "@angular/forms": "^19.1.0",
     "@angular/platform-browser": "^19.1.0",
     "@angular/platform-browser-dynamic": "^19.1.0",
-    "@angular/router": "^19.1.0",
+    "@angular/router": "^20.0.5",
     "chart.js": "^4.4.9",
     "ng2-charts": "^8.0.0",
     "ngx-toastr": "^19.0.0",
