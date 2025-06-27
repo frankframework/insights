@@ -93,26 +93,26 @@ INSERT INTO issue_sub_issues (issue_id, sub_issues_id) VALUES
 ('issue-epic-101', 'issue-feat-103'),
 ('issue-epic-101', 'issue-bug-104');
 
-INSERT INTO issue_label (id, issue_id, label_id) VALUES
-('9446a7b9-85bb-41e9-ba2f-f97a236d75e2', 'issue-epic-101', 'label-ui'),
-('0c0e9bfb-5ab7-437c-b320-874b5c380674', 'issue-task-102', 'label-ui'),
-('17483681-a653-4344-aea4-1eb1f4a2bcf3', 'issue-feat-103', 'label-ui'),
-('23e34af1-984a-4f88-a6c8-73400051e2ea', 'issue-feat-103', 'label-perf'),
-('f16f82d2-cda4-4345-851a-d810a115a929', 'issue-bug-104', 'label-ui'),
-('4ca5380b-f58b-4083-bd7b-21cfbb9932e9', 'issue-feat-105', 'label-sec');
+INSERT INTO issue_label (issue_id, label_id) VALUES
+('issue-epic-101', 'label-ui'),
+('issue-task-102', 'label-ui'),
+('issue-feat-103', 'label-ui'),
+('issue-feat-103', 'label-perf'),
+('issue-bug-104', 'label-ui'),
+('issue-feat-105', 'label-sec');
 
 INSERT INTO pull_request (id, number, title, url, merged_at) VALUES
 ('pr-501', 501, 'feat(ui): Add new graphing widget and icon set', 'http://example.com/pulls/501', '2025-04-08T10:00:00Z'),
 ('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', '2025-04-09T11:00:00Z'),
 ('pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', '2025-04-09T15:00:00Z');
 
-INSERT INTO pull_request_issue (id, pull_request_id, issue_id) VALUES
-('4c74fb21-842e-44cd-8759-e0e62b85c38e', 'pr-501', 'issue-feat-103'),
-('2b723e77-94f0-4489-9ab6-029df81e3e82', 'pr-501', 'issue-task-102'),
-('8db9d19e-cc64-4f9a-ac8f-103080d9cfa7', 'pr-502', 'issue-bug-104'),
-('cfd2ff4c-d15c-4e56-8f62-8cfee5ef7039', 'pr-503', 'issue-feat-105');
+INSERT INTO pull_request_issue (pull_request_id, issue_id) VALUES
+('pr-501', 'issue-feat-103'),
+('pr-501', 'issue-task-102'),
+('pr-502', 'issue-bug-104'),
+('pr-503', 'issue-feat-105');
 
-INSERT INTO release_pull_request (id, release_id, pull_request_id) VALUES
-('9d86f21a-a641-4204-961f-2730cb352f47', 'RE_kwDOAIg5ds4MnUo_', 'pr-501'),
-('343af7e5-45b3-47eb-90f6-114096f69dc3', 'RE_kwDOAIg5ds4MnUo_', 'pr-502'),
-('1d5ca201-ea87-49c9-985a-2b912dc9f220', 'RE_kwDOAIg5ds4MnUo_', 'pr-503');
+INSERT INTO release_pull_request (release_id, pull_request_id) VALUES
+('RE_kwDOAIg5ds4MnUo_', 'pr-501'),
+('RE_kwDOAIg5ds4MnUo_', 'pr-502'),
+('RE_kwDOAIg5ds4MnUo_', 'pr-503');
