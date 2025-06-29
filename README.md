@@ -11,12 +11,15 @@ Frank!Framework Insights provides users, contributors, and maintainers with a ce
 The key goal is to offer detailed insights into releases at every stage.
 
 **Past Releases**
+<br>
 Analyze the composition of previous releases. Understand what types of issues were resolved and view final metrics.
 
 **Current Release**
+<br>
 Track the real-time progress of the release currently in development. The dashboard provides insights into the stability and progress by visualizing the current development roadmap with updates about the progress.
 
 **Future Releases (Roadmap)**
+<br>
 Look ahead at the project's direction. The tool visualizes the roadmap based on GitHub Projects, showing planned features and epics for upcoming releases.
 
 ### In-depth Release Analysis
@@ -122,21 +125,27 @@ The application stack, including the frontend, backend, and database, is now run
 The project uses a suite of automated workflows to ensure code quality, stability, and correctness. These are typically run in a CI/CD pipeline for every pull request and merge to the master branch.
 
 **Linting**
+<br>
 Static code analysis is performed on both the backend and frontend to enforce consistent coding styles and catch common programming errors before they are merged.
 
 **Unit & Integration Tests**
+<br>
 Automated tests are run to verify the functionality of individual components (unit tests) and their interactions (integration tests). This forms the core of our regression testing strategy.
 
 **Build**
+<br>
 The workflow compiles the source code, runs tests, and packages the application into runnable artifacts (e.g., a JAR file for the backend and static assets for the frontend) to ensure it's always in a deployable state.
 
 **End-to-End (E2E) Tests**
+<br>
 These tests simulate real user scenarios by running tests against a fully built and running application in a production-like environment. They verify that the integrated system works as expected from the user's perspective.
 
 **Smoke Tests**
+<br>
 This workflow starts the full application with the latest version of the code (from a pull request branch or master). It then performs health checks on all core modules to confirm that the application starts up correctly as it should. A failed smoke test indicates a critical issue and typically triggers an immediate rollback.
 
 **Stress Tests**
+<br>
 These tests push the system to its limits by simulating high traffic or data load. The goal is to measure performance, identify performance bottlenecks, and ensure the application remains stable and responsive under pressure. This test can be triggered manually to test the newest version of master.
 
 ## Contributing
@@ -144,18 +153,23 @@ These tests push the system to its limits by simulating high traffic or data loa
 This is an open-source project, and contributions are highly welcome! We follow the overarching contribution guidelines of the Frank!Framework organization. Before you start, please familiarize yourself with them.
 
 **Code of Conduct**
+<br>
 All contributors are expected to adhere to our [Code of Conduct](https://github.com/frankframework/frankframework/blob/master/CODE_OF_CONDUCT.md).
 
 **Contribution Guidelines**
+<br>
 For general guidelines like commit messages and pull request procedures, see the main [CONTRIBUTING.md](https://github.com/frankframework/frankframework/blob/master/CONTRIBUTING.md).
 
 **Frontend Conventions**
+<br>
 All frontend code must adhere to the [Frank!Framework Frontend Conventions](https://github.com/frankframework/frontend-conventions).
 
 **Backend Conventions**
+<br>
 New public classes and methods in the Java backend should be documented with **Javadoc**.
 
 **Quality**
+<br>
 All new code must pass the existing tests and should be covered by new tests where applicable.
 
 You can contribute by reporting bugs or suggesting new features by creating an issue, or by forking the repository and submitting a pull request with your improvements.
