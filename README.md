@@ -25,9 +25,9 @@ By analyzing the ratios and connections between these elements, users can gain a
 
 ## System Architecture
 
-The backend fetches data from external APIs (currently primarily the GitHub API), processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
+The backend fetches data from external APIs, processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
 
-This external API represents itself as any possible external API that can be connected to the Frank!Framework Insights application, which can retrieve data from this API for use in the application. The application is built to be highly scalable with these integrations, allowing all necessary external data sources to be connected.
+Currently, the application primarily uses the **GitHub API** to retrieve data about the Frank!Framework's development. However, the architecture is designed to be extensible, meaning other external data sources can be integrated in a similar way in the future. This allows the application to be scaled with new integrations as needed.
 
 ![Insights-components-without-text](https://github.com/user-attachments/assets/278d03eb-d230-4246-93fe-705b0343dce6)
 <p align="start">
@@ -36,7 +36,7 @@ This external API represents itself as any possible external API that can be con
 
 ## Quick Local Setup with Docker
 
-For a fast and easy setup, you can use Docker Compose to run the entire application stack. This is the recommended method for most users.
+For a fast and easy setup, you can use Docker Compose to run the entire application stack.
 
 1.  Ensure you have **Docker Desktop** installed, as it includes Docker and Docker Compose.
 2.  Clone the repository:
@@ -60,13 +60,15 @@ For active development, a manual setup provides more granular control over the i
 ### Prerequisites
 
 * Git
-* Java Development Kit (JDK 21) & Apache Maven
+* Java Development Kit (JDK 21)
 * Node.js & Angular CLI (`npm install -g @angular/cli`)
 * A PostgreSQL database instance.
 * IDE:
     * For Frontend: **WebStorm** or **VS Code**.
     * For Backend: **IntelliJ IDEA**, **Eclipse**, or **VS Code**.
 * **(Optional)** A database tool like **pgAdmin** to manage your database.
+
+> **Note on Maven:** A separate installation of Apache Maven is not required. The backend project includes the Maven Wrapper (`mvnw`), that can be used to download dependencies and build the project (`./mvnw clean install`). 
 
 ### Steps
 
@@ -85,7 +87,7 @@ For active development, a manual setup provides more granular control over the i
     ```
 
 3.  **Backend Setup**
-    * **Open Project:** Open the `InsightsBackend` directory in your Java IDE.
+    * **Open Project:** Open the `InsightsBackend` directory in your Java IDE. Your IDE will automatically detect it as a Maven project and use the wrapper to set it up.
     * **Activate Local Profile:** To use a local configuration, you must activate the `local` Spring profile. The easiest way to do this in **IntelliJ IDEA** is by adding the following to your Run Configuration's **VM options**:
         ```
         -Dspring.profiles.active=local
