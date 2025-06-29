@@ -3,9 +3,6 @@ query repositoryStatistics {
 		labels {
 			totalCount
 		}
-		milestones {
-			totalCount
-		}
 		issueTypes {
 			totalCount
 		}
@@ -22,9 +19,6 @@ query repositoryStatistics {
 			}
 		}
 		releases {
-			totalCount
-		}
-		issues {
 			totalCount
 		}
 	}

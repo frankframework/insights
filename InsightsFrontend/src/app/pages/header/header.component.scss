@@ -1,11 +1,15 @@
-#tab-header {
+#header {
   display: flex;
   flex-direction: row;
   align-items: center;
   position: fixed;
-  top: .5rem;
-  left: 1rem;
+  top: 0;
+  left: 0;
   gap: 2rem;
+  padding: 0.5rem 0 .5rem 1rem;
+  background-color: white;
+  z-index: 20;
+  width: 100%;
 
   @media (max-width: 540px) {
     gap: 1rem;

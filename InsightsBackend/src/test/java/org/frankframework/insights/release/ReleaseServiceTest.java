@@ -22,9 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ReleaseServiceTest {
 
     @Mock
-    private GitHubRepositoryStatisticsService statisticsService;
-
-    @Mock
     private GitHubClient gitHubClient;
 
     @Mock
@@ -50,7 +47,6 @@ public class ReleaseServiceTest {
     private Branch masterBranch, featureBranch, noNameBranch;
     private PullRequest pr1;
     private BranchPullRequest branchPR1;
-    private GitHubRepositoryStatisticsDTO mockStatsDTO;
 
     @BeforeEach
     public void setUp() {
@@ -87,25 +83,10 @@ public class ReleaseServiceTest {
         pr1.setMergedAt(rel1.getPublishedAt().plusDays(2));
 
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
-
-        mockStatsDTO = mock(GitHubRepositoryStatisticsDTO.class);
-    }
-
-    @Test
-    public void skips_whenDatabaseUpToDate() throws Exception {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(2);
-        when(releaseRepository.count()).thenReturn(2L);
-        releaseService.injectReleases();
-        verify(gitHubClient, never()).getReleases();
-        verify(releaseRepository, never()).saveAll(anySet());
     }
 
     @Test
     public void injects_whenDatabaseEmpty() throws Exception {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
@@ -121,9 +102,6 @@ public class ReleaseServiceTest {
 
     @Test
     public void doesNothing_whenNoValidReleases() throws Exception {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Collections.emptySet());
         releaseService.injectReleases();
         verify(releaseRepository, never()).saveAll(anySet());
@@ -138,9 +116,6 @@ public class ReleaseServiceTest {
         rel.setPublishedAt(dto.publishedAt());
         rel.setBranch(masterBranch);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch, featureBranch, masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
@@ -162,9 +137,6 @@ public class ReleaseServiceTest {
         rel.setPublishedAt(dto.publishedAt());
         rel.setBranch(null);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch, featureBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
@@ -178,9 +150,6 @@ public class ReleaseServiceTest {
 
     @Test
     public void assignsPullRequestsToCorrectReleaseByTimeframe() throws Exception {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(2);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(dto1), eq(Release.class))).thenReturn(rel1);
@@ -196,9 +165,6 @@ public class ReleaseServiceTest {
 
     @Test
     public void assignsNothing_whenNoMatchingBranches() throws Exception {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
@@ -219,9 +185,6 @@ public class ReleaseServiceTest {
 
         ReleaseDTO dto = new ReleaseDTO("id", "vX.Y", "vX.Y", relWithNull.getPublishedAt());
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(noNameBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(relWithNull);
@@ -239,9 +202,6 @@ public class ReleaseServiceTest {
         pr1.setMergedAt(OffsetDateTime.now().plusYears(5));
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(2);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(dto1), eq(Release.class))).thenReturn(rel1);
@@ -257,9 +217,6 @@ public class ReleaseServiceTest {
 
     @Test
     public void masterBranchWithReleases_assignsPRsToMaster() throws Exception {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
@@ -281,9 +238,6 @@ public class ReleaseServiceTest {
         relMalformed.setPublishedAt(dtoMalformed.publishedAt());
         relMalformed.setBranch(masterBranch);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(dtoMalformed));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(relMalformed);
@@ -296,9 +250,6 @@ public class ReleaseServiceTest {
 
     @Test
     public void throwsReleaseInjectionException_onGitHubClientException() throws GitHubClientException {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(1);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenThrow(new GitHubClientException("fail", null));
         assertThrows(ReleaseInjectionException.class, () -> releaseService.injectReleases());
     }
@@ -342,9 +293,6 @@ public class ReleaseServiceTest {
         relBad.setPublishedAt(tagBad.publishedAt());
         relBad.setBranch(masterBranch);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(mockStatsDTO);
-        when(mockStatsDTO.getGitHubReleaseCount()).thenReturn(2);
-        when(releaseRepository.count()).thenReturn(0L);
         when(gitHubClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch, masterBranch, featureBranch));
         when(mapper.toEntity(eq(tagGood), eq(Release.class))).thenReturn(relGood);

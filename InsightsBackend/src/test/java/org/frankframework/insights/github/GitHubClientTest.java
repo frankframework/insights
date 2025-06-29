@@ -94,7 +94,7 @@ public class GitHubClientTest {
     @Test
     public void getMilestones_success() throws Exception {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        MilestoneDTO m1 = new MilestoneDTO("id", 1, null, GitHubPropertyState.OPEN);
+        MilestoneDTO m1 = new MilestoneDTO("id", 1, null, "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
         Set<MilestoneDTO> milestones = Set.of(m1);
         doReturn(milestones)
                 .when(gitHubClient)
@@ -313,7 +313,7 @@ public class GitHubClientTest {
     @Test
     public void getRepositoryStatistics_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null, null, null, null);
+        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null);
         doReturn(stats)
                 .when(gitHubClient)
                 .fetchSingleEntity(
@@ -539,11 +539,8 @@ public class GitHubClientTest {
         GitHubRepositoryStatisticsDTO statistics = new GitHubRepositoryStatisticsDTO(
                 new GitHubTotalCountDTO(10),
                 new GitHubTotalCountDTO(5),
-                new GitHubTotalCountDTO(3),
                 new GitHubRefsDTO(List.of(new GitHubRefsDTO.GitHubBranchNodeDTO(
-                        "main", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(2))))),
-                new GitHubTotalCountDTO(1),
-                new GitHubTotalCountDTO(0));
+                        "main", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(2))))));
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
 

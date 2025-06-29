@@ -9,7 +9,7 @@ import { AsyncPipe } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
-import { ReleaseCatalogusComponent } from '../../components/release-catalogus/release-catalogus.component';
+import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 
 @Component({
   selector: 'app-release-graph',

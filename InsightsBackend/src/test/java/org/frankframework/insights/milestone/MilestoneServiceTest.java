@@ -10,7 +10,6 @@ import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,9 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class MilestoneServiceTest {
-
-    @Mock
-    GitHubRepositoryStatisticsService statisticsService;
 
     @Mock
     GitHubClient gitHubClient;
@@ -55,20 +51,9 @@ public class MilestoneServiceTest {
         milestone2.setTitle("Milestone 2");
         milestone2.setState(GitHubPropertyState.CLOSED);
 
-        milestoneDTO1 = new MilestoneDTO("m1", 1, "First", GitHubPropertyState.OPEN);
-        milestoneDTO2 = new MilestoneDTO("m2", 2, "Second", GitHubPropertyState.CLOSED);
-    }
-
-    @Test
-    public void injectMilestones_shouldSkipIfCountsEqual() throws MilestoneInjectionException, GitHubClientException {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
-        when(statisticsDTO.getGitHubMilestoneCount()).thenReturn(5);
-        when(milestoneRepository.count()).thenReturn(5L);
-
-        milestoneService.injectMilestones();
-
-        verify(gitHubClient, never()).getMilestones();
-        verify(milestoneRepository, never()).saveAll(anySet());
+        milestoneDTO1 = new MilestoneDTO("m1", 1, "First", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
+        milestoneDTO2 =
+                new MilestoneDTO("m2", 2, "Second", "https//example.com", GitHubPropertyState.CLOSED, null, 0, 0);
     }
 
     @Test
@@ -78,9 +63,6 @@ public class MilestoneServiceTest {
         Set<Milestone> entities = Set.of(milestone1, milestone2);
         List<Milestone> saved = List.of(milestone1, milestone2);
 
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
-        when(statisticsDTO.getGitHubMilestoneCount()).thenReturn(3);
-        when(milestoneRepository.count()).thenReturn(2L);
         when(gitHubClient.getMilestones()).thenReturn(DTOs);
         when(mapper.toEntity(DTOs, Milestone.class)).thenReturn(entities);
         when(milestoneRepository.saveAll(entities)).thenReturn(saved);
@@ -92,9 +74,6 @@ public class MilestoneServiceTest {
 
     @Test
     public void injectMilestones_shouldThrowOnException() throws GitHubClientException {
-        when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
-        when(statisticsDTO.getGitHubMilestoneCount()).thenReturn(4);
-        when(milestoneRepository.count()).thenReturn(1L);
         when(gitHubClient.getMilestones()).thenThrow(new RuntimeException("fail"));
 
         assertThrows(MilestoneInjectionException.class, () -> milestoneService.injectMilestones());
@@ -103,7 +82,8 @@ public class MilestoneServiceTest {
     @Test
     public void getAllOpenMilestones_shouldReturnMappedSet() throws MappingException {
         Set<Milestone> openMilestones = Set.of(milestone1);
-        Set<MilestoneResponse> responses = Set.of(new MilestoneResponse("m1", 1, "First", GitHubPropertyState.OPEN));
+        Set<MilestoneResponse> responses = Set.of(
+                new MilestoneResponse("m1", 1, "First", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0));
         when(milestoneRepository.findAllByState(GitHubPropertyState.OPEN)).thenReturn(openMilestones);
         when(mapper.toDTO(openMilestones, MilestoneResponse.class)).thenReturn(responses);
 

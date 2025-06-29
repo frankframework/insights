@@ -7,7 +7,7 @@ describe('Graph Rendering and Interaction', () => {
 
   context('Initial State', () => {
     it('should display the main UI components', () => {
-      cy.get('app-tab-header').should('be.visible');
+      cy.get('app-header').should('be.visible');
       cy.get('app-release-catalogus').should('be.visible');
       cy.get('app-release-graph').should('be.visible');
     });

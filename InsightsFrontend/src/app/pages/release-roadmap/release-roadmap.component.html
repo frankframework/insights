@@ -1,0 +1,51 @@
+<div class="roadmap-container">
+  <div class="header">
+    <app-roadmap-toolbar
+      [periodLabel]="currentPeriodLabel"
+      (changePeriod)="changePeriod($event)"
+      (resetPeriod)="resetPeriod()"
+    />
+  </div>
+
+  @if (isLoading) {
+    <app-loader />
+  } @else {
+    <div class="content">
+      @if (openMilestones.length > 0) {
+        <div #scrollContainer class="scroll-container">
+          <app-timeline-header [months]="months" [quarters]="quarters" />
+
+          <div class="body">
+            <div class="background">
+              @if (todayOffsetPercentage > 0 && todayOffsetPercentage < 100) {
+                <div class="today-marker" [style.left.%]="todayOffsetPercentage"></div>
+              }
+              <div class="grid-lines" [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'">
+                @for (month of months; track $index) {
+                  <div class="grid-line"></div>
+                }
+              </div>
+            </div>
+
+            <div class="milestone-lanes">
+              @for (milestone of openMilestones; track milestone.id; let isLast = $last) {
+                <app-milestone-row
+                  [milestone]="milestone"
+                  [issues]="getIssuesForMilestone(milestone.id)"
+                  [timelineStartDate]="timelineStartDate"
+                  [totalTimelineDays]="totalDays"
+                  [isLast]="isLast"
+                />
+              }
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h3>No open milestones</h3>
+          <p>There are no scheduled releases to display in this period.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

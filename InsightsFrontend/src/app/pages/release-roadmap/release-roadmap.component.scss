@@ -1,0 +1,102 @@
+.roadmap-container {
+  padding: 7.5vh 1.5rem 7.5vh 1.5rem;
+  font-family: sans-serif;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  @media (max-width: 768px) {
+    padding-inline: 0.75rem;
+  }
+
+  .header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .content {
+    border: 1px solid #d8dde4;
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 0;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+
+    .scroll-container {
+      overflow-x: auto;
+      overflow-y: visible;
+      flex-grow: 1;
+      padding-bottom: 1rem;
+    }
+
+    .body {
+      position: relative;
+      min-width: 1800px;
+
+      .background {
+        position: absolute;
+        top: 0;
+        left: 150px;
+        right: 0;
+        bottom: 0;
+        z-index: 1;
+
+        @media (min-width: 1024px) {
+          left: 300px;
+        }
+
+        .today-marker {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background-color: #f59e0b;
+        }
+
+        .grid-lines {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: grid;
+
+          .grid-line {
+            border-right: 1px solid #e8edf3;
+          }
+        }
+      }
+
+      .milestone-lanes {
+        position: relative;
+        z-index: 10;
+      }
+    }
+
+    .empty-state {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem;
+      text-align: center;
+      color: #64748b;
+
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e2937;
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+}

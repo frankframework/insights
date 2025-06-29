@@ -1,0 +1,91 @@
+.milestone-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  border-bottom: 1px solid #e2e8f0;
+
+  @media (min-width: 1024px) {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  &--last {
+    border-bottom: none;
+  }
+
+  .title-cell {
+    position: relative;
+    left: 0;
+    padding: 1rem;
+    border-right: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    z-index: 2;
+    transition: background-color 0.2s ease;
+
+    .title-link {
+      font-weight: 600;
+      color: #1e3a8a;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .detail {
+      font-size: 0.875rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &.unplanned {
+        color: #94a3b8;
+        font-style: italic;
+      }
+
+      .estimated-icon {
+        color: #f59e0b;
+        cursor: help;
+      }
+    }
+
+    .progress-bar-container {
+      background-color: #e5e7eb;
+      border-radius: 9999px;
+      height: 0.5rem;
+      margin-top: 0.75rem;
+      overflow: hidden;
+
+      .progress-bar {
+        background-color: #4f46e5;
+        height: 100%;
+        transition: width 0.5s ease;
+      }
+    }
+
+    .counts {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 0.25rem;
+    }
+  }
+
+  .issue-track-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 3.5rem;
+    padding-block: 1.5rem;
+    padding-right: 1.5rem;
+    transition: background-color 0.2s ease;
+
+    .issue-track {
+      position: relative;
+      height: 2.5rem;
+      width: 100%;
+    }
+  }
+}

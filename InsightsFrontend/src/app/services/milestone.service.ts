@@ -6,7 +6,15 @@ export interface Milestone {
   id: string;
   number: number;
   title: string;
+  url: string;
   state: GitHubState;
+  dueOn: Date | null;
+  openIssueCount: number;
+  closedIssueCount: number;
+  isEstimated?: boolean;
+  major: number;
+  minor: number;
+  patch: number;
 }
 
 @Injectable({

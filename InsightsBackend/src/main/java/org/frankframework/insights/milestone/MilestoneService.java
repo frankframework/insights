@@ -11,7 +11,6 @@ import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubPropertyState;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,20 +21,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MilestoneService {
 
-    private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
-
     private final GitHubClient gitHubClient;
 
     private final Mapper mapper;
 
     private final MilestoneRepository milestoneRepository;
 
-    public MilestoneService(
-            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-            GitHubClient gitHubClient,
-            Mapper mapper,
-            MilestoneRepository milestoneRepository) {
-        this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
+    public MilestoneService(GitHubClient gitHubClient, Mapper mapper, MilestoneRepository milestoneRepository) {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
         this.milestoneRepository = milestoneRepository;
@@ -46,20 +38,7 @@ public class MilestoneService {
      * @throws MilestoneInjectionException if an error occurs during the injection process.
      */
     public void injectMilestones() throws MilestoneInjectionException {
-        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubMilestoneCount()
-                == milestoneRepository.count()) {
-            log.info("Milestones already found in the in database");
-            return;
-        }
-
         try {
-            log.info("Amount of milestones found in database: {}", milestoneRepository.count());
-            log.info(
-                    "Amount of milestones found in GitHub: {}",
-                    gitHubRepositoryStatisticsService
-                            .getGitHubRepositoryStatisticsDTO()
-                            .getGitHubMilestoneCount());
-
             log.info("Start injecting GitHub milestones");
             Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
             Set<Milestone> milestones = mapper.toEntity(milestoneDTOS, Milestone.class);

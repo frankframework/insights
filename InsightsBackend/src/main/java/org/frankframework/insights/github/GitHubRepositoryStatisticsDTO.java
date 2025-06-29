@@ -6,18 +6,11 @@ import java.util.regex.Pattern;
 
 public record GitHubRepositoryStatisticsDTO(
         @JsonProperty("labels") GitHubTotalCountDTO labels,
-        @JsonProperty("milestones") GitHubTotalCountDTO milestones,
         @JsonProperty("issueTypes") GitHubTotalCountDTO issueTypes,
-        @JsonProperty("refs") GitHubRefsDTO branches,
-        @JsonProperty("releases") GitHubTotalCountDTO releases,
-        @JsonProperty("issues") GitHubTotalCountDTO issues) {
+        @JsonProperty("refs") GitHubRefsDTO branches) {
 
     public int getGitHubLabelCount() {
         return labels.totalCount();
-    }
-
-    public int getGitHubMilestoneCount() {
-        return milestones.totalCount();
     }
 
     public int getGitHubIssueTypeCount() {
@@ -30,13 +23,5 @@ public record GitHubRepositoryStatisticsDTO(
                         .anyMatch(regex ->
                                 Pattern.compile(regex).matcher(branch.name()).find()))
                 .count();
-    }
-
-    public int getGitHubReleaseCount() {
-        return releases.totalCount();
-    }
-
-    public int getGitHubIssueCount() {
-        return issues.totalCount();
     }
 }

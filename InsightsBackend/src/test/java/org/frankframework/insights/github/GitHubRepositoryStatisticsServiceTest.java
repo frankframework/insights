@@ -26,8 +26,7 @@ public class GitHubRepositoryStatisticsServiceTest {
                 "branch1", new GitHubRefsDTO.GitHubTargetDTO(new GitHubTotalCountDTO(1))));
         GitHubRefsDTO refsDTO = new GitHubRefsDTO(nodes);
 
-        GitHubRepositoryStatisticsDTO dto = new GitHubRepositoryStatisticsDTO(
-                totalCountDTO, totalCountDTO, totalCountDTO, refsDTO, totalCountDTO, totalCountDTO);
+        GitHubRepositoryStatisticsDTO dto = new GitHubRepositoryStatisticsDTO(totalCountDTO, totalCountDTO, refsDTO);
 
         when(gitHubClient.getRepositoryStatistics()).thenReturn(dto);
 

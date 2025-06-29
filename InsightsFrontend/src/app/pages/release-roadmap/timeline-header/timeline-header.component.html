@@ -1,0 +1,18 @@
+<div class="timeline-header">
+  <div class="row quarters-row">
+    <div class="title-cell">Release</div>
+    <div class="grid-area" [style.grid-template-columns]="quartersGridStyle">
+      @for (quarter of quarters; track quarter.name) {
+        <div class="quarter-cell">{{ quarter.name }}</div>
+      }
+    </div>
+  </div>
+  <div class="row months-row">
+    <div class="title-cell"></div>
+    <div class="grid-area" [style.grid-template-columns]="'repeat(' + months.length + ', minmax(0, 1fr))'">
+      @for (month of months; track month) {
+        <div class="month-cell">{{ month | date: 'MMM' }}</div>
+      }
+    </div>
+  </div>
+</div>

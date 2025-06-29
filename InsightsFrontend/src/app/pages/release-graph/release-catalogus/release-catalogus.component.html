@@ -6,6 +6,7 @@
   [ngStyle]="{
     right: isSmallScreen ? 'auto' : selectedRelease ? '36.5vw' : '1.5rem',
     left: isSmallScreen ? '1.25rem' : 'auto',
+    display: isSmallScreen && selectedRelease ? 'none' : 'flex',
   }"
   (click)="toggleModal()"
 >

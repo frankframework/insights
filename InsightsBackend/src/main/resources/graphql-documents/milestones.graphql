@@ -7,6 +7,10 @@ query milestones($after: String) {
 		  number
 		  state
           title
+		  url
+		  dueOn
+		  openIssueCount
+		  closedIssueCount
         }
       }
       pageInfo {

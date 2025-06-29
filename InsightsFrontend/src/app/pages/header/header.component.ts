@@ -3,9 +3,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 
 @Component({
-  selector: 'app-tab-header',
+  selector: 'app-header',
   imports: [NgOptimizedImage, RouterLink, RouterLinkActive],
-  templateUrl: './tab-header.component.html',
-  styleUrl: './tab-header.component.scss',
+  templateUrl: './header.component.html',
+  styleUrl: './header.component.scss',
 })
-export class TabHeaderComponent {}
+export class HeaderComponent {}

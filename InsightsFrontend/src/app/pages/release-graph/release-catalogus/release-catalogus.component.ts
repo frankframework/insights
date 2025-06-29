@@ -1,7 +1,7 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Release } from '../../services/release.service';
+import { Release } from '../../../services/release.service';
 import { NgStyle } from '@angular/common';
-import { ModalComponent } from '../modal/modal.component';
+import { ModalComponent } from '../../../components/modal/modal.component';
 
 @Component({
   selector: 'app-release-catalogus',
@@ -22,7 +22,7 @@ export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.mediaQueryList = globalThis.matchMedia('(max-width: 540px)');
+    this.mediaQueryList = globalThis.matchMedia('(max-width: 992px)');
     this.isSmallScreen = this.mediaQueryList?.matches ?? false;
     this.mediaListener = (): void => {
       this.isSmallScreen = this.mediaQueryList?.matches ?? false;

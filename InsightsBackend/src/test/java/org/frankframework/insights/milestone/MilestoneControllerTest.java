@@ -45,8 +45,10 @@ public class MilestoneControllerTest {
 
     @Test
     public void getAllOpenMilestones_returnsMilestones() throws Exception {
-        MilestoneResponse m1 = new MilestoneResponse("id1", 1, "v1.0", GitHubPropertyState.OPEN);
-        MilestoneResponse m2 = new MilestoneResponse("id2", 2, "v2.0", GitHubPropertyState.OPEN);
+        MilestoneResponse m1 =
+                new MilestoneResponse("id1", 1, "v1.0", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
+        MilestoneResponse m2 =
+                new MilestoneResponse("id2", 2, "v2.0", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
         Set<MilestoneResponse> milestones = Set.of(m1, m2);
 
         when(milestoneService.getAllOpenMilestones()).thenReturn(milestones);
