@@ -62,61 +62,55 @@ export class MilestoneRowComponent implements OnInit {
 
   private runLayoutAlgorithm(): void {
     this.positionedIssues = [];
-
-    if (this.isMilestoneOverdue()) {
-      this.calculateLayoutForOverdueMilestone();
-    } else if (this.isMilestoneInFuture()) {
-      this.calculateLayoutForFutureMilestone();
-    } else {
-      this.calculateLayoutForCurrentMilestone();
-    }
-
-    const maxTrack = this.positionedIssues.reduce((max, p) => Math.max(max, p.track), -1);
-    this.trackCount = Math.max(1, maxTrack + 1);
-  }
-
-  private calculateLayoutForOverdueMilestone(): void {
-    const { closedIssues, openIssues } = this.getSeparatedIssues();
-    const { currentViewClosedWindow } = this.getTimelineViewWindows();
-    const nextQuarterWindow = this.getNextQuarterWindow();
-
-    const closedLayout = this.layoutIssuesWithEvenSpacing(closedIssues, currentViewClosedWindow);
-    const openLayout = this.layoutIssuesWithEvenSpacing(openIssues, nextQuarterWindow);
-
-    this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
-  }
-
-  private calculateLayoutForFutureMilestone(): void {
-    const { closedIssues, openIssues } = this.getSeparatedIssues();
-    const { currentViewClosedWindow } = this.getTimelineViewWindows();
-    const milestoneQuarterWindow = this.getMilestoneQuarterWindow();
-
-    const closedLayout = this.layoutIssuesBackwards(closedIssues, currentViewClosedWindow);
-    const openLayout = this.layoutIssuesWithEvenSpacing(openIssues, milestoneQuarterWindow);
-
-    this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
-  }
-
-  private calculateLayoutForCurrentMilestone(): void {
     const { closedIssues, openIssues } = this.getSeparatedIssues();
     const { currentViewClosedWindow, currentViewOpenWindow } = this.getTimelineViewWindows();
+    const milestoneQuarterWindow = this.getMilestoneQuarterWindow();
 
-    const closedLayout = this.layoutIssuesWithEvenSpacing(closedIssues, currentViewClosedWindow);
-    const openLayout = this.layoutIssuesAsColumn(openIssues, currentViewOpenWindow);
+    let finalClosedLayout: LayoutContext = { positionedIssues: [], trackCount: 0 };
+    let finalOpenLayout: LayoutContext = { positionedIssues: [], trackCount: 0 };
 
-    this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
+    if (this.isMilestoneOverdue()) {
+      finalClosedLayout = this.layoutIssuesWithEvenSpacing(closedIssues, currentViewClosedWindow);
+      finalOpenLayout = this.layoutIssuesWithEvenSpacing(openIssues, this.getNextQuarterWindow());
+    } else if (this.isMilestoneInFuture()) {
+      finalClosedLayout = this.layoutIssuesBackwards(closedIssues, currentViewClosedWindow);
+      finalOpenLayout = this.layoutIssuesWithEvenSpacing(openIssues, milestoneQuarterWindow);
+    } else if (this.isMilestoneInCurrentQuarter()) {
+      const currentQuarterClosedWindow: PlanningWindow = {
+        start: milestoneQuarterWindow.start,
+        end: currentViewOpenWindow.start - this.GAP_MS,
+      };
+      finalClosedLayout = this.layoutIssuesWithEvenSpacing(closedIssues, currentQuarterClosedWindow);
+
+      // FINAL LOGIC: Decide layout for open issues based on the position of "today" in the 6-month view.
+      if (this.isTodayInFirstQuarterOfView()) {
+        // If today is in the first visible quarter, use the vertical column layout.
+        finalOpenLayout = this.layoutIssuesAsColumn(openIssues, currentViewOpenWindow);
+      } else {
+        // If today is in the second visible quarter, use the normal horizontal layout.
+        finalOpenLayout = this.layoutIssuesWithEvenSpacing(openIssues, currentViewOpenWindow);
+      }
+    } else {
+      const allIssues = [...closedIssues, ...openIssues];
+      finalClosedLayout = this.layoutIssuesWithEvenSpacing(allIssues, milestoneQuarterWindow);
+    }
+
+    this.positionedIssues.push(...finalClosedLayout.positionedIssues, ...finalOpenLayout.positionedIssues);
+    this.trackCount = Math.max(1, finalClosedLayout.trackCount, finalOpenLayout.trackCount);
   }
 
   private layoutIssuesAsColumn(issues: Issue[], window: PlanningWindow): LayoutContext {
     const positionedIssues: PositionedIssue[] = [];
-    const windowDuration = window.end - window.start;
-
     for (const [index, issue] of issues.entries()) {
-      const durationMs = Math.min(
-        this.getIssueDurationMsWithMinWidth(issue),
-        windowDuration > 0 ? windowDuration : this.getIssueDurationMsWithMinWidth(issue),
-      );
-      positionedIssues.push(this.createPositionedIssue(issue, window.start, durationMs, index));
+      const trackIndex = index;
+      let durationMs = this.getIssueDurationMsWithMinWidth(issue);
+      let startTime = window.start;
+
+      if (startTime + durationMs > window.end) {
+        startTime = window.end - durationMs;
+      }
+
+      positionedIssues.push(this.createPositionedIssue(issue, startTime, durationMs, trackIndex));
     }
     return { positionedIssues, trackCount: issues.length };
   }
@@ -124,10 +118,13 @@ export class MilestoneRowComponent implements OnInit {
   private layoutIssuesWithEvenSpacing(issues: Issue[], window: PlanningWindow): LayoutContext {
     if (issues.length === 0 || window.start >= window.end) return { positionedIssues: [], trackCount: 0 };
 
-    const { issuesByTrack, trackCount } = this.assignIssuesToTracks(issues, window);
-    const positionedIssues: PositionedIssue[] = [];
+    const estimatedTracks = this.estimateTrackCount(issues, window);
+    const issuesByTrack = this.distributeIssuesRoundRobin(issues, estimatedTracks);
 
+    const positionedIssues: PositionedIssue[] = [];
     for (const [trackIndex, trackIssues] of issuesByTrack.entries()) {
+      if (trackIssues.length === 0) continue;
+
       const totalIssueDuration = trackIssues.reduce(
         (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
         0,
@@ -142,63 +139,33 @@ export class MilestoneRowComponent implements OnInit {
         cursor += durationMs + gapSize;
       }
     }
-    return { positionedIssues, trackCount };
+    return { positionedIssues, trackCount: issuesByTrack.size };
   }
 
   private layoutIssuesBackwards(issues: Issue[], window: PlanningWindow): LayoutContext {
     return this.layoutIssuesWithEvenSpacing(issues, window);
   }
 
-  private assignIssuesToTracks(
-    issues: Issue[],
-    window: PlanningWindow,
-  ): { issuesByTrack: Map<number, Issue[]>; trackCount: number } {
+  private estimateTrackCount(issues: Issue[], window: PlanningWindow): number {
+    const windowDurationMs = window.end - window.start;
+    if (windowDurationMs <= 0) return issues.length;
+
+    const totalDurationWithGaps = issues.reduce((sum, issue) => {
+      return sum + this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS;
+    }, 0);
+
+    return Math.max(1, Math.ceil(totalDurationWithGaps / windowDurationMs));
+  }
+
+  private distributeIssuesRoundRobin(issues: Issue[], trackCount: number): Map<number, Issue[]> {
     const issuesByTrack = new Map<number, Issue[]>();
-    const trackEndTimes: number[] = [];
-
-    for (const issue of issues) {
-      const durationMs = this.getIssueDurationMsWithMinWidth(issue);
-      const wasPlaced = this.tryPlacingOnExistingTrack(issue, durationMs, trackEndTimes, issuesByTrack, window);
-
-      if (!wasPlaced) {
-        this.placeOnNewTrack(issue, durationMs, trackEndTimes, issuesByTrack, window);
-      }
+    for (let index = 0; index < trackCount; index++) {
+      issuesByTrack.set(index, []);
     }
-    return { issuesByTrack, trackCount: trackEndTimes.length };
-  }
-
-  private tryPlacingOnExistingTrack(
-    issue: Issue,
-    durationMs: number,
-    trackEndTimes: number[],
-    issuesByTrack: Map<number, Issue[]>,
-    window: PlanningWindow,
-  ): boolean {
-    for (let index = 0; index < trackEndTimes.length; index++) {
-      const lastEndTime = trackEndTimes[index] || window.start;
-      if (lastEndTime + this.GAP_MS + durationMs <= window.end) {
-        if (!issuesByTrack.has(index)) issuesByTrack.set(index, []);
-        issuesByTrack.get(index)!.push(issue);
-        trackEndTimes[index] = lastEndTime + this.GAP_MS + durationMs;
-        return true;
-      }
+    for (const [index, issue] of issues.entries()) {
+      issuesByTrack.get(index % trackCount)!.push(issue);
     }
-    return false;
-  }
-
-  private placeOnNewTrack(
-    issue: Issue,
-    durationMs: number,
-    trackEndTimes: number[],
-    issuesByTrack: Map<number, Issue[]>,
-    window: PlanningWindow,
-  ): void {
-    if (window.start + durationMs <= window.end) {
-      const newTrackIndex = trackEndTimes.length;
-      if (!issuesByTrack.has(newTrackIndex)) issuesByTrack.set(newTrackIndex, []);
-      issuesByTrack.get(newTrackIndex)!.push(issue);
-      trackEndTimes.push(window.start + durationMs);
-    }
+    return issuesByTrack;
   }
 
   private createPositionedIssue(
@@ -235,12 +202,28 @@ export class MilestoneRowComponent implements OnInit {
     return this.milestone.dueOn.getTime() < today.getTime();
   }
 
+  private isMilestoneInCurrentQuarter(): boolean {
+    if (!this.milestone.dueOn) return false;
+    const today = new Date();
+    const milestoneDate = new Date(this.milestone.dueOn);
+    const currentQuarter = Math.floor(today.getMonth() / 3);
+    const milestoneQuarter = Math.floor(milestoneDate.getMonth() / 3);
+    return today.getFullYear() === milestoneDate.getFullYear() && currentQuarter === milestoneQuarter;
+  }
+
   private isMilestoneInFuture(): boolean {
     if (!this.milestone.dueOn) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const quarterStartDate = this.getMilestoneQuarterWindow().start;
     return quarterStartDate > today.getTime();
+  }
+
+  private isTodayInFirstQuarterOfView(): boolean {
+    const today = new Date();
+    const viewMidpoint = new Date(this.timelineStartDate);
+    viewMidpoint.setMonth(viewMidpoint.getMonth() + 3);
+    return today.getTime() < viewMidpoint.getTime();
   }
 
   private getNextQuarterWindow(): PlanningWindow {
