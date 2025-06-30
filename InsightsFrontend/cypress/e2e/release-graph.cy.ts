@@ -46,8 +46,7 @@ describe('Graph Rendering and Interaction', () => {
 
       cy.get('@infoModal').contains('h2', 'Release Support');
       cy.get('@infoModal').find('.release-content-item').should('have.length', 4);
-      cy.get('@infoModal').contains('p', 'Major versions currently receive one year of security support');
-
+      cy.get('@infoModal').contains('p', 'Our policy is to provide major versions with one year of security support and six months of technical support.');
       cy.get('@infoModal').find('button[aria-label="Close modal"]').click();
 
       cy.get('app-modal').should('not.exist');
