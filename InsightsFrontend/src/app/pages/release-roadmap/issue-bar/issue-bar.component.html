@@ -4,20 +4,10 @@
   class="issue-bar"
   [href]="issue.url"
   [ngStyle]="issueStyle"
-  (mouseenter)="showTooltip()"
-  (mouseleave)="hideTooltip()"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()"
 >
   <div class="inner" [ngStyle]="priorityStyle">
     <span class="number">{{ issue.number }}</span>
   </div>
 </a>
-
-<div #tooltip class="tooltip">
-  <h4 class="tooltip-title">{{ issue.title }}</h4>
-  @if (issue.issuePriority) {
-    <p class="tooltip-detail"><strong>Priority:</strong> {{ issue.issuePriority.name }}</p>
-  }
-  @if (issue.points) {
-    <p class="tooltip-detail"><strong>Points:</strong> {{ issue.points }}</p>
-  }
-</div>
