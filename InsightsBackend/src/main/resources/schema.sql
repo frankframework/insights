@@ -1,7 +1,0 @@
-CREATE TABLE IF NOT EXISTS shedlock (
-	name TEXT NOT NULL,
-	lock_until TIMESTAMPTZ NOT NULL,
-	locked_at TIMESTAMPTZ NOT NULL,
-	locked_by TEXT NOT NULL,
-	PRIMARY KEY (name)
-);
