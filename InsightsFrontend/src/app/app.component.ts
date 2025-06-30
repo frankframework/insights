@@ -9,10 +9,11 @@ import {
 } from '@angular/router';
 import { LoaderComponent } from './components/loader/loader.component';
 import { HeaderComponent } from './pages/header/header.component';
+import { TooltipComponent } from './pages/release-roadmap/issue-bar/tooltip/tooltip.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, LoaderComponent, HeaderComponent],
+  imports: [RouterOutlet, LoaderComponent, HeaderComponent, TooltipComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })

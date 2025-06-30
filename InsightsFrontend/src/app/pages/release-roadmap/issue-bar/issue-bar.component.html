@@ -1,14 +1,13 @@
-<a target="_blank" class="issue-bar" [href]="issue.url" [ngStyle]="issueStyle">
-  <div class="inner" [ngStyle]="priorityStyle" (mouseenter)="updateTooltipPosition()">
+<a
+  #issueLink
+  target="_blank"
+  class="issue-bar"
+  [href]="issue.url"
+  [ngStyle]="issueStyle"
+  (mouseenter)="onMouseEnter()"
+  (mouseleave)="onMouseLeave()"
+>
+  <div class="inner" [ngStyle]="priorityStyle">
     <span class="number">{{ issue.number }}</span>
-    <div #tooltipElement class="tooltip" [style.transform]="tooltipTransformStyle">
-      <h4 class="tooltip-title">{{ issue.title }}</h4>
-      @if (issue.issuePriority) {
-        <p class="tooltip-detail"><strong>Priority:</strong> {{ issue.issuePriority.name }}</p>
-      }
-      @if (issue.points) {
-        <p class="tooltip-detail"><strong>Points:</strong> {{ issue.points }}</p>
-      }
-    </div>
   </div>
 </a>

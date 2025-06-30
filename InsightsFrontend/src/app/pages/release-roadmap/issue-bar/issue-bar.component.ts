@@ -1,7 +1,8 @@
-import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
+import { TooltipService } from './tooltip/tooltip.service';
 
 @Component({
   selector: 'app-issue-bar',
@@ -14,11 +15,10 @@ export class IssueBarComponent implements OnInit {
   @Input({ required: true }) issue!: Issue;
   @Input() issueStyle: Record<string, string> = {};
 
-  @ViewChild('tooltipElement') tooltipRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('issueLink') issueLinkRef!: ElementRef<HTMLAnchorElement>;
 
   public priorityStyle: Record<string, string> = {};
   public isClosed = false;
-  public tooltipTransformStyle = '';
 
   private readonly CLOSED_STYLE: Record<string, string> = {
     'background-color': '#f3e8ff',
@@ -32,20 +32,21 @@ export class IssueBarComponent implements OnInit {
     'border-color': '#86efac',
   };
 
+  constructor(private tooltipService: TooltipService) {}
+
   ngOnInit(): void {
     this.isClosed = this.issue.state === GitHubStates.CLOSED;
     this.priorityStyle = this.getStyleForState();
   }
 
-  public updateTooltipPosition(): void {
-    setTimeout(() => {
-      if (this.tooltipRef?.nativeElement) {
-        const tooltipHeight = this.tooltipRef.nativeElement.offsetHeight;
-        const dynamicOffsetY = tooltipHeight / 2;
+  public onMouseEnter(): void {
+    if (this.issueLinkRef) {
+      this.tooltipService.show(this.issueLinkRef.nativeElement, this.issue);
+    }
+  }
 
-        this.tooltipTransformStyle = `translate(0, calc(-125% + ${dynamicOffsetY}px))`;
-      }
-    }, 0);
+  public onMouseLeave(): void {
+    this.tooltipService.hide();
   }
 
   private getStyleForState(): Record<string, string> {
@@ -55,7 +56,7 @@ export class IssueBarComponent implements OnInit {
 
     const priorityColor = this.issue.issuePriority?.color;
     if (this.isValidHexColor(priorityColor)) {
-      return this.getPriorityStyles(priorityColor!);
+      return this.getPriorityStyles(priorityColor);
     }
 
     return this.OPEN_STYLE;
