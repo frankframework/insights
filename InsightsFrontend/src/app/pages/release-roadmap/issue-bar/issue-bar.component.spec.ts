@@ -60,6 +60,7 @@ describe('IssueBarComponent', () => {
   it('should create', () => {
     component.issue = mockOpenIssueWithoutPriority;
     fixture.detectChanges();
+
     expect(component).toBeTruthy();
   });
 
@@ -67,6 +68,7 @@ describe('IssueBarComponent', () => {
     it('should set isClosed to true for a closed issue', () => {
       component.issue = mockClosedIssue;
       fixture.detectChanges();
+
       expect(component.isClosed).toBeTrue();
     });
 
@@ -74,6 +76,7 @@ describe('IssueBarComponent', () => {
       component.issue = mockClosedIssue;
       fixture.detectChanges();
       const closedStyle = component['CLOSED_STYLE'];
+
       expect(component.priorityStyle).toEqual(closedStyle);
     });
 
@@ -81,6 +84,7 @@ describe('IssueBarComponent', () => {
       component.issue = mockOpenIssueWithoutPriority;
       fixture.detectChanges();
       const openStyle = component['OPEN_STYLE'];
+
       expect(component.priorityStyle).toEqual(openStyle);
     });
 
@@ -88,6 +92,7 @@ describe('IssueBarComponent', () => {
       component.issue = mockOpenIssueWithInvalidColor;
       fixture.detectChanges();
       const openStyle = component['OPEN_STYLE'];
+
       expect(component.priorityStyle).toEqual(openStyle);
     });
 
@@ -117,6 +122,7 @@ describe('IssueBarComponent', () => {
       component.issue = mockBaseIssue as Issue;
       fixture.detectChanges();
       const numberElement = nativeElement.querySelector('.number');
+
       expect(numberElement?.textContent).toContain(mockBaseIssue.number.toString());
     });
 
@@ -124,6 +130,7 @@ describe('IssueBarComponent', () => {
       component.issue = mockBaseIssue as Issue;
       fixture.detectChanges();
       const anchorElement = nativeElement.querySelector('.issue-bar');
+
       expect(anchorElement?.getAttribute('href')).toBe(mockBaseIssue.url);
       expect(anchorElement?.getAttribute('title')).toBe(mockBaseIssue.title);
     });
@@ -132,6 +139,7 @@ describe('IssueBarComponent', () => {
       component.issue = mockBaseIssue as Issue;
       fixture.detectChanges();
       const tooltipTitleElement = nativeElement.querySelector('.tooltip-title');
+
       expect(tooltipTitleElement?.textContent).toContain(mockBaseIssue.title);
     });
 
@@ -140,6 +148,7 @@ describe('IssueBarComponent', () => {
       fixture.detectChanges();
 
       const details = nativeElement.querySelectorAll('.tooltip-detail');
+
       expect(details.length).toBe(2);
       expect(details[0].textContent).toContain(`Priority: ${mockOpenIssueWithPriority.issuePriority!.name}`);
       expect(details[1].textContent).toContain(`Points: ${mockOpenIssueWithPriority.points}`);
@@ -150,6 +159,7 @@ describe('IssueBarComponent', () => {
       fixture.detectChanges();
 
       const priorityElement = nativeElement.querySelector('.tooltip-detail strong');
+
       expect(priorityElement).toBeNull();
     });
   });

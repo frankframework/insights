@@ -24,6 +24,7 @@ describe('RoadmapToolbarComponent', () => {
   describe('Input: periodLabel', () => {
     it('should display the initial empty periodLabel', () => {
       const label = nativeElement.querySelector('.period-label');
+
       expect(label?.textContent?.trim()).toBe('');
     });
 
@@ -32,6 +33,7 @@ describe('RoadmapToolbarComponent', () => {
       component.periodLabel = testLabel;
       fixture.detectChanges();
       const label = nativeElement.querySelector('.period-label');
+
       expect(label?.textContent?.trim()).toBe(testLabel);
     });
   });
@@ -52,6 +54,7 @@ describe('RoadmapToolbarComponent', () => {
       const nextButton = nativeElement.querySelector<HTMLButtonElement>('button[title="Next quarter"]');
       nextButton?.click();
       fixture.detectChanges();
+
       expect(component.changePeriod.emit).toHaveBeenCalledWith(3);
     });
 
@@ -60,6 +63,7 @@ describe('RoadmapToolbarComponent', () => {
       const todayButton = nativeElement.querySelector<HTMLButtonElement>('button[title="Go to today"]');
       todayButton?.click();
       fixture.detectChanges();
+
       expect(component.resetPeriod.emit).toHaveBeenCalled();
     });
   });

@@ -20,6 +20,7 @@ describe('TimelineHeaderComponent', () => {
 
   it('should create', () => {
     fixture.detectChanges();
+
     expect(component).toBeTruthy();
   });
 
@@ -33,6 +34,7 @@ describe('TimelineHeaderComponent', () => {
       component.quarters = mockQuarters;
       fixture.detectChanges();
       const quarterCells = nativeElement.querySelectorAll('.quarter-cell');
+
       expect(quarterCells.length).toBe(2);
     });
 
@@ -40,12 +42,14 @@ describe('TimelineHeaderComponent', () => {
       component.quarters = mockQuarters;
       fixture.detectChanges();
       const quarterCells = nativeElement.querySelectorAll('.quarter-cell');
+
       expect(quarterCells[0].textContent).toContain('Q2 2025');
       expect(quarterCells[1].textContent).toContain('Q3 2025');
     });
 
     it('should calculate quartersGridStyle correctly based on monthCount', () => {
       component.quarters = mockQuarters;
+
       expect(component.quartersGridStyle).toBe('3fr 3fr');
     });
 
@@ -53,6 +57,7 @@ describe('TimelineHeaderComponent', () => {
       component.quarters = mockQuarters;
       fixture.detectChanges();
       const quartersGridArea = nativeElement.querySelector('.quarters-row .grid-area') as HTMLElement;
+
       expect(quartersGridArea.style.gridTemplateColumns).toBe('3fr 3fr');
     });
   });
@@ -64,6 +69,7 @@ describe('TimelineHeaderComponent', () => {
       component.months = mockMonths;
       fixture.detectChanges();
       const monthCells = nativeElement.querySelectorAll('.month-cell');
+
       expect(monthCells.length).toBe(3);
     });
 
@@ -71,6 +77,7 @@ describe('TimelineHeaderComponent', () => {
       component.months = mockMonths;
       fixture.detectChanges();
       const monthCells = nativeElement.querySelectorAll('.month-cell');
+
       expect(monthCells[0].textContent).toContain('Apr');
       expect(monthCells[1].textContent).toContain('May');
       expect(monthCells[2].textContent).toContain('Jun');
