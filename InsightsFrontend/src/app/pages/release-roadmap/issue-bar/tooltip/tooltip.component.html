@@ -1,0 +1,11 @@
+@if (tooltipState$ | async; as state) {
+  <div class="tooltip" [style.top]="state.top" [style.left]="state.left">
+    <h4 class="tooltip-title">{{ state.issue.title }}</h4>
+    @if (state.issue.issuePriority) {
+      <p class="tooltip-detail"><strong>Priority:</strong> {{ state.issue.issuePriority.name }}</p>
+    }
+    @if (state.issue.points) {
+      <p class="tooltip-detail"><strong>Points:</strong> {{ state.issue.points }}</p>
+    }
+  </div>
+}

@@ -25,37 +25,3 @@
     white-space: nowrap;
   }
 }
-
-// Tooltip styling is now separate from the issue-bar hover state
-.tooltip {
-  // display: none by default, position is set to 'fixed' by TypeScript
-  display: none;
-  pointer-events: none;
-  background-color: #1f2937;
-  color: #f9fafb;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  padding: 1rem;
-  width: 300px;
-  max-width: 90vw;
-  z-index: 100; // High z-index to appear on top of everything
-
-  .tooltip-title {
-    font-weight: 600;
-    margin: 0 0 0.5rem 0;
-    white-space: normal;
-  }
-
-  .tooltip-detail {
-    font-size: 0.875rem;
-    color: #d1d5db;
-    margin: 0.25rem 0;
-  }
-
-  .tooltip-link {
-    display: block;
-    font-size: 0.75rem;
-    color: #93c5fd;
-    margin-top: 0.75rem;
-  }
-}
