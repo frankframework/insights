@@ -87,6 +87,7 @@ describe('ReleaseRoadmapComponent', () => {
   it('should create', () => {
     spyOn(milestoneService, 'getOpenMilestones').and.returnValue(of([]));
     fixture.detectChanges();
+
     expect(component).toBeTruthy();
   });
 
@@ -103,6 +104,7 @@ describe('ReleaseRoadmapComponent', () => {
 
     it('should set displayDate to the start of the current quarter on resetPeriod', () => {
       component.resetPeriod();
+
       expect(component.displayDate.getFullYear()).toBe(2025);
       expect(component.displayDate.getMonth()).toBe(3);
       expect(component.displayDate.getDate()).toBe(1);
@@ -118,7 +120,8 @@ describe('ReleaseRoadmapComponent', () => {
     });
 
     it('should generate 6 months and 2 quarters based on the displayDate', () => {
-      component.resetPeriod(); // Starts in Q2
+      component.resetPeriod();
+
       expect(component.months.length).toBe(6);
       expect(component.quarters.length).toBe(2);
       expect(component.quarters[0].name).toBe('Q2 2025');

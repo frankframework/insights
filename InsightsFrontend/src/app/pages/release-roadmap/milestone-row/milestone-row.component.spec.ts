@@ -82,22 +82,26 @@ describe('MilestoneRowComponent', () => {
 
   it('should create', () => {
     initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, dueOn: null }, []);
+
     expect(component).toBeTruthy();
   });
 
   describe('Progress Calculation', () => {
     it('should calculate progress as 50% for 1 open and 1 closed issue', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, openIssueCount: 1, closedIssueCount: 1 }, []);
+
       expect(component.progressPercentage).toBe(50);
     });
 
     it('should calculate progress as 100% when all issues are closed', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, openIssueCount: 0, closedIssueCount: 5 }, []);
+
       expect(component.progressPercentage).toBe(100);
     });
 
     it('should calculate progress as 0% for no issues', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, openIssueCount: 0, closedIssueCount: 0 }, []);
+
       expect(component.progressPercentage).toBe(0);
     });
   });
@@ -105,11 +109,13 @@ describe('MilestoneRowComponent', () => {
   describe('Layout Algorithm Logic', () => {
     it('should not run layout algorithm if dueOn is not set', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, dueOn: null }, [MOCK_OPEN_ISSUE]);
+
       expect(component.positionedIssues.length).toBe(0);
     });
 
     it('should place a single issue on the first track', () => {
       initializeComponent(MOCK_CURRENT_QUARTER_MILESTONE, [MOCK_OPEN_ISSUE]);
+
       expect(component.positionedIssues.length).toBe(1);
       expect(component.trackCount).toBe(1);
     });
@@ -121,6 +127,7 @@ describe('MilestoneRowComponent', () => {
         points: 30,
       }));
       initializeComponent(MOCK_CURRENT_QUARTER_MILESTONE, largeIssues);
+
       expect(component.trackCount).toBeGreaterThan(1);
     });
 
@@ -187,6 +194,7 @@ describe('MilestoneRowComponent', () => {
     it('should display the milestone title and link', () => {
       initializeComponent(MOCK_CURRENT_QUARTER_MILESTONE, []);
       const link = nativeElement.querySelector('.title-link') as HTMLAnchorElement;
+
       expect(link.textContent).toContain(MOCK_CURRENT_QUARTER_MILESTONE.title);
       expect(link.href).toBe(MOCK_CURRENT_QUARTER_MILESTONE.url);
     });
@@ -194,12 +202,14 @@ describe('MilestoneRowComponent', () => {
     it('should display the formatted due date', () => {
       initializeComponent(MOCK_CURRENT_QUARTER_MILESTONE, []);
       const detail = nativeElement.querySelector('.detail');
+
       expect(detail?.textContent).toContain('30-06-2025');
     });
 
     it('should display "Unplanned" when due date is null', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, dueOn: null }, []);
       const detail = nativeElement.querySelector('.detail.unplanned');
+
       expect(detail).toBeTruthy();
       expect(detail?.textContent).toContain('Unplanned');
     });
@@ -207,24 +217,28 @@ describe('MilestoneRowComponent', () => {
     it('should show the estimated icon when isEstimated is true', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, isEstimated: true }, []);
       const icon = nativeElement.querySelector('.estimated-icon');
+
       expect(icon).toBeTruthy();
     });
 
     it('should NOT show the estimated icon when isEstimated is false', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, isEstimated: false }, []);
       const icon = nativeElement.querySelector('.estimated-icon');
+
       expect(icon).toBeFalsy();
     });
 
     it('should set the progress bar width style correctly', () => {
       initializeComponent({ ...MOCK_CURRENT_QUARTER_MILESTONE, openIssueCount: 1, closedIssueCount: 3 }, []);
       const progressBar = nativeElement.querySelector('.progress-bar') as HTMLElement;
+
       expect(progressBar.style.width).toBe('75%');
     });
 
     it('should render the correct number of issue-bar components', () => {
       initializeComponent(MOCK_CURRENT_QUARTER_MILESTONE, [MOCK_OPEN_ISSUE, MOCK_CLOSED_ISSUE]);
       const issueBars = fixture.debugElement.queryAll(By.css('app-issue-bar'));
+
       expect(issueBars.length).toBe(2);
     });
   });
