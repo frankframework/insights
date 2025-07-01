@@ -276,19 +276,33 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     const viewEndTime = this.timelineEndDate.getTime();
 
     return milestones.filter((milestone) => {
-      // 1. Toon milestone als dueOn in de timeline range valt
-      if (milestone.dueOn) {
-        const dueDate = new Date(milestone.dueOn);
-        if (dueDate.getTime() >= viewStartTime && dueDate.getTime() <= viewEndTime) {
+      if (!milestone.dueOn) return false;
+      const dueDate = new Date(milestone.dueOn);
+      const issues = this.getIssuesForMilestone(milestone.id);
+      const hasOpen = issues.some(issue => issue.state === GitHubStates.OPEN);
+
+      // 1. Altijd tonen in het kwartaal waarin dueOn valt
+      const dueQuarterStart = this.getQuarterFromDate(dueDate);
+      const dueQuarterEnd = this.getQuarterEndDate(dueQuarterStart);
+      if (dueQuarterStart.getTime() >= viewStartTime && dueQuarterStart.getTime() <= viewEndTime) {
+        return true;
+      }
+
+      // 2. Uitloop: milestone is gepland in het verleden, maar heeft nog open issues
+      // Toon deze milestone in het eerste kwartaal NA dueOn waarin de timeline start
+      if (hasOpen && dueQuarterStart.getTime() < viewStartTime) {
+        // Bepaal het eerste kwartaal na dueOn
+        const firstFutureQuarterStart = new Date(dueQuarterStart);
+        firstFutureQuarterStart.setMonth(firstFutureQuarterStart.getMonth() + 3);
+        const firstFutureQuarterEnd = this.getQuarterEndDate(firstFutureQuarterStart);
+        // Als de timeline start in of na het eerste kwartaal na dueOn, toon de milestone
+        if (viewStartTime >= firstFutureQuarterStart.getTime() && viewStartTime <= firstFutureQuarterEnd.getTime()) {
           return true;
         }
       }
-      // 2. Toon milestone als er open issues zijn (state === 'open' of GitHubState.Open)
-      const issues = this.getIssuesForMilestone(milestone.id);
-      const hasOpen = issues.some((issue) => {
-        return issue.state === GitHubStates.OPEN;
-      });
-      return hasOpen;
+
+      // 3. Anders: niet tonen
+      return false;
     });
   }
 
