@@ -63,40 +63,21 @@ export class MilestoneRowComponent implements OnInit {
   private runLayoutAlgorithm(): void {
     this.positionedIssues = [];
     const { closedIssues, openIssues } = this.getSeparatedIssues();
-    const { currentViewClosedWindow, currentViewOpenWindow } = this.getTimelineViewWindows();
     const milestoneQuarterWindow = this.getMilestoneQuarterWindow();
 
-    let finalClosedLayout: LayoutContext = { positionedIssues: [], trackCount: 0 };
-    let finalOpenLayout: LayoutContext = { positionedIssues: [], trackCount: 0 };
-
-    if (this.isMilestoneOverdue()) {
-      finalClosedLayout = this.layoutIssuesWithEvenSpacing(closedIssues, currentViewClosedWindow);
-      finalOpenLayout = this.layoutIssuesWithEvenSpacing(openIssues, this.getNextQuarterWindow());
-    } else if (this.isMilestoneInFuture()) {
-      finalClosedLayout = this.layoutIssuesBackwards(closedIssues, currentViewClosedWindow);
-      finalOpenLayout = this.layoutIssuesWithEvenSpacing(openIssues, milestoneQuarterWindow);
-    } else if (this.isMilestoneInCurrentQuarter()) {
-      const currentQuarterClosedWindow: PlanningWindow = {
-        start: milestoneQuarterWindow.start,
-        end: currentViewOpenWindow.start - this.GAP_MS,
-      };
-      finalClosedLayout = this.layoutIssuesWithEvenSpacing(closedIssues, currentQuarterClosedWindow);
-
-      // FINAL LOGIC: Decide layout for open issues based on the position of "today" in the 6-month view.
-      if (this.isTodayInFirstQuarterOfView()) {
-        // If today is in the first visible quarter, use the vertical column layout.
-        finalOpenLayout = this.layoutIssuesAsColumn(openIssues, currentViewOpenWindow);
-      } else {
-        // If today is in the second visible quarter, use the normal horizontal layout.
-        finalOpenLayout = this.layoutIssuesWithEvenSpacing(openIssues, currentViewOpenWindow);
-      }
+    // Alleen open issues tonen als de milestone nog niet is afgerond, anders alleen closed
+    let allIssues: Issue[] = [];
+    if (this.milestone.dueOn && new Date(this.milestone.dueOn) < new Date()) {
+      // Milestone is in het verleden: alleen closed issues tonen
+      allIssues = closedIssues;
     } else {
-      const allIssues = [...closedIssues, ...openIssues];
-      finalClosedLayout = this.layoutIssuesWithEvenSpacing(allIssues, milestoneQuarterWindow);
+      // Milestone is huidig of toekomst: alleen open issues tonen
+      allIssues = openIssues;
     }
 
-    this.positionedIssues.push(...finalClosedLayout.positionedIssues, ...finalOpenLayout.positionedIssues);
-    this.trackCount = Math.max(1, finalClosedLayout.trackCount, finalOpenLayout.trackCount);
+    const layout = this.layoutIssuesWithEvenSpacing(allIssues, milestoneQuarterWindow);
+    this.positionedIssues.push(...layout.positionedIssues);
+    this.trackCount = Math.max(1, layout.trackCount);
   }
 
   private layoutIssuesAsColumn(issues: Issue[], window: PlanningWindow): LayoutContext {
