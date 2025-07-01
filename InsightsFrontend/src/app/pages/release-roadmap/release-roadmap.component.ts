@@ -8,6 +8,7 @@ import { MilestoneRowComponent } from './milestone-row/milestone-row.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
+import { GitHubStates } from '../../app.service';
 
 interface Version {
   major: number;
@@ -38,6 +39,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   public currentPeriodLabel = '';
   protected todayOffsetPercentage = 0;
   private viewInitialized = false;
+  private scheduledMilestones = new Map<string, Date>(); // Cache for scheduled due dates
 
   constructor(
     private milestoneService: MilestoneService,
@@ -67,6 +69,11 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     const currentQuarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
     this.displayDate = new Date(today.getFullYear(), currentQuarterStartMonth, 1);
     this.generateTimelineFromPeriod();
+  }
+
+  public clearScheduledDates(): void {
+    this.scheduledMilestones.clear();
+    this.loadRoadmapData();
   }
 
   public getIssuesForMilestone(milestoneId: string): Issue[] {
@@ -161,10 +168,15 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
             }),
           );
         }),
-        map(({ milestones }) => this.scheduleMilestones(milestones)),
+        map(({ milestones }) => {
+          // Always apply scheduling to maintain consistency with cached dates
+          return this.scheduleMilestones(milestones);
+        }),
         map((finalMilestones) => this.sortMilestones(finalMilestones)),
         map((sortedMilestones) => this.filterMilestonesInView(sortedMilestones)),
-        tap((finalMilestones) => (this.openMilestones = finalMilestones)),
+        tap((finalMilestones) => {
+          this.openMilestones = finalMilestones;
+        }),
         catchError((error) => {
           this.toastrService.error('Could not load roadmap data.', 'Error');
           console.error(error);
@@ -181,54 +193,70 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   }
 
   private scheduleMilestones(milestones: Milestone[]): Milestone[] {
-    const sortedByVersion = this.getMilestonesSortedByVersion(milestones);
-    const majors = sortedByVersion.filter((m) => m.version!.patch === 0);
-    const minors = sortedByVersion.filter((m) => m.version!.patch !== 0);
-
-    const scheduledMajors = this.planReleases(majors, new Date());
-    const scheduledMinors = this.planReleases(minors, new Date(), true);
-
-    return [...scheduledMajors, ...scheduledMinors];
-  }
-
-  private getMilestonesSortedByVersion(milestones: Milestone[]): { milestone: Milestone; version: Version | null }[] {
-    return milestones
+    // Parse versions
+    const parsed = milestones
       .map((m) => ({ milestone: m, version: this.parseVersion(m.title) }))
-      .filter((item) => item.version !== null)
-      .sort((a, b) => {
-        const vA = a.version!;
-        const vB = b.version!;
-        if (vA.major !== vB.major) return vA.major - vB.major;
-        if (vA.minor !== vB.minor) return vA.minor - vB.minor;
-        return vA.patch - vB.patch;
-      });
-  }
+      .filter((mv) => mv.version);
 
-  private planReleases(
-    versionedItems: { milestone: Milestone; version: Version | null }[],
-    startDate: Date,
-    resetCursorForSeries = false,
-  ): Milestone[] {
-    const scheduled: Milestone[] = [];
-    let quarterCursor = new Date(startDate);
-    let lastSeries = '';
+    // Majors en minors splitsen
+    const majors = parsed.filter((mv) => mv.version!.patch === 0);
+    const minors = parsed.filter((mv) => mv.version!.patch > 0);
 
-    for (const item of versionedItems) {
-      if (resetCursorForSeries) {
-        const series = `${item.version!.major}.${item.version!.minor}`;
-        if (series !== lastSeries) {
-          quarterCursor = new Date(startDate);
-        }
-        lastSeries = series;
-      }
-
-      const year = quarterCursor.getFullYear();
-      const quarterIndex = Math.floor(quarterCursor.getMonth() / 3);
-      item.milestone.dueOn = new Date(year, quarterIndex * 3 + 3, 0); // End of quarter
-      scheduled.push(item.milestone);
-      quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+    // Anchor bepalen (eerste major met dueOn, anders huidige kwartaal)
+    let anchorQuarter: Date;
+    let anchorDueOn: Date | null = null;
+    const anchorMajor = majors.find((mv) => mv.milestone.dueOn);
+    if (anchorMajor && anchorMajor.milestone.dueOn) {
+      anchorDueOn = new Date(anchorMajor.milestone.dueOn);
+      anchorQuarter = this.getQuarterFromDate(anchorDueOn);
+    } else {
+      anchorQuarter = this.getQuarterFromDate(new Date());
     }
-    return scheduled;
+
+    // Majors plannen
+    let quarterCursor = new Date(anchorQuarter);
+    for (const { milestone, version } of majors) {
+      if (milestone.dueOn) {
+        // Zet quarterCursor op het kwartaal na deze dueOn
+        const dueQuarter = this.getQuarterFromDate(new Date(milestone.dueOn));
+        quarterCursor = new Date(dueQuarter);
+        quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+      } else {
+        milestone.dueOn = this.getQuarterEndDate(quarterCursor);
+        milestone.isEstimated = true;
+        quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+      }
+    }
+
+    // Minors per serie plannen
+    const minorsByMajor = new Map<string, { milestone: Milestone; version: Version }[]>();
+    for (const mv of minors) {
+      const key = `${mv.version!.major}.${mv.version!.minor}`;
+      if (!minorsByMajor.has(key)) minorsByMajor.set(key, []);
+      minorsByMajor.get(key)!.push(mv as { milestone: Milestone; version: Version });
+    }
+    for (const [key, minorList] of minorsByMajor) {
+      // Plan eerste minor op anchorQuarter, elke volgende een kwartaal verder
+      let minorQuarter = new Date(anchorQuarter);
+      minorList.sort((a, b) => a.version.patch - b.version.patch);
+      for (const mv of minorList) {
+        if (!mv.milestone.dueOn) {
+          mv.milestone.dueOn = this.getQuarterEndDate(minorQuarter);
+          mv.milestone.isEstimated = true;
+          minorQuarter.setMonth(minorQuarter.getMonth() + 3);
+        }
+      }
+    }
+
+    // Uniek houden: geen dubbele milestones per versie
+    const uniqueMilestones = new Map<string, Milestone>();
+    for (const { milestone, version } of parsed) {
+      if (version) {
+        uniqueMilestones.set(`${version.major}.${version.minor}.${version.patch}`, milestone);
+      }
+    }
+
+    return [...uniqueMilestones.values()];
   }
 
   private parseVersion(title: string): Version | null {
@@ -249,8 +277,32 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
     return milestones.filter((milestone) => {
       if (!milestone.dueOn) return false;
-      const dueTime = milestone.dueOn.getTime();
-      return dueTime >= viewStartTime && dueTime <= viewEndTime;
+      const dueDate = new Date(milestone.dueOn);
+      const issues = this.getIssuesForMilestone(milestone.id);
+      const hasOpen = issues.some(issue => issue.state === GitHubStates.OPEN);
+
+      // 1. Altijd tonen in het kwartaal waarin dueOn valt
+      const dueQuarterStart = this.getQuarterFromDate(dueDate);
+      const dueQuarterEnd = this.getQuarterEndDate(dueQuarterStart);
+      if (dueQuarterStart.getTime() >= viewStartTime && dueQuarterStart.getTime() <= viewEndTime) {
+        return true;
+      }
+
+      // 2. Uitloop: milestone is gepland in het verleden, maar heeft nog open issues
+      // Toon deze milestone in het eerste kwartaal NA dueOn waarin de timeline start
+      if (hasOpen && dueQuarterStart.getTime() < viewStartTime) {
+        // Bepaal het eerste kwartaal na dueOn
+        const firstFutureQuarterStart = new Date(dueQuarterStart);
+        firstFutureQuarterStart.setMonth(firstFutureQuarterStart.getMonth() + 3);
+        const firstFutureQuarterEnd = this.getQuarterEndDate(firstFutureQuarterStart);
+        // Als de timeline start in of na het eerste kwartaal na dueOn, toon de milestone
+        if (viewStartTime >= firstFutureQuarterStart.getTime() && viewStartTime <= firstFutureQuarterEnd.getTime()) {
+          return true;
+        }
+      }
+
+      // 3. Anders: niet tonen
+      return false;
     });
   }
 
@@ -273,6 +325,27 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   }
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
-    return milestones.sort((a, b) => (a.dueOn?.getTime() ?? 0) - (b.dueOn?.getTime() ?? 0));
+    return milestones.sort((a, b) => {
+      // First sort by due date
+      const dueComparison = (a.dueOn?.getTime() ?? 0) - (b.dueOn?.getTime() ?? 0);
+      if (dueComparison !== 0) return dueComparison;
+
+      // If due dates are the same, sort by title
+      return a.title.localeCompare(b.title);
+    });
+  }
+
+  private getQuarterFromDate(date: Date): Date {
+    const year = date.getFullYear();
+    const quarterIndex = Math.floor(date.getMonth() / 3);
+    return new Date(year, quarterIndex * 3, 1);
+  }
+
+  private getQuarterEndDate(quarterStart: Date): Date {
+    const quarterEnd = new Date(quarterStart);
+    quarterEnd.setMonth(quarterEnd.getMonth() + 3);
+    quarterEnd.setDate(0); // Last day of the month
+    quarterEnd.setHours(23, 59, 59, 999);
+    return quarterEnd;
   }
 }
