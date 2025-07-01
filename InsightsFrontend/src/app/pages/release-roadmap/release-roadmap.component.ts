@@ -8,6 +8,7 @@ import { MilestoneRowComponent } from './milestone-row/milestone-row.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
+import { GitHubStates } from '../../app.service';
 
 interface Version {
   major: number;
@@ -193,16 +194,18 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   private scheduleMilestones(milestones: Milestone[]): Milestone[] {
     // Parse versions
-    const parsed = milestones.map(m => ({ milestone: m, version: this.parseVersion(m.title) })).filter(mv => mv.version);
+    const parsed = milestones
+      .map((m) => ({ milestone: m, version: this.parseVersion(m.title) }))
+      .filter((mv) => mv.version);
 
     // Majors en minors splitsen
-    const majors = parsed.filter(mv => mv.version!.patch === 0);
-    const minors = parsed.filter(mv => mv.version!.patch > 0);
+    const majors = parsed.filter((mv) => mv.version!.patch === 0);
+    const minors = parsed.filter((mv) => mv.version!.patch > 0);
 
     // Anchor bepalen (eerste major met dueOn, anders huidige kwartaal)
     let anchorQuarter: Date;
     let anchorDueOn: Date | null = null;
-    const anchorMajor = majors.find(mv => mv.milestone.dueOn);
+    const anchorMajor = majors.find((mv) => mv.milestone.dueOn);
     if (anchorMajor && anchorMajor.milestone.dueOn) {
       anchorDueOn = new Date(anchorMajor.milestone.dueOn);
       anchorQuarter = this.getQuarterFromDate(anchorDueOn);
@@ -213,14 +216,14 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     // Majors plannen
     let quarterCursor = new Date(anchorQuarter);
     for (const { milestone, version } of majors) {
-      if (!milestone.dueOn) {
-        milestone.dueOn = this.getQuarterEndDate(quarterCursor);
-        milestone.isEstimated = true;
-        quarterCursor.setMonth(quarterCursor.getMonth() + 3);
-      } else {
+      if (milestone.dueOn) {
         // Zet quarterCursor op het kwartaal na deze dueOn
         const dueQuarter = this.getQuarterFromDate(new Date(milestone.dueOn));
         quarterCursor = new Date(dueQuarter);
+        quarterCursor.setMonth(quarterCursor.getMonth() + 3);
+      } else {
+        milestone.dueOn = this.getQuarterEndDate(quarterCursor);
+        milestone.isEstimated = true;
         quarterCursor.setMonth(quarterCursor.getMonth() + 3);
       }
     }
@@ -253,7 +256,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       }
     }
 
-    return Array.from(uniqueMilestones.values());
+    return [...uniqueMilestones.values()];
   }
 
   private parseVersion(title: string): Version | null {
@@ -271,10 +274,21 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     if (!this.timelineStartDate || !this.timelineEndDate) return milestones;
     const viewStartTime = this.timelineStartDate.getTime();
     const viewEndTime = this.timelineEndDate.getTime();
+
     return milestones.filter((milestone) => {
-      if (!milestone.dueOn) return false;
-      const dueDate = new Date(milestone.dueOn);
-      return dueDate.getTime() >= viewStartTime && dueDate.getTime() <= viewEndTime;
+      // 1. Toon milestone als dueOn in de timeline range valt
+      if (milestone.dueOn) {
+        const dueDate = new Date(milestone.dueOn);
+        if (dueDate.getTime() >= viewStartTime && dueDate.getTime() <= viewEndTime) {
+          return true;
+        }
+      }
+      // 2. Toon milestone als er open issues zijn (state === 'open' of GitHubState.Open)
+      const issues = this.getIssuesForMilestone(milestone.id);
+      const hasOpen = issues.some((issue) => {
+        return issue.state === GitHubStates.OPEN;
+      });
+      return hasOpen;
     });
   }
 
