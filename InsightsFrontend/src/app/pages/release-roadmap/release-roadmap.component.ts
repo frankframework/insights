@@ -432,11 +432,28 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
     return milestones.sort((a, b) => {
-      // First sort by due date
-      const dueComparison = (a.dueOn?.getTime() ?? 0) - (b.dueOn?.getTime() ?? 0);
-      if (dueComparison !== 0) return dueComparison;
-
-      // If due dates are the same, sort by title
+      // Eerst op dueOn (oud -> nieuw, zonder dueOn laatst)
+      const aDue = a.dueOn ? new Date(a.dueOn).getTime() : Number.MAX_SAFE_INTEGER;
+      const bDue = b.dueOn ? new Date(b.dueOn).getTime() : Number.MAX_SAFE_INTEGER;
+      if (aDue !== bDue) return aDue - bDue;
+      // Binnen dueOn: majors (patch==0) altijd boven minors (patch>0)
+      const aMatch = a.title.match(/(\d+)\.(\d+)\.(\d+)/);
+      const bMatch = b.title.match(/(\d+)\.(\d+)\.(\d+)/);
+      if (aMatch && bMatch) {
+        const aPatch = Number(aMatch[3]);
+        const bPatch = Number(bMatch[3]);
+        if (aPatch === 0 && bPatch > 0) return -1;
+        if (aPatch > 0 && bPatch === 0) return 1;
+        // Binnen major/minor: oplopend op release nummer
+        const aMajor = Number(aMatch[1]);
+        const bMajor = Number(bMatch[1]);
+        if (aMajor !== bMajor) return aMajor - bMajor;
+        const aMinor = Number(aMatch[2]);
+        const bMinor = Number(bMatch[2]);
+        if (aMinor !== bMinor) return aMinor - bMinor;
+        if (aPatch !== bPatch) return aPatch - bPatch;
+      }
+      // Fallback: alfabetisch
       return a.title.localeCompare(b.title);
     });
   }
