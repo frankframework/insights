@@ -65,15 +65,8 @@ export class MilestoneRowComponent implements OnInit {
     const { closedIssues, openIssues } = this.getSeparatedIssues();
     const milestoneQuarterWindow = this.getMilestoneQuarterWindow();
 
-    // Alleen open issues tonen als de milestone nog niet is afgerond, anders alleen closed
-    let allIssues: Issue[] = [];
-    if (this.milestone.dueOn && new Date(this.milestone.dueOn) < new Date()) {
-      // Milestone is in het verleden: alleen closed issues tonen
-      allIssues = closedIssues;
-    } else {
-      // Milestone is huidig of toekomst: alleen open issues tonen
-      allIssues = openIssues;
-    }
+    // Toon altijd zowel closed als open issues
+    const allIssues: Issue[] = [...closedIssues, ...openIssues];
 
     const layout = this.layoutIssuesWithEvenSpacing(allIssues, milestoneQuarterWindow);
     this.positionedIssues.push(...layout.positionedIssues);

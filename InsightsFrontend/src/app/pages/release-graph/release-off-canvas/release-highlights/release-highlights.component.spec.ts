@@ -2,16 +2,17 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseHighlightsComponent } from './release-highlights.component';
 import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
 import { Issue } from '../../../../services/issue.service';
+import { GitHubStates } from '../../../../app.service';
 
 const mockReleaseOffCanvasComponent = {
   colorNameToRgba: (color: string) => `rgba(${color},0.75)`,
 };
 
 const mockIssues: Issue[] = [
-  { id: 'i1', number: 1, title: 'Bug A', state: 0, url: '', issueType: { id: 't1', name: 'Bug', color: 'red', description: '' } },
-  { id: 'i2', number: 2, title: 'Feature B', state: 0, url: '', issueType: { id: 't2', name: 'Feature', color: 'blue', description: '' } },
-  { id: 'i3', number: 3, title: 'Bug C', state: 0, url: '', issueType: { id: 't1', name: 'Bug', color: 'red', description: '' } },
-  { id: 'i4', number: 4, title: 'No Type D', state: 0, url: '' }, // Issue with no type
+  { id: 'i1', number: 1, title: 'Bug A', state: GitHubStates.OPEN, url: '', issueType: { id: 't1', name: 'Bug', color: 'red', description: '' } },
+  { id: 'i2', number: 2, title: 'Feature B', state: GitHubStates.OPEN, url: '', issueType: { id: 't2', name: 'Feature', color: 'blue', description: '' } },
+  { id: 'i3', number: 3, title: 'Bug C', state: GitHubStates.OPEN, url: '', issueType: { id: 't1', name: 'Bug', color: 'red', description: '' } },
+  { id: 'i4', number: 4, title: 'No Type D', state: GitHubStates.OPEN, url: '' },
 ];
 
 describe('ReleaseHighlightsComponent', () => {

@@ -8,6 +8,7 @@ import { RoadmapToolbarComponent } from './roadmap-toolbar/roadmap-toolbar.compo
 import { TimelineHeaderComponent } from './timeline-header/timeline-header.component';
 import { MilestoneRowComponent } from './milestone-row/milestone-row.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
+import { GitHubStates } from '../../app.service';
 
 const mockMilestoneService = {
   getOpenMilestones: (): Observable<Milestone[]> => of([]),
@@ -30,7 +31,7 @@ const MOCK_MILESTONES: Milestone[] = [
     closedIssueCount: 1,
     url: '',
     number: 0,
-    state: 'OPEN',
+    state: GitHubStates.OPEN,
     major: 0,
     minor: 0,
     patch: 0,
@@ -43,14 +44,14 @@ const MOCK_MILESTONES: Milestone[] = [
     closedIssueCount: 0,
     url: '',
     number: 0,
-    state: 'OPEN',
+    state: GitHubStates.OPEN,
     major: 0,
     minor: 0,
     patch: 0,
   },
 ];
 
-const MOCK_ISSUES: Issue[] = [{ id: 'i1', number: 1, title: 'Test issue', state: 'OPEN', url: '', points: 5 } as Issue];
+const MOCK_ISSUES: Issue[] = [{ id: 'i1', number: 1, title: 'Test issue', state: GitHubStates.OPEN, url: '', points: 5 } as Issue];
 
 describe('ReleaseRoadmapComponent', () => {
   let component: ReleaseRoadmapComponent;

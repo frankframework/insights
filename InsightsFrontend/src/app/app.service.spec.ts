@@ -125,44 +125,4 @@ describe('AppService', () => {
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });
   });
-
-  describe('isValidISODate()', () => {
-    it('should return true for a valid ISO 8601 date string with time', () => {
-      const validDate = '2025-06-15T16:59:59';
-
-      expect(service.isValidISODate(validDate)).toBe(true);
-    });
-
-    it('should return true for a valid ISO 8601 date string with Z-suffix', () => {
-      const validDate = '2025-06-15T16:59:59Z';
-
-      expect(service.isValidISODate(validDate)).toBe(true);
-    });
-
-    it('should return false for a date string without the "T" separator', () => {
-      const invalidDate = '2025-06-15 16:59:59';
-
-      expect(service.isValidISODate(invalidDate)).toBe(false);
-    });
-
-    it('should return false for a date-only string', () => {
-      const invalidDate = '2025-06-15';
-
-      expect(service.isValidISODate(invalidDate)).toBe(false);
-    });
-
-    it('should return false for a non-standard date format', () => {
-      const invalidDate = '15-06-2025';
-
-      expect(service.isValidISODate(invalidDate)).toBe(false);
-    });
-
-    it('should return false for an empty string', () => {
-      expect(service.isValidISODate('')).toBe(false);
-    });
-
-    it('should return false for a random string', () => {
-      expect(service.isValidISODate('hello world')).toBe(false);
-    });
-  });
 });

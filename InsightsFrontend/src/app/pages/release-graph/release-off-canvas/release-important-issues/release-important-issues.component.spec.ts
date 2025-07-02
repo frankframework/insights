@@ -3,12 +3,13 @@ import { SimpleChange } from '@angular/core';
 import { ReleaseImportantIssuesComponent } from './release-important-issues.component';
 import { Issue } from '../../../../services/issue.service';
 import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
+import { GitHubStates } from '../../../../app.service';
 
 const createMockIssue = (id: string, number: number, typeName: string | null, subIssues: Issue[] = []): Issue => ({
   id,
   number,
   title: `Issue ${number}`,
-  state: 0,
+  state: GitHubStates.OPEN,
   url: '',
   issueType: typeName ? { id: typeName, name: typeName, description: '', color: '' } : undefined,
   subIssues,

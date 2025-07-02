@@ -20,7 +20,7 @@ const MOCK_CURRENT_QUARTER_MILESTONE: Milestone = {
   dueOn: new Date('2025-06-30T00:00:00.000Z'),
   isEstimated: true,
   number: 1,
-  state: 'OPEN',
+  state: GitHubStates.OPEN,
   major: 9,
   minor: 2,
   patch: 0,

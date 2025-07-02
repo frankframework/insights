@@ -8,6 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Release } from '../../../services/release.service';
 import { Issue } from '../../../services/issue.service';
 import { Label } from '../../../services/label.service';
+import { GitHubStates } from 'src/app/app.service';
 
 const mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
 const mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
@@ -15,7 +16,7 @@ const mockToastService = jasmine.createSpyObj('ToastrService', ['error']);
 
 const mockRelease: Release = { id: 'release-1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), branch: { id: 'b1', name: 'master' } };
 const mockLabels: Label[] = [{ id: 'label-1', name: 'Highlight', color: 'blue', description: '' }];
-const mockIssues: Issue[] = [{ id: 'issue-1', number: 123, title: 'Test Issue', state: 0, url: '' }];
+const mockIssues: Issue[] = [{ id: 'issue-1', number: 123, title: 'Test Issue', state: GitHubStates.OPEN, url: '' }];
 
 describe('ReleaseOffCanvasComponent', () => {
   let component: ReleaseOffCanvasComponent;

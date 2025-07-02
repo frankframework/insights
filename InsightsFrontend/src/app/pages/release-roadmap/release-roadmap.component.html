@@ -29,13 +29,24 @@
 
             <div class="milestone-lanes">
               @for (milestone of openMilestones; track milestone.id; let isLast = $last) {
-                <app-milestone-row
-                  [milestone]="milestone"
-                  [issues]="getIssuesForMilestone(milestone.id)"
-                  [timelineStartDate]="timelineStartDate"
-                  [totalTimelineDays]="totalDays"
-                  [isLast]="isLast"
-                />
+                <div class="milestone-row">
+                  <app-milestone-row
+                    [milestone]="milestone"
+                    [issues]="getIssuesForMilestone(milestone.id)"
+                    [timelineStartDate]="timelineStartDate"
+                    [totalTimelineDays]="totalDays"
+                    [isLast]="isLast"
+                  />
+                  <div class="quarter-issues-row">
+                    @for (quarter of quarters; track quarter.name) {
+                      <div class="quarter-cell">
+                        @for (issue of getIssuesForMilestoneAndQuarter(milestone, quarter.name); track issue.id) {
+                          <app-issue-bar [issue]="issue" />
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
               }
             </div>
           </div>
