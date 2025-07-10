@@ -21,14 +21,7 @@ interface Version {
 @Component({
   selector: 'app-release-roadmap',
   standalone: true,
-  imports: [
-    CommonModule,
-    RoadmapToolbarComponent,
-    TimelineHeaderComponent,
-    MilestoneRowComponent,
-    LoaderComponent,
-    IssueBarComponent,
-  ],
+  imports: [CommonModule, RoadmapToolbarComponent, TimelineHeaderComponent, MilestoneRowComponent, LoaderComponent],
   templateUrl: './release-roadmap.component.html',
   styleUrls: ['./release-roadmap.component.scss'],
 })
@@ -48,7 +41,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   protected todayOffsetPercentage = 0;
   private viewInitialized = false;
   private scheduledMilestones = new Map<string, Date>(); // Cache for scheduled due dates
-  public issuesPerQuarter = new Map<string, { milestone: Milestone, issues: Issue[] }[]>();
+  public issuesPerQuarter = new Map<string, { milestone: Milestone; issues: Issue[] }[]>();
 
   constructor(
     private milestoneService: MilestoneService,
@@ -91,7 +84,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   public getIssuesForMilestoneAndQuarter(milestone: Milestone, quarterName: string): Issue[] {
     const entries = this.issuesPerQuarter.get(quarterName) ?? [];
-    const entry = entries.find(e => e.milestone.id === milestone.id);
+    const entry = entries.find((e) => e.milestone.id === milestone.id);
     return entry ? entry.issues : [];
   }
 
@@ -211,18 +204,20 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       .filter((mv) => mv.version);
 
     // Majors en minors splitsen
-    const majors = parsed.filter((mv) => mv.version!.patch === 0).sort((a, b) => {
-      if (a.version!.major !== b.version!.major) return a.version!.major - b.version!.major;
-      return a.version!.minor - b.version!.minor;
-    });
+    const majors = parsed
+      .filter((mv) => mv.version!.patch === 0)
+      .sort((a, b) => {
+        if (a.version!.major !== b.version!.major) return a.version!.major - b.version!.major;
+        return a.version!.minor - b.version!.minor;
+      });
     const minors = parsed.filter((mv) => mv.version!.patch > 0);
 
     // Zoek alle dueOns van majors
     const majorDueOns = majors
-      .filter(mv => mv.milestone.dueOn)
-      .map(mv => ({
+      .filter((mv) => mv.milestone.dueOn)
+      .map((mv) => ({
         version: mv.version!,
-        dueOn: new Date(mv.milestone.dueOn!)
+        dueOn: new Date(mv.milestone.dueOn!),
       }));
 
     // Huidig kwartaal als fallback
@@ -242,39 +237,35 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     }
     // 2. Majors zonder dueOn: vooruit/achteruit plannen
     // Sorteer majors oplopend
-    for (let i = 0; i < majors.length; i++) {
-      const { milestone, version } = majors[i];
+    for (let index = 0; index < majors.length; index++) {
+      const { milestone, version } = majors[index];
       if (!version) continue;
       const key = `${version.major}.${version.minor}`;
       if (!majorQuarterMap.has(key)) {
         // Zoek volgende major met dueOn
-        let nextWithDueOnIdx = -1;
-        for (let j = i + 1; j < majors.length; j++) {
-          const nextVersion = majors[j].version;
+        let nextWithDueOnIndex = -1;
+        for (let index_ = index + 1; index_ < majors.length; index_++) {
+          const nextVersion = majors[index_].version;
           if (!nextVersion) continue;
           const nextKey = `${nextVersion.major}.${nextVersion.minor}`;
           if (majorQuarterMap.has(nextKey)) {
-            nextWithDueOnIdx = j;
+            nextWithDueOnIndex = index_;
             break;
           }
         }
-        if (nextWithDueOnIdx !== -1) {
-          // Terugrekenen vanaf volgende dueOn
-          const nextVersion = majors[nextWithDueOnIdx].version;
-          if (!nextVersion) continue;
-          let q = new Date(majorQuarterMap.get(`${nextVersion.major}.${nextVersion.minor}`)!);
-          q.setMonth(q.getMonth() - 3 * (nextWithDueOnIdx - i));
-          majorQuarterMap.set(key, q);
-        } else {
+        if (nextWithDueOnIndex === -1) {
           // Geen volgende dueOn: vooruit plannen vanaf laatste bekende of huidig kwartaal
           let startQ: Date;
           if (majorQuarterMap.size > 0) {
             // Pak laatste geplande major
-            const lastPlanned = majors.slice(0, i).reverse().find(mv => mv.version && majorQuarterMap.has(`${mv.version.major}.${mv.version.minor}`));
+            const lastPlanned = majors
+              .slice(0, index)
+              .reverse()
+              .find((mv) => mv.version && majorQuarterMap.has(`${mv.version.major}.${mv.version.minor}`));
             if (lastPlanned && lastPlanned.version) {
               const lastQ = new Date(majorQuarterMap.get(`${lastPlanned.version.major}.${lastPlanned.version.minor}`)!);
               startQ = new Date(lastQ);
-              startQ.setMonth(startQ.getMonth() + 3 * (i - majors.indexOf(lastPlanned)));
+              startQ.setMonth(startQ.getMonth() + 3 * (index - majors.indexOf(lastPlanned)));
             } else {
               startQ = new Date(currentQuarter);
             }
@@ -282,6 +273,13 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
             startQ = new Date(currentQuarter);
           }
           majorQuarterMap.set(key, startQ);
+        } else {
+          // Terugrekenen vanaf volgende dueOn
+          const nextVersion = majors[nextWithDueOnIndex].version;
+          if (!nextVersion) continue;
+          let q = new Date(majorQuarterMap.get(`${nextVersion.major}.${nextVersion.minor}`)!);
+          q.setMonth(q.getMonth() - 3 * (nextWithDueOnIndex - index));
+          majorQuarterMap.set(key, q);
         }
       }
     }
@@ -321,35 +319,35 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       // Sorteer minors oplopend
       minorList.sort((a, b) => a.version.patch - b.version.patch);
       // Zoek dueOn van laatste minor (indien aanwezig)
-      let lastMinorWithDueOnIdx = -1;
-      for (let i = minorList.length - 1; i >= 0; i--) {
-        if (minorList[i].milestone.dueOn) {
-          lastMinorWithDueOnIdx = i;
+      let lastMinorWithDueOnIndex = -1;
+      for (let index = minorList.length - 1; index >= 0; index--) {
+        if (minorList[index].milestone.dueOn) {
+          lastMinorWithDueOnIndex = index;
           break;
         }
       }
-      if (lastMinorWithDueOnIdx !== -1) {
+      if (lastMinorWithDueOnIndex === -1) {
+        // Geen dueOn: plan eerste minor in earliestMajorQuarter, elke volgende in het volgende kwartaal
+        let q = new Date(earliestMajorQuarter);
+        for (const element of minorList) {
+          element.milestone.dueOn = this.getQuarterEndDate(q);
+          element.milestone.isEstimated = !element.milestone.dueOn;
+          q.setMonth(q.getMonth() + 3);
+        }
+      } else {
         // Terugrekenen vanaf laatste dueOn
-        let q = this.getQuarterFromDate(new Date(minorList[lastMinorWithDueOnIdx].milestone.dueOn!));
-        for (let i = lastMinorWithDueOnIdx; i >= 0; i--) {
-          minorList[i].milestone.dueOn = this.getQuarterEndDate(q);
-          minorList[i].milestone.isEstimated = !minorList[i].milestone.dueOn;
+        let q = this.getQuarterFromDate(new Date(minorList[lastMinorWithDueOnIndex].milestone.dueOn!));
+        for (let index = lastMinorWithDueOnIndex; index >= 0; index--) {
+          minorList[index].milestone.dueOn = this.getQuarterEndDate(q);
+          minorList[index].milestone.isEstimated = !minorList[index].milestone.dueOn;
           q.setMonth(q.getMonth() - 3);
         }
         // Vooruit plannen voor minors na de laatste met dueOn
-        q = this.getQuarterFromDate(new Date(minorList[lastMinorWithDueOnIdx].milestone.dueOn!));
-        for (let i = lastMinorWithDueOnIdx + 1; i < minorList.length; i++) {
+        q = this.getQuarterFromDate(new Date(minorList[lastMinorWithDueOnIndex].milestone.dueOn!));
+        for (let index = lastMinorWithDueOnIndex + 1; index < minorList.length; index++) {
           q.setMonth(q.getMonth() + 3);
-          minorList[i].milestone.dueOn = this.getQuarterEndDate(q);
-          minorList[i].milestone.isEstimated = !minorList[i].milestone.dueOn;
-        }
-      } else {
-        // Geen dueOn: plan eerste minor in earliestMajorQuarter, elke volgende in het volgende kwartaal
-        let q = new Date(earliestMajorQuarter);
-        for (let i = 0; i < minorList.length; i++) {
-          minorList[i].milestone.dueOn = this.getQuarterEndDate(q);
-          minorList[i].milestone.isEstimated = !minorList[i].milestone.dueOn;
-          q.setMonth(q.getMonth() + 3);
+          minorList[index].milestone.dueOn = this.getQuarterEndDate(q);
+          minorList[index].milestone.isEstimated = !minorList[index].milestone.dueOn;
         }
       }
     }
@@ -385,7 +383,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       if (!milestone.dueOn) return false;
       const dueDate = new Date(milestone.dueOn);
       const issues = this.getIssuesForMilestone(milestone.id);
-      const hasOpen = issues.some(issue => issue.state === GitHubStates.OPEN);
+      const hasOpen = issues.some((issue) => issue.state === GitHubStates.OPEN);
 
       // 1. Altijd tonen in het kwartaal waarin dueOn valt
       const dueQuarterStart = this.getQuarterFromDate(dueDate);
@@ -478,12 +476,12 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     const currentQuarterStart = this.getQuarterFromDate(today);
 
     // Maak een lijst van alle quarters in de huidige view
-    const quarterNames = this.quarters.map(q => q.name);
-    const quarterDates = this.quarters.map(q => {
+    const quarterNames = this.quarters.map((q) => q.name);
+    const quarterDates = this.quarters.map((q) => {
       // Parse quarter name 'Q2 2025' => Date object
       const [qLabel, year] = q.name.split(' ');
-      const quarterNum = Number(qLabel.replace('Q', ''));
-      return new Date(Number(year), (quarterNum - 1) * 3, 1);
+      const quarterNumber = Number(qLabel.replace('Q', ''));
+      return new Date(Number(year), (quarterNumber - 1) * 3, 1);
     });
 
     interface VersionedMilestone {
@@ -492,7 +490,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       dueOn: Date | null;
     }
     const versioned: VersionedMilestone[] = this.openMilestones
-      .map(m => {
+      .map((m) => {
         const match = m.title.match(/(\d+)\.(\d+)\.(\d+)/);
         if (!match) return null;
         return {
@@ -514,7 +512,9 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     for (const v of versioned) {
       const milestone = v.milestone;
       const issues = this.getIssuesForMilestone(milestone.id);
-      const milestoneQuarter = milestone.dueOn ? this.getQuarterFromDate(new Date(milestone.dueOn)) : currentQuarterStart;
+      const milestoneQuarter = milestone.dueOn
+        ? this.getQuarterFromDate(new Date(milestone.dueOn))
+        : currentQuarterStart;
       // Closed issues per kwartaal (altijd in kwartaal van closed_at)
       for (const issue of issues) {
         if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
@@ -522,33 +522,32 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
           const closedQuarter = this.getQuarterFromDate(new Date(issue.closedAt));
           const closedQuarterKey = this.getQuarterKey(closedQuarter);
           if (!this.issuesPerQuarter.has(closedQuarterKey)) this.issuesPerQuarter.set(closedQuarterKey, []);
-          let entry = this.issuesPerQuarter.get(closedQuarterKey)!.find(e => e.milestone.id === milestone.id);
+          let entry = this.issuesPerQuarter.get(closedQuarterKey)!.find((e) => e.milestone.id === milestone.id);
           if (!entry) {
             entry = { milestone, issues: [] };
             this.issuesPerQuarter.get(closedQuarterKey)!.push(entry);
           }
           // Voeg alleen toe als nog niet aanwezig
-          if (!entry.issues.some(i => i.id === issue.id)) {
+          if (!entry.issues.some((index) => index.id === issue.id)) {
             entry.issues.push(issue);
           }
         }
       }
       // Open issues per kwartaal
-      const openIssues = issues.filter(i => i.state === GitHubStates.OPEN);
+      const openIssues = issues.filter((index) => index.state === GitHubStates.OPEN);
       for (const issue of openIssues) {
         if (milestoneQuarter < currentQuarterStart) {
           // Milestone in het verleden: issue in elk kwartaal NA dueOn t/m huidige kwartaal
-          for (let i = 0; i < quarterDates.length; i++) {
-            const qDate = quarterDates[i];
+          for (const [index, qDate] of quarterDates.entries()) {
             if (qDate > milestoneQuarter && qDate <= currentQuarterStart) {
-              const qKey = quarterNames[i];
+              const qKey = quarterNames[index];
               if (!this.issuesPerQuarter.has(qKey)) this.issuesPerQuarter.set(qKey, []);
-              let entry = this.issuesPerQuarter.get(qKey)!.find(e => e.milestone.id === milestone.id);
+              let entry = this.issuesPerQuarter.get(qKey)!.find((e) => e.milestone.id === milestone.id);
               if (!entry) {
                 entry = { milestone, issues: [] };
                 this.issuesPerQuarter.get(qKey)!.push(entry);
               }
-              if (!entry.issues.some(i2 => i2.id === issue.id)) {
+              if (!entry.issues.some((index2) => index2.id === issue.id)) {
                 entry.issues.push(issue);
               }
             }
@@ -557,12 +556,12 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
           // Milestone in huidig/toekomstig kwartaal: alleen in hun eigen kwartaal
           const openQuarterKey = this.getQuarterKey(milestoneQuarter);
           if (!this.issuesPerQuarter.has(openQuarterKey)) this.issuesPerQuarter.set(openQuarterKey, []);
-          let entry = this.issuesPerQuarter.get(openQuarterKey)!.find(e => e.milestone.id === milestone.id);
+          let entry = this.issuesPerQuarter.get(openQuarterKey)!.find((e) => e.milestone.id === milestone.id);
           if (!entry) {
             entry = { milestone, issues: [] };
             this.issuesPerQuarter.get(openQuarterKey)!.push(entry);
           }
-          if (!entry.issues.some(i2 => i2.id === issue.id)) {
+          if (!entry.issues.some((index2) => index2.id === issue.id)) {
             entry.issues.push(issue);
           }
         }
