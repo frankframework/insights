@@ -67,8 +67,13 @@ export class MilestoneRowComponent implements OnInit {
     let overallMaxTrackCount = 0;
 
     const issuesByQuarter = this.distributeIssuesIntoQuarters();
+    const visibleQuarters = new Set(this.quarters.map((q) => q.name));
 
     for (const [quarterKey, quarterIssues] of issuesByQuarter.entries()) {
+      if (!visibleQuarters.has(quarterKey)) {
+        continue;
+      }
+
       const quarterWindow = this.getWindowForQuarter(quarterKey);
       if (!quarterWindow) continue;
 
@@ -94,20 +99,12 @@ export class MilestoneRowComponent implements OnInit {
     const currentQuarterStart = this.getQuarterFromDate(today);
     const quarterMap: QuarterIssueMap = new Map();
 
-    // Initialize map for all visible quarters to ensure they exist
     for (const q of this.quarters) {
       quarterMap.set(q.name, { open: [], closed: [] });
     }
 
     for (const issue of this.issues) {
-      const sortedIssue = this.getSortedIssues(
-        issue.state === GitHubStates.OPEN ? [issue] : [],
-        issue.state === GitHubStates.CLOSED ? [issue] : [],
-      );
-      if (!sortedIssue) continue;
-
       if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
-        // Exception 1: Closed issues are always placed in the quarter they were closed in.
         const closedQuarter = this.getQuarterFromDate(new Date(issue.closedAt));
         const quarterKey = this.getQuarterKey(closedQuarter);
         if (!quarterMap.has(quarterKey)) quarterMap.set(quarterKey, { open: [], closed: [] });
@@ -118,13 +115,11 @@ export class MilestoneRowComponent implements OnInit {
           : currentQuarterStart;
 
         if (milestoneDueQuarter.getTime() < currentQuarterStart.getTime()) {
-          // Exception 2: Open issues from past milestones are moved to the current quarter.
           const currentQuarterKey = this.getQuarterKey(currentQuarterStart);
           if (quarterMap.has(currentQuarterKey)) {
             quarterMap.get(currentQuarterKey)!.open.push(issue);
           }
         } else {
-          // Standard case: Open issues are placed in their milestone's scheduled quarter.
           const quarterKey = this.getQuarterKey(milestoneDueQuarter);
           if (!quarterMap.has(quarterKey)) quarterMap.set(quarterKey, { open: [], closed: [] });
           quarterMap.get(quarterKey)!.open.push(issue);
@@ -132,10 +127,9 @@ export class MilestoneRowComponent implements OnInit {
       }
     }
 
-    // Sort issues within each bucket by priority
     for (const [_, issues] of quarterMap) {
-      issues.open = this.getSortedIssues(issues.open, []);
-      issues.closed = this.getSortedIssues([], issues.closed);
+      issues.open = this.getSortedIssues(issues.open);
+      issues.closed = this.getSortedIssues(issues.closed);
     }
 
     return quarterMap;
@@ -160,21 +154,19 @@ export class MilestoneRowComponent implements OnInit {
     openWindow: PlanningWindow;
   } {
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // Use end of today as the split point
+    today.setHours(23, 59, 59, 999);
     const todayMs = today.getTime();
 
     const start = quarterWindow.start;
     const end = quarterWindow.end;
 
     if (todayMs < start) {
-      // Quarter is entirely in the future
       return { closedWindow: { start, end: start }, openWindow: { start, end } };
     }
     if (todayMs > end) {
-      // Quarter is entirely in the past
       return { closedWindow: { start, end }, openWindow: { start: end, end } };
     }
-    // Quarter contains today
+
     return {
       closedWindow: { start, end: todayMs },
       openWindow: { start: todayMs, end },
@@ -211,8 +203,6 @@ export class MilestoneRowComponent implements OnInit {
     return { positionedIssues, trackCount: issuesByTrack.size };
   }
 
-  // --- Helper functions (mostly unchanged, but some are new or adapted) ---
-
   private createPositionedIssue(
     issue: Issue,
     startTime: number,
@@ -232,7 +222,7 @@ export class MilestoneRowComponent implements OnInit {
 
     const totalDurationWithGaps = issues.reduce((sum, issue) => {
       return sum + this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS;
-    }, -this.GAP_MS); // No gap needed at the start
+    }, -this.GAP_MS);
 
     return Math.max(1, Math.ceil(totalDurationWithGaps / windowDurationMs));
   }
@@ -250,24 +240,20 @@ export class MilestoneRowComponent implements OnInit {
     return issuesByTrack;
   }
 
-  private getSortedIssues(openIssues: Issue[], closedIssues: Issue[]): Issue[] {
+  private getSortedIssues(issues: Issue[]): Issue[] {
     const priorityOrder: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4, no: 5 };
-    const sorter = (a: Issue, b: Issue) => {
+
+    return [...issues].sort((a, b) => {
       const priorityA = priorityOrder[this.getPriorityKey(a.issuePriority)] ?? 5;
       const priorityB = priorityOrder[this.getPriorityKey(b.issuePriority)] ?? 5;
       if (priorityA !== priorityB) return priorityA - priorityB;
 
       const pointsA = a.points ?? this.DEFAULT_POINTS;
       const pointsB = b.points ?? this.DEFAULT_POINTS;
-      if (pointsA !== pointsB) return pointsB - pointsA; // Higher points first
+      if (pointsA !== pointsB) return pointsB - pointsA;
 
-      return b.number - a.number; // Fallback to issue number
-    };
-
-    const sortedOpen = [...openIssues].sort(sorter);
-    const sortedClosed = [...closedIssues].sort(sorter);
-
-    return [...sortedClosed, ...sortedOpen];
+      return b.number - a.number;
+    });
   }
 
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
@@ -283,7 +269,7 @@ export class MilestoneRowComponent implements OnInit {
 
   private getIssueDurationMsWithMinWidth(issue: Issue): number {
     const points = issue.points ?? this.DEFAULT_POINTS;
-    const durationMs = points * 24 * 60 * 60 * 1000; // 1 point = 1 day
+    const durationMs = points * 24 * 60 * 60 * 1000;
     const minDurationMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * (24 * 60 * 60 * 1000);
     return Math.max(durationMs, minDurationMs);
   }
