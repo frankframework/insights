@@ -58,15 +58,12 @@ export class ReleaseNodeService {
       }
     }
 
-    this.sortByDate(masterNodes);
+    this.sortByNightlyAndDate(masterNodes, (node) => node.label);
 
     const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
     return [masterMap, ...subBranchMaps];
   }
 
-  /**
-   * Berekent de X- en Y-coördinaten voor elke release-node.
-   */
   public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
     if (structuredGroups.length === 0) {
       return new Map();
@@ -86,9 +83,6 @@ export class ReleaseNodeService {
     return positionedNodes;
   }
 
-  /**
-   * Kent een kleur toe aan elke node op basis van de support-status.
-   */
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): ReleaseNode[] {
     const allNodes: ReleaseNode[] = [];
     for (const nodes of releaseGroups.values()) {
@@ -114,10 +108,23 @@ export class ReleaseNodeService {
     return grouped;
   }
 
-  private sortGroupedReleases(grouped: Map<string, { publishedAt: Date }[]>): void {
+  private sortGroupedReleases(grouped: Map<string, (Release & { publishedAt: Date })[]>): void {
     for (const releases of grouped.values()) {
-      this.sortByDate(releases);
+      this.sortByNightlyAndDate(releases, (release) => release.name);
     }
+  }
+
+  private sortByNightlyAndDate<T extends { publishedAt: Date }>(nodes: T[], nameAccessor: (node: T) => string): void {
+    nodes.sort((a, b) => {
+      const aIsNightly = nameAccessor(a).toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE);
+      const bIsNightly = nameAccessor(b).toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE);
+
+      if (aIsNightly !== bIsNightly) {
+        return aIsNightly ? 1 : -1;
+      }
+
+      return a.publishedAt.getTime() - b.publishedAt.getTime();
+    });
   }
 
   private createReleaseNodes(releases: (Release & { publishedAt: Date })[]): ReleaseNode[] {
@@ -129,10 +136,6 @@ export class ReleaseNodeService {
       color: '',
       position: { x: 0, y: 0 },
     }));
-  }
-
-  private sortByDate(nodes: { publishedAt: Date }[]): void {
-    nodes.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
   }
 
   private flattenGroupMaps(groupMaps: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
@@ -204,10 +207,6 @@ export class ReleaseNodeService {
     }
   }
 
-  /**
-   * AANGEPAST: De initiële offset is nu een combinatie van een vaste waarde
-   * en een dynamische, op het label gebaseerde waarde.
-   */
   private positionSubBranchNodes(subNodes: ReleaseNode[], baseX: number, baseY: number): void {
     const firstNode = subNodes[0];
 

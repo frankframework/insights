@@ -31,6 +31,7 @@ public class ReleaseService {
     private final ReleasePullRequestRepository releasePullRequestRepository;
 
     private static final String MASTER_BRANCH_NAME = "master";
+	private static final String NIGHTLY_RELEASE_NAME = "nightly";
     private static final int FIRST_RELEASE_INDEX = 0;
     private static final int MAJOR = 1;
     private static final int MINOR = 2;
@@ -196,29 +197,35 @@ public class ReleaseService {
         }
     }
 
-    /**
-     * Assigns pull requests to releases based on their time window.
-     *
-     * @param releases The list of releases to assign pull requests to.
-     * @param prs The set of pull requests to assign.
-     * @return The list of releases sorted by their published date.
-     */
-    private List<Release> assignToReleases(List<Release> releases, Set<BranchPullRequest> prs) {
+	/**
+	 * Assigns pull requests to releases based on their publication dates.
+	 * This method sorts the releases and assigns pull requests to each release based on the time window between releases.
+	 * The first release in the sorted list does not get PRs assigned via this method,
+	 * it serves as the starting point for the next releases time window.
+	 *
+	 * @param releases The list of releases to assign pull requests to.
+	 * @param prs The set of branch pull requests to consider for assignment.
+	 * @return A list of releases with assigned pull requests.
+	 */
+	private List<Release> assignToReleases(List<Release> releases, Set<BranchPullRequest> prs) {
+		releases.sort(Comparator
+				.comparing((Release release) -> release.getName() != null && release.getName().toLowerCase().contains(NIGHTLY_RELEASE_NAME))
+				.thenComparing(Release::getPublishedAt)
+		);
 
-        for (int i = FIRST_RELEASE_INDEX; i < releases.size(); i++) {
-            Release current = releases.get(i);
+		for (int i = FIRST_RELEASE_INDEX; i < releases.size(); i++) {
+			Release current = releases.get(i);
 
-            // Skip the first release since there is no previous release to compare to
-            if (i > FIRST_RELEASE_INDEX) {
-                OffsetDateTime from = releases.get(i - 1).getPublishedAt();
-                OffsetDateTime to = current.getPublishedAt();
-                assignPullRequests(current, prs, from, to);
-            }
-        }
+			// The first release in the sorted list does not get PRs assigned via this method.
+			// It serves as the starting point for the next releases time window.
+			if (i > FIRST_RELEASE_INDEX) {
+				OffsetDateTime from = releases.get(i - 1).getPublishedAt();
+				OffsetDateTime to = current.getPublishedAt();
+				assignPullRequests(current, prs, from, to);
+			}
+		}
 
-        return releases.stream()
-                .sorted(Comparator.comparing(Release::getPublishedAt))
-                .toList();
+		return releases;
     }
 
     /**

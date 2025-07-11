@@ -279,7 +279,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
       if (!milestone.dueOn) return false;
       const dueDate = new Date(milestone.dueOn);
       const issues = this.getIssuesForMilestone(milestone.id);
-      const hasOpen = issues.some(issue => issue.state === GitHubStates.OPEN);
+      const hasOpen = issues.some((issue) => issue.state === GitHubStates.OPEN);
 
       // 1. Altijd tonen in het kwartaal waarin dueOn valt
       const dueQuarterStart = this.getQuarterFromDate(dueDate);

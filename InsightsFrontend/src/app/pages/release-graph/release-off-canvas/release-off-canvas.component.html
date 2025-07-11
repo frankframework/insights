@@ -1,8 +1,15 @@
 <app-off-canvas [title]="release.name" (closeCanvas)="closeCanvas.emit()">
   <div class="off-canvas-body">
     @if (!isLoading) {
-      <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
-      <app-release-important-issues [releaseIssues]="releaseIssues" />
+      @if (highlightedLabels === undefined && releaseIssues === undefined) {
+        <div class="no-new-features">
+          <p>No new features found towards previous release.</p>
+          <p>Please try again later.</p>
+        </div>
+      } @else {
+        <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
+        <app-release-important-issues [releaseIssues]="releaseIssues" />
+      }
     } @else {
       <app-loader />
     }
