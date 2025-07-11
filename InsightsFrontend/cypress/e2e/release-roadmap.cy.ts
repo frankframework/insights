@@ -1,10 +1,14 @@
 describe('Release Roadmap End-to-End Tests', () => {
+  const MOCK_TODAY = new Date('2025-07-15T12:00:00.000Z');
+
   beforeEach(() => {
-    cy.clock(new Date('2025-07-15T12:00:00.000Z').getTime());
+    cy.clock(MOCK_TODAY.getTime(), ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']);
 
     cy.visit('/');
     cy.get('app-header').find('li').contains('Roadmap').click();
-    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
+
+    cy.tick(5000);
+    cy.get('app-loader').should('not.be.visible');
   });
 
   context('Initial Load and View', () => {
@@ -15,6 +19,7 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should display the correct initial period label (Q3-Q4 2025)', () => {
+      // Deze test is nu betrouwbaar omdat "today" altijd 15 juli 2025 is.
       cy.get('.period-label').should('contain.text', 'Q3 2025 - Q4 2025');
     });
 
@@ -33,6 +38,7 @@ describe('Release Roadmap End-to-End Tests', () => {
   context('Timeline Navigation', () => {
     it('should navigate to the previous period and update view', () => {
       cy.get('button[title="Previous quarter"]').click();
+      cy.tick(5000);
       cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q2 2025 - Q3 2025');
       cy.get('app-milestone-row').contains('.title-link', 'Release 9.5.0').should('not.exist');
@@ -40,6 +46,7 @@ describe('Release Roadmap End-to-End Tests', () => {
 
     it('should navigate to the next period and update view', () => {
       cy.get('button[title="Next quarter"]').click();
+      cy.tick(5000);
       cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q4 2025 - Q1 2026');
       cy.get('app-milestone-row').contains('.title-link', 'Release 9.4.0').should('not.exist');
@@ -48,8 +55,11 @@ describe('Release Roadmap End-to-End Tests', () => {
 
     it('should return to the current period when "Go to today" is clicked', () => {
       cy.get('button[title="Next quarter"]').click();
+      cy.tick(5000);
       cy.get('.period-label').should('contain.text', 'Q4 2025 - Q1 2026');
+
       cy.get('button[title="Go to today"]').click();
+      cy.tick(5000);
       cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q3 2025 - Q4 2025');
     });
@@ -93,11 +103,14 @@ describe('Release Roadmap End-to-End Tests', () => {
 
     it('should display a tooltip with correct info on mouse hover', () => {
       cy.get('a.issue-bar[href*="205"]').trigger('mouseenter');
+      cy.tick(500);
       cy.get('app-tooltip').should('be.visible');
       cy.get('.tooltip-title').should('contain.text', 'High priority feature to be done');
       cy.get('.tooltip-detail').should('contain.text', 'Priority: High');
       cy.get('.tooltip-detail').should('contain.text', 'Points: 8');
+
       cy.get('a.issue-bar[href*="205"]').trigger('mouseleave');
+      cy.tick(500);
       cy.get('app-tooltip').should('not.exist');
     });
   });
@@ -119,11 +132,15 @@ describe('Release Roadmap End-to-End Tests', () => {
 
     it('should show an empty state when navigating to a period with no milestones', () => {
       cy.get('button[title="Next quarter"]').click();
+      cy.tick(5000);
       cy.get('button[title="Next quarter"]').click();
+      cy.tick(5000);
       cy.get('button[title="Next quarter"]').click();
+      cy.tick(5000);
       cy.get('button[title="Next quarter"]').click();
-      cy.get('app-loader').should('not.exist');
+      cy.tick(5000);
 
+      cy.get('app-loader').should('not.exist');
       cy.get('.empty-state').should('be.visible').and('contain.text', 'No open milestones');
     });
   });
