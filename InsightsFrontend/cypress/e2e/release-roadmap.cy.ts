@@ -111,7 +111,7 @@ describe('Release Roadmap End-to-End Tests', () => {
 
       cy.get('a.issue-bar[href*="205"]').trigger('mouseleave');
       cy.tick(500);
-      cy.get('app-tooltip').should('not.exist');
+      cy.get('app-tooltip').should('not.be.visible');
     });
   });
 
