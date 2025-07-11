@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { AppService, GitHubState } from '../app.service';
 import { Observable } from 'rxjs';
 
@@ -18,7 +18,7 @@ export interface Milestone {
   providedIn: 'root',
 })
 export class MilestoneService {
-  constructor(private appService: AppService) {}
+  private appService = inject(AppService);
 
   public getOpenMilestones(): Observable<Milestone[]> {
     return this.appService.get<Milestone[]>(this.appService.createAPIUrl('milestones/open'));

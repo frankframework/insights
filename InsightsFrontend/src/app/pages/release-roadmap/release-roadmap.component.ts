@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -42,15 +42,14 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   public totalDays = 0;
   public displayDate!: Date;
   public currentPeriodLabel = '';
-  protected todayOffsetPercentage = 0;
-  private viewInitialized = false;
 
-  constructor(
-    private milestoneService: MilestoneService,
-    private issueService: IssueService,
-    private toastrService: ToastrService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  protected todayOffsetPercentage = 0;
+
+  private viewInitialized = false;
+  private milestoneService = inject(MilestoneService);
+  private issueService = inject(IssueService);
+  private toastrService = inject(ToastrService);
+  private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
     this.resetPeriod();

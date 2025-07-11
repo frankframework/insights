@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import { Issue } from '../../../../../services/issue.service';
 import { ReleaseOffCanvasComponent } from '../../release-off-canvas.component';
 
@@ -16,7 +16,7 @@ export class IssueTreeBranchComponent {
 
   protected expanded = false;
 
-  constructor(private releaseOffCanvasComponent: ReleaseOffCanvasComponent) {}
+  private releaseOffCanvasComponent = inject(ReleaseOffCanvasComponent);
 
   public toggleExpand(): void {
     this.expanded = !this.expanded;

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, Input, OnInit, ElementRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
@@ -20,6 +20,8 @@ export class IssueBarComponent implements OnInit {
   public priorityStyle: Record<string, string> = {};
   public isClosed = false;
 
+  private tooltipService = inject(TooltipService);
+
   private readonly CLOSED_STYLE: Record<string, string> = {
     'background-color': '#f3e8ff',
     color: '#581c87',
@@ -31,8 +33,6 @@ export class IssueBarComponent implements OnInit {
     color: '#166534',
     'border-color': '#86efac',
   };
-
-  constructor(private tooltipService: TooltipService) {}
 
   ngOnInit(): void {
     this.isClosed = this.issue.state === GitHubStates.CLOSED;

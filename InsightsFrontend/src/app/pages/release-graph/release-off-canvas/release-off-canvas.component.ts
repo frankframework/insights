@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { OffCanvasComponent } from '../../../components/off-canvas/off-canvas.component';
 import { Release } from '../../../services/release.service';
 import { Label, LabelService } from '../../../services/label.service';
@@ -24,11 +24,9 @@ export class ReleaseOffCanvasComponent implements OnChanges {
   public releaseIssues?: Issue[];
   public isLoading = true;
 
-  constructor(
-    private labelService: LabelService,
-    private issueService: IssueService,
-    private toastService: ToastrService,
-  ) {}
+  private labelService = inject(LabelService);
+  private issueService = inject(IssueService);
+  private toastService = inject(ToastrService);
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['release'] && this.release?.id) {
