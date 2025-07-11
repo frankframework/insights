@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
 import { BehaviorSubject, catchError, map, of, tap } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
@@ -37,13 +37,11 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private maxTranslateX = 0;
   private routerSubscription!: Subscription;
 
-  constructor(
-    private releaseService: ReleaseService,
-    private nodeService: ReleaseNodeService,
-    private linkService: ReleaseLinkService,
-    private router: Router,
-    private toastService: ToastrService,
-  ) {}
+  private releaseService = inject(ReleaseService);
+  private nodeService = inject(ReleaseNodeService);
+  private linkService = inject(ReleaseLinkService);
+  private router = inject(Router);
+  private toastService = inject(ToastrService);
 
   ngOnInit(): void {
     this.isLoading = true;

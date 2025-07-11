@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   RouterOutlet,
   Router,
@@ -22,7 +22,9 @@ export class AppComponent {
 
   public loading = false;
 
-  constructor(private router: Router) {
+  private router = inject(Router);
+
+  constructor() {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationStart) this.loading = true;
       if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError)

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { TooltipData, TooltipService } from './tooltip.service';
@@ -13,7 +13,9 @@ import { TooltipData, TooltipService } from './tooltip.service';
 export class TooltipComponent {
   public tooltipState$: Observable<TooltipData | null>;
 
-  constructor(private tooltipService: TooltipService) {
+  private tooltipService = inject(TooltipService);
+
+  constructor() {
     this.tooltipState$ = this.tooltipService.tooltipState$;
   }
 }

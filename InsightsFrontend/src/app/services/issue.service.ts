@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { AppService, GitHubState } from '../app.service';
 import { Milestone } from './milestone.service';
 import { Label } from './label.service';
@@ -38,7 +38,7 @@ export interface IssuePriority {
   providedIn: 'root',
 })
 export class IssueService {
-  constructor(private appService: AppService) {}
+  private appService = inject(AppService);
 
   public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
     return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));

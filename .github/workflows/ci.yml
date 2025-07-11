@@ -98,7 +98,9 @@ jobs:
         run: npm ci
         working-directory: InsightsFrontend
       - name: Frontend Unit Tests
-        run: npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
+        run: |
+          set -o pipefail
+          npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
         working-directory: InsightsFrontend
       - name: Upload Frontend Test Logs
         if: ${{ always() }}

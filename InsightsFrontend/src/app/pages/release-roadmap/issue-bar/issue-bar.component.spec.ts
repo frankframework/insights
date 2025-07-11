@@ -1,166 +1,129 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { IssueBarComponent } from './issue-bar.component';
-import { Issue } from '../../../services/issue.service';
+import { Issue, IssuePriority } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
+import { TooltipService } from './tooltip/tooltip.service';
 
-const mockBaseIssue: Omit<Issue, 'state' | 'issuePriority' | 'repo' | 'owner' | 'createdAt'> = {
+const MOCK_ISSUE: Issue = {
   id: '1',
   number: 123,
   title: 'Test Issue Title',
   url: 'https://github.com/test/issue/123',
+  state: GitHubStates.OPEN,
   points: 5,
 };
 
-const mockClosedIssue: Issue = {
-  ...mockBaseIssue,
-  state: GitHubStates.CLOSED,
-} as Issue;
-
-const mockOpenIssueWithPriority: Issue = {
-  ...mockBaseIssue,
-  state: GitHubStates.OPEN,
-  issuePriority: {
-    id: 'p1',
-    name: 'High',
-    color: 'ff0000',
-    description: 'This is a high priority issue',
-  },
-} as Issue;
-
-const mockOpenIssueWithoutPriority: Issue = {
-  ...mockBaseIssue,
-  points: 0,
-  state: GitHubStates.OPEN,
-} as Issue;
-
-const mockOpenIssueWithInvalidColor: Issue = {
-  ...mockBaseIssue,
-  state: GitHubStates.OPEN,
-  issuePriority: {
-    id: 'p2',
-    name: 'Invalid',
-    color: 'invalid-hex',
-    description: 'This is an issue with an invalid hex color',
-  },
-} as Issue;
+class MockTooltipService {
+  show = jasmine.createSpy('show');
+  hide = jasmine.createSpy('hide');
+}
 
 describe('IssueBarComponent', () => {
   let component: IssueBarComponent;
   let fixture: ComponentFixture<IssueBarComponent>;
+  let tooltipService: MockTooltipService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IssueBarComponent],
+      providers: [{ provide: TooltipService, useClass: MockTooltipService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(IssueBarComponent);
     component = fixture.componentInstance;
+    tooltipService = TestBed.inject(TooltipService) as unknown as MockTooltipService;
+
+    component.issue = MOCK_ISSUE;
   });
 
   it('should create', () => {
-    component.issue = mockOpenIssueWithoutPriority;
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
   });
 
-  describe('Initialization and Style Logic', () => {
-    it('should set isClosed to true for a closed issue', () => {
-      component.issue = mockClosedIssue;
-      fixture.detectChanges();
-
-      expect(component.isClosed).toBeTrue();
-    });
-
+  describe('Styling Logic', () => {
     it('should apply CLOSED_STYLE for a closed issue', () => {
-      component.issue = mockClosedIssue;
+      component.issue = { ...MOCK_ISSUE, state: GitHubStates.CLOSED };
       fixture.detectChanges();
-      const closedStyle = component['CLOSED_STYLE'];
+      const closedStyle = (component as any).CLOSED_STYLE;
 
       expect(component.priorityStyle).toEqual(closedStyle);
     });
 
-    it('should apply OPEN_STYLE for an open issue without a priority', () => {
-      component.issue = mockOpenIssueWithoutPriority;
+    it('should apply OPEN_STYLE for an open issue without a priority color', () => {
+      component.issue = { ...MOCK_ISSUE, issuePriority: undefined };
       fixture.detectChanges();
-      const openStyle = component['OPEN_STYLE'];
+      const openStyle = (component as any).OPEN_STYLE;
 
       expect(component.priorityStyle).toEqual(openStyle);
     });
 
-    it('should apply OPEN_STYLE for an open issue with an invalid hex color', () => {
-      component.issue = mockOpenIssueWithInvalidColor;
+    it('should apply OPEN_STYLE for an open issue with an invalid priority color', () => {
+      const priorityWithInvalidColor: IssuePriority = { id: 'p1', name: 'High', color: 'invalid', description: '' };
+      component.issue = { ...MOCK_ISSUE, issuePriority: priorityWithInvalidColor };
       fixture.detectChanges();
-      const openStyle = component['OPEN_STYLE'];
+      const openStyle = (component as any).OPEN_STYLE;
 
       expect(component.priorityStyle).toEqual(openStyle);
     });
 
-    it('should apply priority-specific styles for an open issue with a valid priority color', () => {
-      component.issue = mockOpenIssueWithPriority;
+    it('should generate custom styles for an open issue with a valid priority color', () => {
+      const priorityWithValidColor: IssuePriority = { id: 'p1', name: 'High', color: 'ff0000', description: '' };
+      component.issue = { ...MOCK_ISSUE, issuePriority: priorityWithValidColor };
       fixture.detectChanges();
 
-      const expectedColor = `#${mockOpenIssueWithPriority.issuePriority!.color}`;
       const expectedStyle = {
-        'background-color': `${expectedColor}25`,
-        color: expectedColor,
-        'border-color': expectedColor,
+        'background-color': '#ff000025',
+        color: '#ff0000',
+        'border-color': '#ff0000',
       };
 
       expect(component.priorityStyle).toEqual(expectedStyle);
     });
   });
 
+  describe('Tooltip Interaction', () => {
+    it('should call TooltipService.show on mouseenter', () => {
+      fixture.detectChanges();
+      const issueLink = fixture.debugElement.query(By.css('.issue-bar'));
+      issueLink.triggerEventHandler('mouseenter', null);
+
+      expect(tooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue);
+    });
+
+    it('should call TooltipService.hide on mouseleave', () => {
+      fixture.detectChanges();
+      const issueLink = fixture.debugElement.query(By.css('.issue-bar'));
+      issueLink.triggerEventHandler('mouseleave', null);
+
+      expect(tooltipService.hide).toHaveBeenCalledWith();
+    });
+  });
+
   describe('Template Rendering', () => {
-    let nativeElement: HTMLElement;
+    it('should render the issue number', () => {
+      fixture.detectChanges();
+      const numberElement = fixture.debugElement.query(By.css('.number')).nativeElement;
 
-    beforeEach(() => {
-      nativeElement = fixture.nativeElement;
+      expect(numberElement.textContent).toContain('123');
     });
 
-    it('should render the issue number correctly', () => {
-      component.issue = mockBaseIssue as Issue;
+    it('should set the href attribute on the anchor tag', () => {
       fixture.detectChanges();
-      const numberElement = nativeElement.querySelector('.number');
+      const anchorElement = fixture.debugElement.query(By.css('.issue-bar')).nativeElement as HTMLAnchorElement;
 
-      expect(numberElement?.textContent).toContain(mockBaseIssue.number.toString());
+      expect(anchorElement.href).toBe(MOCK_ISSUE.url);
     });
 
-    it('should set the href and title attributes on the anchor tag', () => {
-      component.issue = mockBaseIssue as Issue;
+    it('should apply the calculated position style to the host element', () => {
+      component.issueStyle = { left: '10%', width: '5%' };
       fixture.detectChanges();
-      const anchorElement = nativeElement.querySelector('.issue-bar');
+      const anchorElement = fixture.debugElement.query(By.css('.issue-bar')).nativeElement as HTMLAnchorElement;
 
-      expect(anchorElement?.getAttribute('href')).toBe(mockBaseIssue.url);
-      expect(anchorElement?.getAttribute('title')).toBe(mockBaseIssue.title);
-    });
-
-    it('should display the title in the tooltip', () => {
-      component.issue = mockBaseIssue as Issue;
-      fixture.detectChanges();
-      const tooltipTitleElement = nativeElement.querySelector('.tooltip-title');
-
-      expect(tooltipTitleElement?.textContent).toContain(mockBaseIssue.title);
-    });
-
-    it('should display priority and points in the tooltip when they exist', () => {
-      component.issue = mockOpenIssueWithPriority;
-      fixture.detectChanges();
-
-      const details = nativeElement.querySelectorAll('.tooltip-detail');
-
-      expect(details.length).toBe(2);
-      expect(details[0].textContent).toContain(`Priority: ${mockOpenIssueWithPriority.issuePriority!.name}`);
-      expect(details[1].textContent).toContain(`Points: ${mockOpenIssueWithPriority.points}`);
-    });
-
-    it('should NOT display priority or points in the tooltip when they do not exist', () => {
-      component.issue = mockOpenIssueWithoutPriority;
-      fixture.detectChanges();
-
-      const priorityElement = nativeElement.querySelector('.tooltip-detail strong');
-
-      expect(priorityElement).toBeNull();
+      expect(anchorElement.style.left).toBe('10%');
+      expect(anchorElement.style.width).toBe('5%');
     });
   });
 });
