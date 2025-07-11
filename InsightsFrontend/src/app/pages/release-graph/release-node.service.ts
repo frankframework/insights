@@ -58,16 +58,12 @@ export class ReleaseNodeService {
       }
     }
 
-    // Gebruik de nieuwe helper-methode om de master-nodes te sorteren.
     this.sortByNightlyAndDate(masterNodes, (node) => node.label);
 
     const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
     return [masterMap, ...subBranchMaps];
   }
 
-  /**
-   * Berekent de X- en Y-coördinaten voor elke release-node.
-   */
   public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
     if (structuredGroups.length === 0) {
       return new Map();
@@ -87,9 +83,6 @@ export class ReleaseNodeService {
     return positionedNodes;
   }
 
-  /**
-   * Kent een kleur toe aan elke node op basis van de support-status.
-   */
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): ReleaseNode[] {
     const allNodes: ReleaseNode[] = [];
     for (const nodes of releaseGroups.values()) {
@@ -115,31 +108,21 @@ export class ReleaseNodeService {
     return grouped;
   }
 
-  /**
-   * Gebruikt de nieuwe helper-methode om de releases binnen elke gegroepeerde branch te sorteren.
-   */
   private sortGroupedReleases(grouped: Map<string, (Release & { publishedAt: Date })[]>): void {
     for (const releases of grouped.values()) {
       this.sortByNightlyAndDate(releases, (release) => release.name);
     }
   }
 
-  /**
-   * NIEUWE HELPER-METHODE: Sorteert een lijst van nodes (Release of ReleaseNode).
-   * De sortering plaatst officiële releases eerst en nightly releases als laatste,
-   * en sorteert vervolgens op publicatiedatum.
-   */
   private sortByNightlyAndDate<T extends { publishedAt: Date }>(nodes: T[], nameAccessor: (node: T) => string): void {
     nodes.sort((a, b) => {
       const aIsNightly = nameAccessor(a).toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE);
       const bIsNightly = nameAccessor(b).toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE);
 
-      // Primaire sortering: plaats non-nightly (false) voor nightly (true)
       if (aIsNightly !== bIsNightly) {
         return aIsNightly ? 1 : -1;
       }
 
-      // Secundaire sortering: op datum
       return a.publishedAt.getTime() - b.publishedAt.getTime();
     });
   }
