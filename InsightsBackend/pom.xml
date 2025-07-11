@@ -45,7 +45,6 @@
 		<postgresql.version>42.7.7</postgresql.version>
 		<lombok.version>1.18.38</lombok.version>
 		<spotless.version>2.45.0</spotless.version>
-		<junit.version>5.13.3</junit.version>
 		<mockito.version>5.18.0</mockito.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<puppycrawl.tools.version>10.26.1</puppycrawl.tools.version>
@@ -129,7 +128,6 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>${junit.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
