@@ -45,7 +45,7 @@ export class MilestoneRowComponent implements OnChanges {
 
   private readonly DEFAULT_POINTS = 3;
   private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 3;
-  private readonly GAP_MS = 24 * 3600 * 1000;
+  private readonly GAP_MS = 12 * 3600 * 1000;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['milestone'] || changes['issues'] || changes['quarters']) {
