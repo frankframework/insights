@@ -48,7 +48,7 @@ export class MilestoneRowComponent implements OnChanges {
   private readonly GAP_MS = 24 * 3600 * 1000;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['milestone'] || changes['issues']) {
+    if (changes['milestone'] || changes['issues'] || changes['quarters']) {
       this.calculateProgress();
       this.runLayoutAlgorithm();
     }

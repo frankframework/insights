@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DatePipe } from '@angular/common';
+import { SimpleChanges } from '@angular/core';
 import { MilestoneRowComponent } from './milestone-row.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue, IssuePriority } from '../../../services/issue.service';
@@ -13,20 +14,21 @@ const MOCK_TOTAL_DAYS = 184;
 const MOCK_TODAY = new Date('2025-08-15T12:00:00.000Z');
 
 const MOCK_QUARTERS = [
+  { name: 'Q2 2025', monthCount: 3 },
   { name: 'Q3 2025', monthCount: 3 },
   { name: 'Q4 2025', monthCount: 3 },
 ];
 
 const MOCK_MILESTONE: Milestone = {
   id: 'm1',
+  number: 1,
   title: 'Test Milestone 9.3.0',
+  url: 'http://example.com/milestone/1',
+  state: GitHubStates.OPEN,
+  dueOn: new Date('2025-09-30T00:00:00.000Z'),
   openIssueCount: 1,
   closedIssueCount: 1,
-  url: 'http://example.com/milestone/1',
-  dueOn: new Date('2025-09-30T00:00:00.000Z'),
   isEstimated: false,
-  number: 1,
-  state: GitHubStates.OPEN,
 };
 
 const MOCK_OPEN_ISSUE: Issue = {
@@ -45,12 +47,26 @@ const MOCK_CLOSED_ISSUE: Issue = {
   state: GitHubStates.CLOSED,
   points: 5,
   url: 'http://example.com/issue/102',
-  closedAt: new Date('2025-07-20T00:00:00.000Z'),
+  closedAt: new Date('2025-07-20T00:00:00.000Z'), // Closed in Q3, before today
 };
 
 describe('MilestoneRowComponent', () => {
   let component: MilestoneRowComponent;
   let fixture: ComponentFixture<MilestoneRowComponent>;
+
+  // Helper function to initialize component with inputs and trigger ngOnChanges
+  const initializeComponent = (milestone: Milestone, issues: Issue[]) => {
+    component.milestone = milestone;
+    component.issues = issues;
+    // Manually call ngOnChanges to simulate the parent component's behavior
+    const changes: SimpleChanges = {
+      milestone: { currentValue: component.milestone, previousValue: null, isFirstChange: () => true, firstChange: true },
+      issues: { currentValue: component.issues, previousValue: null, isFirstChange: () => true, firstChange: true },
+      quarters: { currentValue: component.quarters, previousValue: null, isFirstChange: () => true, firstChange: true }
+    };
+    component.ngOnChanges(changes);
+    fixture.detectChanges();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -64,6 +80,7 @@ describe('MilestoneRowComponent', () => {
     jasmine.clock().install();
     jasmine.clock().mockDate(MOCK_TODAY);
 
+    // Set timeline properties that don't change per test
     component.timelineStartDate = MOCK_TIMELINE_START;
     component.timelineEndDate = MOCK_TIMELINE_END;
     component.totalTimelineDays = MOCK_TOTAL_DAYS;
@@ -75,25 +92,21 @@ describe('MilestoneRowComponent', () => {
   });
 
   it('should create', () => {
-    component.milestone = MOCK_MILESTONE;
-    component.issues = [];
-    fixture.detectChanges();
+    initializeComponent(MOCK_MILESTONE, []);
 
     expect(component).toBeTruthy();
   });
 
   it('should calculate progress as 50% for 1 open and 1 closed issue', () => {
-    component.milestone = { ...MOCK_MILESTONE, openIssueCount: 1, closedIssueCount: 1 };
-    fixture.detectChanges();
+    const milestone: Milestone = { ...MOCK_MILESTONE, openIssueCount: 1, closedIssueCount: 1 };
+    initializeComponent(milestone, []);
 
     expect(component.progressPercentage).toBe(50);
   });
 
   describe('Layout Algorithm Scenarios', () => {
     it('should place closed issues before "today" and open issues after "today" in the CURRENT quarter', () => {
-      component.milestone = MOCK_MILESTONE;
-      component.issues = [MOCK_OPEN_ISSUE, MOCK_CLOSED_ISSUE];
-      fixture.detectChanges();
+      initializeComponent(MOCK_MILESTONE, [MOCK_OPEN_ISSUE, MOCK_CLOSED_ISSUE]);
 
       const closedPositioned = component.positionedIssues.find((p) => p.issue.id === 'issue-closed');
       const openPositioned = component.positionedIssues.find((p) => p.issue.id === 'issue-open');
@@ -109,9 +122,8 @@ describe('MilestoneRowComponent', () => {
     });
 
     it('should place all issues in the "open" window for a FUTURE quarter', () => {
-      component.milestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-12-15T00:00:00.000Z') };
-      component.issues = [MOCK_OPEN_ISSUE];
-      fixture.detectChanges();
+      const futureMilestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-12-15T00:00:00.000Z') }; // Q4
+      initializeComponent(futureMilestone, [MOCK_OPEN_ISSUE]);
 
       expect(component.positionedIssues.length).toBe(1);
       const issuePos = component.positionedIssues[0];
@@ -123,21 +135,16 @@ describe('MilestoneRowComponent', () => {
     });
 
     it('should place all issues in the "closed" window for a PAST quarter', () => {
-      const pastMilestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-06-15T00:00:00.000Z') };
-      const pastClosedIssue = { ...MOCK_CLOSED_ISSUE, closedAt: new Date('2025-05-20T00:00:00.000Z') };
-
-      component.milestone = pastMilestone;
-      component.issues = [pastClosedIssue];
-      component.quarters = [{ name: 'Q2 2025', monthCount: 3 }, ...MOCK_QUARTERS];
-      fixture.detectChanges();
+      const pastMilestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-06-15T00:00:00.000Z') }; // Q2
+      const pastClosedIssue = { ...MOCK_CLOSED_ISSUE, closedAt: new Date('2025-05-20T00:00:00.000Z') }; // Closed in Q2
+      initializeComponent(pastMilestone, [pastClosedIssue]);
 
       expect(component.positionedIssues.length).toBe(1);
     });
 
     it('should move "overdue" open issues to the current quarter for layout', () => {
-      component.milestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-06-15T00:00:00.000Z') };
-      component.issues = [MOCK_OPEN_ISSUE];
-      fixture.detectChanges();
+      const overdueMilestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-06-15T00:00:00.000Z') }; // Due in Q2
+      initializeComponent(overdueMilestone, [MOCK_OPEN_ISSUE]);
 
       expect(component.positionedIssues.length).toBe(1);
       const issuePos = component.positionedIssues[0];
@@ -148,11 +155,9 @@ describe('MilestoneRowComponent', () => {
     });
 
     it('should only render issues that fall into the visible quarters provided by input', () => {
-      const futureIssue = { ...MOCK_OPEN_ISSUE, id: 'future-open' };
-      component.milestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-11-15T00:00:00.000Z') };
-      component.issues = [futureIssue];
+      const futureMilestone = { ...MOCK_MILESTONE, dueOn: new Date('2025-11-15T00:00:00.000Z') }; // Q4
       component.quarters = [{ name: 'Q3 2025', monthCount: 3 }];
-      fixture.detectChanges();
+      initializeComponent(futureMilestone, [MOCK_OPEN_ISSUE]);
 
       expect(component.positionedIssues.length).toBe(0);
     });
@@ -163,21 +168,15 @@ describe('MilestoneRowComponent', () => {
         id: `issue-${index}`,
         points: 20,
       }));
-      component.milestone = MOCK_MILESTONE;
-      component.issues = largeIssues;
-      fixture.detectChanges();
+      initializeComponent(MOCK_MILESTONE, largeIssues);
 
       expect(component.trackCount).toBeGreaterThan(1);
     });
 
     it('should sort issues by priority (critical first) before layout', () => {
-      const lowPrio: Issue = { ...MOCK_OPEN_ISSUE, id: 'low', issuePriority: { name: 'Low' } as IssuePriority };
-      const critPrio: Issue = { ...MOCK_OPEN_ISSUE, id: 'crit', issuePriority: { name: 'Critical' } as IssuePriority };
-
-      component.milestone = MOCK_MILESTONE;
-      component.issues = [lowPrio, critPrio];
-      component.trackCount = 1;
-      fixture.detectChanges();
+      const lowPrio: Issue = { ...MOCK_OPEN_ISSUE, id: 'low', issuePriority: { name: 'Low Prio' } as IssuePriority };
+      const critPrio: Issue = { ...MOCK_OPEN_ISSUE, id: 'crit', issuePriority: { name: 'Critical Prio' } as IssuePriority };
+      initializeComponent(MOCK_MILESTONE, [lowPrio, critPrio]);
 
       const critIndex = component.positionedIssues.findIndex((p) => p.issue.id === 'crit');
       const lowIndex = component.positionedIssues.findIndex((p) => p.issue.id === 'low');
