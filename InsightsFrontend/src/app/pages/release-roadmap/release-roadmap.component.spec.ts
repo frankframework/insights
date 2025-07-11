@@ -1,173 +1,161 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { of, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ReleaseRoadmapComponent } from './release-roadmap.component';
 import { MilestoneService, Milestone } from '../../services/milestone.service';
 import { IssueService, Issue } from '../../services/issue.service';
-import { RoadmapToolbarComponent } from './roadmap-toolbar/roadmap-toolbar.component';
-import { TimelineHeaderComponent } from './timeline-header/timeline-header.component';
-import { MilestoneRowComponent } from './milestone-row/milestone-row.component';
-import { LoaderComponent } from '../../components/loader/loader.component';
 import { GitHubStates } from '../../app.service';
 
-const mockMilestoneService = {
-  getOpenMilestones: (): Observable<Milestone[]> => of([]),
-};
-
-const mockIssueService = {
-  getIssuesByMilestoneId: (): Observable<Issue[]> => of([]),
-};
-
-const mockToastrService = {
-  error: jasmine.createSpy('error'),
-};
 
 const MOCK_MILESTONES: Milestone[] = [
   {
     id: 'm1',
-    title: 'Release 9.2.0',
-    dueOn: null,
+    number: 1,
+    title: 'Release 9.2.0 (Visible)',
+    url: 'http://example.com/m1',
+    state: GitHubStates.OPEN,
+    dueOn: new Date('2025-08-15T00:00:00.000Z'),
     openIssueCount: 1,
     closedIssueCount: 1,
-    url: '',
-    number: 0,
-    state: GitHubStates.OPEN,
-    major: 0,
-    minor: 0,
-    patch: 0,
+    isEstimated: false,
   },
   {
     id: 'm2',
-    title: 'Release 9.1.0',
-    dueOn: null,
-    openIssueCount: 2,
-    closedIssueCount: 0,
-    url: '',
-    number: 0,
+    number: 2,
+    title: 'Release 9.1.0 (Overdue, becomes visible)',
+    url: 'http://example.com/m2',
     state: GitHubStates.OPEN,
-    major: 0,
-    minor: 0,
-    patch: 0,
+    dueOn: new Date('2025-03-15T00:00:00.000Z'),
+    openIssueCount: 1,
+    closedIssueCount: 0,
+    isEstimated: false,
+  },
+  {
+    id: 'm3',
+    number: 3,
+    title: 'Release 9.3.0 (Not visible initially)',
+    url: 'http://example.com/m3',
+    state: GitHubStates.OPEN,
+    dueOn: new Date('2025-12-15T00:00:00.000Z'),
+    openIssueCount: 1,
+    closedIssueCount: 0,
+    isEstimated: false,
   },
 ];
 
-const MOCK_ISSUES: Issue[] = [{ id: 'i1', number: 1, title: 'Test issue', state: GitHubStates.OPEN, url: '', points: 5 } as Issue];
+const MOCK_ISSUES_M1: Issue[] = [
+  { id: 'i1-closed', number: 10, title: 'Closed issue in Q3', state: GitHubStates.CLOSED, url: '', closedAt: new Date('2025-07-20T00:00:00.000Z') } as Issue,
+];
+const MOCK_ISSUES_M2: Issue[] = [
+  { id: 'i2-open', number: 20, title: 'Overdue open issue', state: GitHubStates.OPEN, url: '' } as Issue,
+];
+const MOCK_ISSUES_M3: Issue[] = [
+  { id: 'i3-open', number: 30, title: 'Future open issue', state: GitHubStates.OPEN, url: '' } as Issue,
+];
+
 
 describe('ReleaseRoadmapComponent', () => {
   let component: ReleaseRoadmapComponent;
   let fixture: ComponentFixture<ReleaseRoadmapComponent>;
-  let milestoneService: MilestoneService;
-  let toastrService: ToastrService;
+  let milestoneService: jasmine.SpyObj<MilestoneService>;
+  let issueService: jasmine.SpyObj<IssueService>;
+  let toastrService: jasmine.SpyObj<ToastrService>;
 
   beforeEach(async () => {
+    const milestoneSpy = jasmine.createSpyObj('MilestoneService', ['getOpenMilestones']);
+    const issueSpy = jasmine.createSpyObj('IssueService', ['getIssuesByMilestoneId']);
+    const toastrSpy = jasmine.createSpyObj('ToastrService', ['error']);
+
     await TestBed.configureTestingModule({
-      imports: [ReleaseRoadmapComponent],
+      imports: [ReleaseRoadmapComponent, NoopAnimationsModule],
       providers: [
-        { provide: MilestoneService, useValue: mockMilestoneService },
-        { provide: IssueService, useValue: mockIssueService },
-        { provide: ToastrService, useValue: mockToastrService },
+        { provide: MilestoneService, useValue: milestoneSpy },
+        { provide: IssueService, useValue: issueSpy },
+        { provide: ToastrService, useValue: toastrSpy },
       ],
-    })
-      .overrideComponent(ReleaseRoadmapComponent, {
-        set: {
-          imports: [RoadmapToolbarComponent, TimelineHeaderComponent, MilestoneRowComponent, LoaderComponent],
-        },
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseRoadmapComponent);
     component = fixture.componentInstance;
-    milestoneService = TestBed.inject(MilestoneService);
-    toastrService = TestBed.inject(ToastrService);
-  });
+    milestoneService = TestBed.inject(MilestoneService) as jasmine.SpyObj<MilestoneService>;
+    issueService = TestBed.inject(IssueService) as jasmine.SpyObj<IssueService>;
+    toastrService = TestBed.inject(ToastrService) as jasmine.SpyObj<ToastrService>;
 
-  afterEach(() => {
-    (toastrService.error as jasmine.Spy).calls.reset();
+    milestoneService.getOpenMilestones.and.returnValue(of(MOCK_MILESTONES));
+    issueService.getIssuesByMilestoneId.and.callFake((id: string) => {
+      if (id === 'm1') return of(MOCK_ISSUES_M1);
+      if (id === 'm2') return of(MOCK_ISSUES_M2);
+      if (id === 'm3') return of(MOCK_ISSUES_M3);
+      return of([]);
+    });
   });
 
   it('should create', () => {
-    spyOn(milestoneService, 'getOpenMilestones').and.returnValue(of([]));
+    milestoneService.getOpenMilestones.and.returnValue(of([]));
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
   });
 
-  describe('Timeline Period Calculation', () => {
+  describe('Timeline Period and Filtering Logic', () => {
     beforeEach(() => {
       jasmine.clock().install();
-      jasmine.clock().mockDate(new Date('2025-06-25T12:00:00.000Z'));
-      spyOn(milestoneService, 'getOpenMilestones').and.returnValue(of([]));
+      jasmine.clock().mockDate(new Date('2025-07-10T12:00:00.000Z'));
     });
 
     afterEach(() => {
       jasmine.clock().uninstall();
     });
 
-    it('should set displayDate to the start of the current quarter on resetPeriod', () => {
+    it('should set displayDate to the start of the current quarter (Q3 2025) on resetPeriod', fakeAsync(() => {
       component.resetPeriod();
+      tick();
 
       expect(component.displayDate.getFullYear()).toBe(2025);
-      expect(component.displayDate.getMonth()).toBe(3);
-      expect(component.displayDate.getDate()).toBe(1);
-    });
+      expect(component.displayDate.getMonth()).toBe(6);
+      expect(component.quarters[0].name).toBe('Q3 2025');
+      expect(component.quarters[1].name).toBe('Q4 2025');
+    }));
 
-    it('should advance displayDate by 3 months when changePeriod(3) is called', () => {
-      component.resetPeriod(); // Start at April 1, 2025
-      component.changePeriod(3);
-      // Should now be July 1, 2025
-      expect(component.displayDate.getFullYear()).toBe(2025);
-      expect(component.displayDate.getMonth()).toBe(6); // 6 is July
-      expect(component.displayDate.getDate()).toBe(1);
-    });
+    it('should only show milestones that have issues within the visible quarters (Q3 & Q4)', fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
 
-    it('should generate 6 months and 2 quarters based on the displayDate', () => {
-      component.resetPeriod();
+      expect(component.openMilestones.length).toBe(3);
+      const visibleIds = component.openMilestones.map(m => m.id);
 
-      expect(component.months.length).toBe(6);
-      expect(component.quarters.length).toBe(2);
-      expect(component.quarters[0].name).toBe('Q2 2025');
-      expect(component.quarters[1].name).toBe('Q3 2025');
-    });
-  });
+      expect(visibleIds).toContain('m1');
+      expect(visibleIds).toContain('m2');
+      expect(visibleIds).toContain('m3');
+    }));
 
-  describe('Data Loading', () => {
-    it('should load milestones and issues successfully', () => {
-      spyOn(milestoneService, 'getOpenMilestones').and.returnValue(of(MOCK_MILESTONES));
-      spyOn(mockIssueService, 'getIssuesByMilestoneId').and.returnValue(of(MOCK_ISSUES));
+    it('should filter out milestones when their issues are not in the new view (Q2 & Q3)', fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+
+      expect(component.openMilestones.length).toBe(3);
+
+      component.changePeriod(-3);
+      tick();
+
+      expect(component.openMilestones.length).toBe(2);
+      const visibleIds = component.openMilestones.map(m => m.id);
+
+      expect(visibleIds).toContain('m1');
+      expect(visibleIds).toContain('m2');
+      expect(visibleIds).not.toContain('m3');
+    }));
+
+    it('should handle errors during data loading and show a toastr message', fakeAsync(() => {
+      milestoneService.getOpenMilestones.and.returnValue(throwError(() => new Error('API Error')));
 
       fixture.detectChanges();
-
-      expect(component.isLoading).toBeFalse();
-      expect(component.openMilestones.length).toBeGreaterThan(0);
-      expect(component.milestoneIssues.get('m1')).toEqual(MOCK_ISSUES);
-      expect(toastrService.error).not.toHaveBeenCalled();
-    });
-
-    it('should handle errors during data loading and show a toastr message', () => {
-      spyOn(milestoneService, 'getOpenMilestones').and.returnValue(throwError(() => new Error('API Error')));
-
-      fixture.detectChanges();
+      tick();
 
       expect(component.isLoading).toBeFalse();
       expect(component.openMilestones.length).toBe(0);
       expect(toastrService.error).toHaveBeenCalledWith('Could not load roadmap data.', 'Error');
-    });
-  });
-
-  describe('Milestone Scheduling Logic', () => {
-    it('should schedule milestones by setting their dueOn date', () => {
-      const unscheduledMilestones = [
-        { id: 'm1', title: 'Release 9.2.0', dueOn: null } as Milestone,
-        { id: 'm2', title: 'Release 9.1.0', dueOn: null } as Milestone,
-        { id: 'm3', title: 'Release 9.1.1', dueOn: null } as Milestone,
-      ];
-      spyOn(milestoneService, 'getOpenMilestones').and.returnValue(of(unscheduledMilestones));
-      spyOn(mockIssueService, 'getIssuesByMilestoneId').and.returnValue(of([]));
-
-      fixture.detectChanges();
-
-      expect(component.openMilestones.length).toBeGreaterThan(0);
-      expect(component.openMilestones.every((m) => m.dueOn !== null)).toBeTrue();
-    });
+    }));
   });
 });

@@ -87,7 +87,7 @@ describe('TimelineHeaderComponent', () => {
       component.months = mockMonths;
       fixture.detectChanges();
       const monthsGridArea = nativeElement.querySelector('.months-row .grid-area') as HTMLElement;
-      // FIX: Changed expectation to match computed style from the browser, which adds 'px' to the zero value.
+
       expect(monthsGridArea.style.gridTemplateColumns).toBe('repeat(3, minmax(0px, 1fr))');
     });
   });

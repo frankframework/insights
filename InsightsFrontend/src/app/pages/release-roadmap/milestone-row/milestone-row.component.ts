@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
@@ -30,7 +30,7 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
   templateUrl: './milestone-row.component.html',
   styleUrls: ['./milestone-row.component.scss'],
 })
-export class MilestoneRowComponent implements OnInit {
+export class MilestoneRowComponent implements OnChanges {
   @Input({ required: true }) milestone!: Milestone;
   @Input({ required: true }) issues: Issue[] = [];
   @Input({ required: true }) timelineStartDate!: Date;
@@ -47,9 +47,11 @@ export class MilestoneRowComponent implements OnInit {
   private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 3;
   private readonly GAP_MS = 24 * 3600 * 1000;
 
-  ngOnInit(): void {
-    this.calculateProgress();
-    this.runLayoutAlgorithm();
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['milestone'] || changes['issues']) {
+      this.calculateProgress();
+      this.runLayoutAlgorithm();
+    }
   }
 
   public getIssuesForTrack(trackNumber: number): PositionedIssue[] {
@@ -61,7 +63,11 @@ export class MilestoneRowComponent implements OnInit {
   }
 
   private runLayoutAlgorithm(): void {
-    if (this.issues.length === 0) return;
+    if (this.issues.length === 0) {
+      this.positionedIssues = [];
+      this.trackCount = 1;
+      return;
+    }
 
     this.positionedIssues = [];
     let overallMaxTrackCount = 0;
@@ -70,9 +76,7 @@ export class MilestoneRowComponent implements OnInit {
     const visibleQuarters = new Set(this.quarters.map((q) => q.name));
 
     for (const [quarterKey, quarterIssues] of issuesByQuarter.entries()) {
-      if (!visibleQuarters.has(quarterKey)) {
-        continue;
-      }
+      if (!visibleQuarters.has(quarterKey)) continue;
 
       const quarterWindow = this.getWindowForQuarter(quarterKey);
       if (!quarterWindow) continue;
@@ -83,56 +87,61 @@ export class MilestoneRowComponent implements OnInit {
       const openLayout = this.layoutIssuesWithEvenSpacing(quarterIssues.open, openWindow);
 
       this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
-
-      const maxTracksInQuarter = Math.max(closedLayout.trackCount, openLayout.trackCount);
-      if (maxTracksInQuarter > overallMaxTrackCount) {
-        overallMaxTrackCount = maxTracksInQuarter;
-      }
+      overallMaxTrackCount = Math.max(overallMaxTrackCount, closedLayout.trackCount, openLayout.trackCount);
     }
 
     this.trackCount = Math.max(1, overallMaxTrackCount);
   }
 
   private distributeIssuesIntoQuarters(): QuarterIssueMap {
+    const quarterMap = this.initializeQuarterMap();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const currentQuarterStart = this.getQuarterFromDate(today);
-    const quarterMap: QuarterIssueMap = new Map();
-
-    for (const q of this.quarters) {
-      quarterMap.set(q.name, { open: [], closed: [] });
-    }
 
     for (const issue of this.issues) {
-      if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
-        const closedQuarter = this.getQuarterFromDate(new Date(issue.closedAt));
-        const quarterKey = this.getQuarterKey(closedQuarter);
-        if (!quarterMap.has(quarterKey)) quarterMap.set(quarterKey, { open: [], closed: [] });
-        quarterMap.get(quarterKey)!.closed.push(issue);
-      } else if (issue.state === GitHubStates.OPEN) {
-        const milestoneDueQuarter = this.milestone.dueOn
-          ? this.getQuarterFromDate(new Date(this.milestone.dueOn))
-          : currentQuarterStart;
+      const quarterKey = this.getIssueLayoutQuarterKey(issue, currentQuarterStart);
+      if (!quarterMap.has(quarterKey)) {
+        quarterMap.set(quarterKey, { open: [], closed: [] });
+      }
 
-        if (milestoneDueQuarter.getTime() < currentQuarterStart.getTime()) {
-          const currentQuarterKey = this.getQuarterKey(currentQuarterStart);
-          if (quarterMap.has(currentQuarterKey)) {
-            quarterMap.get(currentQuarterKey)!.open.push(issue);
-          }
-        } else {
-          const quarterKey = this.getQuarterKey(milestoneDueQuarter);
-          if (!quarterMap.has(quarterKey)) quarterMap.set(quarterKey, { open: [], closed: [] });
-          quarterMap.get(quarterKey)!.open.push(issue);
-        }
+      const quarterBin = quarterMap.get(quarterKey)!;
+      if (issue.state === GitHubStates.CLOSED) {
+        quarterBin.closed.push(issue);
+      } else {
+        quarterBin.open.push(issue);
       }
     }
 
-    for (const [_, issues] of quarterMap) {
+    for (const issues of quarterMap.values()) {
       issues.open = this.getSortedIssues(issues.open);
       issues.closed = this.getSortedIssues(issues.closed);
     }
 
     return quarterMap;
+  }
+
+  private initializeQuarterMap(): QuarterIssueMap {
+    const quarterMap: QuarterIssueMap = new Map();
+    for (const q of this.quarters) {
+      quarterMap.set(q.name, { open: [], closed: [] });
+    }
+    return quarterMap;
+  }
+
+  private getIssueLayoutQuarterKey(issue: Issue, currentQuarterStart: Date): string {
+    if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+      return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
+    }
+
+    const milestoneDueQuarter = this.milestone.dueOn
+      ? this.getQuarterFromDate(new Date(this.milestone.dueOn))
+      : currentQuarterStart;
+
+    const effectiveQuarter =
+      milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
+
+    return this.getQuarterKey(effectiveQuarter);
   }
 
   private getWindowForQuarter(quarterKey: string): PlanningWindow | null {
@@ -141,7 +150,6 @@ export class MilestoneRowComponent implements OnInit {
 
     const quarterNumber = Number.parseInt(match[1], 10);
     const year = Number.parseInt(match[2], 10);
-
     const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
     const endDate = new Date(year, quarterNumber * 3, 0);
     endDate.setHours(23, 59, 59, 999);
@@ -156,21 +164,12 @@ export class MilestoneRowComponent implements OnInit {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const todayMs = today.getTime();
+    const { start, end } = quarterWindow;
 
-    const start = quarterWindow.start;
-    const end = quarterWindow.end;
+    if (todayMs < start) return { closedWindow: { start, end: start }, openWindow: { start, end } };
+    if (todayMs > end) return { closedWindow: { start, end }, openWindow: { start: end, end } };
 
-    if (todayMs < start) {
-      return { closedWindow: { start, end: start }, openWindow: { start, end } };
-    }
-    if (todayMs > end) {
-      return { closedWindow: { start, end }, openWindow: { start: end, end } };
-    }
-
-    return {
-      closedWindow: { start, end: todayMs },
-      openWindow: { start: todayMs, end },
-    };
+    return { closedWindow: { start, end: todayMs }, openWindow: { start: todayMs, end } };
   }
 
   private layoutIssuesWithEvenSpacing(issues: Issue[], window: PlanningWindow): LayoutContext {
@@ -178,10 +177,10 @@ export class MilestoneRowComponent implements OnInit {
       return { positionedIssues: [], trackCount: 0 };
     }
 
-    const estimatedTracks = this.estimateTrackCount(issues, window);
-    const issuesByTrack = this.distributeIssuesRoundRobin(issues, estimatedTracks);
-
+    const trackCount = this.estimateTrackCount(issues, window);
+    const issuesByTrack = this.distributeIssuesRoundRobin(issues, trackCount);
     const positionedIssues: PositionedIssue[] = [];
+
     for (const [trackIndex, trackIssues] of issuesByTrack.entries()) {
       if (trackIssues.length === 0) continue;
 
@@ -195,8 +194,7 @@ export class MilestoneRowComponent implements OnInit {
 
       for (const issue of trackIssues) {
         const durationMs = this.getIssueDurationMsWithMinWidth(issue);
-        const startTime = cursor;
-        positionedIssues.push(this.createPositionedIssue(issue, startTime, durationMs, trackIndex));
+        positionedIssues.push(this.createPositionedIssue(issue, cursor, durationMs, trackIndex));
         cursor += durationMs + gapSize;
       }
     }
@@ -218,11 +216,12 @@ export class MilestoneRowComponent implements OnInit {
 
   private estimateTrackCount(issues: Issue[], window: PlanningWindow): number {
     const windowDurationMs = window.end - window.start;
-    if (windowDurationMs <= 0) return issues.length;
+    if (windowDurationMs <= 0) return issues.length || 1;
 
-    const totalDurationWithGaps = issues.reduce((sum, issue) => {
-      return sum + this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS;
-    }, -this.GAP_MS);
+    const totalDurationWithGaps = issues.reduce(
+      (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS,
+      -this.GAP_MS,
+    );
 
     return Math.max(1, Math.ceil(totalDurationWithGaps / windowDurationMs));
   }
@@ -231,12 +230,9 @@ export class MilestoneRowComponent implements OnInit {
     const issuesByTrack = new Map<number, Issue[]>();
     if (trackCount === 0) return issuesByTrack;
 
-    for (let index = 0; index < trackCount; index++) {
-      issuesByTrack.set(index, []);
-    }
-    for (const [index, issue] of issues.entries()) {
-      issuesByTrack.get(index % trackCount)!.push(issue);
-    }
+    for (let index = 0; index < trackCount; index++) issuesByTrack.set(index, []);
+    for (const [index, issue] of issues.entries()) issuesByTrack.get(index % trackCount)!.push(issue);
+
     return issuesByTrack;
   }
 
@@ -287,6 +283,10 @@ export class MilestoneRowComponent implements OnInit {
   }
 
   private calculateProgress(): void {
+    if (!this.milestone) {
+      this.progressPercentage = 0;
+      return;
+    }
     const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
     this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
   }
