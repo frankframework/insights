@@ -19,7 +19,6 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should display the correct initial period label (Q3-Q4 2025)', () => {
-      // Deze test is nu betrouwbaar omdat "today" altijd 15 juli 2025 is.
       cy.get('.period-label').should('contain.text', 'Q3 2025 - Q4 2025');
     });
 
@@ -40,7 +39,10 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.tick(5000);
       cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q2 2025 - Q3 2025');
-      cy.get('app-milestone-row').its('length').should('be.lessThan', cy.get('@initialCount'));
+
+      cy.get('@initialCount').then(initialCount => {
+        cy.get('app-milestone-row').its('length').should('be.lessThan', initialCount as unknown as number);
+      });
     });
 
     it('should navigate to the next period and update view', () => {
@@ -49,7 +51,10 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.tick(5000);
       cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q4 2025 - Q1 2026');
-      cy.get('app-milestone-row').its('length').should('not.equal', cy.get('@initialCount'));
+
+      cy.get('@initialCount').then(initialCount => {
+        cy.get('app-milestone-row').its('length').should('not.equal', initialCount as unknown as number);
+      });
     });
 
     it('should return to the current period when "Go to today" is clicked', () => {
@@ -68,19 +73,20 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('app-milestone-row').first().as('firstMilestoneRow');
       cy.get('.today-marker').invoke('css', 'left').then(left => {
         const todayPosition = parseFloat(left as unknown as string);
-        cy.get('@currentMilestoneRow')
+
+        cy.get('@firstMilestoneRow')
           .find('a.issue-bar[href*="203"]')
           .invoke('css', 'left')
           .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.lessThan(todayPosition));
-        cy.get('@currentMilestoneRow')
+        cy.get('@firstMilestoneRow')
           .find('a.issue-bar[href*="204"]')
           .invoke('css', 'left')
           .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.lessThan(todayPosition));
-        cy.get('@currentMilestoneRow')
+        cy.get('@firstMilestoneRow')
           .find('a.issue-bar[href*="205"]')
           .invoke('css', 'left')
           .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
-        cy.get('@currentMilestoneRow')
+        cy.get('@firstMilestoneRow')
           .find('a.issue-bar[href*="206"]')
           .invoke('css', 'left')
           .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
@@ -88,8 +94,8 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should place "overdue" open issues in the current quarter, after "today"', () => {
-      cy.get('app-milestone-row').contains('.title-link', 'Release 9.3.0').parents('app-milestone-row').as('pastMilestoneRow');
-      const overdueIssue = cy.get('@pastMilestoneRow').find('a.issue-bar[href*="202"]').should('be.visible');
+      cy.get('app-milestone-row').first().as('firstMilestoneRow');
+      const overdueIssue = cy.get('@firstMilestoneRow').find('a.issue-bar[href*="202"]').should('be.visible');
       overdueIssue.invoke('css', 'left').then(left => {
         const issuePosition = parseFloat(left as unknown as string);
         cy.get('.today-marker').invoke('css', 'left').then(todayLeft => {
@@ -115,11 +121,11 @@ describe('Release Roadmap End-to-End Tests', () => {
 
   context('Edge Case Rendering', () => {
     it('should not display a milestone if it has no issues', () => {
-      cy.get('app-milestone-row').contains('.title-link', 'Release 9.7.0 (No Issues)').should('not.exist');
+      cy.get('app-milestone-row .title-link').should('not.contain.text', 'No Issues');
     });
 
     it('should create multiple tracks if issues overflow the available space', () => {
-      cy.get('app-milestone-row').contains('.title-link', 'Release 9.6.0 (Overflow)').parents('app-milestone-row').as('overflowMilestoneRow');
+      cy.get('app-milestone-row').contains('.title-link', '(Overflow)').parents('app-milestone-row').as('overflowMilestoneRow');
       cy.get('@overflowMilestoneRow').find('.issue-track-area').invoke('height').should('be.greaterThan', 50);
       cy.get('@overflowMilestoneRow').find('app-issue-bar').should('have.length', 20);
     });
