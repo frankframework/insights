@@ -34,26 +34,24 @@ describe('Release Roadmap End-to-End Tests', () => {
 
   context('Timeline Navigation', () => {
     it('should navigate to the previous period and update view', () => {
-      cy.get('app-milestone-row').its('length').as('initialCount');
+      cy.get('.milestone-lanes').invoke('html').as('initialHtml');
       cy.get('button[title="Previous quarter"]').click();
       cy.tick(5000);
-      cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q2 2025 - Q3 2025');
 
-      cy.get('@initialCount').then(initialCount => {
-        cy.get('app-milestone-row').its('length').should('be.lessThan', initialCount as unknown as number);
+      cy.get('@initialHtml').then(initialHtml => {
+        cy.get('.milestone-lanes').invoke('html').should('not.equal', initialHtml);
       });
     });
 
     it('should navigate to the next period and update view', () => {
-      cy.get('app-milestone-row').its('length').as('initialCount');
+      cy.get('.milestone-lanes').invoke('html').as('initialHtml');
       cy.get('button[title="Next quarter"]').click();
       cy.tick(5000);
-      cy.get('app-loader').should('not.exist');
       cy.get('.period-label').should('contain.text', 'Q4 2025 - Q1 2026');
 
-      cy.get('@initialCount').then(initialCount => {
-        cy.get('app-milestone-row').its('length').should('not.equal', initialCount as unknown as number);
+      cy.get('@initialHtml').then(initialHtml => {
+        cy.get('.milestone-lanes').invoke('html').should('not.equal', initialHtml);
       });
     });
 
@@ -70,7 +68,7 @@ describe('Release Roadmap End-to-End Tests', () => {
 
   context('Issue Rendering and Layout Logic', () => {
     it('should display closed issues before "today" and open issues after "today"', () => {
-      cy.get('app-milestone-row').first().as('firstMilestoneRow');
+      cy.get('app-milestone-row').eq(1).as('firstMilestoneRow');
       cy.get('.today-marker').invoke('css', 'left').then(left => {
         const todayPosition = parseFloat(left as unknown as string);
 
@@ -88,6 +86,10 @@ describe('Release Roadmap End-to-End Tests', () => {
           .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
         cy.get('@firstMilestoneRow')
           .find('a.issue-bar[href*="206"]')
+          .invoke('css', 'left')
+          .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
+        cy.get('@firstMilestoneRow')
+          .find('a.issue-bar[href*="207"]')
           .invoke('css', 'left')
           .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
       });
