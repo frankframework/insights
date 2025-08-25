@@ -263,8 +263,9 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     for (const { milestone, version } of majors) {
       const key = `${version!.major}.${version!.minor}`;
       const quarter = majorQuarterMap.get(key)!;
+      const hadOriginalDueDate = !!milestone.dueOn;
       milestone.dueOn = this.getQuarterEndDate(quarter);
-      milestone.isEstimated = !milestone.dueOn;
+      milestone.isEstimated = !hadOriginalDueDate;
     }
   }
 
