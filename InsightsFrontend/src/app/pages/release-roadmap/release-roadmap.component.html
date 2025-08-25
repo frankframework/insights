@@ -1,15 +1,15 @@
 <div class="roadmap-container">
-  <div class="header">
-    <app-roadmap-toolbar
-      [periodLabel]="currentPeriodLabel"
-      (changePeriod)="changePeriod($event)"
-      (resetPeriod)="resetPeriod()"
-    />
-  </div>
-
   @if (isLoading) {
     <app-loader />
   } @else {
+    <div class="header">
+      <app-roadmap-toolbar
+        [periodLabel]="currentPeriodLabel"
+        (changePeriod)="changePeriod($event)"
+        (resetPeriod)="resetPeriod()"
+      />
+    </div>
+
     <div class="content">
       @if (openMilestones.length > 0) {
         <div #scrollContainer class="scroll-container">
@@ -33,7 +33,9 @@
                   [milestone]="milestone"
                   [issues]="getIssuesForMilestone(milestone.id)"
                   [timelineStartDate]="timelineStartDate"
+                  [timelineEndDate]="timelineEndDate"
                   [totalTimelineDays]="totalDays"
+                  [quarters]="quarters"
                   [isLast]="isLast"
                 />
               }

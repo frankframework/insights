@@ -1,16 +1,14 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue, IssuePriority } from '../../../services/issue.service';
-import { GitHubState, GitHubStates } from '../../../app.service';
+import { GitHubStates } from '../../../app.service';
 
 interface PositionedIssue {
   issue: Issue;
   style: Record<string, string>;
   track: number;
-  startTime: number;
-  endTime: number;
 }
 
 interface PlanningWindow {
@@ -23,6 +21,8 @@ interface LayoutContext {
   trackCount: number;
 }
 
+type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
+
 @Component({
   selector: 'app-milestone-row',
   standalone: true,
@@ -30,11 +30,13 @@ interface LayoutContext {
   templateUrl: './milestone-row.component.html',
   styleUrls: ['./milestone-row.component.scss'],
 })
-export class MilestoneRowComponent implements OnInit {
+export class MilestoneRowComponent implements OnChanges {
   @Input({ required: true }) milestone!: Milestone;
   @Input({ required: true }) issues: Issue[] = [];
   @Input({ required: true }) timelineStartDate!: Date;
+  @Input({ required: true }) timelineEndDate!: Date;
   @Input({ required: true }) totalTimelineDays!: number;
+  @Input({ required: true }) quarters!: { name: string; monthCount: number }[];
   @Input() isLast = false;
 
   public positionedIssues: PositionedIssue[] = [];
@@ -43,11 +45,11 @@ export class MilestoneRowComponent implements OnInit {
 
   private readonly DEFAULT_POINTS = 3;
   private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 3;
-  private readonly GAP_MS = 24 * 3600 * 1000;
+  private readonly GAP_MS = 12 * 3600 * 1000;
 
-  ngOnInit(): void {
-    this.calculateProgress();
-    if (this.milestone.dueOn) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['milestone'] || changes['issues'] || changes['quarters']) {
+      this.calculateProgress();
       this.runLayoutAlgorithm();
     }
   }
@@ -61,48 +63,124 @@ export class MilestoneRowComponent implements OnInit {
   }
 
   private runLayoutAlgorithm(): void {
-    this.positionedIssues = [];
-    const { closedIssues, openIssues } = this.getSeparatedIssues();
-    const milestoneQuarterWindow = this.getMilestoneQuarterWindow();
-
-    // Alleen open issues tonen als de milestone nog niet is afgerond, anders alleen closed
-    let allIssues: Issue[] = [];
-    if (this.milestone.dueOn && new Date(this.milestone.dueOn) < new Date()) {
-      // Milestone is in het verleden: alleen closed issues tonen
-      allIssues = closedIssues;
-    } else {
-      // Milestone is huidig of toekomst: alleen open issues tonen
-      allIssues = openIssues;
+    if (this.issues.length === 0) {
+      this.positionedIssues = [];
+      this.trackCount = 1;
+      return;
     }
 
-    const layout = this.layoutIssuesWithEvenSpacing(allIssues, milestoneQuarterWindow);
-    this.positionedIssues.push(...layout.positionedIssues);
-    this.trackCount = Math.max(1, layout.trackCount);
+    this.positionedIssues = [];
+    let overallMaxTrackCount = 0;
+
+    const issuesByQuarter = this.distributeIssuesIntoQuarters();
+    const visibleQuarters = new Set(this.quarters.map((q) => q.name));
+
+    for (const [quarterKey, quarterIssues] of issuesByQuarter.entries()) {
+      if (!visibleQuarters.has(quarterKey)) continue;
+
+      const quarterWindow = this.getWindowForQuarter(quarterKey);
+      if (!quarterWindow) continue;
+
+      const { closedWindow, openWindow } = this.getPlanningWindowsForQuarter(quarterWindow);
+
+      const closedLayout = this.layoutIssuesWithEvenSpacing(quarterIssues.closed, closedWindow);
+      const openLayout = this.layoutIssuesWithEvenSpacing(quarterIssues.open, openWindow);
+
+      this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
+      overallMaxTrackCount = Math.max(overallMaxTrackCount, closedLayout.trackCount, openLayout.trackCount);
+    }
+
+    this.trackCount = Math.max(1, overallMaxTrackCount);
   }
 
-  private layoutIssuesAsColumn(issues: Issue[], window: PlanningWindow): LayoutContext {
-    const positionedIssues: PositionedIssue[] = [];
-    for (const [index, issue] of issues.entries()) {
-      const trackIndex = index;
-      let durationMs = this.getIssueDurationMsWithMinWidth(issue);
-      let startTime = window.start;
+  private distributeIssuesIntoQuarters(): QuarterIssueMap {
+    const quarterMap = this.initializeQuarterMap();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentQuarterStart = this.getQuarterFromDate(today);
 
-      if (startTime + durationMs > window.end) {
-        startTime = window.end - durationMs;
+    for (const issue of this.issues) {
+      const quarterKey = this.getIssueLayoutQuarterKey(issue, currentQuarterStart);
+      if (!quarterMap.has(quarterKey)) {
+        quarterMap.set(quarterKey, { open: [], closed: [] });
       }
 
-      positionedIssues.push(this.createPositionedIssue(issue, startTime, durationMs, trackIndex));
+      const quarterBin = quarterMap.get(quarterKey)!;
+      if (issue.state === GitHubStates.CLOSED) {
+        quarterBin.closed.push(issue);
+      } else {
+        quarterBin.open.push(issue);
+      }
     }
-    return { positionedIssues, trackCount: issues.length };
+
+    for (const issues of quarterMap.values()) {
+      issues.open = this.getSortedIssues(issues.open);
+      issues.closed = this.getSortedIssues(issues.closed);
+    }
+
+    return quarterMap;
+  }
+
+  private initializeQuarterMap(): QuarterIssueMap {
+    const quarterMap: QuarterIssueMap = new Map();
+    for (const q of this.quarters) {
+      quarterMap.set(q.name, { open: [], closed: [] });
+    }
+    return quarterMap;
+  }
+
+  private getIssueLayoutQuarterKey(issue: Issue, currentQuarterStart: Date): string {
+    if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+      return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
+    }
+
+    const milestoneDueQuarter = this.milestone.dueOn
+      ? this.getQuarterFromDate(new Date(this.milestone.dueOn))
+      : currentQuarterStart;
+
+    const effectiveQuarter =
+      milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
+
+    return this.getQuarterKey(effectiveQuarter);
+  }
+
+  private getWindowForQuarter(quarterKey: string): PlanningWindow | null {
+    const match = quarterKey.match(/Q(\d) (\d{4})/);
+    if (!match) return null;
+
+    const quarterNumber = Number.parseInt(match[1], 10);
+    const year = Number.parseInt(match[2], 10);
+    const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
+    const endDate = new Date(year, quarterNumber * 3, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { start: startDate.getTime(), end: endDate.getTime() };
+  }
+
+  private getPlanningWindowsForQuarter(quarterWindow: PlanningWindow): {
+    closedWindow: PlanningWindow;
+    openWindow: PlanningWindow;
+  } {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const todayMs = today.getTime();
+    const { start, end } = quarterWindow;
+
+    if (todayMs < start) return { closedWindow: { start, end: start }, openWindow: { start, end } };
+    if (todayMs > end) return { closedWindow: { start, end }, openWindow: { start: end, end } };
+
+    return { closedWindow: { start, end: todayMs }, openWindow: { start: todayMs, end } };
   }
 
   private layoutIssuesWithEvenSpacing(issues: Issue[], window: PlanningWindow): LayoutContext {
-    if (issues.length === 0 || window.start >= window.end) return { positionedIssues: [], trackCount: 0 };
+    if (issues.length === 0 || window.start >= window.end) {
+      return { positionedIssues: [], trackCount: 0 };
+    }
 
-    const estimatedTracks = this.estimateTrackCount(issues, window);
-    const issuesByTrack = this.distributeIssuesRoundRobin(issues, estimatedTracks);
-
+    const trackCount = this.estimateTrackCount(issues, window);
+    const issuesByTrack = this.distributeIssuesRoundRobin(issues, trackCount);
     const positionedIssues: PositionedIssue[] = [];
+
     for (const [trackIndex, trackIssues] of issuesByTrack.entries()) {
       if (trackIssues.length === 0) continue;
 
@@ -111,7 +189,7 @@ export class MilestoneRowComponent implements OnInit {
         0,
       );
       const totalWhitespace = window.end - window.start - totalIssueDuration;
-      const gapSize = totalWhitespace / (trackIssues.length + 1);
+      const gapSize = totalWhitespace > 0 ? totalWhitespace / (trackIssues.length + 1) : 0;
       let cursor = window.start + gapSize;
 
       for (const issue of trackIssues) {
@@ -121,32 +199,6 @@ export class MilestoneRowComponent implements OnInit {
       }
     }
     return { positionedIssues, trackCount: issuesByTrack.size };
-  }
-
-  private layoutIssuesBackwards(issues: Issue[], window: PlanningWindow): LayoutContext {
-    return this.layoutIssuesWithEvenSpacing(issues, window);
-  }
-
-  private estimateTrackCount(issues: Issue[], window: PlanningWindow): number {
-    const windowDurationMs = window.end - window.start;
-    if (windowDurationMs <= 0) return issues.length;
-
-    const totalDurationWithGaps = issues.reduce((sum, issue) => {
-      return sum + this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS;
-    }, 0);
-
-    return Math.max(1, Math.ceil(totalDurationWithGaps / windowDurationMs));
-  }
-
-  private distributeIssuesRoundRobin(issues: Issue[], trackCount: number): Map<number, Issue[]> {
-    const issuesByTrack = new Map<number, Issue[]>();
-    for (let index = 0; index < trackCount; index++) {
-      issuesByTrack.set(index, []);
-    }
-    for (const [index, issue] of issues.entries()) {
-      issuesByTrack.get(index % trackCount)!.push(issue);
-    }
-    return issuesByTrack;
   }
 
   private createPositionedIssue(
@@ -159,122 +211,84 @@ export class MilestoneRowComponent implements OnInit {
       issue,
       track: trackIndex,
       style: this.calculateBarPosition(new Date(startTime), durationMs / (1000 * 3600 * 24)),
-      startTime: startTime,
-      endTime: startTime + durationMs,
     };
   }
 
-  private calculateProgress(): void {
-    const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
-    this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
+  private estimateTrackCount(issues: Issue[], window: PlanningWindow): number {
+    const windowDurationMs = window.end - window.start;
+    if (windowDurationMs <= 0) return issues.length || 1;
+
+    const totalDurationWithGaps = issues.reduce(
+      (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS,
+      -this.GAP_MS,
+    );
+
+    return Math.max(1, Math.ceil(totalDurationWithGaps / windowDurationMs));
   }
 
-  private getSeparatedIssues(): { closedIssues: Issue[]; openIssues: Issue[] } {
-    return {
-      closedIssues: this.getSortedIssues(GitHubStates.CLOSED),
-      openIssues: this.getSortedIssues(GitHubStates.OPEN),
-    };
+  private distributeIssuesRoundRobin(issues: Issue[], trackCount: number): Map<number, Issue[]> {
+    const issuesByTrack = new Map<number, Issue[]>();
+    if (trackCount === 0) return issuesByTrack;
+
+    for (let index = 0; index < trackCount; index++) issuesByTrack.set(index, []);
+    for (const [index, issue] of issues.entries()) issuesByTrack.get(index % trackCount)!.push(issue);
+
+    return issuesByTrack;
   }
 
-  private isMilestoneOverdue(): boolean {
-    if (!this.milestone.dueOn) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return this.milestone.dueOn.getTime() < today.getTime();
-  }
+  private getSortedIssues(issues: Issue[]): Issue[] {
+    const priorityOrder: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4, no: 5 };
 
-  private isMilestoneInCurrentQuarter(): boolean {
-    if (!this.milestone.dueOn) return false;
-    const today = new Date();
-    const milestoneDate = new Date(this.milestone.dueOn);
-    const currentQuarter = Math.floor(today.getMonth() / 3);
-    const milestoneQuarter = Math.floor(milestoneDate.getMonth() / 3);
-    return today.getFullYear() === milestoneDate.getFullYear() && currentQuarter === milestoneQuarter;
-  }
+    return [...issues].sort((a, b) => {
+      const priorityA = priorityOrder[this.getPriorityKey(a.issuePriority)] ?? 5;
+      const priorityB = priorityOrder[this.getPriorityKey(b.issuePriority)] ?? 5;
+      if (priorityA !== priorityB) return priorityA - priorityB;
 
-  private isMilestoneInFuture(): boolean {
-    if (!this.milestone.dueOn) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const quarterStartDate = this.getMilestoneQuarterWindow().start;
-    return quarterStartDate > today.getTime();
-  }
+      const pointsA = a.points ?? this.DEFAULT_POINTS;
+      const pointsB = b.points ?? this.DEFAULT_POINTS;
+      if (pointsA !== pointsB) return pointsB - pointsA;
 
-  private isTodayInFirstQuarterOfView(): boolean {
-    const today = new Date();
-    const viewMidpoint = new Date(this.timelineStartDate);
-    viewMidpoint.setMonth(viewMidpoint.getMonth() + 3);
-    return today.getTime() < viewMidpoint.getTime();
-  }
-
-  private getNextQuarterWindow(): PlanningWindow {
-    const lastDueDate = this.milestone.dueOn!;
-    const nextMonth = new Date(lastDueDate.getFullYear(), lastDueDate.getMonth() + 1, 1);
-    const nextQuarterIndex = Math.floor(nextMonth.getMonth() / 3);
-    const nextQuarterYear = nextMonth.getFullYear();
-    const startDate = new Date(nextQuarterYear, nextQuarterIndex * 3, 1);
-    const endDate = new Date(nextQuarterYear, nextQuarterIndex * 3 + 3, 0);
-    endDate.setHours(23, 59, 59, 999);
-    return { start: startDate.getTime(), end: endDate.getTime() };
-  }
-
-  private getTimelineViewWindows(): { currentViewClosedWindow: PlanningWindow; currentViewOpenWindow: PlanningWindow } {
-    const today = new Date();
-    const timelineStartMs = this.timelineStartDate.getTime();
-    const timelineEndDate = new Date(this.timelineStartDate);
-    timelineEndDate.setDate(timelineEndDate.getDate() + this.totalTimelineDays);
-    const timelineEndMs = timelineEndDate.getTime();
-    const midpoint = new Date(Math.max(timelineStartMs, Math.min(today.getTime(), timelineEndMs)));
-    return {
-      currentViewClosedWindow: { start: timelineStartMs, end: midpoint.getTime() },
-      currentViewOpenWindow: { start: midpoint.getTime(), end: timelineEndMs },
-    };
-  }
-
-  private getMilestoneQuarterWindow(): PlanningWindow {
-    const due = new Date(this.milestone.dueOn!);
-    const year = due.getFullYear();
-    const quarterIndex = Math.floor(due.getMonth() / 3);
-    const startDate = new Date(year, quarterIndex * 3, 1);
-    const endDate = new Date(year, quarterIndex * 3 + 3, 0);
-    endDate.setHours(23, 59, 59, 999);
-    return { start: startDate.getTime(), end: endDate.getTime() };
+      return b.number - a.number;
+    });
   }
 
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
     const startDays = (startDate.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
     const leftPercentage = (startDays / this.totalTimelineDays) * 100;
-    const durationMs = durationDays * 24 * 60 * 60 * 1000;
-    const issueWidthPercentage = (durationMs / (this.totalTimelineDays * 24 * 60 * 60 * 1000)) * 100;
+    const widthPercentage = (durationDays / this.totalTimelineDays) * 100;
+
     return {
       left: `${leftPercentage}%`,
-      width: `${Math.max(issueWidthPercentage, this.MIN_ISSUE_WIDTH_PERCENTAGE)}%`,
+      width: `${Math.max(widthPercentage, this.MIN_ISSUE_WIDTH_PERCENTAGE)}%`,
     };
   }
 
-  private getIssueDurationMs(issue: Issue): number {
-    const points = issue.points ?? this.DEFAULT_POINTS;
-    return points * 24 * 60 * 60 * 1000;
-  }
-
   private getIssueDurationMsWithMinWidth(issue: Issue): number {
-    const durationMs = this.getIssueDurationMs(issue);
-    const minDurationInMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * 24 * 60 * 60 * 1000;
-    return Math.max(durationMs, minDurationInMs);
+    const points = issue.points ?? this.DEFAULT_POINTS;
+    const durationMs = points * 24 * 60 * 60 * 1000;
+    const minDurationMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * (24 * 60 * 60 * 1000);
+    return Math.max(durationMs, minDurationMs);
   }
 
-  private getSortedIssues(state: GitHubState): Issue[] {
-    const issues = this.issues.filter((issue) => issue.state === state);
-    const priorityOrder: Record<string, number> = { critical: 1, high: 2, medium: 3, low: 4, no: 5 };
-    return [...issues].sort((a, b) => {
-      const priorityA = priorityOrder[this.getPriorityKey(a.issuePriority)] ?? 5;
-      const priorityB = priorityOrder[this.getPriorityKey(b.issuePriority)] ?? 5;
-      if (priorityA !== priorityB) return priorityA - priorityB;
-      const pointsA = a.points ?? this.DEFAULT_POINTS;
-      const pointsB = b.points ?? this.DEFAULT_POINTS;
-      if (pointsA !== pointsB) return pointsB - pointsA;
-      return b.number - a.number;
-    });
+  private getQuarterFromDate(date: Date): Date {
+    const year = date.getFullYear();
+    const quarterIndex = Math.floor(date.getMonth() / 3);
+    return new Date(year, quarterIndex * 3, 1);
+  }
+
+  private getQuarterKey(quarter: Date): string {
+    const year = quarter.getFullYear();
+    const quarterNumber = Math.floor(quarter.getMonth() / 3) + 1;
+    return `Q${quarterNumber} ${year}`;
+  }
+
+  private calculateProgress(): void {
+    if (!this.milestone) {
+      this.progressPercentage = 0;
+      return;
+    }
+    const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
+    this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
   }
 
   private getPriorityKey(priority: IssuePriority | undefined | null): string {

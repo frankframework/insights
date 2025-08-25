@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
@@ -16,7 +16,7 @@ export type GitHubState = (typeof GitHubStates)[keyof typeof GitHubStates];
 export class AppService {
   private static readonly API_BASE_URL: string = environment.backendUrl;
 
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
 
   /**
    * Performs a GET request to the given URL with optional query parameters.

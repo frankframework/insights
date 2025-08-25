@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, inject } from '@angular/core';
 import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
@@ -40,7 +40,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
   public doughnutChartPlugins = [];
 
-  constructor(private releaseOffCanvasComponent: ReleaseOffCanvasComponent) {}
+  private releaseOffCanvasComponent = inject(ReleaseOffCanvasComponent);
 
   ngOnChanges(): void {
     this.generatePieData();
