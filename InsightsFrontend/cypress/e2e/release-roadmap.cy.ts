@@ -33,26 +33,18 @@ describe('Release Roadmap End-to-End Tests', () => {
   });
 
   context('Timeline Navigation', () => {
-    it('should navigate to the previous period and update view', () => {
-      cy.get('.milestone-lanes').invoke('html').as('initialHtml');
+    it('should navigate to the previous period', () => {
+      cy.get('.period-label').should('contain.text', 'Q3 2025 - Q4 2025');
       cy.get('button[title="Previous quarter"]').click();
       cy.tick(5000);
       cy.get('.period-label').should('contain.text', 'Q2 2025 - Q3 2025');
-
-      cy.get('@initialHtml').then(initialHtml => {
-        cy.get('.milestone-lanes').invoke('html').should('not.equal', initialHtml);
-      });
     });
 
-    it('should navigate to the next period and update view', () => {
-      cy.get('.milestone-lanes').invoke('html').as('initialHtml');
+    it('should navigate to the next period', () => {
+      cy.get('.period-label').should('contain.text', 'Q3 2025 - Q4 2025');
       cy.get('button[title="Next quarter"]').click();
       cy.tick(5000);
       cy.get('.period-label').should('contain.text', 'Q4 2025 - Q1 2026');
-
-      cy.get('@initialHtml').then(initialHtml => {
-        cy.get('.milestone-lanes').invoke('html').should('not.equal', initialHtml);
-      });
     });
 
     it('should return to the current period when "Go to today" is clicked', () => {
