@@ -8,6 +8,7 @@ import java.util.*;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
+import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.*;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class ReleaseServiceTest {
@@ -302,5 +304,123 @@ public class ReleaseServiceTest {
 
         releaseService.injectReleases();
         verify(releaseRepository).saveAll(anySet());
+    }
+
+    @Test
+    public void assignToReleases_ShouldAssignPRsToCorrectReleases_WhenPRsFallInTimeWindows() {
+        Release r1 = new Release();
+        r1.setId("r1");
+        r1.setName("v1.0");
+        r1.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+
+        Release r2 = new Release();
+        r2.setId("r2");
+        r2.setName("v1.1");
+        r2.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+
+        Release r3 = new Release();
+        r3.setId("r3");
+        r3.setName("v1.2");
+        r3.setPublishedAt(OffsetDateTime.parse("2025-08-20T10:00:00Z"));
+
+        List<Release> releases = new ArrayList<>(List.of(r2, r1, r3)); // Unordered
+
+        PullRequest pull1 = new PullRequest();
+        pull1.setNumber(101);
+        pull1.setMergedAt(OffsetDateTime.parse("2025-08-05T12:00:00Z"));
+        BranchPullRequest pr1 = new BranchPullRequest(null, pull1);
+
+        PullRequest pull2 = new PullRequest();
+        pull2.setNumber(102);
+        pull2.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
+        BranchPullRequest pr2 = new BranchPullRequest(null, pull2);
+
+        PullRequest pull3 = new PullRequest();
+        pull3.setNumber(103);
+        pull3.setMergedAt(OffsetDateTime.parse("2025-07-30T12:00:00Z"));
+        BranchPullRequest pr3 = new BranchPullRequest(null, pull3);
+
+        Set<BranchPullRequest> prs = new HashSet<>(Set.of(pr1, pr2, pr3));
+        ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
+
+        ReflectionTestUtils.invokeMethod(releaseService, "assignToReleases", releases, prs);
+
+        verify(releasePullRequestRepository, times(2)).saveAll(captor.capture());
+        List<Set<ReleasePullRequest>> capturedValues = captor.getAllValues();
+
+        Set<ReleasePullRequest> release2Pulls = capturedValues.getFirst();
+        assertEquals(1, release2Pulls.size());
+        ReleasePullRequest rpr1 = release2Pulls.iterator().next();
+        assertEquals("r2", rpr1.getRelease().getId());
+        assertEquals(101, rpr1.getPullRequest().getNumber());
+
+        Set<ReleasePullRequest> release3Pulls = capturedValues.get(1);
+        assertEquals(1, release3Pulls.size());
+        ReleasePullRequest rpr2 = release3Pulls.iterator().next();
+        assertEquals("r3", rpr2.getRelease().getId());
+        assertEquals(102, rpr2.getPullRequest().getNumber());
+    }
+
+    @Test
+    public void assignToReleases_ShouldSortNightlyReleaseToEnd_AndAssignPRsBasedOnSortedOrder() {
+        Release r1 = new Release();
+        r1.setId("r1");
+        r1.setName("v1.0");
+        r1.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+
+        Release r2Nightly = new Release();
+        r2Nightly.setId("r2");
+        r2Nightly.setName("My Nightly Release");
+        r2Nightly.setPublishedAt(OffsetDateTime.parse("2025-08-15T10:00:00Z"));
+
+        Release r3 = new Release();
+        r3.setId("r3");
+        r3.setName("v1.1");
+        r3.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+
+        List<Release> releases = new ArrayList<>(List.of(r2Nightly, r1, r3));
+
+        PullRequest pull1 = new PullRequest();
+        pull1.setNumber(101);
+        pull1.setMergedAt(OffsetDateTime.parse("2025-08-08T12:00:00Z"));
+        BranchPullRequest pr1 = new BranchPullRequest(null, pull1);
+
+        Set<BranchPullRequest> prs = new HashSet<>(Set.of(pr1));
+        ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
+
+        ReflectionTestUtils.invokeMethod(releaseService, "assignToReleases", releases, prs);
+
+        verify(releasePullRequestRepository, times(1)).saveAll(captor.capture());
+        Set<ReleasePullRequest> release3Pulls = captor.getValue();
+        assertEquals(1, release3Pulls.size());
+        ReleasePullRequest rpr1 = release3Pulls.iterator().next();
+        assertEquals("r3", rpr1.getRelease().getId());
+        assertEquals(101, rpr1.getPullRequest().getNumber());
+    }
+
+    @Test
+    public void assignToReleases_ShouldNotAssignAnything_WhenNoPRsAreInRange() {
+        Release r1 = new Release();
+        r1.setId("r1");
+        r1.setName("v1.0");
+        r1.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+
+        Release r2 = new Release();
+        r2.setId("r2");
+        r2.setName("v1.1");
+        r2.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+
+        List<Release> releases = new ArrayList<>(List.of(r1, r2));
+
+        PullRequest pull1 = new PullRequest();
+        pull1.setNumber(101);
+        pull1.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
+        BranchPullRequest pr1 = new BranchPullRequest(null, pull1);
+
+        Set<BranchPullRequest> prs = new HashSet<>(Set.of(pr1));
+
+        ReflectionTestUtils.invokeMethod(releaseService, "assignToReleases", releases, prs);
+
+        verify(releasePullRequestRepository, never()).saveAll(any());
     }
 }
