@@ -16,7 +16,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
    JOIN PullRequestIssue pri ON pri.issue = i
    JOIN ReleasePullRequest rpr ON rpr.pullRequest = pri.pullRequest
    WHERE rpr.release.id = :releaseId
-     AND i.id NOT IN (SELECT s.id FROM Issue p JOIN p.subIssues s)
 """)
     Set<Issue> findRootIssuesByReleaseId(@Param("releaseId") String releaseId);
 
@@ -25,7 +24,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
    SELECT DISTINCT i
    FROM Issue i
    WHERE i.milestone.id = :milestoneId
-     AND i.id NOT IN (SELECT s.id FROM Issue p JOIN p.subIssues s)
 """)
     Set<Issue> findRootIssuesByMilestoneId(@Param("milestoneId") String milestoneId);
 
@@ -34,7 +32,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
    SELECT DISTINCT i
    FROM Issue i
    WHERE i.closedAt BETWEEN :start AND :end
-     AND i.id NOT IN (SELECT s.id FROM Issue p JOIN p.subIssues s)
 """)
     Set<Issue> findRootIssuesByClosedAtBetween(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
 }
