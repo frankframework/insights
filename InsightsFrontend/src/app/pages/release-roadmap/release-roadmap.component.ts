@@ -360,19 +360,43 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
     return milestones.sort((a, b) => {
-      const aDue = a.dueOn ? new Date(a.dueOn).getTime() : Number.MAX_SAFE_INTEGER;
-      const bDue = b.dueOn ? new Date(b.dueOn).getTime() : Number.MAX_SAFE_INTEGER;
-      if (aDue !== bDue) return aDue - bDue;
+      const dateComparison = this.compareMilestonesByDueDate(a, b);
+      if (dateComparison !== 0) {
+        return dateComparison;
+      }
 
-      const aVersion = this.parseVersion(a.title);
-      const bVersion = this.parseVersion(b.title);
-      if (aVersion && bVersion) {
-        const versionComparison = this.compareMilestoneVersions(aVersion, bVersion);
-        if (versionComparison !== 0) return versionComparison;
+      const versionComparison = this.compareMilestonesByVersion(a, b);
+      if (versionComparison !== 0) {
+        return versionComparison;
       }
 
       return a.title.localeCompare(b.title);
     });
+  }
+
+  private compareMilestonesByDueDate(a: Milestone, b: Milestone): number {
+    const aDue = a.dueOn ? new Date(a.dueOn).getTime() : -1;
+    const bDue = b.dueOn ? new Date(b.dueOn).getTime() : -1;
+
+    if (aDue === -1 && bDue !== -1) {
+      return 1;
+    }
+    if (bDue === -1 && aDue !== -1) {
+      return -1;
+    }
+
+    return aDue - bDue;
+  }
+
+  private compareMilestonesByVersion(a: Milestone, b: Milestone): number {
+    const aVersion = this.parseVersion(a.title);
+    const bVersion = this.parseVersion(b.title);
+
+    if (aVersion && bVersion) {
+      return this.compareMilestoneVersions(aVersion, bVersion);
+    }
+
+    return 0;
   }
 
   private compareMilestoneVersions(aVersion: Version, bVersion: Version): number {
