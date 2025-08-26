@@ -8,6 +8,7 @@ import java.util.*;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
+import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.*;
@@ -302,5 +303,108 @@ public class ReleaseServiceTest {
 
         releaseService.injectReleases();
         verify(releaseRepository).saveAll(anySet());
+    }
+
+    @Test
+    public void injectReleases_shouldAssignPRsToCorrectReleases_whenPRsFallInTimeWindows() throws Exception {
+        // Arrange
+        ReleaseDTO dto1 = new ReleaseDTO("id1", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+        ReleaseDTO dto2 = new ReleaseDTO("id2", "v1.1", "v1.1", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+        ReleaseDTO dto3 = new ReleaseDTO("id3", "v1.2", "v1.2", OffsetDateTime.parse("2025-08-20T10:00:00Z"));
+
+        Release rel1 = new Release();
+        rel1.setId("r1");
+        rel1.setName("v1.0");
+        rel1.setPublishedAt(dto1.publishedAt());
+        rel1.setBranch(masterBranch);
+
+        Release rel2 = new Release();
+        rel2.setId("r2");
+        rel2.setName("v1.1");
+        rel2.setPublishedAt(dto2.publishedAt());
+        rel2.setBranch(masterBranch);
+
+        Release rel3 = new Release();
+        rel3.setId("r3");
+        rel3.setName("v1.2");
+        rel3.setPublishedAt(dto3.publishedAt());
+        rel3.setBranch(masterBranch);
+
+        PullRequest pull1 = new PullRequest();
+        pull1.setNumber(101);
+        pull1.setMergedAt(OffsetDateTime.parse("2025-08-05T12:00:00Z"));
+        BranchPullRequest bpr1 = new BranchPullRequest(masterBranch, pull1);
+
+        PullRequest pull2 = new PullRequest();
+        pull2.setNumber(102);
+        pull2.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
+        BranchPullRequest bpr2 = new BranchPullRequest(masterBranch, pull2);
+
+        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2, dto3));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(invocation -> {
+            ReleaseDTO dto = invocation.getArgument(0);
+            return switch (dto.id()) {
+                case "id1" -> rel1;
+                case "id2" -> rel2;
+                case "id3" -> rel3;
+                default -> null;
+            };
+        });
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2, rel3));
+        when(branchService.getBranchPullRequestsByBranches(anyList()))
+                .thenReturn(Map.of(masterBranch.getId(), Set.of(bpr1, bpr2)));
+
+        ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
+
+        releaseService.injectReleases();
+
+        verify(releasePullRequestRepository, times(2)).saveAll(captor.capture());
+        List<Set<ReleasePullRequest>> capturedValues = captor.getAllValues();
+
+        Set<ReleasePullRequest> release2Pulls = capturedValues.stream()
+                .filter(s -> s.iterator().next().getRelease().getId().equals("r2"))
+                .findFirst()
+                .orElseThrow();
+        Set<ReleasePullRequest> release3Pulls = capturedValues.stream()
+                .filter(s -> s.iterator().next().getRelease().getId().equals("r3"))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(1, release2Pulls.size());
+        assertEquals(101, release2Pulls.iterator().next().getPullRequest().getNumber());
+
+        assertEquals(1, release3Pulls.size());
+        assertEquals(102, release3Pulls.iterator().next().getPullRequest().getNumber());
+    }
+
+    @Test
+    public void releaseSortingComparator_shouldSortNightlyReleasesToEnd() {
+        Release normal_early = new Release();
+        normal_early.setName("v1.0");
+        normal_early.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+
+        Release nightly_middle = new Release();
+        nightly_middle.setName("A nightly build");
+        nightly_middle.setPublishedAt(OffsetDateTime.parse("2025-08-15T10:00:00Z"));
+
+        Release normal_late = new Release();
+        normal_late.setName("v1.1");
+        normal_late.setPublishedAt(OffsetDateTime.parse("2025-08-20T10:00:00Z"));
+
+        Release null_name_release = new Release();
+        null_name_release.setName(null);
+        null_name_release.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+
+        List<Release> releases = Arrays.asList(normal_early, nightly_middle, normal_late, null_name_release);
+        Collections.shuffle(releases);
+
+        Comparator<Release> comparator = releaseService.getReleaseSortingComparator();
+        releases.sort(comparator);
+
+        assertEquals(null_name_release, releases.get(0));
+        assertEquals(normal_early, releases.get(1));
+        assertEquals(normal_late, releases.get(2));
+        assertEquals(nightly_middle, releases.get(3));
     }
 }
