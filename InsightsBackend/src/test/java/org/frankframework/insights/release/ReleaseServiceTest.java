@@ -465,4 +465,55 @@ public class ReleaseServiceTest {
 
         verify(releasePullRequestRepository, never()).saveAll(any());
     }
+
+	@Test
+	public void injectReleases_shouldCorrectlySortReleases_includingNightlyAndNullNames() throws Exception {
+		ReleaseDTO dtoNormal = new ReleaseDTO("id_normal", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+		Release relNormal = new Release();
+		relNormal.setId("rel_normal");
+		relNormal.setName(dtoNormal.name());
+		relNormal.setPublishedAt(dtoNormal.publishedAt());
+		relNormal.setBranch(masterBranch);
+
+		ReleaseDTO dtoNightly = new ReleaseDTO("id_nightly", "A nightly build", "nightly-tag", OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+		Release relNightly = new Release();
+		relNightly.setId("rel_nightly");
+		relNightly.setName(dtoNightly.name());
+		relNightly.setPublishedAt(dtoNightly.publishedAt());
+		relNightly.setBranch(masterBranch);
+
+		ReleaseDTO dtoNullName = new ReleaseDTO("id_null", null, "null-name-tag", OffsetDateTime.parse("2025-08-20T10:00:00Z"));
+		Release relNullName = new Release();
+		relNullName.setId("rel_null");
+		relNullName.setName(null);
+		relNullName.setPublishedAt(dtoNullName.publishedAt());
+		relNullName.setBranch(masterBranch);
+
+		PullRequest pull = new PullRequest();
+		pull.setNumber(101);
+		pull.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
+		BranchPullRequest bpr = new BranchPullRequest(masterBranch, pull);
+
+		when(gitHubClient.getReleases()).thenReturn(Set.of(dtoNormal, dtoNightly, dtoNullName));
+		when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(inv -> {
+			ReleaseDTO dto = (ReleaseDTO) inv.getArgument(0);
+			if (dto.id().equals("id_normal")) return relNormal;
+			if (dto.id().equals("id_nightly")) return relNightly;
+			return relNullName;
+		});
+		when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relNormal, relNightly, relNullName));
+		when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Map.of(masterBranch.getId(), Set.of(bpr)));
+
+		ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
+
+		releaseService.injectReleases();
+
+		verify(releasePullRequestRepository, times(1)).saveAll(captor.capture());
+
+		Set<ReleasePullRequest> savedPulls = captor.getValue();
+
+		assertEquals(1, savedPulls.size());
+		assertEquals("rel_null", savedPulls.iterator().next().getRelease().getId());
+	}
 }
