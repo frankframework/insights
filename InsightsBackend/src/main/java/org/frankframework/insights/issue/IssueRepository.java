@@ -1,6 +1,5 @@
 package org.frankframework.insights.issue;
 
-import java.time.OffsetDateTime;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,12 +28,5 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
     Set<Issue> findRootIssuesByMilestoneId(@Param("milestoneId") String milestoneId);
 
-    @Query(
-            """
-   SELECT DISTINCT i
-   FROM Issue i
-   WHERE i.closedAt BETWEEN :start AND :end
-     AND i.id NOT IN (SELECT s.id FROM Issue p JOIN p.subIssues s)
-""")
-    Set<Issue> findRootIssuesByClosedAtBetween(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+	Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
 }
