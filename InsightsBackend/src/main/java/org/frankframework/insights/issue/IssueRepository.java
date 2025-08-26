@@ -30,9 +30,12 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 	 */
 	Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
-	/**
-	 * Finds all distinct issues where the closedAt date is within a given range.
-	 * Spring Data JPA generates the query from this method name.
-	 */
-	Set<Issue> findDistinctByClosedAtBetween(OffsetDateTime start, OffsetDateTime end);
+	@Query(
+			"""
+   SELECT i
+   FROM Issue i
+   WHERE i.issueType.name = :typeName
+	 AND i.milestone IS NULL
+""")
+	Set<Issue> findUnassignedIssuesByTypeName(@Param("issueTypeName") String typeName);
 }
