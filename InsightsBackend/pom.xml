@@ -42,7 +42,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<jackson.version>2.19.2</jackson.version>
-		<junit.bom.version>5.10.2</junit.bom.version>
+		<junit.bom.version>5.13.4</junit.bom.version>
 		<lombok.version>1.18.38</lombok.version>
 		<postgresql.version>42.7.7</postgresql.version>
 		<spring.shedlock>6.9.2</spring.shedlock>
