@@ -9,29 +9,30 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, String> {
-    @Query(
-            """
+	/**
+	 * This query involves multiple joins across different entities. For such complex
+	 * cases, a custom @Query is more readable and maintainable than a very long
+	 * derived method name.
+	 */
+	@Query(
+			"""
    SELECT DISTINCT i
    FROM Issue i
    JOIN PullRequestIssue pri ON pri.issue = i
    JOIN ReleasePullRequest rpr ON rpr.pullRequest = pri.pullRequest
    WHERE rpr.release.id = :releaseId
 """)
-    Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
+	Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
 
-    @Query(
-            """
-   SELECT DISTINCT i
-   FROM Issue i
-   WHERE i.milestone.id = :milestoneId
-""")
-    Set<Issue> findIssuesByMilestoneId(@Param("milestoneId") String milestoneId);
+	/**
+	 * Finds all distinct issues by traversing the milestone relationship and matching its ID.
+	 * Spring Data JPA generates the query from this method name.
+	 */
+	Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
-    @Query(
-            """
-   SELECT DISTINCT i
-   FROM Issue i
-   WHERE i.closedAt BETWEEN :start AND :end
-""")
-    Set<Issue> findIssuesByClosedAtBetween(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+	/**
+	 * Finds all distinct issues where the closedAt date is within a given range.
+	 * Spring Data JPA generates the query from this method name.
+	 */
+	Set<Issue> findDistinctByClosedAtBetween(OffsetDateTime start, OffsetDateTime end);
 }

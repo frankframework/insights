@@ -259,7 +259,7 @@ public class IssueServiceTest {
     @Test
     public void getIssuesByTimespan_returnsResponsesWithLabels() {
         Set<Issue> issues = Set.of(issue1, issue2);
-        when(issueRepository.findIssuesByClosedAtBetween(any(), any())).thenReturn(issues);
+        when(issueRepository.findDistinctByClosedAtBetween(any(), any())).thenReturn(issues);
 
         Label label = new Label();
         label.setId("l1");
@@ -331,7 +331,7 @@ public class IssueServiceTest {
     @Test
     public void getIssuesByMilestoneId_returnsResponsesWithLabels() throws MilestoneNotFoundException {
         when(milestoneService.checkIfMilestoneExists("m1")).thenReturn(milestone);
-        when(issueRepository.findIssuesByMilestoneId("m1")).thenReturn(Set.of(issue1));
+        when(issueRepository.findDistinctByMilestoneId("m1")).thenReturn(Set.of(issue1));
 
         Label label = new Label();
         label.setId("l1");
@@ -380,7 +380,7 @@ public class IssueServiceTest {
         parent.setTitle("Parent");
         parent.setSubIssues(Set.of(child));
 
-        when(issueRepository.findIssuesByClosedAtBetween(any(), any())).thenReturn(Set.of(parent));
+        when(issueRepository.findDistinctByClosedAtBetween(any(), any())).thenReturn(Set.of(parent));
 
         when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Collections.emptySet());
 

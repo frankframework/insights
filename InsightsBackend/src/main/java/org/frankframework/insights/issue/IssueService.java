@@ -253,7 +253,7 @@ public class IssueService {
      */
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
-        Set<Issue> rootIssues = issueRepository.findIssuesByMilestoneId(milestone.getId());
+        Set<Issue> rootIssues = issueRepository.findDistinctByMilestoneId(milestone.getId());
         return buildIssueResponseTree(rootIssues);
     }
 
@@ -264,7 +264,7 @@ public class IssueService {
      * @return Set of issues made between the given timestamps
      */
     public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
-        Set<Issue> rootIssues = issueRepository.findIssuesByClosedAtBetween(start, end);
+        Set<Issue> rootIssues = issueRepository.findDistinctByClosedAtBetween(start, end);
         return buildIssueResponseTree(rootIssues);
     }
 
