@@ -262,7 +262,7 @@ public class IssueService {
 	 * @return Set of future epic issues, including sub-issues and labels
 	 */
 	public Set<IssueResponse> getFutureEpicIssues() {
-        Set<Issue> futureEpicIssues = issueRepository.findUnassignedIssuesByTypeName(ISSUE_TYPE_EPIC_NAME);
+        Set<Issue> futureEpicIssues = issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull(ISSUE_TYPE_EPIC_NAME);
         return buildIssueResponseTree(futureEpicIssues);
     }
 
