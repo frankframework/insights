@@ -241,7 +241,7 @@ public class IssueService {
      */
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Release release = releaseService.checkIfReleaseExists(releaseId);
-        Set<Issue> rootIssues = issueRepository.findRootIssuesByReleaseId(release.getId());
+        Set<Issue> rootIssues = issueRepository.findIssuesByReleaseId(release.getId());
         return buildIssueResponseTree(rootIssues);
     }
 
@@ -253,7 +253,7 @@ public class IssueService {
      */
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
-        Set<Issue> rootIssues = issueRepository.findRootIssuesByMilestoneId(milestone.getId());
+        Set<Issue> rootIssues = issueRepository.findDistinctByMilestoneId(milestone.getId());
         return buildIssueResponseTree(rootIssues);
     }
 
@@ -264,7 +264,7 @@ public class IssueService {
      * @return Set of issues made between the given timestamps
      */
     public Set<IssueResponse> getIssuesByTimespan(OffsetDateTime start, OffsetDateTime end) {
-        Set<Issue> rootIssues = issueRepository.findRootIssuesByClosedAtBetween(start, end);
+        Set<Issue> rootIssues = issueRepository.findDistinctByClosedAtBetween(start, end);
         return buildIssueResponseTree(rootIssues);
     }
 
