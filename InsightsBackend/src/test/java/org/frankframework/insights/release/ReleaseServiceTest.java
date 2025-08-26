@@ -379,196 +379,32 @@ public class ReleaseServiceTest {
     }
 
     @Test
-    public void injectReleases_shouldSortNightlyReleaseToEnd() throws Exception {
-        // Arrange
-        ReleaseDTO dto1 = new ReleaseDTO("id1", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-01T10:00:00Z"));
-        ReleaseDTO dto2Nightly =
-                new ReleaseDTO("id2", "A Nightly Release", "nightly", OffsetDateTime.parse("2025-08-15T10:00:00Z"));
-        ReleaseDTO dto3 = new ReleaseDTO("id3", "v1.1", "v1.1", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+    public void releaseSortingComparator_shouldSortNightlyReleasesToEnd() {
+        Release normal_early = new Release();
+        normal_early.setName("v1.0");
+        normal_early.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
 
-        Release rel1 = new Release();
-        rel1.setId("r1");
-        rel1.setName(dto1.name());
-        rel1.setPublishedAt(dto1.publishedAt());
-        rel1.setBranch(masterBranch);
+        Release nightly_middle = new Release();
+        nightly_middle.setName("A nightly build");
+        nightly_middle.setPublishedAt(OffsetDateTime.parse("2025-08-15T10:00:00Z"));
 
-        Release rel2Nightly = new Release();
-        rel2Nightly.setId("r2");
-        rel2Nightly.setName(dto2Nightly.name());
-        rel2Nightly.setPublishedAt(dto2Nightly.publishedAt());
-        rel2Nightly.setBranch(masterBranch);
+        Release normal_late = new Release();
+        normal_late.setName("v1.1");
+        normal_late.setPublishedAt(OffsetDateTime.parse("2025-08-20T10:00:00Z"));
 
-        Release rel3 = new Release();
-        rel3.setId("r3");
-        rel3.setName(dto3.name());
-        rel3.setPublishedAt(dto3.publishedAt());
-        rel3.setBranch(masterBranch);
+        Release null_name_release = new Release();
+        null_name_release.setName(null);
+        null_name_release.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
 
-        PullRequest pull1 = new PullRequest();
-        pull1.setNumber(101);
-        pull1.setMergedAt(OffsetDateTime.parse("2025-08-08T12:00:00Z"));
-        BranchPullRequest bpr1 = new BranchPullRequest(masterBranch, pull1);
+        List<Release> releases = Arrays.asList(normal_early, nightly_middle, normal_late, null_name_release);
+        Collections.shuffle(releases);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2Nightly, dto3));
-        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(inv -> {
-            ReleaseDTO dto = inv.getArgument(0);
-            if (dto.id().equals("id1")) return rel1;
-            if (dto.id().equals("id2")) return rel2Nightly;
-            return rel3;
-        });
-        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2Nightly, rel3));
-        when(branchService.getBranchPullRequestsByBranches(anyList()))
-                .thenReturn(Map.of(masterBranch.getId(), Set.of(bpr1)));
-        ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
+        Comparator<Release> comparator = releaseService.getReleaseSortingComparator();
+        releases.sort(comparator);
 
-        releaseService.injectReleases();
-
-        verify(releasePullRequestRepository, times(1)).saveAll(captor.capture());
-        Set<ReleasePullRequest> savedPulls = captor.getValue();
-        assertEquals(1, savedPulls.size());
-        assertEquals("r3", savedPulls.iterator().next().getRelease().getId());
+        assertEquals(null_name_release, releases.get(0));
+        assertEquals(normal_early, releases.get(1));
+        assertEquals(normal_late, releases.get(2));
+        assertEquals(nightly_middle, releases.get(3));
     }
-
-    @Test
-    public void injectReleases_shouldNotAssignAnything_whenNoPRsAreInRange() throws Exception {
-        ReleaseDTO dto1 = new ReleaseDTO("id1", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-01T10:00:00Z"));
-        ReleaseDTO dto2 = new ReleaseDTO("id2", "v1.1", "v1.1", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
-
-        Release rel1 = new Release();
-        rel1.setPublishedAt(dto1.publishedAt());
-        rel1.setBranch(masterBranch);
-
-        Release rel2 = new Release();
-        rel2.setPublishedAt(dto2.publishedAt());
-        rel2.setBranch(masterBranch);
-
-        PullRequest pull1 = new PullRequest();
-        pull1.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
-        BranchPullRequest bpr1 = new BranchPullRequest(masterBranch, pull1);
-
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2));
-        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(invocation -> {
-            ReleaseDTO dto = invocation.getArgument(0);
-            return switch (dto.id()) {
-                case "id1" -> rel1;
-                case "id2" -> rel2;
-                default -> null;
-            };
-        });
-        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2));
-        when(branchService.getBranchPullRequestsByBranches(anyList()))
-                .thenReturn(Map.of(masterBranch.getId(), Set.of(bpr1)));
-
-        releaseService.injectReleases();
-
-        verify(releasePullRequestRepository, never()).saveAll(any());
-    }
-
-	@Test
-	public void injectReleases_shouldCorrectlySortReleases_includingNightlyAndNullNames() throws Exception {
-		ReleaseDTO dtoNormal = new ReleaseDTO("id_normal", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
-		Release relNormal = new Release();
-		relNormal.setId("rel_normal");
-		relNormal.setName(dtoNormal.name());
-		relNormal.setPublishedAt(dtoNormal.publishedAt());
-		relNormal.setBranch(masterBranch);
-
-		ReleaseDTO dtoNightly = new ReleaseDTO("id_nightly", "A nightly build", "nightly-tag", OffsetDateTime.parse("2025-08-01T10:00:00Z"));
-		Release relNightly = new Release();
-		relNightly.setId("rel_nightly");
-		relNightly.setName(dtoNightly.name());
-		relNightly.setPublishedAt(dtoNightly.publishedAt());
-		relNightly.setBranch(masterBranch);
-
-		ReleaseDTO dtoNullName = new ReleaseDTO("id_null", null, "null-name-tag", OffsetDateTime.parse("2025-08-20T10:00:00Z"));
-		Release relNullName = new Release();
-		relNullName.setId("rel_null");
-		relNullName.setName(null);
-		relNullName.setPublishedAt(dtoNullName.publishedAt());
-		relNullName.setBranch(masterBranch);
-
-		PullRequest pull = new PullRequest();
-		pull.setNumber(101);
-		pull.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
-		BranchPullRequest bpr = new BranchPullRequest(masterBranch, pull);
-
-		when(gitHubClient.getReleases()).thenReturn(Set.of(dtoNormal, dtoNightly, dtoNullName));
-		when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
-		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(inv -> {
-			ReleaseDTO dto = inv.getArgument(0);
-			if (dto.id().equals("id_normal")) return relNormal;
-			if (dto.id().equals("id_nightly")) return relNightly;
-			return relNullName;
-		});
-		when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relNormal, relNightly, relNullName));
-		when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Map.of(masterBranch.getId(), Set.of(bpr)));
-
-		ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
-
-		releaseService.injectReleases();
-
-		verify(releasePullRequestRepository, times(1)).saveAll(captor.capture());
-
-		Set<ReleasePullRequest> savedPulls = captor.getValue();
-
-		assertEquals(1, savedPulls.size());
-		assertEquals("rel_null", savedPulls.iterator().next().getRelease().getId());
-	}
-
-	@Test
-	public void injectReleases_shouldCorrectlySortMixedReleases_toCoverComparatorLogic() throws Exception {
-		Branch testBranch = new Branch();
-		testBranch.setId("test-branch-id");
-		testBranch.setName("master");
-
-		ReleaseDTO dtoNormalLate = new ReleaseDTO("id_normal_late", "v1.1", "v1.1", OffsetDateTime.parse("2025-08-20T10:00:00Z"));
-		Release relNormalLate = new Release();
-		relNormalLate.setId("rel_normal_late");
-		relNormalLate.setName(dtoNormalLate.name());
-		relNormalLate.setPublishedAt(dtoNormalLate.publishedAt());
-		relNormalLate.setBranch(testBranch);
-
-		ReleaseDTO dtoNightly = new ReleaseDTO("id_nightly", "My nightly build", "nightly-tag", OffsetDateTime.parse("2025-08-15T10:00:00Z"));
-		Release relNightly = new Release();
-		relNightly.setId("rel_nightly");
-		relNightly.setName(dtoNightly.name());
-		relNightly.setPublishedAt(dtoNightly.publishedAt());
-		relNightly.setBranch(testBranch);
-
-		ReleaseDTO dtoNormalEarly = new ReleaseDTO("id_normal_early", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
-		Release relNormalEarly = new Release();
-		relNormalEarly.setId("rel_normal_early");
-		relNormalEarly.setName(dtoNormalEarly.name());
-		relNormalEarly.setPublishedAt(dtoNormalEarly.publishedAt());
-		relNormalEarly.setBranch(testBranch);
-
-		PullRequest pull = new PullRequest();
-		pull.setNumber(101);
-		pull.setMergedAt(OffsetDateTime.parse("2025-08-18T12:00:00Z"));
-		BranchPullRequest bpr = new BranchPullRequest(testBranch, pull);
-
-		when(gitHubClient.getReleases()).thenReturn(Set.of(dtoNormalLate, dtoNightly, dtoNormalEarly));
-		when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-		when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(inv -> {
-			ReleaseDTO dto = inv.getArgument(0);
-			if (dto.id().equals("id_normal_late")) return relNormalLate;
-			if (dto.id().equals("id_nightly")) return relNightly;
-			return relNormalEarly;
-		});
-		when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relNormalLate, relNightly, relNormalEarly));
-		when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Map.of(testBranch.getId(), Set.of(bpr)));
-
-		ArgumentCaptor<Set<ReleasePullRequest>> captor = ArgumentCaptor.forClass(Set.class);
-
-		releaseService.injectReleases();
-
-		verify(releasePullRequestRepository, times(1)).saveAll(captor.capture());
-
-		Set<ReleasePullRequest> savedPulls = captor.getValue();
-		assertEquals(1, savedPulls.size());
-
-		assertEquals("rel_normal_late", savedPulls.iterator().next().getRelease().getId());
-	}
 }

@@ -208,9 +208,7 @@ public class ReleaseService {
      * @return A list of releases with assigned pull requests.
      */
     private List<Release> assignToReleases(List<Release> releases, Set<BranchPullRequest> prs) {
-        releases.sort(Comparator.comparing((Release release) -> release.getName() != null
-                        && release.getName().toLowerCase().contains(NIGHTLY_RELEASE_NAME))
-                .thenComparing(Release::getPublishedAt));
+        releases.sort(getReleaseSortingComparator());
 
         for (int i = FIRST_RELEASE_INDEX; i < releases.size(); i++) {
             Release current = releases.get(i);
@@ -223,8 +221,19 @@ public class ReleaseService {
                 assignPullRequests(current, prs, from, to);
             }
         }
-
         return releases;
+    }
+
+    /**
+     * Returns a comparator for sorting releases.
+     * Nightly releases are prioritized first, followed by releases sorted by their publication date.
+     *
+     * @return A comparator for sorting releases.
+     */
+    protected Comparator<Release> getReleaseSortingComparator() {
+        return Comparator.comparing((Release release) -> release.getName() != null
+                        && release.getName().toLowerCase().contains(NIGHTLY_RELEASE_NAME))
+                .thenComparing(Release::getPublishedAt);
     }
 
     /**
