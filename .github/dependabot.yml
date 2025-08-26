@@ -4,7 +4,7 @@ updates:
   - package-ecosystem: "maven"
     directory: "/InsightsBackend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     labels:
       - "Dependencies"
       - "Java"
@@ -12,7 +12,7 @@ updates:
   - package-ecosystem: "npm"
     directory: "/InsightsFrontend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     labels:
       - "Dependencies"
       - "JavaScript"
