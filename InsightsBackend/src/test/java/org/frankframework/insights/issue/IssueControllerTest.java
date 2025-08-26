@@ -4,7 +4,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Set;
 import org.frankframework.insights.milestone.MilestoneNotFoundException;
@@ -120,64 +119,29 @@ public class IssueControllerTest {
         mockMvc.perform(get("/api/issues/milestone/milX")).andExpect(status().isNotFound());
     }
 
-    @Test
-    public void getIssuesByTimespan_returnsOkWithIssues() throws Exception {
-        OffsetDateTime start = OffsetDateTime.parse("2023-01-01T00:00:00Z");
-        OffsetDateTime end = OffsetDateTime.parse("2023-12-31T23:59:59Z");
+	@Test
+	public void getFutureEpicIssues_returnsOkWithIssues() throws Exception {
+		IssueResponse epic1 = new IssueResponse();
+		epic1.setId("epic1");
+		Set<IssueResponse> futureIssues = Set.of(epic1);
+		when(issueService.getFutureEpicIssues()).thenReturn(futureIssues);
 
-        IssueResponse resp = new IssueResponse();
-        Set<IssueResponse> issues = Set.of(resp);
+		mockMvc.perform(get("/api/issues/future"))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].id").value("epic1"));
+	}
 
-        when(issueService.getIssuesByTimespan(start, end)).thenReturn(issues);
+	@Test
+	public void getFutureEpicIssues_returnsEmptySet() throws Exception {
+		when(issueService.getFutureEpicIssues()).thenReturn(Collections.emptySet());
 
-        mockMvc.perform(get("/api/issues/timespan")
-                        .param("startDate", start.toString())
-                        .param("endDate", end.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
-    }
-
-    @Test
-    public void getIssuesByTimespan_returnsEmptySet() throws Exception {
-        OffsetDateTime start = OffsetDateTime.parse("2023-01-01T00:00:00Z");
-        OffsetDateTime end = OffsetDateTime.parse("2023-12-31T23:59:59Z");
-
-        when(issueService.getIssuesByTimespan(start, end)).thenReturn(Collections.emptySet());
-
-        mockMvc.perform(get("/api/issues/timespan")
-                        .param("startDate", start.toString())
-                        .param("endDate", end.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
-    }
-
-    @Test
-    public void getIssuesByTimespan_returnsNull_treatedAsEmptySet() throws Exception {
-        OffsetDateTime start = OffsetDateTime.parse("2023-01-01T00:00:00Z");
-        OffsetDateTime end = OffsetDateTime.parse("2023-12-31T23:59:59Z");
-
-        when(issueService.getIssuesByTimespan(start, end)).thenReturn(null);
-
-        mockMvc.perform(get("/api/issues/timespan")
-                        .param("startDate", start.toString())
-                        .param("endDate", end.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
-    }
-
-    @Test
-    public void getIssuesByTimespan_missingParam_returnsBadRequest() throws Exception {
-        OffsetDateTime start = OffsetDateTime.parse("2023-01-01T00:00:00Z");
-
-        mockMvc.perform(get("/api/issues/timespan").param("startDate", start.toString()))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    public void getIssuesByTimespan_invalidParam_returnsBadRequest() throws Exception {
-        mockMvc.perform(get("/api/issues/timespan")
-                        .param("startDate", "not-a-date")
-                        .param("endDate", "2024-01-01T00:00:00Z"))
-                .andExpect(status().isBadRequest());
-    }
+		mockMvc.perform(get("/api/issues/future"))
+				.andExpect(status().isOk())
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+				.andExpect(jsonPath("$").isArray())
+				.andExpect(jsonPath("$.length()").value(0));
+	}
 }

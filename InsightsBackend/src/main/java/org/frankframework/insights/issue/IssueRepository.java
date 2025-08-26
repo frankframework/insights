@@ -29,12 +29,5 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
     Set<Issue> findRootIssuesByMilestoneId(@Param("milestoneId") String milestoneId);
 
-	@Query(
-			"""
-   SELECT i
-   FROM Issue i
-   WHERE i.issueType.name = :typeName
-	 AND i.milestone IS NULL
-""")
-	Set<Issue> findUnassignedIssuesByTypeName(@Param("issueTypeName") String typeName);
+	Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
 }
