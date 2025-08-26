@@ -52,17 +52,14 @@ public class IssueController {
         return ResponseEntity.status(HttpStatus.OK).body(milestoneIssues);
     }
 
-    /**
-     * Fetches all issues associated with a given timespan.
-     * @param startDate the start date of the timespan
-     * @param endDate  the end date of the timespan
-     * @return Set of issues made between the given timestamps the timespan
-     */
-    @GetMapping("/timespan")
-    public ResponseEntity<Set<IssueResponse>> getIssuesByTimespan(
-            @RequestParam OffsetDateTime startDate, @RequestParam OffsetDateTime endDate) {
-        Set<IssueResponse> milestoneIssues = issueService.getIssuesByTimespan(startDate, endDate);
-        if (milestoneIssues == null) milestoneIssues = Collections.emptySet();
-        return ResponseEntity.status(HttpStatus.OK).body(milestoneIssues);
-    }
+	/**
+	 * Fetches all epic issues that are planned for the future (i.e., with a due date after the current date).
+	 * @return Set of future epic issues
+	 */
+	@GetMapping("/future")
+	public ResponseEntity<Set<IssueResponse>> getFutureEpicIssues() {
+		Set<IssueResponse> futureIssues = issueService.getFutureEpicIssues();
+		if (futureIssues == null) futureIssues = Collections.emptySet();
+		return ResponseEntity.status(HttpStatus.OK).body(futureIssues);
+	}
 }

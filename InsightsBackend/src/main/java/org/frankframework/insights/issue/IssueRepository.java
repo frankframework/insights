@@ -29,12 +29,12 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
     Set<Issue> findRootIssuesByMilestoneId(@Param("milestoneId") String milestoneId);
 
-    @Query(
-            """
-   SELECT DISTINCT i
+	@Query(
+			"""
+   SELECT i
    FROM Issue i
-   WHERE i.closedAt BETWEEN :start AND :end
-     AND i.id NOT IN (SELECT s.id FROM Issue p JOIN p.subIssues s)
+   WHERE i.issueType.name = :typeName
+	 AND i.milestone IS NULL
 """)
-    Set<Issue> findRootIssuesByClosedAtBetween(@Param("start") OffsetDateTime start, @Param("end") OffsetDateTime end);
+	Set<Issue> findUnassignedIssuesByTypeName(@Param("issueTypeName") String typeName);
 }
