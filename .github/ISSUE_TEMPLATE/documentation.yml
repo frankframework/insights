@@ -1,0 +1,17 @@
+name: Documentation change
+description: Request a change for the documentation.
+labels: ['documentation']
+type: Task
+projects: ['frankframework/2']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > [!CAUTION]
+        > Please do not add sensitive information in issues, you can provide extra information via email using the issue number as reference.
+  - type: textarea
+    attributes:
+      label: What would you like to change?
+      description: Please give a clear and concise description of the requested change. Please give an example if possible.
+    validations:
+      required: true
