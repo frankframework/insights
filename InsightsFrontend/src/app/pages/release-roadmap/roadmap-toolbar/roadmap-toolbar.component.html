@@ -1,52 +1,60 @@
-<div class="pagination-controls">
-  <button class="control-button" title="Previous quarter" (click)="changePeriod.emit(-3)">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  </button>
-  <button class="control-button" title="Go to today" (click)="resetPeriod.emit()">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <path d="M8 2v4" />
-      <path d="M16 2v4" />
-      <rect width="18" height="18" x="3" y="4" rx="2" />
-      <path d="M3 10h18" />
-      <path d="m9 16 2 2 4-4" />
-    </svg>
-  </button>
-  <button class="control-button" title="Next quarter" (click)="changePeriod.emit(3)">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  </button>
-  <span class="period-label">{{ periodLabel }}</span>
+@if (isCanvasVisible$ | async) {
+  <app-roadmap-future-off-canvas (closeCanvas)="closeFutureDetails()" />
+}
+
+<div class="full-toolbar">
+  <button (click)="openFutureDetails()">Future plans ></button>
+
+  <div class="pagination-controls">
+    <button class="control-button" title="Previous quarter" (click)="changePeriod.emit(-3)">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+    </button>
+    <button class="control-button" title="Go to today" (click)="resetPeriod.emit()">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <rect width="18" height="18" x="3" y="4" rx="2" />
+        <path d="M3 10h18" />
+        <path d="m9 16 2 2 4-4" />
+      </svg>
+    </button>
+    <button class="control-button" title="Next quarter" (click)="changePeriod.emit(3)">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </button>
+    <span class="period-label">{{ periodLabel }}</span>
+  </div>
 </div>

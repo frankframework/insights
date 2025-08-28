@@ -1,5 +1,28 @@
+.full-toolbar {
+  width: calc(100vw - 5rem);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    cursor: pointer;
+    position: relative;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
 .pagination-controls {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
   z-index: 15;
