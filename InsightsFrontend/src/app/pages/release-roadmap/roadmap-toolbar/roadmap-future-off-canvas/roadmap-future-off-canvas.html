@@ -1,0 +1,18 @@
+<app-off-canvas [title]="OFF_CANVAS_NAME" (closeCanvas)="closeCanvas.emit()">
+  <div class="off-canvas-body">
+    @if (!isLoading) {
+      @if (!futureEpicIssues) {
+        <div class="no-new-features">
+          <p>No future plans found.</p>
+          <p>Please try again later.</p>
+        </div>
+      } @else {
+        @for (futureEpicIssue of futureEpicIssues; track futureEpicIssue.id) {
+          <app-future-epic [futureEpicIssue]="futureEpicIssue" />
+        }
+      }
+    } @else {
+      <app-loader />
+    }
+  </div>
+</app-off-canvas>
