@@ -58,18 +58,14 @@ public class IssueServiceTest {
     @InjectMocks
     private IssueService issueService;
 
-    @Mock
-    private GitHubRepositoryStatisticsDTO statsDTO;
-
-    private OffsetDateTime now;
-    private IssueDTO dto1, dto2, dtoSub;
+	private IssueDTO dto1, dto2, dtoSub;
     private Issue issue1, issue2, issueSub;
     private Milestone milestone;
     private IssueType issueType;
 
-    @BeforeEach
+	@BeforeEach
     public void setup() {
-        now = OffsetDateTime.now();
+		OffsetDateTime now = OffsetDateTime.now();
 
         milestone = new Milestone();
         milestone.setId("m1");
@@ -348,6 +344,18 @@ public class IssueServiceTest {
 		assertNotNull(result);
 		assertEquals(1, result.size());
 		assertEquals("epic1", result.iterator().next().getId());
+	}
+
+	@Test
+	public void shouldReturnEmptySetWhenNoFutureEpicsAreFound() {
+		when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic")).thenReturn(Collections.emptySet());
+
+		Set<IssueResponse> result = issueService.getFutureEpicIssues();
+
+		assertNotNull(result);
+		assertTrue(result.isEmpty());
+
+		verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
 	}
 
     @Test

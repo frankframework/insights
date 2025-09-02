@@ -1,36 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseHighlightsComponent } from './release-highlights.component';
-import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
 import { Issue } from '../../../../services/issue.service';
 import { GitHubStates } from '../../../../app.service';
-
-const mockReleaseOffCanvasComponent = {
-  colorNameToRgba: (color: string) => `rgba(${color},0.75)`,
-};
+import { ColorService } from '../../../../services/color.service';
 
 const mockIssues: Issue[] = [
-  { id: 'i1', number: 1, title: 'Bug A', state: GitHubStates.OPEN, url: '', issueType: { id: 't1', name: 'Bug', color: 'red', description: '' } },
-  { id: 'i2', number: 2, title: 'Feature B', state: GitHubStates.OPEN, url: '', issueType: { id: 't2', name: 'Feature', color: 'blue', description: '' } },
-  { id: 'i3', number: 3, title: 'Bug C', state: GitHubStates.OPEN, url: '', issueType: { id: 't1', name: 'Bug', color: 'red', description: '' } },
+  { id: 'i1', number: 1, title: 'Bug A', state: GitHubStates.OPEN, url: '', issueType: { id: 'id-1', name: 'Bug', color: 'red', description: 'description-1' } },
+  { id: 'i2', number: 2, title: 'Feature B', state: GitHubStates.OPEN, url: '', issueType: { id: 'id-2', name: 'Feature', color: 'blue', description: 'description-2' } },
+  { id: 'i3', number: 3, title: 'Bug C', state: GitHubStates.OPEN, url: '', issueType: { id: 'id-3', name: 'Bug', color: 'red', description: 'description-3' } },
   { id: 'i4', number: 4, title: 'No Type D', state: GitHubStates.OPEN, url: '' },
 ];
 
 describe('ReleaseHighlightsComponent', () => {
   let component: ReleaseHighlightsComponent;
   let fixture: ComponentFixture<ReleaseHighlightsComponent>;
-  let parentComponent: ReleaseOffCanvasComponent;
+  let colorService: ColorService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseHighlightsComponent],
       providers: [
-        { provide: ReleaseOffCanvasComponent, useValue: mockReleaseOffCanvasComponent },
+        ColorService,
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseHighlightsComponent);
     component = fixture.componentInstance;
-    parentComponent = TestBed.inject(ReleaseOffCanvasComponent);
+    colorService = TestBed.inject(ColorService);
   });
 
   it('should create', () => {
@@ -47,7 +43,8 @@ describe('ReleaseHighlightsComponent', () => {
     });
 
     it('should correctly aggregate issue types into doughnut chart data', () => {
-      spyOn(parentComponent, 'colorNameToRgba').and.callThrough();
+      spyOn(colorService, 'colorNameToRgba').and.callFake((color: string) => `rgba(${color},0.75)`);
+
       component.releaseIssues = mockIssues;
       component.ngOnChanges();
 
@@ -55,10 +52,11 @@ describe('ReleaseHighlightsComponent', () => {
       const dataset = chartData.datasets[0];
 
       expect(chartData.labels).toEqual(['Bug', 'Feature']);
-      expect(dataset.data).toEqual([2, 1]); // 2 bugs, 1 feature
+      expect(dataset.data).toEqual([2, 1]);
+
       expect(dataset.backgroundColor).toEqual(['rgba(red,0.75)', 'rgba(blue,0.75)']);
-      expect(parentComponent.colorNameToRgba).toHaveBeenCalledWith('red');
-      expect(parentComponent.colorNameToRgba).toHaveBeenCalledWith('blue');
+      expect(colorService.colorNameToRgba).toHaveBeenCalledWith('red');
+      expect(colorService.colorNameToRgba).toHaveBeenCalledWith('blue');
     });
 
     it('should not generate data if releaseIssues is undefined', () => {
@@ -77,7 +75,9 @@ describe('ReleaseHighlightsComponent', () => {
 
       const chartData = component.doughnutChartData;
 
+      // Zorg ervoor dat de data van "No Type D" niet is meegenomen
       expect(chartData.labels).not.toContain('No Type D');
+      expect(chartData.labels?.length).toBe(2);
     });
   });
 
