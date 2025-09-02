@@ -1,3 +1,7 @@
+@if (isOffCanvasVisible) {
+  <app-roadmap-future-off-canvas (closeCanvas)="closeOffCanvas()" />
+}
+
 <div class="roadmap-container">
   @if (isLoading) {
     <app-loader />
@@ -7,6 +11,7 @@
         [periodLabel]="currentPeriodLabel"
         (changePeriod)="changePeriod($event)"
         (resetPeriod)="resetPeriod()"
+        (openFutureDetails)="openOffCanvas()"
       />
     </div>
 

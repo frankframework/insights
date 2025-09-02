@@ -1,1 +1,6 @@
-<p>{{ futureEpicIssue.number }}</p>
+<a target="_blank" rel="noopener noreferrer" class="future-epic-card" [href]="futureEpicIssue.url">
+  <div class="card-content">
+    <span class="epic-title">{{ futureEpicIssue.title }}</span>
+  </div>
+  <span class="epic-number">#{{ futureEpicIssue.number }}</span>
+</a>
