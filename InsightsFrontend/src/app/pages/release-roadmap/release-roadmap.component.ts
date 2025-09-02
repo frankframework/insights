@@ -9,7 +9,7 @@ import { LoaderComponent } from '../../components/loader/loader.component';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
 import { GitHubStates } from '../../app.service';
-import { RoadmapFutureOffCanvasComponent } from './roadmap-toolbar/roadmap-future-off-canvas/roadmap-future-off-canvas';
+import { RoadmapFutureOffCanvasComponent } from './roadmap-future-off-canvas/roadmap-future-off-canvas';
 
 interface Version {
   major: number;
