@@ -1,5 +1,7 @@
 package org.frankframework.insights.label;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +54,12 @@ public class LabelService {
         this.labelRepository = labelRepository;
         this.issueLabelRepository = issueLabelRepository;
         this.releaseService = releaseService;
-        this.priorityLabels = gitHubProperties.getPriorityLabels();
-        this.ignoredLabels = gitHubProperties.getIgnoredLabels();
+        this.priorityLabels = gitHubProperties.getPriorityLabels().stream()
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
+        this.ignoredLabels = gitHubProperties.getIgnoredLabels().stream()
+                .map(String::toUpperCase)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -85,71 +91,122 @@ public class LabelService {
     }
 
     /**
-     * Fetches labels from the database and returns them as a set of LabelResponse objects.
-     * @param releaseId the ID of the release for which to fetch labels
-     * @return a set of LabelResponse objects
+     * Fetches and processes labels associated with a specific release to determine highlights.
+     * @param releaseId the ID of the release
+     * @return a set of highlighted labels for the release
      * @throws ReleaseNotFoundException if the release is not found
-     * @throws MappingException if an error occurs during mapping
+     * @throws MappingException if there is an error during mapping
      */
     public Set<LabelResponse> getHighlightsByReleaseId(String releaseId)
             throws ReleaseNotFoundException, MappingException {
-        Release release = releaseService.checkIfReleaseExists(releaseId);
-        List<Label> releaseLabels = labelRepository.findLabelsByReleaseId(release.getId());
-        Map<String, Long> labelCountMap = countLabelOccurrences(releaseLabels);
-        Map<String, Label> uniqueLabelMap = mapUniqueLabels(releaseLabels);
+        List<Label> releaseLabels = getLabelsForRelease(releaseId);
+        if (releaseLabels.isEmpty()) {
+            return Collections.emptySet();
+        }
 
-        List<Label> priorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap);
-        List<Label> nonPriorityLabelsList = getSortedLabelsByPriorityAndCount(uniqueLabelMap, labelCountMap);
+        Map<Label, Long> labelCounts = calculateLabelCounts(releaseLabels);
 
-        List<Label> highlightLabels = selectTopLabels(priorityLabelsList, nonPriorityLabelsList);
+        List<Label> highlightLabels = selectFinalHighlights(labelCounts);
 
         return mapper.toDTO(new LinkedHashSet<>(highlightLabels), LabelResponse.class);
     }
 
     /**
-     * Counts occurrences of each label in the provided list.
-     * @param labels the list of labels to count
-     * @return a map of label IDs to their occurrence counts
+     * Fetches all labels associated with a specific release.
+     * @param releaseId the ID of the release
+     * @return a list of labels associated with the release
+     * @throws ReleaseNotFoundException if the release is not found
      */
-    private Map<String, Long> countLabelOccurrences(List<Label> labels) {
-        return labels.stream().collect(Collectors.groupingBy(Label::getId, Collectors.counting()));
+    private List<Label> getLabelsForRelease(String releaseId) throws ReleaseNotFoundException {
+        Release release = releaseService.checkIfReleaseExists(releaseId);
+        return labelRepository.findLabelsByReleaseId(release.getId());
     }
 
     /**
-     * Maps unique labels from the provided list to a map.
-     * @param labels the list of labels to map
-     * @return a map of label IDs to Label objects, ensuring uniqueness
+     * Groups labels and counts their occurrences.
+     * @param allLabels A list of all labels from a release, including duplicates.
+     * @return A Map where the key is the unique Label and the value is its occurrence count.
      */
-    private Map<String, Label> mapUniqueLabels(List<Label> labels) {
-        return labels.stream().collect(Collectors.toMap(Label::getId, Function.identity(), (l1, l2) -> l1));
+    private Map<Label, Long> calculateLabelCounts(List<Label> allLabels) {
+        return allLabels.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
     /**
-     * Filters and sorts labels based on priority and count.
-     * @param uniqueLabelMap the map of unique labels
-     * @param labelCountMap the map of label counts
-     * @return a sorted list of labels that are either priority labels or not ignored
+     * Selects the final highlighted labels based on priority, ignoring certain labels,
+     * @param labelCounts A map of labels to their occurrence counts.
+     * @return A list of Labels that are highlighted for the release.
      */
-    private List<Label> getSortedLabelsByPriorityAndCount(
-            Map<String, Label> uniqueLabelMap, Map<String, Long> labelCountMap) {
-        return uniqueLabelMap.values().stream()
-                .filter(label -> priorityLabels.contains(label.getColor()) || !ignoredLabels.contains(label.getColor()))
-                .sorted((l1, l2) -> Long.compare(
-                        labelCountMap.getOrDefault(l2.getId(), 0L), labelCountMap.getOrDefault(l1.getId(), 0L)))
+    private List<Label> selectFinalHighlights(Map<Label, Long> labelCounts) {
+        List<Map.Entry<Label, Long>> sortedCandidates = filterAndSortCandidates(labelCounts);
+        return combineAndLimitHighlights(sortedCandidates);
+    }
+
+    /**
+     * Filters out ignored labels and sorts the remaining candidates by their counts in descending order.
+     * @param labelCounts A map of labels to their occurrence counts.
+     * @return A sorted list of label entries, excluding ignored labels.
+     */
+    private List<Map.Entry<Label, Long>> filterAndSortCandidates(Map<Label, Long> labelCounts) {
+        return labelCounts.entrySet().stream()
+                .filter(entry ->
+                        !ignoredLabels.contains(entry.getKey().getColor().toUpperCase()))
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .collect(Collectors.toList());
     }
 
     /**
-     * Selects the top labels from both primary and secondary lists,
-     * @param primaryList the primary list of labels
-     * @param secondaryList the secondary list of labels
-     * @return a list of the top labels, limited to MAX_HIGHLIGHTED_LABELS
+     * Separates a sorted list of candidates into priority and non-priority groups,
+     * then combines them with priority labels first and limits the result.
+     * @param sortedCandidates A pre-sorted list of candidate labels.
+     * @return The final, ordered, and limited list of Labels.
      */
-    private List<Label> selectTopLabels(List<Label> primaryList, List<Label> secondaryList) {
-        return Stream.concat(primaryList.stream(), secondaryList.stream())
-                .distinct()
+    private List<Label> combineAndLimitHighlights(List<Map.Entry<Label, Long>> sortedCandidates) {
+        List<Label> priorityLabels = extractPriorityLabels(sortedCandidates);
+        List<Label> nonPriorityLabels = extractNonPriorityLabels(sortedCandidates);
+        return buildFinalHighlightsList(priorityLabels, nonPriorityLabels);
+    }
+
+    /**
+     * Filters a list of candidates to return only the priority labels.
+     * @param candidates The list of sorted candidate entries.
+     * @return A list of Labels that are in the priority list.
+     */
+    private List<Label> extractPriorityLabels(List<Map.Entry<Label, Long>> candidates) {
+        return candidates.stream()
+                .filter(entry -> isPriorityLabel(entry.getKey()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Filters a list of candidates to return only the non-priority labels.
+     * @param candidates The list of sorted candidate entries.
+     * @return A list of Labels that are not in the priority list.
+     */
+    private List<Label> extractNonPriorityLabels(List<Map.Entry<Label, Long>> candidates) {
+        return candidates.stream()
+                .filter(entry -> !isPriorityLabel(entry.getKey()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Combines the priority and non-priority lists and limits the result to the maximum size.
+     * @param priority The list of priority labels.
+     * @param nonPriority The list of non-priority labels.
+     * @return The final, combined, and limited list of highlight labels.
+     */
+    private List<Label> buildFinalHighlightsList(List<Label> priority, List<Label> nonPriority) {
+        return Stream.concat(priority.stream(), nonPriority.stream())
                 .limit(MAX_HIGHLIGHTED_LABELS)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Helper predicate to check if a label is a priority label (case-insensitive).
+     */
+    private boolean isPriorityLabel(Label label) {
+        return priorityLabels.contains(label.getColor().toUpperCase());
     }
 
     /**
