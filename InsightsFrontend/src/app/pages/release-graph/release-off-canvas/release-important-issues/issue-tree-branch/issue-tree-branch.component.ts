@@ -1,10 +1,12 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Issue } from '../../../../../services/issue.service';
-import { ReleaseOffCanvasComponent } from '../../release-off-canvas.component';
+import { IssueTypeTagComponent } from '../../../../../components/issue-type-tag/issue-type-tag.component';
 
 @Component({
   selector: 'app-issue-tree-branch',
   standalone: true,
+  imports: [CommonModule, IssueTypeTagComponent],
   templateUrl: './issue-tree-branch.component.html',
   styleUrl: './issue-tree-branch.component.scss',
 })
@@ -16,8 +18,6 @@ export class IssueTreeBranchComponent {
 
   protected expanded = false;
 
-  private releaseOffCanvasComponent = inject(ReleaseOffCanvasComponent);
-
   public toggleExpand(): void {
     this.expanded = !this.expanded;
   }
@@ -25,20 +25,5 @@ export class IssueTreeBranchComponent {
   public getIndent(): string {
     const d = Math.min(this.depth, IssueTreeBranchComponent.MAX_SUB_ISSUE_DEPTH);
     return `${d}rem`;
-  }
-
-  public getTypeTextColor(issueType?: { color?: string }): string {
-    if (!issueType?.color) return 'white';
-    const rgba = this.releaseOffCanvasComponent.colorNameToRgba(issueType.color.trim().toLowerCase());
-
-    const match = rgba.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-    if (!match) return 'white';
-
-    const r = Number.parseInt(match[1], 10);
-    const g = Number.parseInt(match[2], 10);
-    const b = Number.parseInt(match[3], 10);
-
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.7 ? 'black' : 'white';
   }
 }

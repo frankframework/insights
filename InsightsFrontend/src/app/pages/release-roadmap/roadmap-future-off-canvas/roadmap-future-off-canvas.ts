@@ -1,9 +1,9 @@
 import { Component, OnInit, inject, ChangeDetectorRef, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { LoaderComponent } from '../../../../components/loader/loader.component';
-import { Issue, IssueService } from '../../../../services/issue.service';
-import { OffCanvasComponent } from '../../../../components/off-canvas/off-canvas.component';
 import { Subject, catchError, of, takeUntil } from 'rxjs';
 import { FutureEpic } from './future-epic/future-epic';
+import { Issue, IssueService } from '../../../services/issue.service';
+import { OffCanvasComponent } from '../../../components/off-canvas/off-canvas.component';
+import { LoaderComponent } from '../../../components/loader/loader.component';
 
 @Component({
   selector: 'app-roadmap-future-off-canvas',

@@ -11,9 +11,11 @@
   z-index: 20;
   width: 100%;
 
-  @media (max-width: 540px) {
-    gap: 1rem;
-    font-size: .8rem;
+  @media (max-width: 768px) {
+    & {
+      gap: 1rem;
+      font-size: .8rem;
+    }
   }
 
   .logo-container {
