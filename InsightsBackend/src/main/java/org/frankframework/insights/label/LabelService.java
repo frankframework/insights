@@ -126,22 +126,20 @@ public class LabelService {
         return allLabels.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
-	/**
-	 * Selects the final highlighted labels based on inclusion, popularity, and a maximum limit.
-	 * @param labelCounts A map of labels to their occurrence counts.
-	 * @return A list of the final highlighted labels.
-	 */
-	private List<Label> selectFinalHighlights(Map<Label, Long> labelCounts) {
-		return labelCounts.entrySet().stream()
-				.filter(entry ->
-						includedLabels.contains(entry.getKey().getColor().toUpperCase()))
-
-				.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-
-				.map(Map.Entry::getKey)
-				.limit(MAX_HIGHLIGHTED_LABELS)
-				.collect(Collectors.toList());
-	}
+    /**
+     * Selects the final highlighted labels based on inclusion, popularity, and a maximum limit.
+     * @param labelCounts A map of labels to their occurrence counts.
+     * @return A list of the final highlighted labels.
+     */
+    private List<Label> selectFinalHighlights(Map<Label, Long> labelCounts) {
+        return labelCounts.entrySet().stream()
+                .filter(entry ->
+                        includedLabels.contains(entry.getKey().getColor().toUpperCase()))
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .map(Map.Entry::getKey)
+                .limit(MAX_HIGHLIGHTED_LABELS)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Fetches all labels from the database and returns them as a map.
