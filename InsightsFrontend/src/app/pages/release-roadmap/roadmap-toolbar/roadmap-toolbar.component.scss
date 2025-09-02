@@ -20,6 +20,33 @@
   }
 }
 
+.future-plans-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f0f4ff;
+  border: 1px solid #cdd6e8;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  transition: all 0.2s ease;
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    opacity: 1;
+    background-color: #e4e9f3;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    svg {
+      transform: translateX(3px);
+    }
+  }
+}
+
 .pagination-controls {
   display: flex;
   justify-content: space-between;

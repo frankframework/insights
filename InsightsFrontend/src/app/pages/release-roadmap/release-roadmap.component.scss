@@ -6,6 +6,11 @@
   flex-direction: column;
   height: 100%;
 
+  &.no-scroll {
+    height: 100vh;
+    overflow: hidden;
+  }
+
   @media (max-width: 768px) {
     padding-inline: 0.75rem;
   }
