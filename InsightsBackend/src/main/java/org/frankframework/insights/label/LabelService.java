@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
@@ -35,8 +34,7 @@ public class LabelService {
     private final LabelRepository labelRepository;
     private final IssueLabelRepository issueLabelRepository;
     private final ReleaseService releaseService;
-    private final List<String> priorityLabels;
-    private final List<String> ignoredLabels;
+    private final List<String> includedLabels;
 
     private static final int MAX_HIGHLIGHTED_LABELS = 15;
 
@@ -54,10 +52,7 @@ public class LabelService {
         this.labelRepository = labelRepository;
         this.issueLabelRepository = issueLabelRepository;
         this.releaseService = releaseService;
-        this.priorityLabels = gitHubProperties.getPriorityLabels().stream()
-                .map(String::toUpperCase)
-                .collect(Collectors.toList());
-        this.ignoredLabels = gitHubProperties.getIgnoredLabels().stream()
+        this.includedLabels = gitHubProperties.getIncludedLabels().stream()
                 .map(String::toUpperCase)
                 .collect(Collectors.toList());
     }
@@ -131,83 +126,22 @@ public class LabelService {
         return allLabels.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
-    /**
-     * Selects the final highlighted labels based on priority, ignoring certain labels,
-     * @param labelCounts A map of labels to their occurrence counts.
-     * @return A list of Labels that are highlighted for the release.
-     */
-    private List<Label> selectFinalHighlights(Map<Label, Long> labelCounts) {
-        List<Map.Entry<Label, Long>> sortedCandidates = filterAndSortCandidates(labelCounts);
-        return combineAndLimitHighlights(sortedCandidates);
-    }
+	/**
+	 * Selects the final highlighted labels based on inclusion, popularity, and a maximum limit.
+	 * @param labelCounts A map of labels to their occurrence counts.
+	 * @return A list of the final highlighted labels.
+	 */
+	private List<Label> selectFinalHighlights(Map<Label, Long> labelCounts) {
+		return labelCounts.entrySet().stream()
+				.filter(entry ->
+						includedLabels.contains(entry.getKey().getColor().toUpperCase()))
 
-    /**
-     * Filters out ignored labels and sorts the remaining candidates by their counts in descending order.
-     * @param labelCounts A map of labels to their occurrence counts.
-     * @return A sorted list of label entries, excluding ignored labels.
-     */
-    private List<Map.Entry<Label, Long>> filterAndSortCandidates(Map<Label, Long> labelCounts) {
-        return labelCounts.entrySet().stream()
-                .filter(entry ->
-                        !ignoredLabels.contains(entry.getKey().getColor().toUpperCase()))
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .collect(Collectors.toList());
-    }
+				.sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
 
-    /**
-     * Separates a sorted list of candidates into priority and non-priority groups,
-     * then combines them with priority labels first and limits the result.
-     * @param sortedCandidates A pre-sorted list of candidate labels.
-     * @return The final, ordered, and limited list of Labels.
-     */
-    private List<Label> combineAndLimitHighlights(List<Map.Entry<Label, Long>> sortedCandidates) {
-        List<Label> priorityLabels = extractPriorityLabels(sortedCandidates);
-        List<Label> nonPriorityLabels = extractNonPriorityLabels(sortedCandidates);
-        return buildFinalHighlightsList(priorityLabels, nonPriorityLabels);
-    }
-
-    /**
-     * Filters a list of candidates to return only the priority labels.
-     * @param candidates The list of sorted candidate entries.
-     * @return A list of Labels that are in the priority list.
-     */
-    private List<Label> extractPriorityLabels(List<Map.Entry<Label, Long>> candidates) {
-        return candidates.stream()
-                .filter(entry -> isPriorityLabel(entry.getKey()))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Filters a list of candidates to return only the non-priority labels.
-     * @param candidates The list of sorted candidate entries.
-     * @return A list of Labels that are not in the priority list.
-     */
-    private List<Label> extractNonPriorityLabels(List<Map.Entry<Label, Long>> candidates) {
-        return candidates.stream()
-                .filter(entry -> !isPriorityLabel(entry.getKey()))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Combines the priority and non-priority lists and limits the result to the maximum size.
-     * @param priority The list of priority labels.
-     * @param nonPriority The list of non-priority labels.
-     * @return The final, combined, and limited list of highlight labels.
-     */
-    private List<Label> buildFinalHighlightsList(List<Label> priority, List<Label> nonPriority) {
-        return Stream.concat(priority.stream(), nonPriority.stream())
-                .limit(MAX_HIGHLIGHTED_LABELS)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Helper predicate to check if a label is a priority label (case-insensitive).
-     */
-    private boolean isPriorityLabel(Label label) {
-        return priorityLabels.contains(label.getColor().toUpperCase());
-    }
+				.map(Map.Entry::getKey)
+				.limit(MAX_HIGHLIGHTED_LABELS)
+				.collect(Collectors.toList());
+	}
 
     /**
      * Fetches all labels from the database and returns them as a map.
