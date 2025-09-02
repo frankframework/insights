@@ -38,21 +38,22 @@ describe('ColorService', () => {
 
   describe('colorNameToRgba', () => {
     it('should convert a named color to an rgba string', () => {
-      // De browser zet 'red' om naar 'rgb(255, 0, 0)'
       const expectedRgba = 'rgba(255,0,0,0.75)';
 
       expect(service.colorNameToRgba('red')).toBe(expectedRgba);
     });
 
     it('should handle hex codes and convert them to rgba', () => {
-      // De browser zet '#0000ff' om naar 'rgb(0, 0, 255)'
       const expectedRgba = 'rgba(0,0,255,0.75)';
 
       expect(service.colorNameToRgba('#0000ff')).toBe(expectedRgba);
     });
 
-    it('should return the original string if conversion fails', () => {
-      expect(service.colorNameToRgba('not-a-real-color')).toBe('not-a-real-color');
+    it('should return a default rgba for an invalid color string', () => {
+      const expectedRgba = 'rgba(0,0,0,0.75)';
+
+      expect(service.colorNameToRgba('not-a-real-color')).toBe(expectedRgba);
     });
   });
 });
+

@@ -26,7 +26,7 @@ describe('FutureEpic', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [FutureEpic, IssueTypeTagComponent], // Import standalone component and its dependency
+      imports: [FutureEpic, IssueTypeTagComponent],
     }).compileComponents();
 
     fixture = TestBed.createComponent(FutureEpic);

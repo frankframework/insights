@@ -32,6 +32,6 @@ export class ColorService {
       return `rgba(${r},${g},${b},${0.75})`;
     }
 
-    return color;
+    return `rgba(0,0,0,0.75)`;
   }
 }
