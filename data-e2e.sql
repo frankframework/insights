@@ -84,10 +84,10 @@ INSERT INTO issue_priority (id, name, description, color) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO label (id, name, description, color) VALUES
-    ('label-perf', 'performance', 'Improvements related to performance', 'f29513'),
-    ('label-sec', 'security', 'Improvements related to security', 'bf251a'),
-    ('label-ui', 'ui/ux', 'Improvements related to user interface and experience', '0e8a16'),
-    ('label-ci', 'ci/cd', 'Changes related to continuous integration and deployment', '5319e7')
+    ('label-perf', 'performance', 'Improvements related to performance', 'FEF2C0'),
+    ('label-sec', 'security', 'Improvements related to security', 'D4C5F9'),
+    ('label-ui', 'ui/ux', 'Improvements related to user interface and experience', '006B75'),
+    ('label-ci', 'ci/cd', 'Changes related to continuous integration and deployment', '006B75')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue (id, number, title, state, url, issue_type_id) VALUES
