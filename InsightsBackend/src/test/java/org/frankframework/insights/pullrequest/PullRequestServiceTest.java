@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
@@ -19,7 +20,6 @@ import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubEdgesDTO;
-import org.frankframework.insights.github.GitHubNodeDTO;
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueDTO;
@@ -248,13 +248,13 @@ public class PullRequestServiceTest {
 
         LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
-        List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
+        GraphQLNodeDTO<LabelDTO> labelNode = new GraphQLNodeDTO<>(labelDTO);
+        List<GraphQLNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
         IssueDTO issue =
                 new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
-        GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>(issue);
+        GraphQLNodeDTO<IssueDTO> issueNode = new GraphQLNodeDTO<>(issue);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>(List.of(issueNode));
 
         PullRequestDTO prDto = new PullRequestDTO(

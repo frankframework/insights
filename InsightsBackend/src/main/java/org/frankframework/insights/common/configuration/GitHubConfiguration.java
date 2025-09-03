@@ -3,7 +3,7 @@ package org.frankframework.insights.common.configuration;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.FetchProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 @Slf4j
-public class SystemDataInitializer implements CommandLineRunner {
+public class GitHubConfiguration implements CommandLineRunner {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
@@ -29,9 +29,9 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
-    private final Boolean gitHubFetchEnabled;
+    private final Boolean fetchEnabled;
 
-    public SystemDataInitializer(
+    public GitHubConfiguration(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             LabelService labelService,
             MilestoneService milestoneService,
@@ -41,7 +41,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
-            GitHubProperties gitHubProperties) {
+            FetchProperties fetchProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -51,7 +51,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
-        this.gitHubFetchEnabled = gitHubProperties.getFetch();
+        this.fetchEnabled = fetchProperties.getEnabled();
     }
 
     /**
@@ -63,8 +63,8 @@ public class SystemDataInitializer implements CommandLineRunner {
     public void run(String... args) {
         log.info("Startup: Fetching GitHub statistics");
         fetchGitHubStatistics();
-        log.info("Startup: Fetching full system data");
-        initializeSystemData();
+        log.info("Startup: Fetching all GitHub data");
+        initializeGitHubData();
     }
 
     /**
@@ -75,7 +75,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     public void dailyJob() {
         log.info("Daily fetch job started");
         fetchGitHubStatistics();
-        initializeSystemData();
+        initializeGitHubData();
     }
 
     /**
@@ -84,7 +84,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
-            if (!gitHubFetchEnabled) {
+            if (!fetchEnabled) {
                 log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
                 return;
             }
@@ -96,12 +96,12 @@ public class SystemDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
+     * Initializes data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
      */
-    @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
-    public void initializeSystemData() {
+    @SchedulerLock(name = "initializeGitHubData", lockAtMostFor = "PT2H")
+    public void initializeGitHubData() {
         try {
-            if (!gitHubFetchEnabled) {
+            if (!fetchEnabled) {
                 log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
                 return;
             }
@@ -118,7 +118,7 @@ public class SystemDataInitializer implements CommandLineRunner {
 
             log.info("Done fetching all GitHub data");
         } catch (Exception e) {
-            log.error("Error initializing system data", e);
+            log.error("Error initializing GitHub data", e);
         }
     }
 }

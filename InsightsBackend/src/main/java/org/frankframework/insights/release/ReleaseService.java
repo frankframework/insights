@@ -11,6 +11,7 @@ import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
+import org.frankframework.insights.common.exception.ApiException;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -90,7 +91,7 @@ public class ReleaseService {
                                     .collect(Collectors.toList()))));
 
             processAndAssignPullsAndCommits(releasesByBranch, pullRequestsByBranch);
-        } catch (Exception e) {
+        } catch (ApiException e) {
             throw new ReleaseInjectionException("Error injecting GitHub releases.", e);
         }
     }

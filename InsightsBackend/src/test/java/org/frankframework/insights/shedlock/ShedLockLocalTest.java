@@ -6,8 +6,9 @@ import static org.mockito.Mockito.when;
 import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.configuration.GitHubConfiguration;
+import org.frankframework.insights.common.configuration.SnykConfiguration;
+import org.frankframework.insights.common.configuration.properties.FetchProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -57,15 +58,19 @@ public class ShedLockLocalTest {
     private ReleaseService releaseService;
 
     @Mock
-    private GitHubProperties gitHubProperties;
+    private FetchProperties fetchProperties;
 
-    private SystemDataInitializer systemDataInitializer;
+    private GitHubConfiguration gitHubConfiguration;
+
+	private SnykConfiguration snykConfiguration;
+
+    // todo expand test classes with snyk client
 
     @BeforeEach
     public void setUp() {
-        when(gitHubProperties.getFetch()).thenReturn(false);
+        when(fetchProperties.getEnabled()).thenReturn(false);
 
-        systemDataInitializer = new SystemDataInitializer(
+        gitHubConfiguration = new GitHubConfiguration(
                 gitHubRepositoryStatisticsService,
                 labelService,
                 milestoneService,
@@ -75,14 +80,18 @@ public class ShedLockLocalTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                gitHubProperties);
+                fetchProperties);
+
+		snykConfiguration = new SnykConfiguration(
+				fetchProperties
+		);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
 
     @Test
     public void should_SkipGitHubFetch_when_LocalProfileIsActive() {
-        systemDataInitializer.run();
+        gitHubConfiguration.run();
 
         verifyNoInteractions(gitHubRepositoryStatisticsService);
         verifyNoInteractions(labelService);
@@ -94,4 +103,12 @@ public class ShedLockLocalTest {
         verifyNoInteractions(pullRequestService);
         verifyNoInteractions(releaseService);
     }
+
+	@Test
+	public void should_SkipSnykFetch_when_LocalProfileIsActive() {
+		snykConfiguration.run();
+
+		//todo add services here
+//		verifyNoInteractions(vulnerabilityService);
+	}
 }

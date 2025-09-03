@@ -1,10 +1,9 @@
 package org.frankframework.insights.github;
 
-import org.frankframework.insights.common.exception.ApiException;
-import org.springframework.http.HttpStatus;
+import org.frankframework.insights.common.client.graphql.GraphQLClientException;
 
-public class GitHubClientException extends ApiException {
+public class GitHubClientException extends GraphQLClientException {
     public GitHubClientException(String message, Throwable cause) {
-        super(message, HttpStatus.INTERNAL_SERVER_ERROR, cause);
+        super(message, cause);
     }
 }

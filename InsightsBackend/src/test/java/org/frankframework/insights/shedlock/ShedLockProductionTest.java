@@ -8,8 +8,9 @@ import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.configuration.GitHubConfiguration;
+import org.frankframework.insights.common.configuration.SnykConfiguration;
+import org.frankframework.insights.common.configuration.properties.FetchProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
@@ -67,15 +68,17 @@ public class ShedLockProductionTest {
     private ReleaseService releaseService;
 
     @Mock
-    private GitHubProperties gitHubProperties;
+    private FetchProperties fetchProperties;
 
-    private SystemDataInitializer systemDataInitializer;
+    private GitHubConfiguration gitHubConfiguration;
+
+	private SnykConfiguration snykConfiguration;
 
     @BeforeEach
     public void setUp() {
-        when(gitHubProperties.getFetch()).thenReturn(true);
+        when(fetchProperties.getEnabled()).thenReturn(true);
 
-        systemDataInitializer = new SystemDataInitializer(
+        gitHubConfiguration = new GitHubConfiguration(
                 gitHubRepositoryStatisticsService,
                 labelService,
                 milestoneService,
@@ -85,7 +88,11 @@ public class ShedLockProductionTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                gitHubProperties);
+                fetchProperties);
+
+		snykConfiguration = new SnykConfiguration(
+				fetchProperties
+		);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
@@ -95,7 +102,7 @@ public class ShedLockProductionTest {
             throws LabelInjectionException, GitHubClientException, MilestoneInjectionException,
                     BranchInjectionException, ReleaseInjectionException, IssueInjectionException,
                     PullRequestInjectionException, IssueTypeInjectionException, IssuePriorityInjectionException {
-        systemDataInitializer.run();
+        gitHubConfiguration.run();
 
         verify(gitHubRepositoryStatisticsService, times(1)).fetchRepositoryStatistics();
         verify(labelService, times(1)).injectLabels();
@@ -107,4 +114,11 @@ public class ShedLockProductionTest {
         verify(pullRequestService, times(1)).injectBranchPullRequests();
         verify(releaseService, times(1)).injectReleases();
     }
+
+	@Test
+	public void should_FetchSnykData_when_ProductionProfileIsActive() {
+		snykConfiguration.run();
+
+		verify(vulnerabilityService, times(1)).injectVulnerabilities();
+	}
 }

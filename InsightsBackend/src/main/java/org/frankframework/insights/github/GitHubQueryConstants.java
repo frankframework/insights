@@ -2,10 +2,11 @@ package org.frankframework.insights.github;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.frankframework.insights.common.client.graphql.GraphQLQuery;
 
 @Getter
 @AllArgsConstructor
-public enum GitHubQueryConstants {
+public enum GitHubQueryConstants implements GraphQLQuery {
     REPOSITORY_STATISTICS("repositoryStatistics", "repository"),
     LABELS("labels", "repository.labels"),
     MILESTONES("milestones", "repository.milestones"),

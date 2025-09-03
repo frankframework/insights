@@ -6,11 +6,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubNodeDTO;
 import org.frankframework.insights.issuePriority.IssuePriority;
 import org.frankframework.insights.issuePriority.IssuePriorityResponse;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -163,7 +163,7 @@ public class IssueService {
 
             Set<Issue> subIssues = issueDTO.subIssues().edges().stream()
                     .filter(Objects::nonNull)
-                    .map(GitHubNodeDTO::node)
+                    .map(GraphQLNodeDTO::node)
                     .map(node -> issueMap.get(node.id()))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());

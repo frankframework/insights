@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
@@ -118,8 +119,8 @@ public class IssueServiceTest {
 
         LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
-        List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
+        GraphQLNodeDTO<LabelDTO> labelNode = new GraphQLNodeDTO<>(labelDTO);
+        List<GraphQLNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
         GitHubEdgesDTO<GitHubProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>(Collections.emptyList());
@@ -150,7 +151,7 @@ public class IssueServiceTest {
                 null,
                 emptyProjectItems);
 
-        GitHubNodeDTO<IssueDTO> subIssueNode = new GitHubNodeDTO<>(dto2);
+        GraphQLNodeDTO<IssueDTO> subIssueNode = new GraphQLNodeDTO<>(dto2);
         GitHubEdgesDTO<IssueDTO> subIssuesEdge = new GitHubEdgesDTO<>(List.of(subIssueNode));
 
         dtoSub = new IssueDTO(

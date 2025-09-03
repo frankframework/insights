@@ -3,15 +3,18 @@ package org.frankframework.insights.github;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.BranchDTO;
+import org.frankframework.insights.common.client.graphql.GraphQLClient;
+import org.frankframework.insights.common.client.graphql.GraphQLClientException;
+import org.frankframework.insights.common.client.graphql.GraphQLConnectionDTO;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
+import org.frankframework.insights.common.client.graphql.GraphQLQuery;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
-import org.frankframework.insights.graphql.GraphQLClient;
 import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
@@ -19,19 +22,39 @@ import org.frankframework.insights.milestone.MilestoneDTO;
 import org.frankframework.insights.pullrequest.PullRequestDTO;
 import org.frankframework.insights.release.ReleaseDTO;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
-/**
- * GitHubClient is a GraphQL client for interacting with the GitHub API.
- */
 @Component
 @Slf4j
 public class GitHubClient extends GraphQLClient {
-    private final ObjectMapper objectMapper;
 
     public GitHubClient(GitHubProperties gitHubProperties, ObjectMapper objectMapper) {
-        super(gitHubProperties.getUrl(), gitHubProperties.getSecret());
-        this.objectMapper = objectMapper;
+        super(
+                gitHubProperties.getUrl(),
+                builder -> {
+                    if (gitHubProperties.getSecret() != null
+                            && !gitHubProperties.getSecret().isEmpty()) {
+                        builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + gitHubProperties.getSecret());
+                    }
+                },
+                objectMapper);
+    }
+
+    /**
+     * Fetches repository statistics from GitHub.
+     * @return GitHubRepositoryStatisticsDTO containing repository statistics
+     * @throws GitHubClientException if an error occurs during the request
+     */
+    public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
+        try {
+            GitHubRepositoryStatisticsDTO repositoryStatisticsDTO = fetchSingleEntity(
+                    GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
+            log.info("Fetched repository statistics from GitHub");
+            return repositoryStatisticsDTO;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch repository statistics from GitHub.", e);
+        }
     }
 
     /**
@@ -40,9 +63,13 @@ public class GitHubClient extends GraphQLClient {
      * @throws GitHubClientException if an error occurs during the request
      */
     public Set<LabelDTO> getLabels() throws GitHubClientException {
-        Set<LabelDTO> labels = getEntities(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
-        log.info("Successfully fetched {} labels from GitHub", labels.size());
-        return labels;
+        try {
+            Set<LabelDTO> labels = fetchPaginatedViaRelay(GitHubQueryConstants.LABELS, new HashMap<>(), LabelDTO.class);
+            log.info("Successfully fetched {} labels from GitHub", labels.size());
+            return labels;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch labels from GitHub.", e);
+        }
     }
 
     /**
@@ -51,10 +78,14 @@ public class GitHubClient extends GraphQLClient {
      * @throws GitHubClientException if an error occurs during the request
      */
     public Set<MilestoneDTO> getMilestones() throws GitHubClientException {
-        Set<MilestoneDTO> milestones =
-                getEntities(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
-        log.info("Successfully fetched {} milestones from GitHub", milestones.size());
-        return milestones;
+        try {
+            Set<MilestoneDTO> milestones =
+                    fetchPaginatedViaRelay(GitHubQueryConstants.MILESTONES, new HashMap<>(), MilestoneDTO.class);
+            log.info("Successfully fetched {} milestones from GitHub", milestones.size());
+            return milestones;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch milestones from GitHub.", e);
+        }
     }
 
     /**
@@ -63,10 +94,14 @@ public class GitHubClient extends GraphQLClient {
      * @throws GitHubClientException of an error occurs during the request
      */
     public Set<IssueTypeDTO> getIssueTypes() throws GitHubClientException {
-        Set<IssueTypeDTO> issueTypes =
-                getEntities(GitHubQueryConstants.ISSUE_TYPES, new HashMap<>(), IssueTypeDTO.class);
-        log.info("Successfully fetched {} issue types from GitHub", issueTypes.size());
-        return issueTypes;
+        try {
+            Set<IssueTypeDTO> issueTypes =
+                    fetchPaginatedViaRelay(GitHubQueryConstants.ISSUE_TYPES, new HashMap<>(), IssueTypeDTO.class);
+            log.info("Successfully fetched {} issueTypes from GitHub", issueTypes.size());
+            return issueTypes;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch issue types from GitHub.", e);
+        }
     }
 
     /**
@@ -77,19 +112,16 @@ public class GitHubClient extends GraphQLClient {
      */
     public Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> getIssuePriorities(String projectId)
             throws GitHubClientException {
-        HashMap<String, Object> variables = new HashMap<>();
-        variables.put("projectId", projectId);
-        log.info("Started fetching issue priorities from GitHub for project with id: [{}]", projectId);
-
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> issuePriorities =
-                getNodes(GitHubQueryConstants.ISSUE_PRIORITIES, variables, new ParameterizedTypeReference<>() {});
-
-        log.info(
-                "Successfully fetched {} issue priorities from GitHub for project with id: [{}]",
-                issuePriorities.size(),
-                projectId);
-
-        return issuePriorities;
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("projectId", projectId);
+            return fetchPaginatedViaNodes(
+                    GitHubQueryConstants.ISSUE_PRIORITIES,
+                    variables,
+                    GitHubPrioritySingleSelectDTO.SingleSelectObject.class);
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch issue priorities from GitHub.", e);
+        }
     }
 
     /**
@@ -98,9 +130,14 @@ public class GitHubClient extends GraphQLClient {
      * @throws GitHubClientException if an error occurs during the request
      */
     public Set<BranchDTO> getBranches() throws GitHubClientException {
-        Set<BranchDTO> branches = getEntities(GitHubQueryConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
-        log.info("Successfully fetched {} branches from GitHub", branches.size());
-        return branches;
+        try {
+            Set<BranchDTO> branches =
+                    fetchPaginatedViaRelay(GitHubQueryConstants.BRANCHES, new HashMap<>(), BranchDTO.class);
+            log.info("Successfully fetched {} branches from GitHub", branches.size());
+            return branches;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch branches from GitHub.", e);
+        }
     }
 
     /**
@@ -109,9 +146,13 @@ public class GitHubClient extends GraphQLClient {
      * @throws GitHubClientException if an error occurs during the request
      */
     public Set<IssueDTO> getIssues() throws GitHubClientException {
-        Set<IssueDTO> issues = getEntities(GitHubQueryConstants.ISSUES, new HashMap<>(), IssueDTO.class);
-        log.info("Successfully fetched {} issues from GitHub", issues.size());
-        return issues;
+        try {
+            Set<IssueDTO> issues = fetchPaginatedViaRelay(GitHubQueryConstants.ISSUES, new HashMap<>(), IssueDTO.class);
+            log.info("Successfully fetched {} issues from GitHub", issues.size());
+            return issues;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch issues from GitHub.", e);
+        }
     }
 
     /**
@@ -121,172 +162,68 @@ public class GitHubClient extends GraphQLClient {
      * @throws GitHubClientException if an error occurs during the request
      */
     public Set<PullRequestDTO> getBranchPullRequests(String branchName) throws GitHubClientException {
-        HashMap<String, Object> variables = new HashMap<>();
-        variables.put("branchName", branchName);
-        log.info("Started fetching pull requests from GitHub for branch with name: {}", branchName);
-
-        Set<PullRequestDTO> pullRequests =
-                getEntities(GitHubQueryConstants.BRANCH_PULLS, variables, PullRequestDTO.class);
-        log.info(
-                "Successfully fetched {} pull requests from GitHub for branch with name: {}",
-                pullRequests.size(),
-                branchName);
-        return pullRequests;
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            variables.put("branchName", branchName);
+            Set<PullRequestDTO> pullRequests =
+                    fetchPaginatedViaRelay(GitHubQueryConstants.BRANCH_PULLS, variables, PullRequestDTO.class);
+            log.info(
+                    "Successfully fetched {} pull requests for branch {} from GitHub", pullRequests.size(), branchName);
+            return pullRequests;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException(
+                    String.format("Failed to fetch pull requests for branch '%s' from GitHub.", branchName), e);
+        }
     }
 
-    /**
-     * Fetches releases from GitHub.
-     * @return Set of ReleaseDTO containing releases
-     * @throws GitHubClientException if an error occurs during the request
-     */
     public Set<ReleaseDTO> getReleases() throws GitHubClientException {
-        Set<ReleaseDTO> releases = getEntities(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
-        log.info("Successfully fetched {} releases from GitHub", releases.size());
-        return releases;
+        try {
+            Set<ReleaseDTO> releases =
+                    fetchPaginatedViaRelay(GitHubQueryConstants.RELEASES, new HashMap<>(), ReleaseDTO.class);
+            log.info("Successfully fetched {} releases from GitHub", releases.size());
+            return releases;
+        } catch (GraphQLClientException e) {
+            throw new GitHubClientException("Failed to fetch releases from GitHub.", e);
+        }
     }
 
     /**
-     * Fetches entities from GitHub using a GraphQL query.
+     * Helper to fetch paginated data from a standard Relay-style GraphQL connection.
      * @param query the GraphQL query to execute
-     * @param queryVariables the variables for the query
-     * @param entityType the type of entity to fetch
-     * @return Set of entities of the specified type
-     * @param <T> the type of entity
-     * @throws GitHubClientException if an error occurs during the request
+     * @param queryVariables the variables for the GraphQL query
+     * @param entityType the class type of the entities to fetch
+     * @return Set of entities of type T
+     * @param <T> the type of entities to fetch
+     * @throws GraphQLClientException if an error occurs during the request
      */
-    protected <T> Set<T> getEntities(
-            GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
-            throws GitHubClientException {
-        return getPaginatedEntities(
-                query,
-                queryVariables,
-                new ParameterizedTypeReference<GitHubPaginationDTO<T>>() {},
-                dto -> dto.edges() == null
+    private <T> Set<T> fetchPaginatedViaRelay(
+            GraphQLQuery query, Map<String, Object> queryVariables, Class<T> entityType) throws GraphQLClientException {
+        ParameterizedTypeReference<GraphQLConnectionDTO<Map<String, Object>>> responseType =
+                new ParameterizedTypeReference<>() {};
+
+        Function<GraphQLConnectionDTO<Map<String, Object>>, Collection<Map<String, Object>>> collectionExtractor =
+                connection -> connection.edges() == null
                         ? Set.of()
-                        : dto.edges().stream()
-                                .map(edge -> objectMapper.convertValue(edge.node(), entityType))
-                                .collect(Collectors.toSet()),
-                GitHubPaginationDTO::pageInfo);
+                        : connection.edges().stream().map(GraphQLNodeDTO::node).collect(Collectors.toList());
+
+        return fetchPaginatedCollection(
+                query, queryVariables, entityType, responseType, collectionExtractor, GraphQLConnectionDTO::pageInfo);
     }
 
     /**
-     * Fetches nodes from GitHub using a GraphQL query.
+     * Helper to fetch paginated data from a GraphQL connection using the 'nodes' field.
      * @param query the GraphQL query to execute
-     * @param queryVariables the variables for the query
-     * @param responseType the type of the response to expect
-     * @return Set of GitHubSingleSelectDTO.SingleSelectObject containing nodes
-     * @param <RAW> the raw	 response type
-     * @throws GitHubClientException if an error occurs during the request
+     * @param queryVariables the variables for the GraphQL query
+     * @param entityType the class type of the entities to fetch
+     * @return Set of entities of type T
+     * @param <T> the type of entities to fetch
+     * @throws GraphQLClientException if an error occurs during the request
      */
-    protected <RAW extends GitHubPrioritySingleSelectDTO>
-            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> getNodes(
-                    GitHubQueryConstants query,
-                    Map<String, Object> queryVariables,
-                    ParameterizedTypeReference<RAW> responseType)
-                    throws GitHubClientException {
-        return getPaginatedEntities(
-                query,
-                queryVariables,
-                responseType,
-                dto -> dto.nodes() == null ? Set.of() : new HashSet<>(dto.nodes()),
-                GitHubPrioritySingleSelectDTO::pageInfo);
-    }
-
-    /**
-     * Executes a GraphQL query to fetch paginated entities from GitHub.
-     * @param query the GraphQL query to execute
-     * @param queryVariables the variables for the query
-     * @param responseType the type of the response to expect
-     * @param entityExtractor a function to extract entities from the response
-     * @param pageInfoExtractor a function to extract pagination information from the response
-     * @return Set of entities of the specified type
-     * @param <RAW> the raw response type
-     * @param <T> the type of entity to fetch
-     * @throws GitHubClientException if an error occurs during the request
-     */
-    protected <RAW, T> Set<T> getPaginatedEntities(
-            GitHubQueryConstants query,
-            Map<String, Object> queryVariables,
-            ParameterizedTypeReference<RAW> responseType,
-            Function<RAW, Collection<T>> entityExtractor,
-            Function<RAW, GitHubPageInfo> pageInfoExtractor)
-            throws GitHubClientException {
-
-        try {
-            Set<T> allEntities = new HashSet<>();
-            String cursor = null;
-            boolean hasNextPage = true;
-
-            while (hasNextPage) {
-                queryVariables.put("after", cursor);
-
-                RAW response = getGraphQlClient()
-                        .documentName(query.getDocumentName())
-                        .variables(queryVariables)
-                        .retrieve(query.getRetrievePath())
-                        .toEntity(responseType)
-                        .block();
-
-                if (response == null) {
-                    log.warn("Received null response for query: {}", query);
-                    break;
-                }
-
-                Collection<T> entities = entityExtractor.apply(response);
-                if (entities == null || entities.isEmpty()) {
-                    log.warn("Received empty entities for query: {}", query);
-                    break;
-                }
-
-                allEntities.addAll(entities);
-                log.info("Fetched {} entities with query: {}", entities.size(), query);
-
-                GitHubPageInfo pageInfo = pageInfoExtractor.apply(response);
-                hasNextPage = pageInfo != null && pageInfo.hasNextPage();
-                cursor = (pageInfo != null) ? pageInfo.endCursor() : null;
-            }
-            return allEntities;
-        } catch (Exception e) {
-            throw new GitHubClientException("Failed to execute GraphQL request for " + query, e);
-        }
-    }
-
-    /**
-     * Fetches repository statistics from GitHub.
-     * @return GitHubRepositoryStatisticsDTO containing repository statistics
-     * @throws GitHubClientException if an error occurs during the request
-     */
-    public GitHubRepositoryStatisticsDTO getRepositoryStatistics() throws GitHubClientException {
-        GitHubRepositoryStatisticsDTO repositoryStatistics = fetchSingleEntity(
-                GitHubQueryConstants.REPOSITORY_STATISTICS, new HashMap<>(), GitHubRepositoryStatisticsDTO.class);
-        log.info("Fetched repository statistics from GitHub");
-        return repositoryStatistics;
-    }
-
-    /**
-     * Executes a GraphQL query to fetch a single entity from GitHub.
-     * @param query the GraphQL query to execute
-     * @param queryVariables the variables for the query
-     * @param entityType the type of entity to fetch
-     * @return the entity of the specified type
-     * @param <T> the type of entity
-     * @throws GitHubClientException if an error occurs during the request
-     */
-    protected <T> T fetchSingleEntity(
-            GitHubQueryConstants query, Map<String, Object> queryVariables, Class<T> entityType)
-            throws GitHubClientException {
-        try {
-            T response = getGraphQlClient()
-                    .documentName(query.getDocumentName())
-                    .variables(queryVariables)
-                    .retrieve(query.getRetrievePath())
-                    .toEntity(entityType)
-                    .block();
-
-            log.info("Successfully requested single object with GraphQL query: {}", query);
-            return response;
-        } catch (Exception e) {
-            throw new GitHubClientException("Failed to execute GraphQL request for " + query, e);
-        }
+    private <T> Set<T> fetchPaginatedViaNodes(
+            GraphQLQuery query, Map<String, Object> queryVariables, Class<T> entityType) throws GraphQLClientException {
+        ParameterizedTypeReference<GitHubNodesDTO<Map<String, Object>>> responseType =
+                new ParameterizedTypeReference<>() {};
+        return fetchPaginatedCollection(
+                query, queryVariables, entityType, responseType, GitHubNodesDTO::nodes, GitHubNodesDTO::pageInfo);
     }
 }

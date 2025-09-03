@@ -1,6 +1,5 @@
 package org.frankframework.insights.issuePriority;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,7 +19,6 @@ public class IssuePriorityService {
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
     private final String projectId;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String PRIORITY_FIELD_NAME = "priority";
 
@@ -46,7 +44,6 @@ public class IssuePriorityService {
             Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> singleSelectDTOS =
                     gitHubClient.getIssuePriorities(projectId);
             Set<IssuePriority> issuePriorities = fetchAndMapGithubPriorityOptions(singleSelectDTOS);
-            System.out.println(objectMapper.writeValueAsString(issuePriorities));
             saveIssuePriorities(issuePriorities);
         } catch (Exception e) {
             throw new IssuePriorityInjectionException("Error while injecting GitHub issue priorities", e);
