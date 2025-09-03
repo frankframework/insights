@@ -49,7 +49,7 @@
 
 		<spotless.version>2.45.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
-		<puppycrawl.tools.version>11.0.0</puppycrawl.tools.version>
+		<puppycrawl.tools.version>11.0.1</puppycrawl.tools.version>
 		<jacoco.version>0.8.13</jacoco.version>
 
 		<sonar.organization>frank-framework</sonar.organization>
