@@ -8,22 +8,22 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, String> {
-	/**
-	 * This query involves multiple joins across different entities. For such complex
-	 * cases, a custom @Query is more readable and maintainable than a very long
-	 * derived method name.
-	 */
-	@Query(
-			"""
+    /**
+     * This query involves multiple joins across different entities. For such complex
+     * cases, a custom @Query is more readable and maintainable than a very long
+     * derived method name.
+     */
+    @Query(
+            """
    SELECT DISTINCT i
    FROM Issue i
    JOIN PullRequestIssue pri ON pri.issue = i
    JOIN ReleasePullRequest rpr ON rpr.pullRequest = pri.pullRequest
    WHERE rpr.release.id = :releaseId
 """)
-	Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
+    Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
 
-	Set<Issue> findDistinctByMilestoneId(String milestoneId);
+	  Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
-	Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
+	  Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
 }
