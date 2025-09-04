@@ -1,0 +1,9 @@
+<a target="_blank" rel="noopener noreferrer" class="future-epic-card" [href]="futureEpicIssue.url">
+  <div class="card-content">
+    @if (futureEpicIssue.issueType) {
+      <app-issue-type-tag [issueType]="futureEpicIssue.issueType" />
+    }
+    <span class="epic-title">{{ futureEpicIssue.title }}</span>
+  </div>
+  <span class="epic-number">#{{ futureEpicIssue.number }}</span>
+</a>

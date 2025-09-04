@@ -9,7 +9,8 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./roadmap-toolbar.component.scss'],
 })
 export class RoadmapToolbarComponent {
-  @Input() periodLabel = '';
-  @Output() changePeriod = new EventEmitter<number>();
-  @Output() resetPeriod = new EventEmitter<void>();
+  @Input() public periodLabel = '';
+  @Output() public readonly changePeriod = new EventEmitter<number>();
+  @Output() public readonly resetPeriod = new EventEmitter<void>();
+  @Output() public readonly openFutureDetails = new EventEmitter<void>();
 }

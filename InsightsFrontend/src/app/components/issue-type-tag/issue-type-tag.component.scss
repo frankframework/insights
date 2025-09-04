@@ -1,0 +1,14 @@
+:host {
+  display: inline-block;
+}
+
+.issue-type-tag {
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: 0.025em;
+}
