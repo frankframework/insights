@@ -72,7 +72,7 @@ public class ShedLockProductionTest {
 
     private GitHubConfiguration gitHubConfiguration;
 
-	private SnykConfiguration snykConfiguration;
+    private SnykConfiguration snykConfiguration;
 
     @BeforeEach
     public void setUp() {
@@ -90,9 +90,7 @@ public class ShedLockProductionTest {
                 releaseService,
                 fetchProperties);
 
-		snykConfiguration = new SnykConfiguration(
-				fetchProperties
-		);
+        snykConfiguration = new SnykConfiguration(fetchProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
@@ -115,10 +113,10 @@ public class ShedLockProductionTest {
         verify(releaseService, times(1)).injectReleases();
     }
 
-	@Test
-	public void should_FetchSnykData_when_ProductionProfileIsActive() {
-		snykConfiguration.run();
+    @Test
+    public void should_FetchSnykData_when_ProductionProfileIsActive() {
+        snykConfiguration.run();
 
-//		verify(vulnerabilityService, times(1)).injectVulnerabilities();
-	}
+        //		verify(vulnerabilityService, times(1)).injectVulnerabilities();
+    }
 }

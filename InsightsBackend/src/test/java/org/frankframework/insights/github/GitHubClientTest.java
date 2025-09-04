@@ -30,132 +30,141 @@ import reactor.core.publisher.Mono;
 @ExtendWith(MockitoExtension.class)
 public class GitHubClientTest {
 
-	@Mock
-	private GitHubProperties gitHubProperties;
-	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
-	private HttpGraphQlClient httpGraphQlClient;
+    @Mock
+    private GitHubProperties gitHubProperties;
 
-	private GitHubClient gitHubClient;
-	private final ObjectMapper objectMapper = new ObjectMapper();
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private HttpGraphQlClient httpGraphQlClient;
 
-	private class TestableGitHubClient extends GitHubClient {
-		public TestableGitHubClient(GitHubProperties props, ObjectMapper mapper) {
-			super(props, mapper);
-		}
+    private GitHubClient gitHubClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-		@Override
-		protected HttpGraphQlClient getGraphQlClient() {
-			return httpGraphQlClient;
-		}
-	}
+    private class TestableGitHubClient extends GitHubClient {
+        public TestableGitHubClient(GitHubProperties props, ObjectMapper mapper) {
+            super(props, mapper);
+        }
 
-	@BeforeEach
-	public void setUp() {
-		when(gitHubProperties.getUrl()).thenReturn("https://api.github.com/graphql");
-		when(gitHubProperties.getSecret()).thenReturn("test-secret-token");
-		gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper);
-	}
+        @Override
+        protected HttpGraphQlClient getGraphQlClient() {
+            return httpGraphQlClient;
+        }
+    }
 
-	@Test
-	public void getRepositoryStatistics_Success_ReturnsStatistics() throws GitHubClientException {
-		GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null);
-		when(httpGraphQlClient.documentName(GitHubQueryConstants.REPOSITORY_STATISTICS.getDocumentName())
-				.variables(anyMap())
-				.retrieve(GitHubQueryConstants.REPOSITORY_STATISTICS.getRetrievePath())
-				.toEntity(GitHubRepositoryStatisticsDTO.class))
-				.thenReturn(Mono.just(stats));
+    @BeforeEach
+    public void setUp() {
+        when(gitHubProperties.getUrl()).thenReturn("https://api.github.com/graphql");
+        when(gitHubProperties.getSecret()).thenReturn("test-secret-token");
+        gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper);
+    }
 
-		GitHubRepositoryStatisticsDTO result = gitHubClient.getRepositoryStatistics();
+    @Test
+    public void getRepositoryStatistics_Success_ReturnsStatistics() throws GitHubClientException {
+        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null);
+        when(httpGraphQlClient
+                        .documentName(GitHubQueryConstants.REPOSITORY_STATISTICS.getDocumentName())
+                        .variables(anyMap())
+                        .retrieve(GitHubQueryConstants.REPOSITORY_STATISTICS.getRetrievePath())
+                        .toEntity(GitHubRepositoryStatisticsDTO.class))
+                .thenReturn(Mono.just(stats));
 
-		assertThat(result).isEqualTo(stats);
-	}
+        GitHubRepositoryStatisticsDTO result = gitHubClient.getRepositoryStatistics();
 
-	@Test
-	public void getRepositoryStatistics_Failure_ThrowsGitHubClientException() {
-		RuntimeException apiError = new RuntimeException("API Error");
-		when(httpGraphQlClient.documentName(GitHubQueryConstants.REPOSITORY_STATISTICS.getDocumentName())
-				.variables(anyMap())
-				.retrieve(GitHubQueryConstants.REPOSITORY_STATISTICS.getRetrievePath())
-				.toEntity(any(Class.class)))
-				.thenReturn(Mono.error(apiError));
+        assertThat(result).isEqualTo(stats);
+    }
 
-		assertThatThrownBy(() -> gitHubClient.getRepositoryStatistics())
-				.isInstanceOf(GitHubClientException.class)
-				.hasMessage("Failed to fetch repository statistics from GitHub.")
-				.hasCauseInstanceOf(Exception.class);
-	}
+    @Test
+    public void getRepositoryStatistics_Failure_ThrowsGitHubClientException() {
+        RuntimeException apiError = new RuntimeException("API Error");
+        when(httpGraphQlClient
+                        .documentName(GitHubQueryConstants.REPOSITORY_STATISTICS.getDocumentName())
+                        .variables(anyMap())
+                        .retrieve(GitHubQueryConstants.REPOSITORY_STATISTICS.getRetrievePath())
+                        .toEntity(any(Class.class)))
+                .thenReturn(Mono.error(apiError));
 
-	@Test
-	public void getLabels_Success_ReturnsLabels() throws GitHubClientException {
-		Map<String, Object> labelNodeMap = Map.of("id", "L_1", "name", "bug", "description", "Bug report", "color", "d73a4a");
-		LabelDTO expectedLabel = new LabelDTO("L_1", "bug", "Bug report", "d73a4a");
+        assertThatThrownBy(() -> gitHubClient.getRepositoryStatistics())
+                .isInstanceOf(GitHubClientException.class)
+                .hasMessage("Failed to fetch repository statistics from GitHub.")
+                .hasCauseInstanceOf(Exception.class);
+    }
 
-		GraphQLNodeDTO<Map<String, Object>> node = new GraphQLNodeDTO<>(labelNodeMap);
-		GraphQLPageInfoDTO pageInfo = new GraphQLPageInfoDTO(false, null);
-		GraphQLConnectionDTO<Map<String, Object>> connection = new GraphQLConnectionDTO<>(List.of(node), pageInfo);
+    @Test
+    public void getLabels_Success_ReturnsLabels() throws GitHubClientException {
+        Map<String, Object> labelNodeMap =
+                Map.of("id", "L_1", "name", "bug", "description", "Bug report", "color", "d73a4a");
+        LabelDTO expectedLabel = new LabelDTO("L_1", "bug", "Bug report", "d73a4a");
 
-		when(httpGraphQlClient.documentName(GitHubQueryConstants.LABELS.getDocumentName())
-				.variables(anyMap())
-				.retrieve(GitHubQueryConstants.LABELS.getRetrievePath())
-				.toEntity(any(ParameterizedTypeReference.class)))
-				.thenReturn(Mono.just(connection));
+        GraphQLNodeDTO<Map<String, Object>> node = new GraphQLNodeDTO<>(labelNodeMap);
+        GraphQLPageInfoDTO pageInfo = new GraphQLPageInfoDTO(false, null);
+        GraphQLConnectionDTO<Map<String, Object>> connection = new GraphQLConnectionDTO<>(List.of(node), pageInfo);
 
-		Set<LabelDTO> labels = gitHubClient.getLabels();
+        when(httpGraphQlClient
+                        .documentName(GitHubQueryConstants.LABELS.getDocumentName())
+                        .variables(anyMap())
+                        .retrieve(GitHubQueryConstants.LABELS.getRetrievePath())
+                        .toEntity(any(ParameterizedTypeReference.class)))
+                .thenReturn(Mono.just(connection));
 
-		assertThat(labels).hasSize(1);
-		assertThat(labels.iterator().next()).usingRecursiveComparison().isEqualTo(expectedLabel);
-	}
+        Set<LabelDTO> labels = gitHubClient.getLabels();
 
-	@Test
-	public void getLabels_Empty_ReturnsEmptySet() throws GitHubClientException {
-		GraphQLPageInfoDTO pageInfo = new GraphQLPageInfoDTO(false, null);
-		GraphQLConnectionDTO<Map<String, Object>> connection = new GraphQLConnectionDTO<>(Collections.emptyList(), pageInfo);
+        assertThat(labels).hasSize(1);
+        assertThat(labels.iterator().next()).usingRecursiveComparison().isEqualTo(expectedLabel);
+    }
 
-		when(httpGraphQlClient.documentName(GitHubQueryConstants.LABELS.getDocumentName())
-				.variables(anyMap())
-				.retrieve(GitHubQueryConstants.LABELS.getRetrievePath())
-				.toEntity(any(ParameterizedTypeReference.class)))
-				.thenReturn(Mono.just(connection));
+    @Test
+    public void getLabels_Empty_ReturnsEmptySet() throws GitHubClientException {
+        GraphQLPageInfoDTO pageInfo = new GraphQLPageInfoDTO(false, null);
+        GraphQLConnectionDTO<Map<String, Object>> connection =
+                new GraphQLConnectionDTO<>(Collections.emptyList(), pageInfo);
 
-		Set<LabelDTO> labels = gitHubClient.getLabels();
+        when(httpGraphQlClient
+                        .documentName(GitHubQueryConstants.LABELS.getDocumentName())
+                        .variables(anyMap())
+                        .retrieve(GitHubQueryConstants.LABELS.getRetrievePath())
+                        .toEntity(any(ParameterizedTypeReference.class)))
+                .thenReturn(Mono.just(connection));
 
-		assertThat(labels).isEmpty();
-	}
+        Set<LabelDTO> labels = gitHubClient.getLabels();
 
-	@Test
-	public void getBranches_Success_ReturnsBranches() throws GitHubClientException {
-		Map<String, Object> branchNodeMap = Map.of("id", "B_1", "name", "main");
-		BranchDTO expectedBranch = new BranchDTO("B_1", "main");
+        assertThat(labels).isEmpty();
+    }
 
-		GraphQLNodeDTO<Map<String, Object>> node = new GraphQLNodeDTO<>(branchNodeMap);
-		GraphQLPageInfoDTO pageInfo = new GraphQLPageInfoDTO(false, null);
-		GraphQLConnectionDTO<Map<String, Object>> connection = new GraphQLConnectionDTO<>(List.of(node), pageInfo);
+    @Test
+    public void getBranches_Success_ReturnsBranches() throws GitHubClientException {
+        Map<String, Object> branchNodeMap = Map.of("id", "B_1", "name", "main");
+        BranchDTO expectedBranch = new BranchDTO("B_1", "main");
 
-		when(httpGraphQlClient.documentName(GitHubQueryConstants.BRANCHES.getDocumentName())
-				.variables(anyMap())
-				.retrieve(GitHubQueryConstants.BRANCHES.getRetrievePath())
-				.toEntity(any(ParameterizedTypeReference.class)))
-				.thenReturn(Mono.just(connection));
+        GraphQLNodeDTO<Map<String, Object>> node = new GraphQLNodeDTO<>(branchNodeMap);
+        GraphQLPageInfoDTO pageInfo = new GraphQLPageInfoDTO(false, null);
+        GraphQLConnectionDTO<Map<String, Object>> connection = new GraphQLConnectionDTO<>(List.of(node), pageInfo);
 
-		Set<BranchDTO> branches = gitHubClient.getBranches();
+        when(httpGraphQlClient
+                        .documentName(GitHubQueryConstants.BRANCHES.getDocumentName())
+                        .variables(anyMap())
+                        .retrieve(GitHubQueryConstants.BRANCHES.getRetrievePath())
+                        .toEntity(any(ParameterizedTypeReference.class)))
+                .thenReturn(Mono.just(connection));
 
-		assertThat(branches).hasSize(1);
-		assertThat(branches.iterator().next()).usingRecursiveComparison().isEqualTo(expectedBranch);
-	}
+        Set<BranchDTO> branches = gitHubClient.getBranches();
 
-	@Test
-	public void getBranchPullRequests_Failure_ThrowsGitHubClientException() {
-		String branchName = "feature-branch";
-		RuntimeException apiError = new RuntimeException("API Error");
-		when(httpGraphQlClient.documentName(GitHubQueryConstants.BRANCH_PULLS.getDocumentName())
-				.variables(anyMap())
-				.retrieve(GitHubQueryConstants.BRANCH_PULLS.getRetrievePath())
-				.toEntity(any(ParameterizedTypeReference.class)))
-				.thenReturn(Mono.error(apiError));
+        assertThat(branches).hasSize(1);
+        assertThat(branches.iterator().next()).usingRecursiveComparison().isEqualTo(expectedBranch);
+    }
 
-		assertThatThrownBy(() -> gitHubClient.getBranchPullRequests(branchName))
-				.isInstanceOf(GitHubClientException.class)
-				.hasMessage("Failed to fetch pull requests for branch 'feature-branch' from GitHub.")
-				.hasCauseInstanceOf(Exception.class);
-	}
+    @Test
+    public void getBranchPullRequests_Failure_ThrowsGitHubClientException() {
+        String branchName = "feature-branch";
+        RuntimeException apiError = new RuntimeException("API Error");
+        when(httpGraphQlClient
+                        .documentName(GitHubQueryConstants.BRANCH_PULLS.getDocumentName())
+                        .variables(anyMap())
+                        .retrieve(GitHubQueryConstants.BRANCH_PULLS.getRetrievePath())
+                        .toEntity(any(ParameterizedTypeReference.class)))
+                .thenReturn(Mono.error(apiError));
+
+        assertThatThrownBy(() -> gitHubClient.getBranchPullRequests(branchName))
+                .isInstanceOf(GitHubClientException.class)
+                .hasMessage("Failed to fetch pull requests for branch 'feature-branch' from GitHub.")
+                .hasCauseInstanceOf(Exception.class);
+    }
 }

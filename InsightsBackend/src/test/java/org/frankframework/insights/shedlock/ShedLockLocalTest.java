@@ -62,7 +62,7 @@ public class ShedLockLocalTest {
 
     private GitHubConfiguration gitHubConfiguration;
 
-	private SnykConfiguration snykConfiguration;
+    private SnykConfiguration snykConfiguration;
 
     // todo expand test classes with snyk client
 
@@ -82,9 +82,7 @@ public class ShedLockLocalTest {
                 releaseService,
                 fetchProperties);
 
-		snykConfiguration = new SnykConfiguration(
-				fetchProperties
-		);
+        snykConfiguration = new SnykConfiguration(fetchProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
@@ -104,11 +102,11 @@ public class ShedLockLocalTest {
         verifyNoInteractions(releaseService);
     }
 
-	@Test
-	public void should_SkipSnykFetch_when_LocalProfileIsActive() {
-		snykConfiguration.run();
+    @Test
+    public void should_SkipSnykFetch_when_LocalProfileIsActive() {
+        snykConfiguration.run();
 
-		//todo add services here
-//		verifyNoInteractions(vulnerabilityService);
-	}
+        // todo add services here
+        //		verifyNoInteractions(vulnerabilityService);
+    }
 }
