@@ -3,7 +3,6 @@ package org.frankframework.insights.common.configuration;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.common.configuration.properties.FetchProperties;
-import org.frankframework.insights.snyk.SnykClient;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
