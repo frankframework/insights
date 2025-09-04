@@ -83,6 +83,9 @@ public class ShedLockTest {
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
 
+	//todo add tests 'what if github and snyk run through eachother + db lock?'
+	//todo add snyk tests
+
     @Test
     public void should_CreateLockProvider_when_BeanIsInitialized() {
         ShedLockConfiguration shedLockConfiguration = new ShedLockConfiguration();
