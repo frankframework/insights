@@ -23,10 +23,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
 	Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
 
-	/**
-	 * Finds all distinct issues by traversing the milestone relationship and matching its ID.
-	 * Spring Data JPA generates the query from this method name.
-	 */
 	Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
 	Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
