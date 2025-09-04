@@ -58,18 +58,14 @@ public class IssueServiceTest {
     @InjectMocks
     private IssueService issueService;
 
-    @Mock
-    private GitHubRepositoryStatisticsDTO statsDTO;
-
-    private OffsetDateTime now;
-    private IssueDTO dto1, dto2, dtoSub;
+	private IssueDTO dto1, dto2, dtoSub;
     private Issue issue1, issue2, issueSub;
     private Milestone milestone;
     private IssueType issueType;
 
-    @BeforeEach
+	@BeforeEach
     public void setup() {
-        now = OffsetDateTime.now();
+		OffsetDateTime now = OffsetDateTime.now();
 
         milestone = new Milestone();
         milestone.setId("m1");
@@ -257,40 +253,6 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void getIssuesByTimespan_returnsResponsesWithLabels() {
-        Set<Issue> issues = Set.of(issue1, issue2);
-        when(issueRepository.findDistinctByClosedAtBetween(any(), any())).thenReturn(issues);
-
-        Label label = new Label();
-        label.setId("l1");
-        label.setName("bug");
-        label.setColor("red");
-        label.setDescription("desc");
-        LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
-
-        IssueLabel issueLabel = new IssueLabel(issue1, label);
-        when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Set.of(issueLabel));
-
-        when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
-            Issue issue = inv.getArgument(0);
-            IssueResponse ir = new IssueResponse();
-            ir.setId(issue.getId());
-            return ir;
-        });
-        when(mapper.toDTO(any(Label.class), eq(LabelResponse.class))).thenReturn(lr);
-        when(mapper.toDTO(any(IssueType.class), eq(IssueTypeResponse.class)))
-                .thenReturn(new IssueTypeResponse("it1", "ImportantissueType1", "description1", "purple"));
-        when(mapper.toDTO(any(IssuePriority.class), eq(IssuePriorityResponse.class)))
-                .thenReturn(new IssuePriorityResponse("ip1", "High", "High priority issue", "red"));
-
-        Set<IssueResponse> resp = issueService.getIssuesByTimespan(now.minusDays(5), now.plusDays(5));
-
-        assertEquals(2, resp.size());
-        assertTrue(resp.stream().anyMatch(r -> r.getId().equals("i1")));
-        assertTrue(resp.stream().anyMatch(r -> r.getId().equals("i2")));
-    }
-
-    @Test
     public void getIssuesByReleaseId_returnsResponsesWithLabels() throws ReleaseNotFoundException {
         Release release = mock(Release.class);
         when(release.getId()).thenReturn("rel123");
@@ -364,53 +326,37 @@ public class IssueServiceTest {
         assertThrows(MilestoneNotFoundException.class, () -> issueService.getIssuesByMilestoneId("notfound"));
     }
 
-    @Test
-    public void getIssuesByTimespan_mapsSubIssuesRecursively() {
-        Issue grandChild = new Issue();
-        grandChild.setId("grandchild");
-        grandChild.setTitle("Grandchild");
+	@Test
+	public void getFutureEpicIssues_shouldReturnUnassignedEpics() {
+		Issue unassignedEpic = new Issue();
+		unassignedEpic.setId("epic1");
+		unassignedEpic.setMilestone(null);
 
-        Issue child = new Issue();
-        child.setId("child");
-        child.setTitle("Child");
-        child.setSubIssues(Set.of(grandChild));
+		when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic")).thenReturn(Set.of(unassignedEpic));
 
-        Issue parent = new Issue();
-        parent.setId("parent");
-        parent.setTitle("Parent");
-        parent.setSubIssues(Set.of(child));
+		IssueResponse epicResponse = new IssueResponse();
+		epicResponse.setId("epic1");
+		when(mapper.toDTO(unassignedEpic, IssueResponse.class)).thenReturn(epicResponse);
 
-        when(issueRepository.findDistinctByClosedAtBetween(any(), any())).thenReturn(Set.of(parent));
+		Set<IssueResponse> result = issueService.getFutureEpicIssues();
 
-        when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Collections.emptySet());
+		verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
+		assertNotNull(result);
+		assertEquals(1, result.size());
+		assertEquals("epic1", result.iterator().next().getId());
+	}
 
-        when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
-            Issue issue = inv.getArgument(0);
-            IssueResponse resp = new IssueResponse();
-            resp.setId(issue.getId());
-            resp.setTitle(issue.getTitle());
-            return resp;
-        });
+	@Test
+	public void shouldReturnEmptySetWhenNoFutureEpicsAreFound() {
+		when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic")).thenReturn(Collections.emptySet());
 
-        Set<IssueResponse> responses = issueService.getIssuesByTimespan(
-                OffsetDateTime.now().minusDays(1), OffsetDateTime.now().plusDays(1));
+		Set<IssueResponse> result = issueService.getFutureEpicIssues();
 
-        assertEquals(1, responses.size());
-        IssueResponse respParent = responses.iterator().next();
-        assertEquals("parent", respParent.getId());
-        assertNotNull(respParent.getSubIssues());
-        assertEquals(1, respParent.getSubIssues().size());
+		assertNotNull(result);
+		assertTrue(result.isEmpty());
 
-        IssueResponse respChild = respParent.getSubIssues().iterator().next();
-        assertEquals("child", respChild.getId());
-        assertNotNull(respChild.getSubIssues());
-        assertEquals(1, respChild.getSubIssues().size());
-
-        IssueResponse respGrandChild = respChild.getSubIssues().iterator().next();
-        assertEquals("grandchild", respGrandChild.getId());
-        assertTrue(respGrandChild.getSubIssues() == null
-                || respGrandChild.getSubIssues().isEmpty());
-    }
+		verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
+	}
 
     @Test
     public void getAllIssuesMap_returnsMap() {

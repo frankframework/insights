@@ -9,6 +9,7 @@ import { LoaderComponent } from '../../components/loader/loader.component';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
 import { GitHubStates } from '../../app.service';
+import { RoadmapFutureOffCanvasComponent } from './roadmap-future-off-canvas/roadmap-future-off-canvas';
 
 interface Version {
   major: number;
@@ -25,7 +26,14 @@ interface MilestoneWithVersion {
 @Component({
   selector: 'app-release-roadmap',
   standalone: true,
-  imports: [CommonModule, RoadmapToolbarComponent, TimelineHeaderComponent, MilestoneRowComponent, LoaderComponent],
+  imports: [
+    CommonModule,
+    RoadmapToolbarComponent,
+    TimelineHeaderComponent,
+    MilestoneRowComponent,
+    LoaderComponent,
+    RoadmapFutureOffCanvasComponent,
+  ],
   templateUrl: './release-roadmap.component.html',
   styleUrls: ['./release-roadmap.component.scss'],
 })
@@ -42,6 +50,7 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
   public totalDays = 0;
   public displayDate!: Date;
   public currentPeriodLabel = '';
+  public isOffCanvasVisible = false;
 
   protected todayOffsetPercentage = 0;
 
@@ -75,6 +84,16 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   public getIssuesForMilestone(milestoneId: string): Issue[] {
     return this.milestoneIssues.get(milestoneId) || [];
+  }
+
+  public openOffCanvas(): void {
+    this.isOffCanvasVisible = true;
+    this.cdr.markForCheck();
+  }
+
+  public closeOffCanvas(): void {
+    this.isOffCanvasVisible = false;
+    this.cdr.markForCheck();
   }
 
   private generateTimelineFromPeriod(): void {

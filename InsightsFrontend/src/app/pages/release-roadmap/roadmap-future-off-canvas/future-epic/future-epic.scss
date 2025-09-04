@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  padding: 0.5rem 0;
+}
+
+.future-epic-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background-color: #ffffff;
+  border: 1px solid #e8edf3;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: #bec8d5;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+}
+
+.card-content {
+  display: flex;
+  flex-direction: row;
+  gap: .5rem;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.epic-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.epic-number {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #64748b;
+  background-color: #f1f5f9;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.5rem;
+  margin-left: 1rem;
+  flex-shrink: 0;
+}

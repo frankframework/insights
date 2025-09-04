@@ -47,4 +47,8 @@ export class IssueService {
   public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
     return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
   }
+
+  public getFutureEpicIssues(): Observable<Issue[]> {
+    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/future`));
+  }
 }

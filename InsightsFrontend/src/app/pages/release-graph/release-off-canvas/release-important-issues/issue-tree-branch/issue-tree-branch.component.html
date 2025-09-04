@@ -14,13 +14,7 @@
     }
     <a class="issue-number" target="_blank" rel="noopener noreferrer" [href]="issue.url">#{{ issue.number }}</a>
     @if (issue.issueType) {
-      <span
-        class="issue-type"
-        [style.background]="issue.issueType.color"
-        [style.color]="getTypeTextColor(issue.issueType)"
-      >
-        {{ issue.issueType.name }}
-      </span>
+      <app-issue-type-tag [issueType]="issue.issueType" />
     }
     <span class="issue-title">{{ issue.title }}</span>
   </div>

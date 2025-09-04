@@ -1,5 +1,5 @@
 .off-canvas-body {
-  height: calc(100vh - 7vh);
+  height: calc(100vh - 7rem);
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -9,7 +9,7 @@
   }
 }
 
-.no-releases {
+.no-new-features {
   height: 100%;
   display: flex;
   flex-direction: column;

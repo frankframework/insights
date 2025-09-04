@@ -4,7 +4,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { Label } from '../../../../services/label.service';
 import { Issue } from '../../../../services/issue.service';
-import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
+import { ColorService } from '../../../../services/color.service';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -40,7 +40,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
   public doughnutChartPlugins = [];
 
-  private releaseOffCanvasComponent = inject(ReleaseOffCanvasComponent);
+  private colorService = inject(ColorService);
 
   ngOnChanges(): void {
     this.generatePieData();
@@ -59,7 +59,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
       if (!issue.issueType) continue;
       const issueTypeName = issue.issueType.name;
       let issueTypeColor = issue.issueType.color;
-      issueTypeColor = this.releaseOffCanvasComponent.colorNameToRgba(issueTypeColor);
+      issueTypeColor = this.colorService.colorNameToRgba(issueTypeColor);
 
       if (pieDataMap.has(issueTypeName)) {
         pieDataMap.get(issueTypeName)!.count += 1;

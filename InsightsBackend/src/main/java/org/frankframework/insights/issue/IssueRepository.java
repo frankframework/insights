@@ -1,6 +1,5 @@
 package org.frankframework.insights.issue;
 
-import java.time.OffsetDateTime;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -24,15 +23,7 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
 	Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
 
-	/**
-	 * Finds all distinct issues by traversing the milestone relationship and matching its ID.
-	 * Spring Data JPA generates the query from this method name.
-	 */
 	Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
-	/**
-	 * Finds all distinct issues where the closedAt date is within a given range.
-	 * Spring Data JPA generates the query from this method name.
-	 */
-	Set<Issue> findDistinctByClosedAtBetween(OffsetDateTime start, OffsetDateTime end);
+	Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
 }

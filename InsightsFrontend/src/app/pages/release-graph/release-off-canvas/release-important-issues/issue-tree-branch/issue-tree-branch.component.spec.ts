@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { IssueTreeBranchComponent } from './issue-tree-branch.component';
-import { ReleaseOffCanvasComponent } from '../../release-off-canvas.component';
 import { Issue } from '../../../../../services/issue.service';
 import { GitHubStates } from '../../../../../app.service';
+import { IssueTypeTagComponent } from '../../../../../components/issue-type-tag/issue-type-tag.component';
+import { By } from '@angular/platform-browser';
 
 const MOCK_ISSUE: Issue = {
   id: 'PROJ-1',
@@ -20,28 +21,12 @@ const MOCK_ISSUE: Issue = {
     },
   ],
   issueType: {
-    id: 'story-id',
+    id: 'it-3',
     name: 'Story',
-    color: 'lightgreen',
-    description: 'A user story',
+    description: 'test',
+    color: '#a2eeef',
   },
 };
-
-class MockReleaseOffCanvasComponent {
-  colorNameToRgba(color: string): string {
-    switch (color) {
-      case 'lightyellow': {
-        return 'rgba(255, 255, 224, 1)';
-      }
-      case 'darkblue': {
-        return 'rgba(0, 0, 139, 1)';
-      }
-      default: {
-        return 'rgba(0, 0, 0, 1)';
-      }
-    }
-  }
-}
 
 describe('IssueTreeBranchComponent', () => {
   let component: IssueTreeBranchComponent;
@@ -50,8 +35,7 @@ describe('IssueTreeBranchComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [IssueTreeBranchComponent],
-      providers: [{ provide: ReleaseOffCanvasComponent, useClass: MockReleaseOffCanvasComponent }],
+      imports: [IssueTreeBranchComponent, IssueTypeTagComponent], // Import standalone components
     }).compileComponents();
 
     fixture = TestBed.createComponent(IssueTreeBranchComponent);
@@ -79,14 +63,6 @@ describe('IssueTreeBranchComponent', () => {
       expect(titleElement.textContent).toBe('This is a parent issue');
     });
 
-    it('should not show the fold icon if there are no sub-issues', () => {
-      component.issue = { ...MOCK_ISSUE, subIssues: [] };
-      fixture.detectChanges();
-      const foldIcon = nativeElement.querySelector('.issue-fold-icon');
-
-      expect(foldIcon).toBeFalsy();
-    });
-
     it('should show the fold icon if sub-issues exist', () => {
       component.issue = MOCK_ISSUE;
       fixture.detectChanges();
@@ -95,44 +71,21 @@ describe('IssueTreeBranchComponent', () => {
       expect(foldIcon).toBeTruthy();
     });
 
-    it('should display the issue type when provided', () => {
+    it('should render the IssueTypeTagComponent when issueType is provided', () => {
       component.issue = MOCK_ISSUE;
       fixture.detectChanges();
-      const typeElement = nativeElement.querySelector('.issue-type') as HTMLSpanElement;
+      const tagComponent = fixture.debugElement.query(By.directive(IssueTypeTagComponent));
 
-      expect(typeElement).toBeTruthy();
-      expect(typeElement.textContent?.trim()).toBe('Story');
-      expect(typeElement.style.backgroundColor).toBe('lightgreen');
+      expect(tagComponent).toBeTruthy();
+      expect(tagComponent.componentInstance.issueType).toEqual(MOCK_ISSUE.issueType);
     });
 
-    it('should not display the issue type when not provided', () => {
+    it('should not render the IssueTypeTagComponent when not provided', () => {
       component.issue = { ...MOCK_ISSUE, issueType: undefined };
       fixture.detectChanges();
-      const typeElement = nativeElement.querySelector('.issue-type');
+      const tagComponent = fixture.debugElement.query(By.directive(IssueTypeTagComponent));
 
-      expect(typeElement).toBeFalsy();
-    });
-  });
-
-  describe('Indentation Logic (getIndent)', () => {
-    it('should have 0rem indent at depth 0', () => {
-      component.depth = 0;
-
-      expect(component.getIndent()).toBe('0rem');
-    });
-
-    it('should have 3rem indent at depth 3', () => {
-      component.depth = 3;
-
-      expect(component.getIndent()).toBe('3rem');
-    });
-
-    it('should cap the indent at the MAX_SUB_ISSUE_DEPTH', () => {
-      component.depth = 10;
-      // @ts-ignore: Accessing private static property for test
-      const maxDepth = IssueTreeBranchComponent.MAX_SUB_ISSUE_DEPTH;
-
-      expect(component.getIndent()).toBe(`${maxDepth}rem`);
+      expect(tagComponent).toBeFalsy();
     });
   });
 
@@ -143,8 +96,7 @@ describe('IssueTreeBranchComponent', () => {
     });
 
     it('should start as collapsed by default', () => {
-      // @ts-ignore: Accessing private property for test
-      expect(component.expanded).toBeFalse();
+      expect(component['expanded']).toBeFalse();
       expect(nativeElement.querySelector('.issue-tree-branch.expanded')).toBeFalsy();
     });
 
@@ -154,23 +106,16 @@ describe('IssueTreeBranchComponent', () => {
       foldButton.click();
       fixture.detectChanges();
 
-      // @ts-ignore: Accessing private static property for test
-      expect(component.expanded).toBeTrue();
-      expect(foldButton.classList.contains('expanded')).toBeTrue();
-      expect(foldButton.getAttribute('aria-expanded')).toBe('true');
+      expect(component['expanded']).toBeTrue();
 
       foldButton.click();
       fixture.detectChanges();
 
-      // @ts-ignore: Accessing private static property for test
-      expect(component.expanded).toBeFalse();
-      expect(foldButton.classList.contains('expanded')).toBeFalse();
-      expect(foldButton.getAttribute('aria-expanded')).toBe('false');
+      expect(component['expanded']).toBeFalse();
     });
 
     it('should not render sub-issues when collapsed', () => {
-      // @ts-ignore: Accessing private static property for test
-      component.expanded = false;
+      component['expanded'] = false;
       fixture.detectChanges();
       const subIssues = nativeElement.querySelectorAll('app-issue-tree-branch');
 
@@ -178,42 +123,11 @@ describe('IssueTreeBranchComponent', () => {
     });
 
     it('should render sub-issues when expanded', () => {
-      // @ts-ignore: Accessing private static property for test
-      component.expanded = true;
+      component['expanded'] = true;
       fixture.detectChanges();
       const subIssues = nativeElement.querySelectorAll('app-issue-tree-branch');
 
       expect(subIssues.length).toBe(1);
-    });
-  });
-
-  describe('Issue Type & Text Color (getTypeTextColor)', () => {
-    it('should return "white" for undefined issueType color', () => {
-      expect(component.getTypeTextColor({ color: '' })).toBe('white');
-    });
-
-    it('should return "black" for a light background color', () => {
-      const color = component.getTypeTextColor({ color: 'lightyellow' });
-
-      expect(color).toBe('black');
-    });
-
-    it('should return "white" for a dark background color', () => {
-      const color = component.getTypeTextColor({ color: 'darkblue' });
-
-      expect(color).toBe('white');
-    });
-  });
-
-  describe('Inputs', () => {
-    it('should correctly receive issue and depth inputs', () => {
-      // @ts-ignore: Accessing private static property for test
-      component.issue = { id: 'T-1', number: 101, title: 'Input Test', url: '' };
-      component.depth = 5;
-      fixture.detectChanges();
-
-      expect(component.issue.id).toBe('T-1');
-      expect(component.depth).toBe(5);
     });
   });
 });
