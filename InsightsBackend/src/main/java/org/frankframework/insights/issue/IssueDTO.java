@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.github.GitHubEdgesDTO;
-import org.frankframework.insights.github.GitHubNodeDTO;
 import org.frankframework.insights.github.GitHubProjectItemDTO;
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
@@ -62,13 +62,13 @@ public record IssueDTO(
         }
 
         return projectItems.edges().stream()
-                .map(GitHubNodeDTO::node)
+                .map(GraphQLNodeDTO::node)
                 .map(GitHubProjectItemDTO::fieldValues)
                 .flatMap(fv -> {
                     if (fv.edges() == null || fv.edges().isEmpty()) return java.util.stream.Stream.empty();
                     return fv.edges().stream();
                 })
-                .map(GitHubNodeDTO::node)
+                .map(GraphQLNodeDTO::node)
                 .filter(Objects::nonNull)
                 .filter(fv -> fv.field() != null
                         && fieldName.equalsIgnoreCase(fv.field().name()))

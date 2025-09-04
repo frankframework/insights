@@ -11,9 +11,9 @@ import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import org.frankframework.insights.branch.BranchService;
+import org.frankframework.insights.common.configuration.GitHubConfiguration;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
-import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.FetchProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -62,13 +62,13 @@ public class ShedLockTest {
     private ReleaseService releaseService;
 
     @Mock
-    private GitHubProperties gitHubProperties;
+    private FetchProperties fetchProperties;
 
-    private SystemDataInitializer systemDataInitializer;
+    private GitHubConfiguration gitHubConfiguration;
 
     @BeforeEach
     public void setUp() {
-        systemDataInitializer = new SystemDataInitializer(
+        gitHubConfiguration = new GitHubConfiguration(
                 gitHubRepositoryStatisticsService,
                 labelService,
                 milestoneService,
@@ -78,10 +78,13 @@ public class ShedLockTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                gitHubProperties);
+                fetchProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
+
+    // todo add tests 'what if github and snyk run through eachother + db lock?'
+    // todo add snyk tests
 
     @Test
     public void should_CreateLockProvider_when_BeanIsInitialized() {
@@ -93,13 +96,13 @@ public class ShedLockTest {
 
     @Test
     public void should_LockStartupTask_when_Executed() {
-        systemDataInitializer.run();
+        gitHubConfiguration.run();
         LockAssert.assertLocked();
     }
 
     @Test
     public void should_LockDailyJob_when_Executed() {
-        systemDataInitializer.dailyJob();
+        gitHubConfiguration.dailyJob();
         LockAssert.assertLocked();
     }
 
@@ -110,13 +113,13 @@ public class ShedLockTest {
 
         Future<?> startupFuture = executorService.submit(() -> {
             latch.countDown();
-            systemDataInitializer.run();
+            gitHubConfiguration.run();
         });
 
         Future<?> dailyJobFuture = executorService.submit(() -> {
             try {
                 latch.await();
-                systemDataInitializer.dailyJob();
+                gitHubConfiguration.dailyJob();
             } catch (InterruptedException e) {
                 throw new RuntimeException("Thread was interrupted while waiting", e);
             }
@@ -143,7 +146,7 @@ public class ShedLockTest {
         Future<?> dailyJobFuture = executorService.submit(() -> {
             try {
                 latch.await();
-                systemDataInitializer.dailyJob();
+                gitHubConfiguration.dailyJob();
             } catch (InterruptedException e) {
                 throw new RuntimeException("Thread was interrupted while waiting", e);
             }
@@ -151,7 +154,7 @@ public class ShedLockTest {
 
         Future<?> startupFuture = executorService.submit(() -> {
             latch.countDown();
-            systemDataInitializer.run();
+            gitHubConfiguration.run();
         });
 
         dailyJobFuture.get();
