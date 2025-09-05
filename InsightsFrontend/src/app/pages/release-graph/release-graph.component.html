@@ -1,6 +1,15 @@
 <div class="graph-container">
   @if (!isLoading) {
-    <svg #svgElement id="svgElement" [attr.viewBox]="viewBox" (wheel)="onWheel($event)">
+    <svg
+      #svgElement
+      id="svgElement"
+      [attr.viewBox]="viewBox"
+      (wheel)="onWheel($event)"
+      (mousedown)="onMouseDown($event)"
+      (mouseup)="onMouseUp()"
+      (mousemove)="onMouseMove($event)"
+      (mouseleave)="onMouseUp()"
+    >
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
         @for (releaseNode of releaseNodes; track releaseNode) {
           <g

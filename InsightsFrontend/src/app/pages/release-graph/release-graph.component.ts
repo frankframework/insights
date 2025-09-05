@@ -33,6 +33,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public translateY = 0;
   public viewBox = '0 0 0 0';
 
+  public isDragging = false;
+  private lastPositionX = 0;
   private minTranslateX = 0;
   private maxTranslateX = 0;
   private routerSubscription!: Subscription;
@@ -58,9 +60,30 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.routerSubscription?.unsubscribe();
   }
 
+  public onMouseDown(event: MouseEvent): void {
+    event.preventDefault();
+    this.isDragging = true;
+    this.lastPositionX = event.clientX;
+    this.svgElement.nativeElement.style.cursor = 'grabbing';
+  }
+
+  public onMouseUp(): void {
+    this.isDragging = false;
+    this.svgElement.nativeElement.style.cursor = 'grab';
+  }
+
+  public onMouseMove(event: MouseEvent): void {
+    if (!this.isDragging) return;
+    event.preventDefault();
+    const deltaX = event.clientX - this.lastPositionX;
+    this.lastPositionX = event.clientX;
+    const newTranslateX = this.translateX + deltaX;
+    this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, newTranslateX));
+  }
+
   public onWheel(event: WheelEvent): void {
     event.preventDefault();
-    const delta = event.deltaY / this.scale;
+    const delta = (event.deltaX === 0 ? event.deltaY : event.deltaX) / this.scale;
     const newTranslateX = this.translateX - delta;
     this.translateX = Math.min(this.maxTranslateX, Math.max(this.minTranslateX, newTranslateX));
   }
@@ -80,7 +103,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const verticalDirection = y2 > y1 ? 1 : -1;
     const cornerY = y2 - verticalDirection * releaseNodeRadiusWithMargin;
-
     const horizontalSweep = x2 > x1 ? 0 : 1;
 
     return [
@@ -162,7 +184,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     this.maxTranslateX = -minX * this.scale + W * 0.25;
     this.minTranslateX = W - maxX * this.scale - W * 0.5;
-
     this.translateX = this.minTranslateX + W * 0.3;
 
     return `0 0 ${W} ${H}`;
@@ -171,7 +192,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private checkReleaseGraphLoading(): void {
     if (this.isLoading) {
       this.isLoading = false;
-
       setTimeout(() => {
         this.centerGraph();
       }, 50);
