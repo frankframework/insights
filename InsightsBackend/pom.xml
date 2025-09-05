@@ -46,7 +46,6 @@
 		<lombok.version>1.18.38</lombok.version>
 		<postgresql.version>42.7.7</postgresql.version>
 		<spring.shedlock>6.10.0</spring.shedlock>
-
 		<spotless.version>2.45.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<puppycrawl.tools.version>11.0.1</puppycrawl.tools.version>
@@ -92,7 +91,6 @@
 			<groupId>org.springframework.graphql</groupId>
 			<artifactId>spring-graphql</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>net.javacrumbs.shedlock</groupId>
 			<artifactId>shedlock-spring</artifactId>
@@ -103,18 +101,24 @@
 			<artifactId>shedlock-provider-jdbc-template</artifactId>
 			<version>${spring.shedlock}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-hibernate6</artifactId>
 			<version>${jackson.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>${postgresql.version}</version>
 			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
