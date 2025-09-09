@@ -10,15 +10,7 @@ env:
   JDK_VERSION: 21
   NODE_VERSION: 23
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ env.REGISTRY }}/${{ github.repository }}
-
-docker-login: &docker_login
-  name: Log in to GHCR
-  uses: docker/login-action@v3
-  with:
-    registry: ${{ env.REGISTRY }}
-    username: ${{ github.actor }}
-    password: ${{ secrets.GITHUB_TOKEN }}
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
     
 jobs:
   backend-lint:
@@ -118,6 +110,14 @@ jobs:
         with:
           name: frontend-test-logs
           path: InsightsFrontend/test.log
+
+  docker-login: &docker_login
+    name: Log in to GHCR
+    uses: docker/login-action@v3
+    with:
+      registry: ${{ env.REGISTRY }}
+      username: ${{ github.actor }}
+      password: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-push-dev-backend:
     name: Build & Push Dev Backend Image
