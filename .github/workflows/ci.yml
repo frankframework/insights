@@ -9,7 +9,17 @@ on:
 env:
   JDK_VERSION: 21
   NODE_VERSION: 23
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ env.REGISTRY }}/${{ github.repository }}
 
+docker-login: &docker_login
+  name: Log in to GHCR
+  uses: docker/login-action@v3
+  with:
+    registry: ${{ env.REGISTRY }}
+    username: ${{ github.actor }}
+    password: ${{ secrets.GITHUB_TOKEN }}
+    
 jobs:
   backend-lint:
     name: Backend Lint
@@ -109,81 +119,87 @@ jobs:
           name: frontend-test-logs
           path: InsightsFrontend/test.log
 
-  backend-build:
-    name: Build Backend
+  build-and-push-dev-backend:
+    name: Build & Push Dev Backend Image
     runs-on: ubuntu-latest
     needs: [backend-test]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - *docker_login
+      - name: Build and Push Dev Docker Image
+        uses: docker/build-push-action@v5
         with:
-          java-version: ${{ env.JDK_VERSION }}
-          distribution: 'temurin'
-      - name: Build backend
-        run: mvn package -DskipTests --file pom.xml
-        working-directory: InsightsBackend
-      - name: Upload Backend Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jar
-          path: InsightsBackend/target/*.jar
-
-  frontend-build:
-    name: Build Frontend
+          context: ./InsightsBackend
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/backend:${{ github.sha }}
+          
+  build-and-push-dev-frontend:
+    name: Build & Push Dev Frontend Image
     runs-on: ubuntu-latest
     needs: [frontend-test]
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - *docker_login
+      - name: Build and Push Dev Docker Image
+        uses: docker/build-push-action@v5
         with:
-          node-version: ${{ env.NODE_VERSION }}
-      - name: Install dependencies
-        run: npm ci
-        working-directory: InsightsFrontend
-      - name: Build frontend (development config)
-        run: npm run build -- --configuration=development
-        working-directory: InsightsFrontend
-      - name: Upload Frontend Artifact for E2E
-        uses: actions/upload-artifact@v4
+          context: ./InsightsFrontend
+          build-args: ENV_CONFIGURATION=development
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/frontend:${{ github.sha }}
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [build-and-push-dev-backend, build-and-push-dev-frontend]
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - *docker_login
+      - name: Start Services with Docker Compose
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          USE_SEEDER: true
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
+      - name: Check Backend Health
+        uses: jtalk/url-health-check-action@v4
         with:
-          name: frontend-dist-dev
-          path: InsightsFrontend/dist/
+          url: http://localhost:8080/actuator/health
+          max-attempts: 20
+          retry-delay: 5s
+      - name: Check Frontend Health
+        uses: jtalk/url-health-check-action@v4
+        with:
+          url: http://localhost:4200
+          max-attempts: 20
+          retry-delay: 5s
+      - name: Show Docker Logs on Failure
+        if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
 
   e2e-test:
-    name: End-to-End Testing
+    name: End-to-End Tests
     runs-on: ubuntu-latest
-    needs: [backend-build, frontend-build]
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: insights
-        ports: [5432:5432]
-        options: >-
-          --health-cmd="pg_isready"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+    needs: [integration-tests] # <-- Runs AFTER integration tests
+    permissions:
+      contents: read
+      packages: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Download Backend Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-jar
-          path: backend-artifact
-      - name: Download Frontend Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist-dev
-          path: frontend-artifact
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JDK_VERSION }}
-          distribution: 'temurin'
+      - uses: actions/checkout@v4
+      - *docker_login
+      - name: Start Services with Docker Compose
+        env:
+          USE_SEEDER: true
+          IMAGE_TAG: ${{ github.sha }}
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -191,40 +207,10 @@ jobs:
       - name: Install Cypress Dependencies
         run: npm ci
         working-directory: ./InsightsFrontend
-      - name: Start Backend and Frontend Services
-        env:
-          SPRING_PROFILES_ACTIVE: local
-        run: |
-          java -jar ./backend-artifact/*.jar &
-          npm install -g http-server
-          http-server ./frontend-artifact/insights-frontend/browser -p 4200 --cors &
-      - name: Wait for Backend Application
-        run: |
-          echo "Waiting for backend application to be healthy..."
-          RETRY_COUNT=0
-          MAX_RETRIES=20
-          RETRY_INTERVAL=5
-          until curl -s -f http://localhost:8080/actuator/health > /dev/null; do
-            if [ ${RETRY_COUNT} -ge ${MAX_RETRIES} ]; then
-              echo "Error: Timed out waiting for backend."
-              exit 1
-            fi
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Backend not ready. Retrying in ${RETRY_INTERVAL}s..."
-            sleep ${RETRY_INTERVAL}
-          done
-          echo "Backend is up and healthy!"
-      - name: Load E2E Data into Database
-        env:
-          PGPASSWORD: postgres
-        run: |
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          psql -h localhost -p 5432 -U postgres -d insights -f ./data-e2e.sql
-          echo "Data successfully loaded."
       - name: Run Cypress E2E Tests
         run: npm run cypress:run
         working-directory: ./InsightsFrontend
-      - name: Upload E2E Test Logs and Videos
+      - name: Upload E2E Test Artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
@@ -234,6 +220,7 @@ jobs:
             InsightsFrontend/cypress/screenshots/
 
   docker-dispatch:
+    name: Trigger Production Publish
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     needs: [e2e-test]
     runs-on: ubuntu-latest

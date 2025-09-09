@@ -1,0 +1,12 @@
+services:
+  backend:
+    image: ghcr.io/${{ github.repository }}/backend:${IMAGE_TAG:-latest}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    image: ghcr.io/${{ github.repository }}/frontend:${IMAGE_TAG:-latest}
