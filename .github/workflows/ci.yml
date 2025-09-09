@@ -169,6 +169,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
           USE_SEEDER: true
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
       - name: Check Backend Health
         uses: jtalk/url-health-check-action@v4
@@ -211,6 +212,7 @@ jobs:
         env:
           USE_SEEDER: true
           IMAGE_TAG: ${{ github.sha }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
       - name: Set up Node.js
         uses: actions/setup-node@v4
