@@ -1,25 +1,27 @@
 INSERT INTO branch (id, name) VALUES
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44', 'release/7.8'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43', 'release/7.7'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvOS4x', 'release/9.1'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg==', 'master'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42', 'release/7.6'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl', '7.9-release'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl', '8.0-release'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMi1yZWxlYXNl', '8.2-release'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl', '8.1-release'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMy1yZWxlYXNl', 'release/8.3'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4w', 'release/7.0'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy41', 'release/7.5'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4z', 'release/7.3'),
-  ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w', 'release/9.0');
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44', 'release/7.8'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43', 'release/7.7'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvOS4x', 'release/9.1'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg==', 'master'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42', 'release/7.6'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl', '7.9-release'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl', '8.0-release'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMi1yZWxlYXNl', '8.2-release'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl', '8.1-release'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMy1yZWxlYXNl', 'release/8.3'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4w', 'release/7.0'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy41', 'release/7.5'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4z', 'release/7.3'),
+    ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w', 'release/9.0')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO milestone (id, number, title, state, url, due_on, open_issue_count, closed_issue_count) VALUES
     ('milestone-past', 10, 'Release 9.3.0', 0, 'http://example.com/milestone/10', '2025-06-30T23:59:59Z', 1, 1),
     ('milestone-current', 11, 'Release 9.4.0', 0, 'http://example.com/milestone/11', '2025-09-30T23:59:59Z', 2, 2),
     ('milestone-future', 12, 'Release 9.5.0', 0, 'http://example.com/milestone/12', '2025-12-31T23:59:59Z', 2, 0),
     ('milestone-overflow', 13, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/13', '2025-09-30T23:59:59Z', 20, 0),
-    ('milestone-no-issues', 14, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/14', '2025-09-30T23:59:59Z', 0, 0);
+    ('milestone-no-issues', 14, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/14', '2025-09-30T23:59:59Z', 0, 0)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO release (id, tag_name, name, published_at, branch_id) VALUES
     ('RE_kwDOAIg5ds4H2uLY','v7.8.4','v7.8.4','2023-11-28T18:16:14Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
@@ -66,7 +68,8 @@ INSERT INTO release (id, tag_name, name, published_at, branch_id) VALUES
     ('RE_kwDOAIg5ds4Ky4-S','release/8.3-nightly','v8.3.3-20250605.001628 (nightly)','2025-06-04T23:37:27Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMy1yZWxlYXNl'),
     ('RE_kwDOAIg5ds4Lhg3o','v9.0.0','v9.0.0','2025-01-07T14:29:41Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
     ('RE_kwDOAIg5ds4MnUo_','v9.0.1','v9.0.1','2025-04-10T17:36:45Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
-    ('RE_kwDOAIg5ds4LkXe7','release/9.0-nightly','v9.0.2-20250612.031144 (nightly)','2025-06-12T02:33:56Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w');
+    ('RE_kwDOAIg5ds4LkXe7','release/9.0-nightly','v9.0.2-20250612.031144 (nightly)','2025-06-12T02:33:56Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue_type (id, name, description, color) VALUES
     ('type-epic', 'Epic', 'A large body of work that can be broken down into a number of smaller stories', '9400D3'),
@@ -95,7 +98,8 @@ INSERT INTO issue (id, number, title, state, url, issue_type_id) VALUES
     ('issue-task-102', 102, 'Task: Create new icon set for dashboard widgets', 1, 'http://example.com/issues/102', 'type-task'),
     ('issue-feat-103', 103, 'Feature: Add real-time graphing widget', 1, 'http://example.com/issues/103', 'type-feature'),
     ('issue-bug-104', 104, 'Bug: Widget alignment is broken on Firefox', 1, 'http://example.com/issues/104', 'type-bug'),
-    ('issue-feat-105', 105, 'Feature: Implement API key authentication for security', 1, 'http://example.com/issues/105', 'type-feature');
+    ('issue-feat-105', 105, 'Feature: Implement API key authentication for security', 1, 'http://example.com/issues/105', 'type-feature')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue (id, number, title, state, url, points, closed_at, milestone_id, issue_type_id, issue_priority_id) VALUES
     ('issue-past-closed', 201, 'Old feature that was completed', 1, 'http://example.com/issue/201', 5, '2025-05-20T10:00:00Z', 'milestone-past', 'type-feature', NULL),
@@ -106,7 +110,8 @@ INSERT INTO issue (id, number, title, state, url, points, closed_at, milestone_i
     ('issue-current-open-2', 206, 'Another open task', 0, 'http://example.com/issue/206', 5, NULL, 'milestone-current', 'type-task', 'prio-medium'),
     ('issue-zero-points', 207, 'Issue with zero points', 0, 'http://example.com/issue/207', 0, NULL, 'milestone-current', 'type-task', NULL),
     ('issue-future-open-1', 301, 'Planning for Q4 feature', 0, 'http://example.com/issue/301', 13, NULL, 'milestone-future', 'type-feature', NULL),
-    ('issue-future-open-2', 302, 'Technical spike for Q4', 0, 'http://example.com/issue/302', 8, NULL, 'milestone-future', 'type-task', NULL);
+    ('issue-future-open-2', 302, 'Technical spike for Q4', 0, 'http://example.com/issue/302', 8, NULL, 'milestone-future', 'type-task', NULL)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue (id, number, title, state, url, points, closed_at, milestone_id, issue_type_id, issue_priority_id)
 SELECT
@@ -120,12 +125,14 @@ SELECT
     'milestone-overflow',
     'type-task',
     NULL
-FROM generate_series(1, 20) AS i;
+FROM generate_series(1, 20) AS i
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue_sub_issues (issue_id, sub_issues_id) VALUES
     ('issue-epic-101', 'issue-task-102'),
     ('issue-epic-101', 'issue-feat-103'),
-    ('issue-epic-101', 'issue-bug-104');
+    ('issue-epic-101', 'issue-bug-104')
+ON CONFLICT (issue_id, sub_issues_id) DO NOTHING;
 
 INSERT INTO issue_label (issue_id, label_id) VALUES
     ('issue-epic-101', 'label-ui'),
@@ -133,20 +140,24 @@ INSERT INTO issue_label (issue_id, label_id) VALUES
     ('issue-feat-103', 'label-ui'),
     ('issue-feat-103', 'label-perf'),
     ('issue-bug-104', 'label-ui'),
-    ('issue-feat-105', 'label-sec');
+    ('issue-feat-105', 'label-sec')
+ON CONFLICT (issue_id, label_id) DO NOTHING;
 
 INSERT INTO pull_request (id, number, title, url, merged_at) VALUES
     ('pr-501', 501, 'feat(ui): Add new graphing widget and icon set', 'http://example.com/pulls/501', '2025-04-08T10:00:00Z'),
     ('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', '2025-04-09T11:00:00Z'),
-    ('pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', '2025-04-09T15:00:00Z');
+    (  'pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', '2025-04-09T15:00:00Z')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO pull_request_issue (pull_request_id, issue_id) VALUES
     ('pr-501', 'issue-feat-103'),
     ('pr-501', 'issue-task-102'),
     ('pr-502', 'issue-bug-104'),
-    ('pr-503', 'issue-feat-105');
+    ('pr-503', 'issue-feat-105')
+ON CONFLICT (pull_request_id, issue_id) DO NOTHING;
 
 INSERT INTO release_pull_request (release_id, pull_request_id) VALUES
     ('RE_kwDOAIg5ds4MnUo_', 'pr-501'),
     ('RE_kwDOAIg5ds4MnUo_', 'pr-502'),
-    ('RE_kwDOAIg5ds4MnUo_', 'pr-503');
+    ('RE_kwDOAIg5ds4MnUo_', 'pr-503')
+ON CONFLICT (release_id, pull_request_id) DO NOTHING;

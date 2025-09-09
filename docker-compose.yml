@@ -1,11 +1,14 @@
 services:
   frontend:
-    build: ./InsightsFrontend
+    build:
+      context: ./InsightsFrontend
+      args:
+        - ENV_CONFIGURATION=development
     restart: always
     networks:
       - FFInsightsNetwork
     depends_on:
-      - backend
+      - db-seeder
     ports:
       - "4200:80"
     container_name: frontend
@@ -19,10 +22,16 @@ services:
     networks:
       - FFInsightsNetwork
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
     container_name: backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   db:
     image: postgres:17
@@ -37,6 +46,36 @@ services:
       - FFInsightsNetwork
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d insights"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-seeder:
+    image: postgres:17
+    restart: "no"
+    networks:
+      - FFInsightsNetwork
+    volumes:
+      - ./seeder.sql:/seeder.sql
+    environment:
+      PGPASSWORD: postgres
+      USE_SEEDER: ${USE_SEEDER}
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for backend to become healthy...';
+        if [ \"$$USE_SEEDER\" != \"false\" ] ; then
+          echo 'Backend is healthy. Seeding database...';
+          psql -h db -U postgres -d insights -f /seeder.sql;
+          echo 'Database seeding complete.';
+        else
+          echo 'USE_SEEDER is false, skipping database seeding.';
+        fi
+      "
 
 networks:
   FFInsightsNetwork:
