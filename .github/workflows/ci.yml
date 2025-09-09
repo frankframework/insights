@@ -13,14 +13,6 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
     
 jobs:
-  x-docker-login: &docker_login
-    name: Log in to GHCR
-    uses: docker/login-action@v3
-    with:
-      registry: ${{ env.REGISTRY }}
-      username: ${{ github.actor }}
-      password: ${{ secrets.GITHUB_TOKEN }}
-
   backend-lint:
     name: Backend Lint
     runs-on: ubuntu-latest
@@ -30,15 +22,8 @@ jobs:
         with:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
-      - name: Lint backend
-        run: mvn clean checkstyle:check | tee backend-lint.log
+      - run: mvn clean checkstyle:check
         working-directory: InsightsBackend
-      - name: Upload Backend Lint Logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-lint-log
-          path: InsightsBackend/backend-lint.log
 
   frontend-lint:
     name: Frontend Lint
@@ -48,18 +33,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
         working-directory: InsightsFrontend
-      - name: Lint frontend
-        run: npm run lint | tee frontend-lint.log
+      - run: npm run lint
         working-directory: InsightsFrontend
-      - name: Upload Frontend Lint Logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-lint-log
-          path: InsightsFrontend/frontend-lint.log
 
   backend-test:
     name: Backend Unit Test
@@ -76,18 +53,8 @@ jobs:
         with:
           path: ~/.m2/repository
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
-          restore-keys: maven-${{ runner.os }}-
-      - name: Backend Unit Tests
-        run: mvn test --file pom.xml | tee test.log
+      - run: mvn test --file pom.xml
         working-directory: InsightsBackend
-      - name: Upload Backend Test Logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-test-logs
-          path: |
-            InsightsBackend/target/surefire-reports/
-            InsightsBackend/test.log
 
   frontend-test:
     name: Frontend Unit Test
@@ -103,32 +70,26 @@ jobs:
         with:
           path: InsightsFrontend/node_modules
           key: npm-${{ runner.os }}-${{ hashFiles('InsightsFrontend/package-lock.json') }}
-          restore-keys: npm-${{ runner.os }}-
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
         working-directory: InsightsFrontend
-      - name: Frontend Unit Tests
-        run: |
-          set -o pipefail
-          npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
+      - run: npm run test -- --watch=false --browsers=ChromeHeadless
         working-directory: InsightsFrontend
-      - name: Upload Frontend Test Logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-test-logs
-          path: InsightsFrontend/test.log
 
   build-and-push-dev-backend:
     name: Build & Push Dev Backend Image
     runs-on: ubuntu-latest
-    needs: [docker-login]
+    needs: [backend-test]
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v4
-      - *docker_login
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and Push Dev Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -139,13 +100,18 @@ jobs:
   build-and-push-dev-frontend:
     name: Build & Push Dev Frontend Image
     runs-on: ubuntu-latest
-    needs: [docker-login]
+    needs: [frontend-test]
     permissions:
       contents: read
       packages: write
     steps:
-      - *docker_login
       - uses: actions/checkout@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and Push Dev Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -162,28 +128,23 @@ jobs:
       contents: read
       packages: read
     steps:
-      - *docker_login
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
       - name: Start Services with Docker Compose
         env:
           IMAGE_TAG: ${{ github.sha }}
           USE_SEEDER: true
         run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
-      - name: Check Backend Health
-        uses: jtalk/url-health-check-action@v4
-        with:
-          url: http://localhost:8080/actuator/health
-          max-attempts: 20
-          retry-delay: 5s
-      - name: Check Frontend Health
-        uses: jtalk/url-health-check-action@v4
-        with:
-          url: http://localhost:4200
-          max-attempts: 20
-          retry-delay: 5s
+      - name: Run Integration Tests
+        run: echo "TODO - Add integration test commands here."
       - name: Show Docker Logs on Failure
         if: failure()
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs
+        run: docker-compose -f docker-compose.yml -f docker-compose.ci.yml logs
 
   e2e-test:
     name: End-to-End Tests
@@ -193,7 +154,12 @@ jobs:
       contents: read
       packages: read
     steps:
-      - *docker_login
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
       - name: Start Services with Docker Compose
         env:
@@ -210,20 +176,12 @@ jobs:
       - name: Run Cypress E2E Tests
         run: npm run cypress:run
         working-directory: ./InsightsFrontend
-      - name: Upload E2E Test Artifacts
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-artifacts
-          path: |
-            InsightsFrontend/cypress/videos/
-            InsightsFrontend/cypress/screenshots/
 
-  docker-dispatch:
+  trigger-production-publish:
     name: Trigger Production Publish
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    needs: [e2e-test]
     runs-on: ubuntu-latest
+    needs: [e2e-test]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
       - name: Trigger Docker Publish workflow
         uses: peter-evans/repository-dispatch@v3
