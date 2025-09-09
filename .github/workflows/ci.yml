@@ -13,6 +13,14 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
     
 jobs:
+  x-docker-login: &docker_login
+    name: Log in to GHCR
+    uses: docker/login-action@v3
+    with:
+      registry: ${{ env.REGISTRY }}
+      username: ${{ github.actor }}
+      password: ${{ secrets.GITHUB_TOKEN }}
+
   backend-lint:
     name: Backend Lint
     runs-on: ubuntu-latest
@@ -111,14 +119,6 @@ jobs:
           name: frontend-test-logs
           path: InsightsFrontend/test.log
 
-  docker-login:
-    name: Authenticate with Docker Registry
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-test]    
-    steps:
-      - name: Log in to GHCR
-        uses: ./.github/workflows/reusable-login.yml
-
   build-and-push-dev-backend:
     name: Build & Push Dev Backend Image
     runs-on: ubuntu-latest
@@ -144,8 +144,8 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
       - *docker_login
+      - uses: actions/checkout@v4
       - name: Build and Push Dev Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -162,8 +162,8 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v4
       - *docker_login
+      - uses: actions/checkout@v4
       - name: Start Services with Docker Compose
         env:
           IMAGE_TAG: ${{ github.sha }}
@@ -193,8 +193,8 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v4
       - *docker_login
+      - uses: actions/checkout@v4
       - name: Start Services with Docker Compose
         env:
           USE_SEEDER: true
