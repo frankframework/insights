@@ -68,14 +68,13 @@ services:
         condition: service_healthy
     command: >
       sh -c "
-        echo 'Waiting for backend to become healthy...';
         if [ \"$$USE_SEEDER\" != \"false\" ] ; then
           echo 'Backend is healthy. Seeding database...';
           psql -h db -U postgres -d insights -f /seeder.sql;
           echo 'Database seeding complete.';
         else
           echo 'USE_SEEDER is false, skipping database seeding.';
-        fi
+        fi && echo 'Seeder finished, container will remain running.' && tail -f /dev/null
       "
 
 networks:
