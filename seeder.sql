@@ -72,7 +72,7 @@ INSERT INTO release (id, tag_name, name, published_at, branch_id) VALUES
     ('RE_kwDOAIg5ds4H_D0j','v7.9.0','v7.9.0', CURRENT_TIMESTAMP - interval '18 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
     ('RE_kwDOAIg5ds4I9mAj','v7.9.2','v7.9.2', CURRENT_TIMESTAMP - interval '17 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
     ('RE_kwDOAIg5ds4JT_pm','v7.9.3','v7.9.3', CURRENT_TIMESTAMP - interval '16 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4KrI8p','v7.9.5','v7.9.5', CURRENT_TIMESTAMP - interval '15 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4KrI8p','v7.9.4','v7.9.4', CURRENT_TIMESTAMP - interval '15 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
     ('RE_kwDOAIg5ds4L1QJF','7.9-nightly','v7.9.7-nightly', CURRENT_TIMESTAMP - interval '15 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
 
     ('MDc6UmVsZWFzZTQ5MDUxNjU=','v6.1','v6.1', CURRENT_TIMESTAMP - interval '48 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg==')

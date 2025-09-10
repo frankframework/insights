@@ -21,8 +21,13 @@ describe('Graph Rendering and Interaction', () => {
       cy.get('[data-cy="node-v9.1.1-nightly"]').should('be.visible');
     });
 
-    it('should filter out releases that are too old', () => {
-      cy.get('[data-cy="node-v7.4"]').should('not.exist');
+    it('should hide minor releases of unsupported majors, but keep the major visible', () => {
+      cy.get('[data-cy="node-v7.4"]')
+        .should('be.visible')
+        .find('circle')
+        .should('have.attr', 'fill', '#FD230E');
+
+      cy.get('[data-cy="node-v7.9.4"]').should('not.exist');
     });
   });
 
