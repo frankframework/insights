@@ -7,8 +7,16 @@
           <p>Please try again later.</p>
         </div>
       } @else {
-        <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
-        <app-release-important-issues [releaseIssues]="releaseIssues" />
+        @if (highlightedLabels) {
+          <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
+        } @else {
+          <div class="no-highlights">
+            <p>No new highlights found for this release.</p>
+          </div>
+        }
+        @if (releaseIssues) {
+          <app-release-important-issues [releaseIssues]="releaseIssues" />
+        }
       }
     } @else {
       <app-loader />

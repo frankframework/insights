@@ -4,6 +4,7 @@
 
 The Frank!Framework insights application is an open-source tool designed to provide in-depth insights into the development and release lifecycle of the [Frank!Framework](https://github.com/frankframework/frankframework).
 
+
 ## Purpose of the Application
 
 Frank!Framework Insights provides users, contributors, and maintainers with a centralized overview of the development activities surrounding the Frank!Framework. Instead of manually gathering information from different sources, this tool collects, analyzes, and visualizes key data to make the entire release lifecycle transparent.
@@ -28,6 +29,8 @@ For any given release, the tool provides deep-dive analytics by processing a wid
 
 By analyzing the ratios and connections between these elements, users can gain a much deeper understanding of the work involved in a release, identify potential risks, and track the overall health of the development process.
 
+<br>
+
 ## System Architecture
 
 The backend fetches data from external APIs, processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
@@ -38,6 +41,8 @@ Currently, the application primarily uses the **GitHub API** to retrieve data ab
 <p align="start">
   <em>A high-level overview of the data flow from external APIs to the user.</em>
 </p>
+
+<br>
 
 ## Quick Local Setup with Docker
 
@@ -54,7 +59,16 @@ For a fast and easy setup, you can use Docker Compose to run the entire applicat
     docker compose up -d --build
     ```
 
-The application stack, including the frontend, backend, and database, is now running. You can access the frontend at `http://localhost:4200` and the backend API at `http://localhost:8080`.
+### Database Seeding
+By default, the database is automatically seeded with mock data to populate the application. This allows you to explore the features immediately after setup.
+
+Please note that not all releases in the mock data set have detailed content. For a full example of a release with associated issues and pull requests, check release v9.0.1.
+
+If you prefer to start with a clean, empty database, you can disable the seeder by setting the use_seeder environment variable to false in the docker-compose.yml file for the db-seeder service.
+
+The application stack, including the frontend, backend, and database, should now be running. You can access the frontend at `http://localhost:4200` and the backend API at `http://localhost:8080`.
+
+<br>
 
 ## Manual Development Setup
 
@@ -120,6 +134,8 @@ For a manual setup, you will need Git, Java Development Kit (JDK 21), Node.js wi
 
 The application stack, including the frontend, backend, and database, is now running. You can access the frontend at http://localhost:4200 and the backend API at http://localhost:8080.
 
+<br>
+
 ## Automated Workflows & Quality Assurance
 
 The project uses a suite of automated workflows to ensure code quality, stability, and correctness. These are typically run in a CI/CD pipeline for every pull request and merge to the master branch.
@@ -147,6 +163,9 @@ This workflow starts the full application with the latest version of the code (f
 **Stress Tests**
 <br>
 These tests push the system to its limits by simulating high traffic or data load. The goal is to measure performance, identify performance bottlenecks, and ensure the application remains stable and responsive under pressure. This test can be triggered manually to test the newest version of master.
+
+<br>
+
 
 ## Contributing
 
