@@ -17,14 +17,19 @@ jobs:
     name: Backend Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
+      
       - name: Lint backend
         run: mvn clean checkstyle:check | tee backend-lint.log
         working-directory: InsightsBackend
+
       - name: Upload Backend Lint Log
         if: always()
         uses: actions/upload-artifact@v4
@@ -36,15 +41,22 @@ jobs:
     name: Frontend Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm ci
+      
+      - name: Install dependencies
+        run: npm ci
         working-directory: InsightsFrontend
+
       - name: Lint frontend
         run: npm run lint | tee frontend-lint.log
         working-directory: InsightsFrontend
+
       - name: Upload Frontend Lint Log
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,19 +69,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend-lint]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ env.JDK_VERSION }}
           distribution: 'temurin'
+      
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+      
       - name: Backend Unit Tests
         run: mvn test --file pom.xml | tee test.log
         working-directory: InsightsBackend
+
       - name: Upload Backend Test Reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -84,20 +102,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [frontend-lint]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+
       - name: Cache Node modules
         uses: actions/cache@v4
         with:
           path: InsightsFrontend/node_modules
           key: npm-${{ runner.os }}-${{ hashFiles('InsightsFrontend/package-lock.json') }}
-      - run: npm ci
+
+      - name: Install dependencies
+        run: npm ci
         working-directory: InsightsFrontend
+
       - name: Frontend Unit Tests
         run: npm run test -- --watch=false --browsers=ChromeHeadless | tee test.log
         working-directory: InsightsFrontend
+
       - name: Upload Frontend Test Log
         if: always()
         uses: actions/upload-artifact@v4
@@ -113,13 +139,16 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and Push Dev Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -135,13 +164,16 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Build and Push Dev Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -158,24 +190,30 @@ jobs:
       contents: read
       packages: read
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v4
+      
       - name: Start Services with Docker Compose
         env:
           IMAGE_TAG: ${{ github.sha }}
           USE_SEEDER: true
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
-      - name: Application has successfully started with all health checks passing.
-        run: echo "Application has successfully started with all health checks passing."
+
+      - name: Application success message
+        run: echo "Application has sucessfully started, all health checks passed as well."
+
       - name: Save Docker Logs
         if: always()
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs > integration-docker-logs.log
+      
       - name: Upload Integration Test Logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -191,29 +229,36 @@ jobs:
       contents: read
       packages: read
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/checkout@v4
+      
       - name: Start Services with Docker Compose
         env:
           USE_SEEDER: true
           IMAGE_TAG: ${{ github.sha }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+      
       - name: Install Cypress Dependencies
         run: npm ci
         working-directory: ./InsightsFrontend
+
       - name: Run Cypress E2E Tests
         run: npm run cypress:run
         working-directory: ./InsightsFrontend
+
       - name: Upload E2E Test Artifacts
         if: always()
         uses: actions/upload-artifact@v4

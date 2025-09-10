@@ -8,7 +8,8 @@ services:
     networks:
       - FFInsightsNetwork
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "4200:80"
     container_name: frontend

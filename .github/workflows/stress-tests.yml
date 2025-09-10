@@ -2,6 +2,10 @@ name: Stress tests
 
 on:
   workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'The image tag (commit SHA) to run stress tests against'
+        required: true
 
 jobs:
   stress-test:
@@ -10,23 +14,31 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Start Services with Docker Compose
         env:
-          IMAGE_TAG: ${{ github.event.client_payload.sha }}
+          IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          USE_SEEDER: true
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
+
       - name: Install Apache Bench
         run: sudo apt-get update && sudo apt-get install -y apache2-utils
+
       - name: Stress test Backend
         run: ab -r -n 1000 -c 50 http://localhost:8080/api/releases > backend-stress.log || true
+
       - name: Stress test Frontend
         run: ab -r -n 1000 -c 50 http://localhost:4200/ > frontend-stress.log || true
+
       - name: Upload Apache Bench logs
         if: always()
         uses: actions/upload-artifact@v4
