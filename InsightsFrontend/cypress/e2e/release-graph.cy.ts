@@ -22,12 +22,12 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should hide minor releases of unsupported majors, but keep the major visible', () => {
-      cy.get('[data-cy="node-v7.4"]')
+      cy.get('[data-cy="node-v7.6-RC1"]')
         .should('be.visible')
         .find('circle')
         .should('have.attr', 'fill', '#FD230E');
 
-      cy.get('[data-cy="node-v7.9.4"]').should('not.exist');
+      cy.get('[data-cy="node-v7.6.3"]').should('not.exist');
     });
   });
 
