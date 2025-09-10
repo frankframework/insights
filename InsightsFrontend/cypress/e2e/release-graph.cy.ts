@@ -22,9 +22,30 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should hide minor releases of unsupported majors, but keep the major visible', () => {
-      cy.get('[data-cy="node-v7.6-RC1"]')
-        .scrollIntoView()
-        .should('be.visible')
+      const selector = '[data-cy="node-v7.6-RC1"]';
+
+      const scrollUntilVisible = (retries = 30) => {
+        if (retries < 0) {
+          cy.get(selector).should('be.visible');
+          return;
+        }
+
+        cy.get('body').then($body => {
+          if ($body.find(`${selector}:visible`).length > 0) {
+            cy.log('Element is now visible.');
+            return;
+          }
+
+          cy.log(`Element not visible, scrolling... Retries left: ${retries}`);
+          cy.get('@graphSvg').first().trigger('wheel', { deltaY: -1000, bubbles: true });
+          cy.wait(100);
+          scrollUntilVisible(retries - 1);
+        });
+      };
+
+      scrollUntilVisible();
+
+      cy.get(selector)
         .find('circle')
         .should('have.attr', 'fill', '#FD230E');
 
