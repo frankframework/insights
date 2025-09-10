@@ -1,3 +1,6 @@
+-- Note: The syntax used here (CURRENT_TIMESTAMP, INTERVAL) is common in SQL dialects like PostgreSQL.
+-- If you are using a different database (e.g., SQLite), you may need to adjust the date functions.
+
 INSERT INTO branch (id, name) VALUES
     ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44', 'release/7.8'),
     ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43', 'release/7.7'),
@@ -23,29 +26,56 @@ INSERT INTO milestone (id, number, title, state, url, due_on, open_issue_count, 
     ('milestone-no-issues', 14, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/14', CURRENT_TIMESTAMP + interval '2 months', 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
+
 INSERT INTO release (id, tag_name, name, published_at, branch_id) VALUES
-    ('RE_kwDOAIg5ds4H2uLY','v7.8.4','v7.8.4', CURRENT_TIMESTAMP - interval '1 year','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
-    ('RE_kwDOAIg5ds4FCsYR','v7.7.5','v7.7.5', CURRENT_TIMESTAMP - interval '2 years','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43'),
     ('RE_kwDOAIg5ds4MwqlG','release/9.1-nightly','v9.1.1-nightly', CURRENT_TIMESTAMP,'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvOS4x'),
-    ('MDc6UmVsZWFzZTE5MTg1NjMx','v7.4','v7.4','2019-08-09T08:29:49Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg=='),
-    ('MDc6UmVsZWFzZTM5OTQ3Mjk3','v7.6-RC1','v7.6-RC1','2021-03-17T14:49:31Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
-    ('RE_kwDOAIg5ds4JT_pm','v7.9.3','v7.9.3', CURRENT_TIMESTAMP - interval '10 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4IC5Zw','v8.0.0','v8.0.0', CURRENT_TIMESTAMP - interval '9 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4J18zh','v8.2.0','v8.2.0', CURRENT_TIMESTAMP - interval '5 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMi1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4Ezmke','v7.8-RC2','v7.8-RC2', CURRENT_TIMESTAMP - interval '13 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
-    ('RE_kwDOAIg5ds4I8K7R','v8.1.0-RC1','v8.1.0-RC1', CURRENT_TIMESTAMP - interval '6 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4DVcfu','v7.6.3','v7.6.3','2021-12-24T13:45:29Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
-    ('RE_kwDOAIg5ds4HUdA_','v7.8.2','v7.8.2', CURRENT_TIMESTAMP - interval '11 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
-    ('RE_kwDOAIg5ds4Hlplu','v7.9-RC1','v7.9-RC1', CURRENT_TIMESTAMP - interval '10 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4EQLJy','v7.6.5','v7.6.5','2022-07-06T13:05:56Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
-    ('MDc6UmVsZWFzZTM0MDA2OTE2','v7.5','v7.5','2020-11-16T14:51:47Z','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy41'),
-    ('RE_kwDOAIg5ds4JWcoo','v8.1.0','v8.1.0', CURRENT_TIMESTAMP - interval '4 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4KrJui','v8.2.1','v8.2.1', CURRENT_TIMESTAMP - interval '1 month','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMi1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4H_D0j','v7.9.0','v7.9.0', CURRENT_TIMESTAMP - interval '9 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4JUJAU','v8.0.2','v8.0.2', CURRENT_TIMESTAMP - interval '4 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4Ks6Gh','v8.3.0','v8.3.0', CURRENT_TIMESTAMP - interval '1 month','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMy1yZWxlYXNl'),
-    ('RE_kwDOAIg5ds4Lhg3o','v9.0.0','v9.0.0', CURRENT_TIMESTAMP - interval '3 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
-    ('RE_kwDOAIg5ds4MnUo_','v9.0.1','v9.0.1', CURRENT_TIMESTAMP - interval '2 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w')
+    ('RE_kwDOAIg5ds4JaYPG','master-nightly','v9.2.0-nightly', CURRENT_TIMESTAMP,'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg=='),
+    ('RE_kwDOAIg5ds4Lhg3o','v9.0.0','v9.0.0', CURRENT_TIMESTAMP - interval '4 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
+    ('RE_kwDOAIg5ds4MnUo_','v9.0.1','v9.0.1', CURRENT_TIMESTAMP - interval '3 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
+    ('RE_kwDOAIg5ds4LkXe7','release/9.0-nightly','v9.0.2-nightly', CURRENT_TIMESTAMP - interval '1 month','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
+
+    ('RE_kwDOAIg5ds4IC5Zw','v8.0.0','v8.0.0', CURRENT_TIMESTAMP - interval '14 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'), -- Support anchor
+    ('RE_kwDOAIg5ds4JdZVZ','8.0-nightly','v8.0.6-nightly', CURRENT_TIMESTAMP - interval '13 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4JUJAU','v8.0.2','v8.0.2', CURRENT_TIMESTAMP - interval '12 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4KLQbP','v8.0.3','v8.0.3', CURRENT_TIMESTAMP - interval '11 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4I8K7R','v8.1.0-RC1','v8.1.0-RC1', CURRENT_TIMESTAMP - interval '10 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4JWcoo','v8.1.0','v8.1.0', CURRENT_TIMESTAMP - interval '9 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4KrJiA','v8.1.2','v8.1.2', CURRENT_TIMESTAMP - interval '8 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4J18zh','v8.2.0','v8.2.0', CURRENT_TIMESTAMP - interval '7 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMi1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4KrJui','v8.2.1','v8.2.1', CURRENT_TIMESTAMP - interval '6 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMi1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4Ks6Gh','v8.3.0','v8.3.0', CURRENT_TIMESTAMP - interval '5 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMy1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4Ky4-S','release/8.3-nightly','v8.3.3-nightly', CURRENT_TIMESTAMP - interval '4 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMy1yZWxlYXNl'),
+
+    ('MDc6UmVsZWFzZTExMjgwNTk1','v7.0-RC3','v7.0-RC3', CURRENT_TIMESTAMP - interval '40 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4w'),
+    ('MDc6UmVsZWFzZTczNjI2ODg=','v7.0-B2','v7.0-B2', CURRENT_TIMESTAMP - interval '42 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4w'),
+    ('MDc6UmVsZWFzZTc4MDkyNjQ=','v7.0-B3','v7.0-B3', CURRENT_TIMESTAMP - interval '41 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4w'),
+    ('MDc6UmVsZWFzZTE4NTQ2MjE3','v7.3','v7.3', CURRENT_TIMESTAMP - interval '38 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy4z'),
+    ('MDc6UmVsZWFzZTE5MTg1NjMx','v7.4','v7.4', CURRENT_TIMESTAMP - interval '37 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg=='),
+    ('MDc6UmVsZWFzZTI0NTExODMx','v7.5-RC2','v7.5-RC2', CURRENT_TIMESTAMP - interval '36 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy41'),
+    ('MDc6UmVsZWFzZTM0MDA2OTE2','v7.5','v7.5', CURRENT_TIMESTAMP - interval '35 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy41'),
+    ('MDc6UmVsZWFzZTM5OTQ3Mjk3','v7.6-RC1','v7.6-RC1', CURRENT_TIMESTAMP - interval '34 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
+    ('MDc6UmVsZWFzZTQ0MDQ1Mjcw','v7.6-RC2','v7.6-RC2', CURRENT_TIMESTAMP - interval '33 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
+    ('RE_kwDOAIg5ds4DFmai','v7.6.1','v7.6.1', CURRENT_TIMESTAMP - interval '32 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
+    ('RE_kwDOAIg5ds4DVcfu','v7.6.3','v7.6.3', CURRENT_TIMESTAMP - interval '31 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
+    ('RE_kwDOAIg5ds4EQLJy','v7.6.5','v7.6.5', CURRENT_TIMESTAMP - interval '30 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy42'),
+    ('RE_kwDOAIg5ds4DsJ4k','v7.7-RC2','v7.7-RC2', CURRENT_TIMESTAMP - interval '29 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43'),
+    ('RE_kwDOAIg5ds4FCsYR','v7.7.5','v7.7.5', CURRENT_TIMESTAMP - interval '28 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43'),
+    ('RE_kwDOAIg5ds4Fj6Z-','v7.7.6','v7.7.6', CURRENT_TIMESTAMP - interval '27 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43'),
+    ('RE_kwDOAIg5ds4EiaNU','v7.8-RC1','v7.8-RC1', CURRENT_TIMESTAMP - interval '26 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4Ezmke','v7.8-RC2','v7.8-RC2', CURRENT_TIMESTAMP - interval '25 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4FkWRa','v7.8-RC3','v7.8-RC3', CURRENT_TIMESTAMP - interval '24 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4HUdA_','v7.8.2','v7.8.2', CURRENT_TIMESTAMP - interval '23 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4HeiTd','v7.8.3','v7.8.3', CURRENT_TIMESTAMP - interval '22 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4H2uLY','v7.8.4','v7.8.4', CURRENT_TIMESTAMP - interval '21 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4H-_so','v7.8.5','v7.8.5', CURRENT_TIMESTAMP - interval '20 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
+    ('RE_kwDOAIg5ds4Hlplu','v7.9-RC1','v7.9-RC1', CURRENT_TIMESTAMP - interval '19 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4H_D0j','v7.9.0','v7.9.0', CURRENT_TIMESTAMP - interval '18 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4I9mAj','v7.9.2','v7.9.2', CURRENT_TIMESTAMP - interval '17 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4JT_pm','v7.9.3','v7.9.3', CURRENT_TIMESTAMP - interval '16 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4KrI8p','v7.9.5','v7.9.5', CURRENT_TIMESTAMP - interval '15 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+    ('RE_kwDOAIg5ds4L1QJF','7.9-nightly','v7.9.7-nightly', CURRENT_TIMESTAMP - interval '15 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+
+    ('MDc6UmVsZWFzZTQ5MDUxNjU=','v6.1','v6.1', CURRENT_TIMESTAMP - interval '48 months','MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg==')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue_type (id, name, description, color) VALUES
@@ -121,9 +151,9 @@ INSERT INTO issue_label (issue_id, label_id) VALUES
 ON CONFLICT (issue_id, label_id) DO NOTHING;
 
 INSERT INTO pull_request (id, number, title, url, merged_at) VALUES
-    ('pr-501', 501, 'feat(ui): Add new graphing widget and icon set', 'http://example.com/pulls/501', '2025-04-08T10:00:00Z'),
-    ('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', '2025-04-09T11:00:00Z'),
-    (  'pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', '2025-04-09T15:00:00Z')
+    ('pr-501', 501, 'feat(ui): Add new graphing widget and icon set', 'http://example.com/pulls/501', CURRENT_TIMESTAMP - interval '3 months' - interval '2 days'),
+    ('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', CURRENT_TIMESTAMP - interval '3 months' - interval '1 day'),
+    ('pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', CURRENT_TIMESTAMP - interval '3 months')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO pull_request_issue (pull_request_id, issue_id) VALUES
