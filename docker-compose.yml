@@ -62,7 +62,8 @@ services:
       - ./seeder.sql:/seeder.sql
     environment:
       PGPASSWORD: postgres
-      USE_SEEDER: ${USE_SEEDER}
+      # If you would like to disable the seeder on startup of the docker compose, replace with false.
+      USE_SEEDER: true
     depends_on:
       backend:
         condition: service_healthy

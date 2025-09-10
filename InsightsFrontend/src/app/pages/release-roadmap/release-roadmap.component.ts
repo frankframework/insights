@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -37,7 +37,7 @@ interface MilestoneWithVersion {
   templateUrl: './release-roadmap.component.html',
   styleUrls: ['./release-roadmap.component.scss'],
 })
-export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
+export class ReleaseRoadmapComponent implements OnInit {
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
   public isLoading = true;
@@ -54,7 +54,6 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   protected todayOffsetPercentage = 0;
 
-  private viewInitialized = false;
   private milestoneService = inject(MilestoneService);
   private issueService = inject(IssueService);
   private toastrService = inject(ToastrService);
@@ -62,11 +61,6 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.resetPeriod();
-  }
-
-  ngAfterViewInit(): void {
-    this.viewInitialized = true;
-    setTimeout(() => this.scrollToToday(), 0);
   }
 
   public changePeriod(months: number): void {
@@ -178,7 +172,6 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
         finalize(() => {
           this.isLoading = false;
           this.cdr.detectChanges();
-          setTimeout(() => this.scrollToToday(), 0);
         }),
       )
       .subscribe();
@@ -357,20 +350,6 @@ export class ReleaseRoadmapComponent implements OnInit, AfterViewInit {
     }
 
     return null;
-  }
-
-  private scrollToToday(): void {
-    if (this.viewInitialized && this.scrollContainer?.nativeElement && this.todayOffsetPercentage > 0) {
-      const container = this.scrollContainer.nativeElement;
-      const titleWidth = window.innerWidth >= 1024 ? 300 : 150;
-
-      const scrollableWidth = container.scrollWidth - container.clientWidth;
-      const timelineAreaWidth = container.scrollWidth - titleWidth;
-      const todayMarkerAbsolutePosition = (this.todayOffsetPercentage / 100) * timelineAreaWidth;
-      const desiredScrollLeft = todayMarkerAbsolutePosition - container.clientWidth / 3;
-
-      container.scrollLeft = Math.max(0, Math.min(desiredScrollLeft, scrollableWidth));
-    }
   }
 
   private parseMilestones(milestones: Milestone[]): Milestone[] {
