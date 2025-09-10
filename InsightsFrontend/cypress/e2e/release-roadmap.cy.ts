@@ -15,7 +15,6 @@ describe('Release Roadmap End-to-End Tests', () => {
     return `Q${startQuarter} ${startYear} - Q${endQuarter} ${endYear}`;
   };
 
-
   beforeEach(() => {
     cy.clock(TODAY.getTime(), ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']);
 

@@ -13,12 +13,16 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should render a significant number of nodes and links', () => {
-      cy.get('@graphSvg').find('g[data-cy^="node-"]').should('have.length.greaterThan', 20);
-      cy.get('@graphSvg').find('path[data-cy^="link-"]').should('have.length.greaterThan', 20);
+      cy.get('@graphSvg').find('g[data-cy^="node-"]').should('have.length.greaterThan', 15);
+      cy.get('@graphSvg').find('path[data-cy^="link-"]').should('have.length.greaterThan', 15);
     });
 
     it('should display the most recent releases on the right side of the view', () => {
-      cy.get('[data-cy="node-v9.1.1-20250612.022341 (nightly)"]').should('be.visible');
+      cy.get('[data-cy="node-v9.1.1-nightly"]').should('be.visible');
+    });
+
+    it('should filter out releases that are too old', () => {
+      cy.get('[data-cy="node-v7.4"]').should('not.exist');
     });
   });
 
