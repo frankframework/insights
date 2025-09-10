@@ -16,11 +16,11 @@ INSERT INTO branch (id, name) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO milestone (id, number, title, state, url, due_on, open_issue_count, closed_issue_count) VALUES
-    ('milestone-past', 10, 'Release 9.3.0', 0, 'http://example.com/milestone/10', '2025-06-30T23:59:59Z', 1, 1),
-    ('milestone-current', 11, 'Release 9.4.0', 0, 'http://example.com/milestone/11', '2025-09-30T23:59:59Z', 2, 2),
-    ('milestone-future', 12, 'Release 9.5.0', 0, 'http://example.com/milestone/12', '2025-12-31T23:59:59Z', 2, 0),
-    ('milestone-overflow', 13, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/13', '2025-09-30T23:59:59Z', 20, 0),
-    ('milestone-no-issues', 14, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/14', '2025-09-30T23:59:59Z', 0, 0)
+    ('milestone-past', 10, 'Release 9.3.0', 0, 'http://example.com/milestone/10', CURRENT_TIMESTAMP - interval '1 month', 1, 1),
+    ('milestone-current', 11, 'Release 9.4.0', 0, 'http://example.com/milestone/11', CURRENT_TIMESTAMP + interval '2 months', 2, 2),
+    ('milestone-future', 12, 'Release 9.5.0', 0, 'http://example.com/milestone/12', CURRENT_TIMESTAMP + interval '5 months', 2, 0),
+    ('milestone-overflow', 13, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/13', CURRENT_TIMESTAMP + interval '2 months', 20, 0),
+    ('milestone-no-issues', 14, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/14', CURRENT_TIMESTAMP + interval '2 months', 0, 0)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO release (id, tag_name, name, published_at, branch_id) VALUES
@@ -102,10 +102,10 @@ INSERT INTO issue (id, number, title, state, url, issue_type_id) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO issue (id, number, title, state, url, points, closed_at, milestone_id, issue_type_id, issue_priority_id) VALUES
-    ('issue-past-closed', 201, 'Old feature that was completed', 1, 'http://example.com/issue/201', 5, '2025-05-20T10:00:00Z', 'milestone-past', 'type-feature', NULL),
+    ('issue-past-closed', 201, 'Old feature that was completed', 1, 'http://example.com/issue/201', 5, CURRENT_TIMESTAMP - interval '2 months', 'milestone-past', 'type-feature', NULL),
     ('issue-past-open', 202, 'Overdue bug from past release', 0, 'http://example.com/issue/202', 3, NULL, 'milestone-past', 'type-bug', 'prio-high'),
-    ('issue-current-closed-1', 203, 'Task finished early this quarter', 1, 'http://example.com/issue/203', 2, '2025-07-05T10:00:00Z', 'milestone-current', 'type-task', NULL),
-    ('issue-current-closed-2', 204, 'Bug fixed just before today', 1, 'http://example.com/issue/204', 3, '2025-07-14T10:00:00Z', 'milestone-current', 'type-bug', NULL),
+    ('issue-current-closed-1', 203, 'Task finished early this quarter', 1, 'http://example.com/issue/203', 2, CURRENT_TIMESTAMP - interval '10 days', 'milestone-current', 'type-task', NULL),
+    ('issue-current-closed-2', 204, 'Bug fixed just before today', 1, 'http://example.com/issue/204', 3, CURRENT_TIMESTAMP - interval '1 day', 'milestone-current', 'type-bug', NULL),
     ('issue-current-open-1', 205, 'High priority feature to be done', 0, 'http://example.com/issue/205', 8, NULL, 'milestone-current', 'type-feature', 'prio-high'),
     ('issue-current-open-2', 206, 'Another open task', 0, 'http://example.com/issue/206', 5, NULL, 'milestone-current', 'type-task', 'prio-medium'),
     ('issue-zero-points', 207, 'Issue with zero points', 0, 'http://example.com/issue/207', 0, NULL, 'milestone-current', 'type-task', NULL),
@@ -143,6 +143,7 @@ INSERT INTO issue_label (issue_id, label_id) VALUES
     ('issue-feat-105', 'label-sec')
 ON CONFLICT (issue_id, label_id) DO NOTHING;
 
+-- Pull request merge dates are kept static as they are tied to specific releases
 INSERT INTO pull_request (id, number, title, url, merged_at) VALUES
     ('pr-501', 501, 'feat(ui): Add new graphing widget and icon set', 'http://example.com/pulls/501', '2025-04-08T10:00:00Z'),
     ('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', '2025-04-09T11:00:00Z'),
