@@ -31,7 +31,7 @@ jobs:
         working-directory: InsightsBackend
 
       - name: Upload Backend Lint Log
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: backend-lint-log
@@ -58,7 +58,7 @@ jobs:
         working-directory: InsightsFrontend
 
       - name: Upload Frontend Lint Log
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-lint-log
@@ -89,7 +89,7 @@ jobs:
         working-directory: InsightsBackend
 
       - name: Upload Backend Test Reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-reports
@@ -125,7 +125,7 @@ jobs:
         working-directory: InsightsFrontend
 
       - name: Upload Frontend Test Log
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-test-log
@@ -215,7 +215,7 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml logs > integration-docker-logs.log
       
       - name: Upload Integration Test Logs
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-logs
@@ -260,7 +260,7 @@ jobs:
         working-directory: ./InsightsFrontend
 
       - name: Upload E2E Test Artifacts
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-artifacts

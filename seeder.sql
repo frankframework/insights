@@ -1,6 +1,3 @@
--- Note: The syntax used here (CURRENT_TIMESTAMP, INTERVAL) is common in SQL dialects like PostgreSQL.
--- If you are using a different database (e.g., SQLite), you may need to adjust the date functions.
-
 INSERT INTO branch (id, name) VALUES
     ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44', 'release/7.8'),
     ('MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy43', 'release/7.7'),
