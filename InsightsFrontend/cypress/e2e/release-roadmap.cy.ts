@@ -157,7 +157,7 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should render an issue with 0 points with a minimum width', () => {
-      cy.get('a.issue-bar[href*="207"]').should('be.visible').invoke('width').should('be.greaterThan', 10);
+      cy.get('a.issue-bar[href*="207"]').scrollIntoView().should('be.visible').invoke('width').should('be.greaterThan', 10);
     });
 
     it('should show an empty state when navigating to a period with no milestones', () => {
