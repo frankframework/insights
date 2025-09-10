@@ -23,6 +23,7 @@ describe('Graph Rendering and Interaction', () => {
 
     it('should hide minor releases of unsupported majors, but keep the major visible', () => {
       cy.get('[data-cy="node-v7.6-RC1"]')
+        .scrollIntoView()
         .should('be.visible')
         .find('circle')
         .should('have.attr', 'fill', '#FD230E');
