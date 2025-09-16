@@ -2,16 +2,12 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { SimpleChange } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { ReleaseOffCanvasComponent } from './release-off-canvas.component';
 import { LabelService, Label } from '../../../services/label.service';
 import { IssueService, Issue } from '../../../services/issue.service';
 import { ToastrService } from 'ngx-toastr';
 import { Release } from '../../../services/release.service';
 import { GitHubStates } from '../../../app.service';
-
-const mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
-const mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
-const mockToastrService = jasmine.createSpyObj('ToastrService', ['error']);
+import { ReleaseOffCanvasComponent } from './release-off-canvas.component';
 
 const mockRelease: Release = {
   id: 'release-1',
@@ -27,7 +23,20 @@ describe('ReleaseOffCanvasComponent', () => {
   let component: ReleaseOffCanvasComponent;
   let fixture: ComponentFixture<ReleaseOffCanvasComponent>;
 
+  let mockLabelService: jasmine.SpyObj<LabelService>;
+  let mockIssueService: jasmine.SpyObj<IssueService>;
+  let mockToastrService: jasmine.SpyObj<ToastrService>;
+
+  const triggerNgOnChanges = () => {
+    component.release = mockRelease;
+    component.ngOnChanges({ release: new SimpleChange(null, mockRelease, true) });
+  };
+
   beforeEach(async () => {
+    mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
+    mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
+    mockToastrService = jasmine.createSpyObj('ToastrService', ['error']);
+
     await TestBed.configureTestingModule({
       imports: [ReleaseOffCanvasComponent],
       providers: [
@@ -39,10 +48,6 @@ describe('ReleaseOffCanvasComponent', () => {
 
     fixture = TestBed.createComponent(ReleaseOffCanvasComponent);
     component = fixture.componentInstance;
-
-    mockLabelService.getHighLightsByReleaseId.calls.reset();
-    mockIssueService.getIssuesByReleaseId.calls.reset();
-    mockToastrService.error.calls.reset();
   });
 
   it('should create', () => {
@@ -50,11 +55,6 @@ describe('ReleaseOffCanvasComponent', () => {
   });
 
   describe('ngOnChanges - Data Fetching', () => {
-    const triggerNgOnChanges = () => {
-      component.release = mockRelease;
-      component.ngOnChanges({ release: new SimpleChange(null, mockRelease, true) });
-    };
-
     it('should set isLoading to true initially, and then to false after data is fetched', fakeAsync(() => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
@@ -91,7 +91,7 @@ describe('ReleaseOffCanvasComponent', () => {
 
     it('should handle label fetch error gracefully', fakeAsync(() => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(
-        throwError(() => new Error('Label API Error')).pipe(delay(0)),
+              throwError(() => new Error('Label API Error')).pipe(delay(0)),
       );
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
 
@@ -100,8 +100,9 @@ describe('ReleaseOffCanvasComponent', () => {
 
       expect(component.isLoading).toBe(false);
       expect(mockToastrService.error).toHaveBeenCalledWith(
-        'Failed to load release highlights. Please try again later.',
+              'Failed to load release highlights. Please try again later.',
       );
+
       expect(component.highlightedLabels).toBeUndefined();
       expect(component.releaseIssues).toBeUndefined();
     }));
@@ -109,7 +110,7 @@ describe('ReleaseOffCanvasComponent', () => {
     it('should handle issue fetch error gracefully', fakeAsync(() => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(
-        throwError(() => new Error('Issue API Error')).pipe(delay(0)),
+              throwError(() => new Error('Issue API Error')).pipe(delay(0)),
       );
 
       triggerNgOnChanges();
@@ -125,7 +126,6 @@ describe('ReleaseOffCanvasComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
 
-      // Act
       triggerNgOnChanges();
       tick();
 

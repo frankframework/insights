@@ -14,25 +14,21 @@ const MOCK_ISSUE: Issue = {
   points: 5,
 };
 
-class MockTooltipService {
-  show = jasmine.createSpy('show');
-  hide = jasmine.createSpy('hide');
-}
-
 describe('IssueBarComponent', () => {
   let component: IssueBarComponent;
   let fixture: ComponentFixture<IssueBarComponent>;
-  let tooltipService: MockTooltipService;
+  let mockTooltipService: jasmine.SpyObj<TooltipService>;
 
   beforeEach(async () => {
+    mockTooltipService = jasmine.createSpyObj('TooltipService', ['show', 'hide']);
+
     await TestBed.configureTestingModule({
       imports: [IssueBarComponent],
-      providers: [{ provide: TooltipService, useClass: MockTooltipService }],
+      providers: [{ provide: TooltipService, useValue: mockTooltipService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(IssueBarComponent);
     component = fixture.componentInstance;
-    tooltipService = TestBed.inject(TooltipService) as unknown as MockTooltipService;
 
     component.issue = MOCK_ISSUE;
   });
@@ -90,7 +86,7 @@ describe('IssueBarComponent', () => {
       const issueLink = fixture.debugElement.query(By.css('.issue-bar'));
       issueLink.triggerEventHandler('mouseenter', null);
 
-      expect(tooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue);
+      expect(mockTooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue);
     });
 
     it('should call TooltipService.hide on mouseleave', () => {
@@ -98,7 +94,7 @@ describe('IssueBarComponent', () => {
       const issueLink = fixture.debugElement.query(By.css('.issue-bar'));
       issueLink.triggerEventHandler('mouseleave', null);
 
-      expect(tooltipService.hide).toHaveBeenCalledWith();
+      expect(mockTooltipService.hide).toHaveBeenCalledWith();
     });
   });
 

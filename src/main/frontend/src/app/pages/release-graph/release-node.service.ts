@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Release } from '../../services/release.service';
 
-export type Position = {
+export interface Position {
   x: number;
   y: number;
-};
+}
 
-export type ReleaseNode = {
+export interface ReleaseNode {
   id: string;
   label: string;
   position: Position;
@@ -14,7 +14,7 @@ export type ReleaseNode = {
   branch: string;
   originalBranch?: string;
   publishedAt: Date;
-};
+}
 
 export const SupportColors = {
   FULL: '#30A102',

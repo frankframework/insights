@@ -16,9 +16,7 @@ public class GitHubProperties {
     private List<String> includedLabels;
     private Boolean fetch;
 
-	public List<String> getIncludedLabels() {
-		return includedLabels.stream()
-				.map(String::toUpperCase)
-				.toList();
-	}
+    public List<String> getIncludedLabels() {
+        return includedLabels.stream().map(String::toUpperCase).toList();
+    }
 }

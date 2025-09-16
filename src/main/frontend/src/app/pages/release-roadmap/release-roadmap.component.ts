@@ -11,17 +11,17 @@ import { Milestone, MilestoneService } from '../../services/milestone.service';
 import { GitHubStates } from '../../app.service';
 import { RoadmapFutureOffCanvasComponent } from './roadmap-future-off-canvas/roadmap-future-off-canvas';
 
-type Version = {
+interface Version {
   major: number;
   minor: number;
   patch: number;
   source: string;
-};
+}
 
-type MilestoneWithVersion = {
+interface MilestoneWithVersion {
   milestone: Milestone;
   version: Version | null;
-};
+}
 
 @Component({
   selector: 'app-release-roadmap',

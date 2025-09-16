@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class IssueService {
-	private static final String ISSUE_TYPE_EPIC_NAME = "Epic";
+    private static final String ISSUE_TYPE_EPIC_NAME = "Epic";
 
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
@@ -257,11 +257,11 @@ public class IssueService {
         return buildIssueResponseTree(rootIssues);
     }
 
-	/**
-	 * Fetches all epic issues that are planned for the future (i.e., with a due date after the current date).
-	 * @return Set of future epic issues, including sub-issues and labels
-	 */
-	public Set<IssueResponse> getFutureEpicIssues() {
+    /**
+     * Fetches all epic issues that are planned for the future (i.e., with a due date after the current date).
+     * @return Set of future epic issues, including sub-issues and labels
+     */
+    public Set<IssueResponse> getFutureEpicIssues() {
         Set<Issue> futureEpicIssues = issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull(ISSUE_TYPE_EPIC_NAME);
         return buildIssueResponseTree(futureEpicIssues);
     }

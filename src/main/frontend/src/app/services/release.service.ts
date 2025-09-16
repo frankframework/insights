@@ -2,18 +2,18 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppService } from '../app.service';
 
-export type Release = {
+export interface Release {
   id: string;
   tagName: string;
   name: string;
   publishedAt: Date | string;
   branch: Branch;
-};
+}
 
-export type Branch = {
+export interface Branch {
   id: string;
   name: string;
-};
+}
 
 @Injectable({
   providedIn: 'root',

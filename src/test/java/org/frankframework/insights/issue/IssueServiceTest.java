@@ -58,14 +58,14 @@ public class IssueServiceTest {
     @InjectMocks
     private IssueService issueService;
 
-	private IssueDTO dto1, dto2, dtoSub;
+    private IssueDTO dto1, dto2, dtoSub;
     private Issue issue1, issue2, issueSub;
     private Milestone milestone;
     private IssueType issueType;
 
-	@BeforeEach
+    @BeforeEach
     public void setup() {
-		OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now();
 
         milestone = new Milestone();
         milestone.setId("m1");
@@ -326,37 +326,39 @@ public class IssueServiceTest {
         assertThrows(MilestoneNotFoundException.class, () -> issueService.getIssuesByMilestoneId("notfound"));
     }
 
-	@Test
-	public void getFutureEpicIssues_shouldReturnUnassignedEpics() {
-		Issue unassignedEpic = new Issue();
-		unassignedEpic.setId("epic1");
-		unassignedEpic.setMilestone(null);
+    @Test
+    public void getFutureEpicIssues_shouldReturnUnassignedEpics() {
+        Issue unassignedEpic = new Issue();
+        unassignedEpic.setId("epic1");
+        unassignedEpic.setMilestone(null);
 
-		when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic")).thenReturn(Set.of(unassignedEpic));
+        when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic"))
+                .thenReturn(Set.of(unassignedEpic));
 
-		IssueResponse epicResponse = new IssueResponse();
-		epicResponse.setId("epic1");
-		when(mapper.toDTO(unassignedEpic, IssueResponse.class)).thenReturn(epicResponse);
+        IssueResponse epicResponse = new IssueResponse();
+        epicResponse.setId("epic1");
+        when(mapper.toDTO(unassignedEpic, IssueResponse.class)).thenReturn(epicResponse);
 
-		Set<IssueResponse> result = issueService.getFutureEpicIssues();
+        Set<IssueResponse> result = issueService.getFutureEpicIssues();
 
-		verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
-		assertNotNull(result);
-		assertEquals(1, result.size());
-		assertEquals("epic1", result.iterator().next().getId());
-	}
+        verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("epic1", result.iterator().next().getId());
+    }
 
-	@Test
-	public void shouldReturnEmptySetWhenNoFutureEpicsAreFound() {
-		when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic")).thenReturn(Collections.emptySet());
+    @Test
+    public void shouldReturnEmptySetWhenNoFutureEpicsAreFound() {
+        when(issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull("Epic"))
+                .thenReturn(Collections.emptySet());
 
-		Set<IssueResponse> result = issueService.getFutureEpicIssues();
+        Set<IssueResponse> result = issueService.getFutureEpicIssues();
 
-		assertNotNull(result);
-		assertTrue(result.isEmpty());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
 
-		verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
-	}
+        verify(issueRepository).findIssuesByIssueTypeNameAndMilestoneIsNull("Epic");
+    }
 
     @Test
     public void getAllIssuesMap_returnsMap() {

@@ -35,5 +35,4 @@ jobs:
         with:
           name: apache-bench-logs
           path: |
-            backend-stress.log
-            frontend-stress.log
+            stress.log

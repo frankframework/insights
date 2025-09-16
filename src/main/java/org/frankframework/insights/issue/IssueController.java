@@ -50,14 +50,14 @@ public class IssueController {
         return ResponseEntity.status(HttpStatus.OK).body(milestoneIssues);
     }
 
-	/**
-	 * Fetches all epic issues that are planned for the future (i.e., with a due date after the current date).
-	 * @return Set of future epic issues
-	 */
-	@GetMapping("/future")
-	public ResponseEntity<Set<IssueResponse>> getFutureEpicIssues() {
-		Set<IssueResponse> futureIssues = issueService.getFutureEpicIssues();
-		if (futureIssues == null) futureIssues = Collections.emptySet();
-		return ResponseEntity.status(HttpStatus.OK).body(futureIssues);
-	}
+    /**
+     * Fetches all epic issues that are planned for the future (i.e., with a due date after the current date).
+     * @return Set of future epic issues
+     */
+    @GetMapping("/future")
+    public ResponseEntity<Set<IssueResponse>> getFutureEpicIssues() {
+        Set<IssueResponse> futureIssues = issueService.getFutureEpicIssues();
+        if (futureIssues == null) futureIssues = Collections.emptySet();
+        return ResponseEntity.status(HttpStatus.OK).body(futureIssues);
+    }
 }

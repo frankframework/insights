@@ -11,12 +11,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableSchedulerLock(defaultLockAtMostFor = "PT2H")
 @ConfigurationPropertiesScan
 public class InsightsApplication {
-	public static void main(String[] args) {
-		SpringApplication app = configureApplication();
-		app.run(args);
-	}
+    public static void main(String[] args) {
+        SpringApplication app = configureApplication();
+        app.run(args);
+    }
 
-	public static SpringApplication configureApplication() {
-		return new SpringApplication(InsightsApplication.class);
-	}
+    public static SpringApplication configureApplication() {
+        return new SpringApplication(InsightsApplication.class);
+    }
 }

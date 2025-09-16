@@ -2,10 +2,10 @@ import { Component, inject, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ColorService } from '../../services/color.service';
 
-type IssueType = {
+interface IssueType {
   name: string;
   color: string;
-};
+}
 
 @Component({
   selector: 'app-issue-type-tag',

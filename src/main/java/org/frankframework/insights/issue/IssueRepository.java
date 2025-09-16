@@ -23,7 +23,7 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
 """)
     Set<Issue> findIssuesByReleaseId(@Param("releaseId") String releaseId);
 
-	  Set<Issue> findDistinctByMilestoneId(String milestoneId);
+    Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
-	  Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
+    Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
 }

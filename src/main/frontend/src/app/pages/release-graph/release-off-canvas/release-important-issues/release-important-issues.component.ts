@@ -13,10 +13,10 @@ export const TypePriority = {
 
 type TypePriorityKey = keyof typeof TypePriority;
 
-type IssueTypeOption = {
+interface IssueTypeOption {
   label: string;
   value: string | null;
-};
+}
 
 @Component({
   selector: 'app-release-important-issues',
@@ -31,14 +31,11 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
 
   public issueTypeOptions = computed<IssueTypeOption[]>(() => {
     const issues = this.issuesSignal();
-    const typeNames = issues.map((issue) => issue.issueType?.name ?? null);
+
+    const typeNames = issues.map((issue) => this.getIssueTypeName(issue));
     const uniqueTypeNames = [...new Set(typeNames)];
-    uniqueTypeNames.sort((a, b) => {
-      const aPriority = this.getPriority(a);
-      const bPriority = this.getPriority(b);
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return (a ?? '').localeCompare(b ?? '');
-    });
+    uniqueTypeNames.sort((a, b) => this.sortIssueTypeNames(a, b));
+
     const options: IssueTypeOption[] = [{ label: 'All types', value: 'all' }];
     for (const name of uniqueTypeNames) {
       if (name) {
@@ -50,16 +47,18 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
     return options;
   });
 
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public sortedAndFilteredIssues = computed(() => {
     const issues = this.issuesSignal();
     if (!issues) return [];
     let filtered = [...issues];
+
     if (this.selectedType() !== 'all') {
-      filtered =
-        this.selectedType() === null
-          ? filtered.filter((issue) => !issue.issueType?.name)
-          : filtered.filter((issue) => issue.issueType?.name === this.selectedType());
+      const filterPredicate = this.selectedType() === null ? this.isIssueWithoutType : this.isIssueWithSelectedType;
+
+      filtered = filtered.filter((issue) => filterPredicate(issue));
     }
+
     filtered.sort(this.sortIssues);
     return filtered;
   });
@@ -74,13 +73,9 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
   }
 
   private sortIssues = (a: Issue, b: Issue): number => {
-    const groupOrder = (issue: Issue): number => {
-      if ((issue.issueType?.name ?? '').toUpperCase() === 'EPIC') return 0;
-      if (issue.subIssues && issue.subIssues.length > 0) return 1;
-      return 2;
-    };
-    const aGroup = groupOrder(a);
-    const bGroup = groupOrder(b);
+    const aGroup = this.groupOrder(a);
+    const bGroup = this.groupOrder(b);
+
     if (aGroup !== bGroup) return aGroup - bGroup;
     if (aGroup === 2) {
       const aPriority = this.getPriority(a.issueType?.name);
@@ -91,6 +86,31 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
       return a.number - b.number;
     }
     return a.number - b.number;
+  };
+
+  private groupOrder(issue: Issue): number {
+    if ((issue.issueType?.name ?? '').toUpperCase() === 'EPIC') return 0;
+    if (issue.subIssues && issue.subIssues.length > 0) return 1;
+    return 2;
+  }
+
+  private isIssueWithoutType(issue: Issue): boolean {
+    return !issue.issueType?.name;
+  }
+
+  private isIssueWithSelectedType = (issue: Issue): boolean => {
+    return issue.issueType?.name === this.selectedType();
+  };
+
+  private getIssueTypeName(issue: Issue): string | null {
+    return issue.issueType?.name ?? null;
+  }
+
+  private sortIssueTypeNames = (a: string | null, b: string | null): number => {
+    const aPriority = this.getPriority(a);
+    const bPriority = this.getPriority(b);
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return (a ?? '').localeCompare(b ?? '');
   };
 
   private getPriority(typeName?: string | null): number {

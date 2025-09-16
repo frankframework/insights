@@ -4,7 +4,7 @@ import { Milestone } from './milestone.service';
 import { Label } from './label.service';
 import { Observable } from 'rxjs';
 
-export type Issue = {
+export interface Issue {
   id: string;
   number: number;
   title: string;
@@ -18,21 +18,21 @@ export type Issue = {
   points?: number;
   labels?: Label[];
   subIssues?: Issue[];
-};
+}
 
-export type IssueType = {
+export interface IssueType {
   id: string;
   name: string;
   description: string;
   color: string;
-};
+}
 
-export type IssuePriority = {
+export interface IssuePriority {
   id: string;
   name: string;
   color: string;
   description: string;
-};
+}
 
 @Injectable({
   providedIn: 'root',

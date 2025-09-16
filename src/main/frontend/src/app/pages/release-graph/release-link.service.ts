@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { ReleaseNode } from './release-node.service';
 
-export type ReleaseLink = {
+export interface ReleaseLink {
   id: string;
   source: string;
   target: string;
-};
+}
 
 @Injectable({ providedIn: 'root' })
 export class ReleaseLinkService {

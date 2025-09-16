@@ -2,11 +2,11 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Issue } from '../../../../services/issue.service';
 
-export type TooltipData = {
+export interface TooltipData {
   issue: Issue;
   top: string;
   left: string;
-};
+}
 
 @Injectable({
   providedIn: 'root',

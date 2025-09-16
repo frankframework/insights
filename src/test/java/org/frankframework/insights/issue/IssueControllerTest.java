@@ -119,29 +119,29 @@ public class IssueControllerTest {
         mockMvc.perform(get("/api/issues/milestone/milX")).andExpect(status().isNotFound());
     }
 
-	@Test
-	public void getFutureEpicIssues_returnsOkWithIssues() throws Exception {
-		IssueResponse epic1 = new IssueResponse();
-		epic1.setId("epic1");
-		Set<IssueResponse> futureIssues = Set.of(epic1);
-		when(issueService.getFutureEpicIssues()).thenReturn(futureIssues);
+    @Test
+    public void getFutureEpicIssues_returnsOkWithIssues() throws Exception {
+        IssueResponse epic1 = new IssueResponse();
+        epic1.setId("epic1");
+        Set<IssueResponse> futureIssues = Set.of(epic1);
+        when(issueService.getFutureEpicIssues()).thenReturn(futureIssues);
 
-		mockMvc.perform(get("/api/issues/future"))
-				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-				.andExpect(jsonPath("$").isArray())
-				.andExpect(jsonPath("$.length()").value(1))
-				.andExpect(jsonPath("$[0].id").value("epic1"));
-	}
+        mockMvc.perform(get("/api/issues/future"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value("epic1"));
+    }
 
-	@Test
-	public void getFutureEpicIssues_returnsEmptySet() throws Exception {
-		when(issueService.getFutureEpicIssues()).thenReturn(Collections.emptySet());
+    @Test
+    public void getFutureEpicIssues_returnsEmptySet() throws Exception {
+        when(issueService.getFutureEpicIssues()).thenReturn(Collections.emptySet());
 
-		mockMvc.perform(get("/api/issues/future"))
-				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-				.andExpect(jsonPath("$").isArray())
-				.andExpect(jsonPath("$.length()").value(0));
-	}
+        mockMvc.perform(get("/api/issues/future"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 }

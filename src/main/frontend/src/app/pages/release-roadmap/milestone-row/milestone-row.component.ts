@@ -5,21 +5,21 @@ import { Milestone } from '../../../services/milestone.service';
 import { Issue, IssuePriority } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
 
-type PositionedIssue = {
+interface PositionedIssue {
   issue: Issue;
   style: Record<string, string>;
   track: number;
-};
+}
 
-type PlanningWindow = {
+interface PlanningWindow {
   start: number;
   end: number;
-};
+}
 
-type LayoutContext = {
+interface LayoutContext {
   positionedIssues: PositionedIssue[];
   trackCount: number;
-};
+}
 
 type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
 

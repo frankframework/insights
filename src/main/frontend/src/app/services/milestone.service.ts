@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AppService, GitHubState } from '../app.service';
 import { Observable } from 'rxjs';
 
-export type Milestone = {
+export interface Milestone {
   id: string;
   number: number;
   title: string;
@@ -12,7 +12,7 @@ export type Milestone = {
   openIssueCount: number;
   closedIssueCount: number;
   isEstimated?: boolean;
-};
+}
 
 @Injectable({
   providedIn: 'root',

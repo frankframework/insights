@@ -95,8 +95,10 @@ describe('RoadmapFutureOffCanvasComponent', () => {
     expect(component.futureEpicIssues).toEqual([]);
 
     const epics = fixture.debugElement.queryAll(By.css('app-future-epic'));
+
     expect(epics.length).withContext('No epic components should be rendered').toBe(0);
   }));
+
   it('should emit closeCanvas event when close is triggered from child component', () => {
     spyOn(component.closeCanvas, 'emit');
     mockIssueService.getFutureEpicIssues.and.returnValue(of([]));

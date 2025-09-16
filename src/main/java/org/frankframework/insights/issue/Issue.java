@@ -36,8 +36,8 @@ public class Issue {
     @Column(nullable = false)
     private String url;
 
-	@Column(columnDefinition = "TEXT")
-	private String businessValue;
+    @Column(columnDefinition = "TEXT")
+    private String businessValue;
 
     @ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference("milestone-issue")

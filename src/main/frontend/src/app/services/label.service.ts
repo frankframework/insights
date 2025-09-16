@@ -2,12 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { AppService } from '../app.service';
 import { Observable } from 'rxjs';
 
-export type Label = {
+export interface Label {
   id: string;
   name: string;
   description: string;
   color: string;
-};
+}
 
 @Injectable({
   providedIn: 'root',
