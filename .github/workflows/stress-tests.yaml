@@ -1,0 +1,38 @@
+name: Stress tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'The image tag (commit SHA) to run stress tests against'
+        required: true
+
+jobs:
+  stress-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Start Services with Docker Compose
+        run: docker compose up -d
+
+      - name: Install Apache Bench
+        run: sudo apt-get update && sudo apt-get install -y apache2-utils
+
+      - name: Stress test Backend
+        run: ab -r -n 1000 -c 50 http://localhost:8080/api/releases > backend-stress.log || true
+
+      - name: Stress test Frontend
+        run: ab -r -n 1000 -c 50 http://localhost:8080/ > frontend-stress.log || true
+
+      - name: Upload Apache Bench logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apache-bench-logs
+          path: |
+            stress.log

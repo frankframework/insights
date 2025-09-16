@@ -1,0 +1,10 @@
+services:
+    insights:
+        image: ghcr.io/frankframework/insights:latest
+        build:
+            dockerfile: ./docker/Dockerfile
+            context: .
+        environment:
+            SPRING_PROFILES_ACTIVE: local-seed
+        ports:
+            - "8080:8080"
