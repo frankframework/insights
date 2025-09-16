@@ -37,7 +37,7 @@ jobs:
         run: ab -r -n 1000 -c 50 http://localhost:8080/api/releases > backend-stress.log || true
 
       - name: Stress test Frontend
-        run: ab -r -n 1000 -c 50 http://localhost:4200/ > frontend-stress.log || true
+        run: ab -r -n 1000 -c 50 http://localhost:8080/ > frontend-stress.log || true
 
       - name: Upload Apache Bench logs
         if: always()

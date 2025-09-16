@@ -1,0 +1,54 @@
+import { Injectable, inject } from '@angular/core';
+import { AppService, GitHubState } from '../app.service';
+import { Milestone } from './milestone.service';
+import { Label } from './label.service';
+import { Observable } from 'rxjs';
+
+export type Issue = {
+  id: string;
+  number: number;
+  title: string;
+  state: GitHubState;
+  closedAt?: Date;
+  url: string;
+  businessValue?: string;
+  milestone?: Milestone;
+  issueType?: IssueType;
+  issuePriority?: IssuePriority;
+  points?: number;
+  labels?: Label[];
+  subIssues?: Issue[];
+};
+
+export type IssueType = {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+};
+
+export type IssuePriority = {
+  id: string;
+  name: string;
+  color: string;
+  description: string;
+};
+
+@Injectable({
+  providedIn: 'root',
+})
+export class IssueService {
+  private appService = inject(AppService);
+
+  public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
+    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));
+  }
+
+  public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
+    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
+  }
+
+  public getFutureEpicIssues(): Observable<Issue[]> {
+    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/future`));
+  }
+}

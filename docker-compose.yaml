@@ -1,0 +1,10 @@
+services:
+    insights:
+        image: insights
+        build:
+            dockerfile: ./docker/Dockerfile
+            context: .
+        environment:
+            SPRING_PROFILES_ACTIVE: e2e
+        ports:
+            - "8080:8080"
