@@ -7,8 +7,7 @@ import { LabelService, Label } from '../../../services/label.service';
 import { IssueService, Issue } from '../../../services/issue.service';
 import { ToastrService } from 'ngx-toastr';
 import { Release } from '../../../services/release.service';
-import { GitHubStates } from 'src/app/app.service';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { GitHubStates } from '../../../app.service';
 
 const mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
 const mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
@@ -30,7 +29,7 @@ describe('ReleaseOffCanvasComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ReleaseOffCanvasComponent, NoopAnimationsModule],
+      imports: [ReleaseOffCanvasComponent],
       providers: [
         { provide: LabelService, useValue: mockLabelService },
         { provide: IssueService, useValue: mockIssueService },

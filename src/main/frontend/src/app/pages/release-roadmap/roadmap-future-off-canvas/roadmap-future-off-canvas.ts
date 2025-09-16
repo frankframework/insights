@@ -48,7 +48,7 @@ export class RoadmapFutureOffCanvasComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (issues: Issue[]) => {
-          this.futureEpicIssues = issues && issues.length > 0 ? issues : undefined;
+          this.futureEpicIssues = issues;
         },
         complete: () => {
           this.isLoading = false;

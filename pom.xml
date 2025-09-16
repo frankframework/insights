@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>org.frankframework</groupId>
 	<artifactId>insights</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>${revision}</version>
 	<name>insights</name>
 	<description>Insights application for the Frank!Framework</description>
 	<url>https://frankframework.org</url>
@@ -45,6 +45,7 @@
 	</scm>
 
 	<properties>
+		<revision>1.0.0</revision>
 		<java.version>21</java.version>
 		<jackson.version>2.20.0</jackson.version>
 		<junit.bom.version>5.13.4</junit.bom.version>
@@ -365,4 +366,53 @@
             </plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<properties>
+				<config.image.repository>ghcr.io/frankframework</config.image.repository>
+				<config.image.name>insights</config.image.name>
+				<config.image.tag>${config.image.name}</config.image.tag>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>3.1.0</version>
+						<executions>
+							<execution>
+								<id>prepare-package</id>
+								<phase>package</phase>
+								<configuration>
+									<target>
+										<exec executable="docker" failonerror="true">
+											<arg value="build"/>
+											<arg value="-f"/>
+											<arg value="docker/Dockerfile"/>
+											<arg value="--no-cache"/>
+											<arg value="-t"/>
+											<arg value="${config.image.tag}:latest"/>
+											<arg value="-t"/>
+											<arg value="${config.image.tag}${revision}"/>
+											<arg value="-t"/>
+											<arg value="${config.image.repository}/${config.image.tag}:latest"/>
+											<arg value="-t"/>
+											<arg value="${config.image.repository}/${config.image.tag}:${revision}"/>
+											<arg value="."/>
+										</exec>
+									</target>
+								</configuration>
+								<goals>
+									<goal>run</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

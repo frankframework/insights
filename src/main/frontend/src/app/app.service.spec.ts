@@ -1,19 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AppService } from './app.service';
-import { environment } from '../environments/environment';
 import { provideHttpClient } from '@angular/common/http';
 
 describe('AppService', () => {
   let service: AppService;
   let httpTestingController: HttpTestingController;
 
-  const originalBackendUrl = environment.backendUrl;
-  const MOCK_API_URL = 'http://localhost:8080/api';
-
   beforeEach(() => {
-    environment.backendUrl = MOCK_API_URL;
-
     TestBed.configureTestingModule({
       providers: [AppService, provideHttpClient(), provideHttpClientTesting()],
     });
@@ -24,7 +18,6 @@ describe('AppService', () => {
 
   afterEach(() => {
     httpTestingController.verify();
-    environment.backendUrl = originalBackendUrl;
   });
 
   it('should be created', () => {
@@ -98,29 +91,23 @@ describe('AppService', () => {
   });
 
   describe('createAPIUrl()', () => {
-    let actualBaseUrl: string;
-
-    beforeEach(() => {
-      actualBaseUrl = (service as any).constructor.API_BASE_URL;
-    });
-
-    it('should correctly construct an API URL from the environment', () => {
+    it('should correctly construct an API URL', () => {
       const endpoint = 'releases';
-      const expectedUrl = `${actualBaseUrl}/releases`;
+      const expectedUrl = `/api/releases`;
 
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });
 
     it('should construct a URL even if the endpoint is empty', () => {
       const endpoint = '';
-      const expectedUrl = `${actualBaseUrl}/`;
+      const expectedUrl = `/api/`;
 
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });
 
     it('should create a double slash if the endpoint starts with a slash (current behavior)', () => {
       const endpoint = '/users';
-      const expectedUrl = `${actualBaseUrl}//users`;
+      const expectedUrl = `/api//users`;
 
       expect(service.createAPIUrl(endpoint)).toBe(expectedUrl);
     });

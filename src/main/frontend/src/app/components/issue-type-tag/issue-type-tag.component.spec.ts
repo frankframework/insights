@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { IssueTypeTagComponent } from './issue-type-tag.component';
-import { ColorService } from 'src/app/services/color.service';
+import { ColorService } from '../../services/color.service';
 
 class MockColorService {
   getTypeTextColor(color: string): string {

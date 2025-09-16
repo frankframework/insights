@@ -30,7 +30,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: ${{ env.PNPM_VERION }}
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -40,6 +40,7 @@ jobs:
           cache-dependency-path: 'src/main/frontend/pnpm-lock.yaml'
 
       - name: Install Frontend Dependencies
+        if: steps.pnpm-modules-cache.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile
         working-directory: src/main/frontend
 
@@ -55,7 +56,7 @@ jobs:
         working-directory: src/main/frontend
 
       - name: Test & Build Backend and run E2E Tests
-        run: mvn clean package "-Dspring.profiles.active=e2e"
+        run: mvn clean package "-Dspring.profiles.active=local-seed"
 
       - name: Upload CI Artifacts on Failure
         if: failure()

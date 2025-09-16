@@ -242,6 +242,9 @@ export class ReleaseNodeService {
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+      return false;
+    }
     const { securitySupportEnd } = this.getSupportEndDates(release);
     return new Date() > securitySupportEnd;
   }

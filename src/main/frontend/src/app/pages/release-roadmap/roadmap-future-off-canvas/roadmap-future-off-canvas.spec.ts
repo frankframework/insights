@@ -91,14 +91,12 @@ describe('RoadmapFutureOffCanvasComponent', () => {
     tick();
     fixture.detectChanges();
 
-    const noPlansMessage = fixture.debugElement.query(By.css('.no-new-features'));
-
     expect(component.isLoading).toBeFalse();
-    expect(component.futureEpicIssues).toBeUndefined();
-    expect(noPlansMessage).toBeTruthy();
-    expect(noPlansMessage.nativeElement.textContent).toContain('No future plans found.');
-  }));
+    expect(component.futureEpicIssues).toEqual([]);
 
+    const epics = fixture.debugElement.queryAll(By.css('app-future-epic'));
+    expect(epics.length).withContext('No epic components should be rendered').toBe(0);
+  }));
   it('should emit closeCanvas event when close is triggered from child component', () => {
     spyOn(component.closeCanvas, 'emit');
     mockIssueService.getFutureEpicIssues.and.returnValue(of([]));
