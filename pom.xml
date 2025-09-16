@@ -45,7 +45,7 @@
 	</scm>
 
 	<properties>
-		<revision>1.0.0</revision>
+		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>21</java.version>
 		<jackson.version>2.20.0</jackson.version>
 		<junit.bom.version>5.13.4</junit.bom.version>
@@ -358,6 +358,9 @@
                                         <include>tsconfig.json</include>
                                         <include>cypress/**</include>
                                     </includes>
+									<excludes>
+										<exclude>cypress/test-results/**</exclude>
+									</excludes>
                                 </resource>
                             </resources>
                         </configuration>

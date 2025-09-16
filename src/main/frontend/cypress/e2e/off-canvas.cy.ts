@@ -6,7 +6,6 @@ describe('Off-Canvas Panel Journey', () => {
   });
 
   it('should open, display all content correctly, and close', () => {
-    // This test is fine as-is from your last version.
     cy.get('[data-cy="node-v9.0.1"]').should('be.visible').click();
 
     cy.get('app-release-off-canvas', { timeout: 10000 })
@@ -44,12 +43,9 @@ describe('Off-Canvas Panel Journey', () => {
       .its('length')
       .as('initialCount');
 
-    // --- START FIX ---
-    // Force the selection, skipping the visibility check.
     cy.get('@importantIssues')
       .find('[data-cy="issue-type-filter"]')
       .select('Feature', { force: true });
-    // --- END FIX ---
 
     cy.get('@initialCount').then((initialCount) => {
       cy.get('@importantIssues')
@@ -63,12 +59,9 @@ describe('Off-Canvas Panel Journey', () => {
         cy.wrap($item).should('contain.text', 'Feature');
       });
 
-    // --- START FIX ---
-    // Force the second selection as well.
     cy.get('@importantIssues')
       .find('[data-cy="issue-type-filter"]')
       .select('All types', { force: true });
-    // --- END FIX ---
 
     cy.get('@initialCount').then((initialCount) => {
       cy.get('@importantIssues')
