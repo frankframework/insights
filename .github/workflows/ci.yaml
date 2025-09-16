@@ -41,7 +41,6 @@ jobs:
           cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Install Frontend Dependencies
-        if: steps.pnpm-modules-cache.outputs.cache-hit != 'true'
         run: pnpm install --frozen-lockfile
         working-directory: src/main/frontend
 
