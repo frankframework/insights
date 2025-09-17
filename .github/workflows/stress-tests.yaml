@@ -1,4 +1,4 @@
-name: Stress tests
+name: Stress tests web app
 
 on:
   workflow_dispatch:
