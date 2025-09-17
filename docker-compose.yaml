@@ -1,10 +1,16 @@
 services:
-    insights:
+    insights-webapp:
         image: ghcr.io/frankframework/insights:latest
         build:
-            dockerfile: ./docker/Dockerfile
+            dockerfile: docker/insights-webapp/Dockerfile
             context: .
         environment:
             SPRING_PROFILES_ACTIVE: local-seed
         ports:
             - "8080:8080"
+
+    snyk-scanner:
+      image: ghcr.io/frankframework/snyk-scanner:latest
+      build:
+        context: .
+        dockerfile: ./docker/snyk-scanner/Dockerfile

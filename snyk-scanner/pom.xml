@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.frankframework</groupId>
+		<artifactId>insights-parent</artifactId>
+		<version>${revision}</version>
+	</parent>
+
+	<artifactId>snyk-scanner</artifactId>
+	<name>snyk-scanner</name>
+	<description>Project that scans for FrankFramework vulnerabilities</description>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<properties>
+				<config.image.repository>ghcr.io/frankframework</config.image.repository>
+				<config.image.name>snyk-scanner</config.image.name>
+				<config.image.tag>${config.image.name}</config.image.tag>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>prepare-package</id>
+								<phase>package</phase>
+								<configuration>
+									<target>
+										<exec executable="docker" failonerror="true">
+											<arg value="build"/>
+											<arg value="-f"/>
+											<arg value="../docker/snyk-scanner/Dockerfile"/>
+											<arg value="-t"/>
+											<arg value="${config.image.tag}:latest"/>
+											<arg value="-t"/>
+											<arg value="${config.image.repository}/${config.image.tag}:latest"/>
+											<arg value=".."/>
+										</exec>
+									</target>
+								</configuration>
+								<goals>
+									<goal>run</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>

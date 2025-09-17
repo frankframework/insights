@@ -45,18 +45,18 @@ jobs:
 
       - name: Install Frontend Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: src/main/frontend
+        working-directory: insights-webapp/src/main/frontend
 
       - name: Lint Frontend
         run: pnpm lint
-        working-directory: src/main/frontend
+        working-directory: insights-webapp/src/main/frontend
 
       - name: Lint Backend
         run: mvn checkstyle:check
 
       - name: Test Frontend
         run: pnpm test --watch=false --browsers=ChromeHeadless
-        working-directory: src/main/frontend
+        working-directory: insights-webapp/src/main/frontend
 
       - name: Test & Build Backend and run E2E Tests
         run: mvn clean package "-Dspring.profiles.active=local-seed"
@@ -110,7 +110,7 @@ jobs:
 
       - name: Install Frontend Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: src/main/frontend
+        working-directory: insights-webapp/src/main/frontend
 
       - name: Build
         run: mvn clean package -DskipTests "-Dspring.profiles.active=prod"
@@ -141,7 +141,7 @@ jobs:
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata for insights application
+      - name: Extract Docker metadata for insights web application
         id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
@@ -157,7 +157,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/Dockerfile
+          file: docker/webapp/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

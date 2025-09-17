@@ -8,9 +8,9 @@ RUN addgroup --gid ${GID} spring && \
 USER spring
 
 COPY --chown=spring --chmod=774 ./docker/scripts/ /scripts/
-COPY --chown=spring ./target/insights*.jar /app/insights.jar
+COPY --chown=spring ./snyk-scanner/target/snyk-scanner*.jar /app/snyk-scanner.jar
 
 EXPOSE 8080
 
 ENTRYPOINT ["/scripts/entrypoint.sh"]
-CMD ["java","-jar","/app/insights.jar"]
+CMD ["java","-jar","/app/snyk-scanner.jar"]
