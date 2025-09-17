@@ -4,7 +4,7 @@ set -e
 export JAVA_OPTS="\
   -XX:MaxRAMPercentage=75 \
   -XX:+ExitOnOutOfMemoryError
-	-XX:+HeapDumpOnOutOfMemoryError \
-	$JAVA_OPTS"
+  -XX:+HeapDumpOnOutOfMemoryError \
+  $JAVA_OPTS"
 
 exec "$@"

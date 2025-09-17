@@ -7,7 +7,7 @@ RUN addgroup --gid ${GID} spring && \
 
 USER spring
 
-COPY --chown=spring ./docker/scripts/ /scripts/
+COPY --chown=spring --chmod=774 ./docker/scripts/ /scripts/
 COPY --chown=spring ./target/insights*.jar /app/insights.jar
 
 EXPOSE 8080
