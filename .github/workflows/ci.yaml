@@ -106,22 +106,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
+          cache-dependency-path: 'insights-webapp/pnpm-lock.yaml'
 
       - name: Install Frontend Dependencies
         run: pnpm install --frozen-lockfile
         working-directory: insights-webapp/src/main/frontend
 
       - name: Build
-        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod"
-
-      # Install the cosign tool except on PR
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb #v3.8.2
-        with:
-          cosign-release: 'v2.2.4'
+        run: mvn clean package -DskipTests
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
@@ -139,10 +131,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Install the cosign tool except on PR
+      # https://github.com/sigstore/cosign-installer
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb #v3.8.2
+        with:
+          cosign-release: 'v2.2.4'
+
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata for insights web application
-        id: meta
+        id: meta-insights-webapp
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -150,31 +150,72 @@ jobs:
             type=ref,event=branch
             type=raw,value=0.0.${{ github.run_number }}
 
-      # Build and push Docker image with Buildx (don't push on PR)
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata for snyk scanner
+        id: meta-snyk-scanner
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=raw,value=0.0.${{ github.run_number }}
+
+      # Build and push insights webapp Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
-      - name: Build and push Docker image
-        id: build-and-push
+      - name: Build and push insights webapp Docker image
+        id: build-and-push-insights-webapp
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: docker/webapp/Dockerfile
+          file: ./docker/insights-webapp/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-insights-webapp.outputs.tags }}
+          labels: ${{ steps.meta-insights-webapp.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Sign the resulting Docker image digest except on PRs.
+      # Build and push snyk scanner Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and push snyk scanner Docker image
+        id: build-and-push-snyk-scanner
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/snyk-scanner/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-snyk-scanner.outputs.tags }}
+          labels: ${{ steps.meta-snyk-scanner.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Sign the resulting insights webapp Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
       # repository is public to avoid leaking data.  If you would like to publish
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
-      - name: Sign the published Docker image
+      - name: Sign the published insights webapp Docker image
         if: ${{ github.event_name != 'pull_request' }}
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+          TAGS: ${{ steps.meta-insights-webapp.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push-insights-webapp.outputs.digest }}
+          # This step uses the identity token to provision an ephemeral certificate
+          # against the sigstore community Fulcio instance.
+        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+
+      # Sign the resulting snyk scanner Docker image digest except on PRs.
+      # This will only write to the public Rekor transparency log when the Docker
+      # repository is public to avoid leaking data.  If you would like to publish
+      # transparency data even for private images, pass --force to cosign below.
+      # https://github.com/sigstore/cosign
+      - name: Sign the published snyk scanner Docker image
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+          TAGS: ${{ steps.meta-snyk-scanner.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push-snyk-scanner.outputs.digest }}
           # This step uses the identity token to provision an ephemeral certificate
           # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
