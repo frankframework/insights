@@ -34,6 +34,7 @@ jobs:
         with:
           node-version: 23
           cache: 'pnpm'
+          cache-dependency-path: 'insights-webapp/pnpm-lock.yaml'
 
       - name: Cache SonarQube packages
         uses: actions/cache@v4
@@ -52,4 +53,4 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=frankframework_insights "-Dspring.profiles.active=local-seed"
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=frankframework_insights

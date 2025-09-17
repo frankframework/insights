@@ -4,8 +4,6 @@ services:
         build:
             dockerfile: docker/insights-webapp/Dockerfile
             context: .
-        environment:
-            SPRING_PROFILES_ACTIVE: local-seed
         ports:
             - "8080:8080"
 

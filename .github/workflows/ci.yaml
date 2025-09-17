@@ -41,7 +41,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
+          cache-dependency-path: 'insights-webapp/pnpm-lock.yaml'
 
       - name: Install Frontend Dependencies
         run: pnpm install --frozen-lockfile
@@ -59,7 +59,7 @@ jobs:
         working-directory: insights-webapp/src/main/frontend
 
       - name: Test & Build Backend and run E2E Tests
-        run: mvn clean package "-Dspring.profiles.active=local-seed"
+        run: mvn clean package
 
       - name: Upload CI Artifacts on Failure
         if: failure()
