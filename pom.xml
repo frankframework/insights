@@ -55,6 +55,7 @@
 		<puppycrawl.tools.version>11.0.1</puppycrawl.tools.version>
 		<jacoco.version>0.8.13</jacoco.version>
 
+		<surefire.module.args/>
 		<sonar.organization>frank-framework</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -105,6 +106,13 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<configuration>
+						<argLine>@{argLine} --enable-preview ${surefire.module.args}</argLine>
+					</configuration>
+				</plugin>
 				<plugin>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-maven-plugin</artifactId>

@@ -12,6 +12,10 @@
 	<name>insights-webapp</name>
 	<description>Insights Web Application for the Frank!Framework</description>
 
+	<properties>
+		<surefire.module.args>-Dspring.profiles.active=local-seed</surefire.module.args>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -111,11 +115,8 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<argLine>@{argLine} --enable-preview -Dspring.profiles.active=local-seed</argLine>
-				</configuration>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
