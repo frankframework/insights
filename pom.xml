@@ -115,11 +115,6 @@
 						<goals><goal>prepare-agent</goal></goals>
 					</execution>
 					<execution>
-						<id>report</id>
-						<phase>verify</phase>
-						<goals><goal>report</goal></goals>
-					</execution>
-					<execution>
 						<id>report-aggregate</id>
 						<phase>verify</phase>
 						<goals>
