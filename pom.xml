@@ -63,7 +63,7 @@
 
 	<modules>
 		<module>insights-webapp</module>
-		<module>snyk-scanner</module>
+		<module>cve-scanner</module>
 	</modules>
 
 	<dependencyManagement>

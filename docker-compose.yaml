@@ -7,8 +7,8 @@ services:
         ports:
             - "8080:8080"
 
-    snyk-scanner:
-      image: ghcr.io/frankframework/snyk-scanner:latest
+    cve-scanner:
+      image: ghcr.io/frankframework/cve-scanner:latest
       build:
         context: .
-        dockerfile: ./docker/snyk-scanner/Dockerfile
+        dockerfile: ./docker/cve-scanner/Dockerfile
