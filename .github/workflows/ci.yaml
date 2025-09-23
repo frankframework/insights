@@ -41,22 +41,22 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: 'insights-webapp/pnpm-lock.yaml'
+          cache-dependency-path: 'webapp/pnpm-lock.yaml'
 
       - name: Install Frontend Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: insights-webapp/src/main/frontend
+        working-directory: webapp/src/main/frontend
 
       - name: Lint Frontend
         run: pnpm lint
-        working-directory: insights-webapp/src/main/frontend
+        working-directory: webapp/src/main/frontend
 
       - name: Lint Backend
         run: mvn checkstyle:check
 
       - name: Test Frontend
         run: pnpm test --watch=false --browsers=ChromeHeadless
-        working-directory: insights-webapp/src/main/frontend
+        working-directory: webapp/src/main/frontend
 
       - name: Test & Build Backend and run E2E Tests
         run: mvn clean package
@@ -106,11 +106,11 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
-          cache-dependency-path: 'insights-webapp/pnpm-lock.yaml'
+          cache-dependency-path: 'webapp/pnpm-lock.yaml'
 
       - name: Install Frontend Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: insights-webapp/src/main/frontend
+        working-directory: webapp/src/main/frontend
 
       - name: Build
         run: mvn clean package -DskipTests
@@ -141,8 +141,8 @@ jobs:
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata for insights web application
-        id: meta-insights-webapp
+      - name: Extract Docker metadata for the insights web application
+        id: meta-webapp
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -163,15 +163,15 @@ jobs:
 
       # Build and push insights webapp Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
-      - name: Build and push insights webapp Docker image
-        id: build-and-push-insights-webapp
+      - name: Build and push webapp Docker image
+        id: build-and-push-webapp
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/insights-webapp/Dockerfile
+          file: ./docker/webapp/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-insights-webapp.outputs.tags }}
-          labels: ${{ steps.meta-insights-webapp.outputs.labels }}
+          tags: ${{ steps.meta-webapp.outputs.tags }}
+          labels: ${{ steps.meta-webapp.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -194,12 +194,12 @@ jobs:
       # repository is public to avoid leaking data.  If you would like to publish
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
-      - name: Sign the published insights webapp Docker image
+      - name: Sign the published webapp Docker image
         if: ${{ github.event_name != 'pull_request' }}
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta-insights-webapp.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push-insights-webapp.outputs.digest }}
+          TAGS: ${{ steps.meta-webapp.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push-webapp.outputs.digest }}
           # This step uses the identity token to provision an ephemeral certificate
           # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}

@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: 23
           cache: 'pnpm'
-          cache-dependency-path: 'insights-webapp/pnpm-lock.yaml'
+          cache-dependency-path: 'webapp/pnpm-lock.yaml'
 
       - name: Cache SonarQube packages
         uses: actions/cache@v4
