@@ -1,8 +1,8 @@
 services:
-    insights-webapp:
-        image: ghcr.io/frankframework/insights:latest
+    webapp:
+        image: ghcr.io/frankframework/webapp:latest
         build:
-            dockerfile: docker/insights-webapp/Dockerfile
+            dockerfile: docker/webapp/Dockerfile
             context: .
         ports:
             - "8080:8080"

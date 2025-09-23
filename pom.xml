@@ -62,7 +62,7 @@
 	</properties>
 
 	<modules>
-		<module>insights-webapp</module>
+		<module>webapp</module>
 		<module>cve-scanner</module>
 	</modules>
 

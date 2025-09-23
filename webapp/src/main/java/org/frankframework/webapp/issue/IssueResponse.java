@@ -1,0 +1,31 @@
+package org.frankframework.webapp.issue;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
+import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
+import org.frankframework.webapp.github.GitHubPropertyState;
+import org.frankframework.webapp.issuePriority.IssuePriorityResponse;
+import org.frankframework.webapp.issuetype.IssueTypeResponse;
+import org.frankframework.webapp.label.LabelResponse;
+import org.frankframework.webapp.milestone.MilestoneResponse;
+
+@Getter
+@Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class IssueResponse {
+    private String id;
+    private int number;
+    private String title;
+    private GitHubPropertyState state;
+    private OffsetDateTime closedAt;
+    private String url;
+    private String businessValue;
+    private MilestoneResponse milestone;
+    private IssueTypeResponse issueType;
+    private IssuePriorityResponse issuePriority;
+    private double points;
+    private Set<LabelResponse> labels;
+    private Set<IssueResponse> subIssues;
+}
