@@ -10,6 +10,7 @@ import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.dependency.DependencyService;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
@@ -67,6 +68,9 @@ public class ShedLockProductionTest {
     private ReleaseService releaseService;
 
     @Mock
+    private DependencyService dependencyService;
+
+    @Mock
     private GitHubProperties gitHubProperties;
 
     private SystemDataInitializer systemDataInitializer;
@@ -85,6 +89,7 @@ public class ShedLockProductionTest {
                 issueService,
                 pullRequestService,
                 releaseService,
+                dependencyService,
                 gitHubProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);

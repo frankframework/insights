@@ -14,6 +14,7 @@ import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.dependency.DependencyService;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -62,6 +63,9 @@ public class ShedLockTest {
     private ReleaseService releaseService;
 
     @Mock
+    private DependencyService dependencyService;
+
+    @Mock
     private GitHubProperties gitHubProperties;
 
     private SystemDataInitializer systemDataInitializer;
@@ -78,6 +82,7 @@ public class ShedLockTest {
                 issueService,
                 pullRequestService,
                 releaseService,
+                dependencyService,
                 gitHubProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);

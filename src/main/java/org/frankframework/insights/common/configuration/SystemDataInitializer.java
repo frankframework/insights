@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.dependency.DependencyService;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
@@ -29,6 +30,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
+    private final DependencyService dependencyService;
     private final Boolean gitHubFetchEnabled;
 
     public SystemDataInitializer(
@@ -41,6 +43,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
+            DependencyService dependencyService,
             GitHubProperties gitHubProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
@@ -51,6 +54,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
+        this.dependencyService = dependencyService;
         this.gitHubFetchEnabled = gitHubProperties.getFetch();
     }
 
@@ -96,13 +100,13 @@ public class SystemDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
+     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub and dependencies and vulnerabilities from Nexus.
      */
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
             if (!gitHubFetchEnabled) {
-                log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+                log.info("Skipping GitHub and CVE fetch: skipping due to build/test configuration.");
                 return;
             }
 
@@ -115,6 +119,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();
             releaseService.injectReleases();
+
+            dependencyService.executeDependencyAndCveScan();
 
             log.info("Done fetching all GitHub data");
         } catch (Exception e) {
