@@ -9,8 +9,8 @@ import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.frankframework.shared.entity.Release;
 import org.frankframework.webapp.pullrequest.PullRequest;
-import org.frankframework.webapp.release.Release;
 
 @Entity
 @Getter

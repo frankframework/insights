@@ -5,7 +5,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.webapp.branch.Branch;
+import org.frankframework.shared.entity.Branch;
 import org.frankframework.webapp.branch.BranchService;
 import org.frankframework.webapp.common.configuration.properties.GitHubProperties;
 import org.frankframework.webapp.common.entityconnection.branchpullrequest.BranchPullRequest;

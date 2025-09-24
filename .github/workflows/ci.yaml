@@ -59,7 +59,7 @@ jobs:
         working-directory: webapp/src/main/frontend
 
       - name: Test & Build Backend and run E2E Tests
-        run: mvn clean package
+        run: mvn clean package "-Dspring.profiles.active=local-seed"
 
       - name: Upload CI Artifacts on Failure
         if: failure()
@@ -113,7 +113,15 @@ jobs:
         working-directory: webapp/src/main/frontend
 
       - name: Build
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod"
+
+      # Install the cosign tool except on PR
+      # https://github.com/sigstore/cosign-installer
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb #v3.8.2
+        with:
+          cosign-release: 'v2.2.4'
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
@@ -131,18 +139,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Install the cosign tool except on PR
-      # https://github.com/sigstore/cosign-installer
-      - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb #v3.8.2
-        with:
-          cosign-release: 'v2.2.4'
-
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata for the insights web application
-        id: meta-webapp
+      - name: Extract Docker metadata for insights application
+        id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -150,72 +150,31 @@ jobs:
             type=ref,event=branch
             type=raw,value=0.0.${{ github.run_number }}
 
-      # Extract metadata (tags, labels) for Docker
-      # https://github.com/docker/metadata-action
-      - name: Extract Docker metadata for cve scanner
-        id: meta-cve-scanner
-        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=raw,value=0.0.${{ github.run_number }}
-
-      # Build and push insights webapp Docker image with Buildx (don't push on PR)
+      # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
-      - name: Build and push webapp Docker image
-        id: build-and-push-webapp
+      - name: Build and push Docker image
+        id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/webapp/Dockerfile
+          file: docker/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-webapp.outputs.tags }}
-          labels: ${{ steps.meta-webapp.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Build and push cve scanner Docker image with Buildx (don't push on PR)
-      # https://github.com/docker/build-push-action
-      - name: Build and push cve scanner Docker image
-        id: build-and-push-cve-scanner
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/cve-scanner/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-cve-scanner.outputs.tags }}
-          labels: ${{ steps.meta-cve-scanner.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Sign the resulting insights webapp Docker image digest except on PRs.
+      # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
       # repository is public to avoid leaking data.  If you would like to publish
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
-      - name: Sign the published webapp Docker image
+      - name: Sign the published Docker image
         if: ${{ github.event_name != 'pull_request' }}
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta-webapp.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push-webapp.outputs.digest }}
-          # This step uses the identity token to provision an ephemeral certificate
-          # against the sigstore community Fulcio instance.
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
-
-
-      # Sign the resulting cve scanner Docker image digest except on PRs.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
-      # https://github.com/sigstore/cosign
-      - name: Sign the published cve scanner Docker image
-        if: ${{ github.event_name != 'pull_request' }}
-        env:
-          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta-cve-scanner.outputs.tags }}
-          DIGEST: ${{ steps.build-and-push-cve-scanner.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
           # This step uses the identity token to provision an ephemeral certificate
           # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}

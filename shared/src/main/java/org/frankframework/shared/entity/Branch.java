@@ -1,4 +1,4 @@
-package org.frankframework.webapp.branch;
+package org.frankframework.shared.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;

@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.shared.entity.Branch;
 import org.frankframework.webapp.common.configuration.properties.GitHubProperties;
 import org.frankframework.webapp.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.webapp.common.entityconnection.branchpullrequest.BranchPullRequestRepository;

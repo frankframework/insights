@@ -9,7 +9,7 @@
 	</parent>
 
 	<artifactId>webapp</artifactId>
-	<name>insights-webapp</name>
+	<name>webapp</name>
 	<description>Insights Web Application for the Frank!Framework</description>
 
 	<properties>
@@ -110,10 +110,25 @@
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.frankframework</groupId>
+			<artifactId>cve-scanner</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.frankframework</groupId>
+			<artifactId>shared</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
@@ -187,7 +202,7 @@
 			<id>docker</id>
 			<properties>
 				<config.image.repository>ghcr.io/frankframework</config.image.repository>
-				<config.image.name>insights-webapp</config.image.name>
+				<config.image.name>webapp</config.image.name>
 				<config.image.tag>${config.image.name}</config.image.tag>
 			</properties>
 			<build>
@@ -204,7 +219,7 @@
 										<exec executable="docker" failonerror="true">
 											<arg value="build"/>
 											<arg value="-f"/>
-											<arg value="../docker/insights-webapp/Dockerfile"/>
+											<arg value="../docker/Dockerfile"/>
 											<arg value="-t"/>
 											<arg value="${config.image.tag}:latest"/>
 											<arg value="-t"/>

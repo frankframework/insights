@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.frankframework.webapp.branch.Branch;
+import org.frankframework.shared.entity.Branch;
 import org.frankframework.webapp.pullrequest.PullRequest;
 
 @Entity

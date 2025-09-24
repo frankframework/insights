@@ -2,13 +2,7 @@ services:
     webapp:
         image: ghcr.io/frankframework/webapp:latest
         build:
-            dockerfile: docker/webapp/Dockerfile
+            dockerfile: docker/Dockerfile
             context: .
         ports:
             - "8080:8080"
-
-    cve-scanner:
-      image: ghcr.io/frankframework/cve-scanner:latest
-      build:
-        context: .
-        dockerfile: ./docker/cve-scanner/Dockerfile

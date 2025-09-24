@@ -5,7 +5,9 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import org.frankframework.webapp.branch.Branch;
+import org.frankframework.shared.entity.Branch;
+import org.frankframework.shared.entity.Release;
+import org.frankframework.shared.repository.ReleaseRepository;
 import org.frankframework.webapp.branch.BranchService;
 import org.frankframework.webapp.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.webapp.common.entityconnection.releasepullrequest.ReleasePullRequest;

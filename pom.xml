@@ -64,6 +64,7 @@
 	<modules>
 		<module>webapp</module>
 		<module>cve-scanner</module>
+		<module>shared</module>
 	</modules>
 
 	<dependencyManagement>

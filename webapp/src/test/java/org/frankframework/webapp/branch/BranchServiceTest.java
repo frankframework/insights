@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
+import org.frankframework.shared.entity.Branch;
 import org.frankframework.webapp.common.configuration.properties.GitHubProperties;
 import org.frankframework.webapp.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.webapp.common.entityconnection.branchpullrequest.BranchPullRequestRepository;

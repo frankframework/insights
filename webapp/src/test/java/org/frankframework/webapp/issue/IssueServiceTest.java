@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import org.frankframework.shared.entity.Release;
 import org.frankframework.webapp.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.webapp.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.webapp.common.mapper.Mapper;
@@ -17,7 +18,6 @@ import org.frankframework.webapp.issuetype.IssueTypeResponse;
 import org.frankframework.webapp.issuetype.IssueTypeService;
 import org.frankframework.webapp.label.*;
 import org.frankframework.webapp.milestone.*;
-import org.frankframework.webapp.release.Release;
 import org.frankframework.webapp.release.ReleaseNotFoundException;
 import org.frankframework.webapp.release.ReleaseService;
 import org.junit.jupiter.api.*;

@@ -1,11 +1,10 @@
-package org.frankframework.webapp.release;
+package org.frankframework.shared.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.webapp.branch.Branch;
 
 @Entity
 @JsonIgnoreProperties(ignoreUnknown = true)
