@@ -407,4 +407,112 @@ public class ReleaseServiceTest {
         assertEquals(normal_late, releases.get(2));
         assertEquals(nightly_middle, releases.get(3));
     }
+
+    @Test
+    public void isValidRelease_shouldFilterOutReleaseCandidate() throws Exception {
+        ReleaseDTO rcRelease = new ReleaseDTO("id1", "v8.1.0-RC1", "v8.1.0-RC1", OffsetDateTime.now());
+        ReleaseDTO validRelease = new ReleaseDTO("id2", "v8.1.0", "v8.1.0", OffsetDateTime.now());
+
+        when(gitHubClient.getReleases()).thenReturn(Set.of(rcRelease, validRelease));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        releaseService.injectReleases();
+
+        ArgumentCaptor<Set<Release>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(releaseRepository).saveAll(captor.capture());
+        Set<Release> savedReleases = captor.getValue();
+
+        assertEquals(1, savedReleases.size());
+        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(rcRelease), eq(Release.class));
+    }
+
+    @Test
+    public void isValidRelease_shouldFilterOutBetaRelease() throws Exception {
+        ReleaseDTO betaRelease = new ReleaseDTO("id1", "v7.0-B2", "v7.0-B2", OffsetDateTime.now());
+        ReleaseDTO validRelease = new ReleaseDTO("id2", "v7.0.0", "v7.0.0", OffsetDateTime.now());
+
+        when(gitHubClient.getReleases()).thenReturn(Set.of(betaRelease, validRelease));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        releaseService.injectReleases();
+
+        ArgumentCaptor<Set<Release>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(releaseRepository).saveAll(captor.capture());
+        Set<Release> savedReleases = captor.getValue();
+
+        assertEquals(1, savedReleases.size());
+        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(betaRelease), eq(Release.class));
+    }
+
+    @Test
+    public void isValidRelease_shouldFilterOutMultipleInvalidReleases() throws Exception {
+        ReleaseDTO rc1 = new ReleaseDTO("id1", "v7.8-RC1", "v7.8-RC1", OffsetDateTime.now());
+        ReleaseDTO rc2 = new ReleaseDTO("id2", "v7.8-RC2", "v7.8-RC2", OffsetDateTime.now());
+        ReleaseDTO beta = new ReleaseDTO("id3", "v7.0-B3", "v7.0-B3", OffsetDateTime.now());
+        ReleaseDTO validRelease = new ReleaseDTO("id4", "v7.8.0", "v7.8.0", OffsetDateTime.now());
+
+        when(gitHubClient.getReleases()).thenReturn(Set.of(rc1, rc2, beta, validRelease));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        releaseService.injectReleases();
+
+        ArgumentCaptor<Set<Release>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(releaseRepository).saveAll(captor.capture());
+        Set<Release> savedReleases = captor.getValue();
+
+        assertEquals(1, savedReleases.size());
+        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(rc1), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(rc2), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(beta), eq(Release.class));
+    }
+
+    @Test
+    public void isValidRelease_shouldHandleNullReleaseName() throws Exception {
+        ReleaseDTO nullNameRelease = new ReleaseDTO("id1", null, null, OffsetDateTime.now());
+
+        when(gitHubClient.getReleases()).thenReturn(Set.of(nullNameRelease));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        releaseService.injectReleases();
+
+        verify(releaseRepository, never()).saveAll(anySet());
+        verify(mapper, never()).toEntity(any(ReleaseDTO.class), eq(Release.class));
+    }
+
+    @Test
+    public void isValidRelease_shouldAllowCaseInsensitiveMatching() throws Exception {
+        ReleaseDTO rcLowercase = new ReleaseDTO("id1", "v7.5-rc2", "v7.5-rc2", OffsetDateTime.now());
+        ReleaseDTO betaUppercase = new ReleaseDTO("id2", "v7.6-B1", "v7.6-B1", OffsetDateTime.now());
+        ReleaseDTO validRelease = new ReleaseDTO("id3", "v7.6.0", "v7.6.0", OffsetDateTime.now());
+
+        when(gitHubClient.getReleases()).thenReturn(Set.of(rcLowercase, betaUppercase, validRelease));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        releaseService.injectReleases();
+
+        ArgumentCaptor<Set<Release>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(releaseRepository).saveAll(captor.capture());
+        Set<Release> savedReleases = captor.getValue();
+
+        assertEquals(1, savedReleases.size());
+        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(rcLowercase), eq(Release.class));
+        verify(mapper, never()).toEntity(eq(betaUppercase), eq(Release.class));
+    }
 }

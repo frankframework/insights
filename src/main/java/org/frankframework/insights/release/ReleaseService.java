@@ -72,6 +72,7 @@ public class ReleaseService {
                     branchService.getBranchPullRequestsByBranches(allBranches);
 
             Set<Release> releases = releaseDTOs.stream()
+                    .filter(this::isValidRelease)
                     .map(dto -> mapToRelease(dto, allBranches))
                     .collect(Collectors.toSet());
 
@@ -93,6 +94,26 @@ public class ReleaseService {
         } catch (Exception e) {
             throw new ReleaseInjectionException("Error injecting GitHub releases.", e);
         }
+    }
+
+    /**
+     * Checks if a release is valid (not a release candidate or beta release).
+     * Filters out releases with patterns like -RCX or -BX.
+     *
+     * @param dto The ReleaseDTO to validate.
+     * @return True if the release is valid, false otherwise.
+     */
+    private boolean isValidRelease(ReleaseDTO dto) {
+        String releaseName = dto.name();
+        if (releaseName == null) {
+            return false;
+        }
+
+        // Filter out release candidates (-RC1, -RC2, etc.) and beta releases (-B1, -B2, etc.)
+        Pattern rcPattern = Pattern.compile("-RC\\d+", Pattern.CASE_INSENSITIVE);
+        Pattern betaPattern = Pattern.compile("-B\\d+", Pattern.CASE_INSENSITIVE);
+
+        return !rcPattern.matcher(releaseName).find() && !betaPattern.matcher(releaseName).find();
     }
 
     /**
