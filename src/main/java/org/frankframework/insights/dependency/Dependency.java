@@ -1,0 +1,30 @@
+package org.frankframework.insights.dependency;
+
+import jakarta.persistence.*;
+import java.util.UUID;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"groupId", "artifactId", "version"}))
+public class Dependency {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false)
+    private String groupId;
+
+    @Column(nullable = false)
+    private String artifactId;
+
+    @Column(nullable = false)
+    private String version;
+
+    private String fileName;
+}

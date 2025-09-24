@@ -9,8 +9,8 @@ import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.properties.DataProperties;
-import org.frankframework.insights.common.properties.GitHubProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.dependency.DependencyService;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
@@ -27,15 +27,12 @@ import org.frankframework.insights.pullrequest.PullRequestInjectionException;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
-import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
-
-import java.net.DatagramPacket;
 
 @ActiveProfiles("production")
 @ExtendWith(MockitoExtension.class)
@@ -71,16 +68,16 @@ public class ShedLockProductionTest {
     private ReleaseService releaseService;
 
     @Mock
-    private VulnerabilityService vulnerabilityService;
+    private DependencyService dependencyService;
 
     @Mock
-    private DataProperties dataProperties;
+    private GitHubProperties gitHubProperties;
 
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
     public void setUp() {
-        when(dataProperties.isFetchEnabled()).thenReturn(true);
+        when(gitHubProperties.getFetch()).thenReturn(true);
 
         systemDataInitializer = new SystemDataInitializer(
                 gitHubRepositoryStatisticsService,
@@ -92,8 +89,8 @@ public class ShedLockProductionTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                vulnerabilityService,
-                dataProperties);
+                dependencyService,
+                gitHubProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }

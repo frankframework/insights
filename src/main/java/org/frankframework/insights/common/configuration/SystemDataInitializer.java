@@ -1,11 +1,10 @@
 package org.frankframework.insights.common.configuration;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.properties.DataProperties;
+import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.dependency.DependencyService;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
@@ -15,8 +14,6 @@ import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
-import org.frankframework.insights.vulnerability.VulnerabilityService;
-import org.owasp.dependencycheck.utils.Settings;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,8 +30,8 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
-    private final VulnerabilityService vulnerabilityService;
-    private final Boolean dataFetchEnabled;
+    private final DependencyService dependencyService;
+    private final Boolean gitHubFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -46,8 +43,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
-            VulnerabilityService vulnerabilityService,
-            DataProperties dataProperties) {
+            DependencyService dependencyService,
+            GitHubProperties gitHubProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -57,8 +54,8 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
-        this.vulnerabilityService = vulnerabilityService;
-        this.dataFetchEnabled = dataProperties.isFetchEnabled();
+        this.dependencyService = dependencyService;
+        this.gitHubFetchEnabled = gitHubProperties.getFetch();
     }
 
     /**
@@ -91,25 +88,25 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
-            if (!dataFetchEnabled) {
-                log.info("Skipping data fetch: skipping due to build/test configuration.");
+            if (!gitHubFetchEnabled) {
+                log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
                 return;
             }
 
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
         } catch (GitHubClientException e) {
-            log.error("Error fetching data statistics", e);
+            log.error("Error fetching GitHub statistics", e);
         }
     }
 
     /**
-     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, releases, dependencies and vulnerabilities.
+     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub and dependencies and vulnerabilities from Nexus.
      */
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
-            if (!dataFetchEnabled) {
-                log.info("Skipping data fetch: skipping due to build/test configuration.");
+            if (!gitHubFetchEnabled) {
+                log.info("Skipping GitHub and CVE fetch: skipping due to build/test configuration.");
                 return;
             }
 
@@ -122,33 +119,12 @@ public class SystemDataInitializer implements CommandLineRunner {
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();
             releaseService.injectReleases();
-			log.info("Done fetching all GitHub data");
 
-			log.info("Start fetching vulnerability data");
+            dependencyService.executeDependencyAndCveScan();
 
-			cleanUpOwaspLockFile();
-            vulnerabilityService.executeVulnerabilityScanForAllReleases();
-
-            log.info("Done fetching all vulnerability data");
+            log.info("Done fetching all GitHub data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
-        }
-    }
-
-    private void cleanUpOwaspLockFile() {
-        try {
-            Settings settings = new Settings();
-            Path dataDirectory = settings.getDataDirectory().toPath();
-            Path lockFile = dataDirectory.resolve("odc.update.lock");
-
-            if (Files.exists(lockFile)) {
-                Files.delete(lockFile);
-                log.warn("Removed stale OWASP dependency-check lock file on startup: {}", lockFile);
-            }
-        } catch (Exception e) {
-            log.error(
-                    "Failed to delete stale OWASP lock file. This might cause delays if an update is already in progress.",
-                    e);
         }
     }
 }
