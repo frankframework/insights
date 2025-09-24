@@ -2,6 +2,7 @@ package org.frankframework.webapp.common.configuration;
 
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import org.frankframework.cve_scanner.ScanOrchestrator;
 import org.frankframework.webapp.common.configuration.properties.GitHubProperties;
 import org.springframework.boot.CommandLineRunner;
@@ -11,12 +12,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Configuration
 @Slf4j
 public class NexusConfiguration implements CommandLineRunner {
-    private final ScanOrchestrator scanOrchestrator;
+	private final ScanOrchestrator scanOrchestrator;
     private final Boolean fetchEnabled;
 
     public NexusConfiguration(ScanOrchestrator scanOrchestrator, GitHubProperties gitHubProperties) {
-        this.scanOrchestrator = scanOrchestrator;
-        this.fetchEnabled = gitHubProperties.getFetch();
+		this.scanOrchestrator = scanOrchestrator;
+		this.fetchEnabled = gitHubProperties.getFetch();
     }
 
     /**

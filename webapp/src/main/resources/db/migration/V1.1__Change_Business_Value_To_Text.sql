@@ -1,3 +1,2 @@
 ALTER TABLE issue
 ALTER COLUMN business_value TYPE TEXT;
-
