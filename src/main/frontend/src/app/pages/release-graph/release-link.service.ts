@@ -37,52 +37,14 @@ export class ReleaseLinkService {
     ];
   }
 
-  public createSkipNodes(structuredGroups: Map<string, ReleaseNode[]>[]): SkipNode[] {
+  public createSkipNodes(structuredGroups: Map<string, ReleaseNode[]>[], allReleases: any[]): SkipNode[] {
     if (structuredGroups.length === 0) return [];
 
     const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
     if (masterNodes.length === 0) return [];
 
     const skipNodes: SkipNode[] = [];
-
-    // Check for initial gap before first release
-    if (masterNodes.length > 0) {
-      const firstNode = masterNodes[0];
-      const vFirst = this.nodeService.getVersionInfo(firstNode);
-
-      if (vFirst && (vFirst.major > 1 || (vFirst.major === 1 && vFirst.minor > 0))) {
-        const skippedVersions: string[] = [];
-        let skippedCount = 0;
-
-        if (vFirst.major > 1) {
-          // Major versions before first major
-          for (let major = 1; major < vFirst.major; major++) {
-            skippedVersions.push(`v${major}.0`);
-            skippedCount++;
-          }
-        }
-
-        if (vFirst.major >= 1 && vFirst.minor > 0) {
-          // Minor versions before first minor in the same major
-          for (let minor = 0; minor < vFirst.minor; minor++) {
-            skippedVersions.push(`v${vFirst.major}.${minor}`);
-            skippedCount++;
-          }
-        }
-
-        if (skippedCount > 0) {
-          // Position before the fade-in line
-          skipNodes.push({
-            id: `skip-initial-${firstNode.id}`,
-            x: firstNode.position.x - 175, // Between fade-in start and first node
-            y: firstNode.position.y,
-            skippedCount,
-            skippedVersions,
-            label: skippedCount === 1 ? '1 skipped' : `${skippedCount} skipped`
-          });
-        }
-      }
-    }
+    const allNodes = [...structuredGroups.values()].flat().flatMap(nodes => [...nodes.values()]).flat();
 
     // Create skip nodes for version gaps between existing nodes
     for (let i = 0; i < masterNodes.length - 1; i++) {
@@ -90,42 +52,87 @@ export class ReleaseLinkService {
       const target = masterNodes[i + 1];
 
       if (this.isVersionGap(source, target)) {
-        const vSource = this.nodeService.getVersionInfo(source);
-        const vTarget = this.nodeService.getVersionInfo(target);
+        const skippedReleases = this.findSkippedReleasesBetweenNodes(source, target, allNodes, allReleases);
+        const minorReleases = skippedReleases.filter(r => {
+          const info = this.nodeService.getVersionInfo({ label: r.name } as ReleaseNode);
+          return info?.type === 'minor';
+        });
 
-        if (vSource && vTarget) {
-          const skippedVersions: string[] = [];
-          let skippedCount = 0;
-
-          if (vTarget.major > vSource.major + 1) {
-            // Major version gaps
-            for (let major = vSource.major + 1; major < vTarget.major; major++) {
-              skippedVersions.push(`v${major}.0`);
-              skippedCount++;
-            }
-          } else if (vSource.major === vTarget.major && vTarget.minor > vSource.minor + 1) {
-            // Minor version gaps
-            for (let minor = vSource.minor + 1; minor < vTarget.minor; minor++) {
-              skippedVersions.push(`v${vSource.major}.${minor}`);
-              skippedCount++;
-            }
-          }
-
-          if (skippedCount > 0) {
-            skipNodes.push({
-              id: `skip-${source.id}-${target.id}`,
-              x: (source.position.x + target.position.x) / 2,
-              y: source.position.y,
-              skippedCount,
-              skippedVersions,
-              label: skippedCount === 1 ? '1 skipped' : `${skippedCount} skipped`
-            });
-          }
+        if (minorReleases.length > 0) {
+          skipNodes.push({
+            id: `skip-${source.id}-${target.id}`,
+            x: (source.position.x + target.position.x) / 2,
+            y: source.position.y,
+            skippedCount: minorReleases.length,
+            skippedVersions: skippedReleases.map(r => r.name.startsWith('v') ? r.name : `v${r.name}`),
+            label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`
+          });
         }
       }
     }
 
+    // Check for initial gap before first release
+    if (masterNodes.length > 0) {
+      const firstNode = masterNodes[0];
+      const skippedReleases = this.findSkippedReleasesBeforeNode(firstNode, allNodes, allReleases);
+      const minorReleases = skippedReleases.filter(r => {
+        const info = this.nodeService.getVersionInfo({ label: r.name } as ReleaseNode);
+        return info?.type === 'minor';
+      });
+
+      if (minorReleases.length > 0) {
+        skipNodes.push({
+          id: `skip-initial-${firstNode.id}`,
+          x: firstNode.position.x - 175,
+          y: firstNode.position.y,
+          skippedCount: minorReleases.length,
+          skippedVersions: skippedReleases.map(r => r.name.startsWith('v') ? r.name : `v${r.name}`),
+          label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`
+        });
+      }
+    }
+
     return skipNodes;
+  }
+
+  private findSkippedReleasesBetweenNodes(source: ReleaseNode, target: ReleaseNode, allNodes: ReleaseNode[], allReleases: any[]): any[] {
+    const vSource = this.nodeService.getVersionInfo(source);
+    const vTarget = this.nodeService.getVersionInfo(target);
+    if (!vSource || !vTarget) return [];
+
+    return allReleases.filter(release => {
+      const vRelease = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!vRelease) return false;
+
+      const releaseInGraph = allNodes.some(node => node.id === release.id);
+      if (releaseInGraph) return false;
+
+      if (vSource.major === vTarget.major) {
+        return vRelease.major === vSource.major &&
+               vRelease.minor > vSource.minor &&
+               vRelease.minor < vTarget.minor;
+      } else {
+        return (vRelease.major > vSource.major && vRelease.major < vTarget.major) ||
+               (vRelease.major === vSource.major && vRelease.minor > vSource.minor) ||
+               (vRelease.major === vTarget.major && vRelease.minor < vTarget.minor);
+      }
+    });
+  }
+
+  private findSkippedReleasesBeforeNode(firstNode: ReleaseNode, allNodes: ReleaseNode[], allReleases: any[]): any[] {
+    const vFirst = this.nodeService.getVersionInfo(firstNode);
+    if (!vFirst) return [];
+
+    return allReleases.filter(release => {
+      const vRelease = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!vRelease) return false;
+
+      const releaseInGraph = allNodes.some(node => node.id === release.id);
+      if (releaseInGraph) return false;
+
+      return (vRelease.major < vFirst.major) ||
+             (vRelease.major === vFirst.major && vRelease.minor < vFirst.minor);
+    });
   }
 
   public createSkipNodeLinks(skipNodes: SkipNode[], masterNodes: ReleaseNode[]): ReleaseLink[] {

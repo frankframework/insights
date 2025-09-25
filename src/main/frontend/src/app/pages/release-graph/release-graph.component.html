@@ -42,8 +42,7 @@
                   (click)="openSkipNodeDetails(skipNode)"
           >
             <circle r="20" class="skip-circle" />
-            <text y="4" class="skip-text">{{ skipNode.skippedCount }}</text>
-            <text y="-30" class="skip-label">{{ skipNode.label }}</text>
+            <text y="2" class="skip-text">{{ skipNode.skippedCount }}</text>
           </g>
         }
       </g>
@@ -60,6 +59,15 @@
     </div>
 
     <app-release-catalogus [selectedRelease]="selectedRelease$ | async" />
+
+    @if (dataForSkipModal) {
+      <app-skipped-versions-modal
+        [skipNode]="dataForSkipModal"
+        [releases]="releases"
+        (closed)="closeSkipNodeModal()"
+        (versionClicked)="onSkippedVersionClick($event)"
+      />
+    }
   } @else {
     <app-loader />
   }

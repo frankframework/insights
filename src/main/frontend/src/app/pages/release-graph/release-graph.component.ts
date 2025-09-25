@@ -10,13 +10,14 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
+import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 
 @Component({
   selector: 'app-release-graph',
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe, ReleaseCatalogusComponent],
+  imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
@@ -128,14 +129,16 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const target = this.findNodeById(link.target);
     if (!source || !target) return '';
 
+    const isSkipLink = link.isGap || link.isFadeIn;
+    const releaseNodeRadiusWithMargin = isSkipLink ? 10 : 25;
+
     if (link.isGap || link.isFadeIn) {
       const [x1, y1] = [source.position.x, source.position.y];
       const [x2, y2] = [target.position.x, target.position.y];
-      const releaseNodeRadiusWithMargin = link.isFadeIn ? 0 : 25;
-      return `M ${x1 + releaseNodeRadiusWithMargin},${y1} L ${x2 - releaseNodeRadiusWithMargin},${y2}`;
+      const startMargin = link.isFadeIn ? 0 : releaseNodeRadiusWithMargin;
+      return `M ${x1 + startMargin},${y1} L ${x2 - releaseNodeRadiusWithMargin},${y2}`;
     }
 
-    const releaseNodeRadiusWithMargin = 25;
     const [x1, y1] = [source.position.x, source.position.y];
     const [x2, y2] = [target.position.x, target.position.y];
 
@@ -166,28 +169,21 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this._selectedRelease.next(null);
   }
 
+  public dataForSkipModal: SkipNode | null = null;
+
   public openSkipNodeDetails(skipNode: SkipNode): void {
-    // Find the first actual release that matches one of the skipped versions
-    const skippedRelease = this.releases.find(release =>
-      skipNode.skippedVersions.some(version =>
-        release.name === version || release.name === version.replace('v', '')
-      )
-    );
+    this.dataForSkipModal = skipNode;
+  }
 
-    if (skippedRelease) {
-      this._selectedRelease.next(skippedRelease);
-    } else {
-      // If no matching release found, find the first release that matches the pattern
-      const firstSkippedVersion = skipNode.skippedVersions[0];
-      const matchingRelease = this.releases.find(release => {
-        const releaseVersion = release.name.replace(/^v/, '');
-        const skippedVersion = firstSkippedVersion.replace(/^v/, '');
-        return releaseVersion.startsWith(skippedVersion);
-      });
+  public closeSkipNodeModal(): void {
+    this.dataForSkipModal = null;
+  }
 
-      if (matchingRelease) {
-        this._selectedRelease.next(matchingRelease);
-      }
+  public onSkippedVersionClick(version: string): void {
+    this.closeSkipNodeModal();
+    const release = this.releases.find((r) => r.name === version || `v${r.name}` === version);
+    if (release) {
+      this._selectedRelease.next(release);
     }
   }
 
@@ -222,7 +218,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.releaseNodes = this.nodeService.assignReleaseColors(releaseNodeMap);
 
     // Create skip nodes and their links
-    this.skipNodes = this.linkService.createSkipNodes(sortedGroups);
+    this.skipNodes = this.linkService.createSkipNodes(sortedGroups, this.releases);
     const masterNodes = releaseNodeMap.get('master') ?? [];
     const skipNodeLinks = this.linkService.createSkipNodeLinks(this.skipNodes, masterNodes);
 
