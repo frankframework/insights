@@ -1,22 +1,31 @@
 <div class="graph-container">
   @if (!isLoading) {
     <svg
-      #svgElement
-      id="svgElement"
-      [attr.viewBox]="viewBox"
-      (wheel)="onWheel($event)"
-      (mousedown)="onMouseDown($event)"
-      (mouseup)="onMouseUp()"
-      (mousemove)="onMouseMove($event)"
-      (mouseleave)="onMouseUp()"
+            #svgElement
+            id="svgElement"
+            [attr.viewBox]="viewBox"
+            (wheel)="onWheel($event)"
+            (mousedown)="onMouseDown($event)"
+            (mouseup)="onMouseUp()"
+            (mousemove)="onMouseMove($event)"
+            (mouseleave)="onMouseUp()"
     >
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
+        @for (link of allLinks; track link) {
+          <path
+                  [attr.data-cy]="'link-' + link.id"
+                  [attr.d]="getCustomPath(link)"
+                  [class.dotted]="link.isGap || link.isFadeIn"
+                  [class.fade-in]="link.isFadeIn"
+          />
+        }
+
         @for (releaseNode of releaseNodes; track releaseNode) {
           <g
-            id="node"
-            [attr.data-cy]="'node-' + releaseNode.label"
-            [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
-            (click)="openReleaseDetails(releaseNode)"
+                  id="node"
+                  [attr.data-cy]="'node-' + releaseNode.label"
+                  [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
+                  (click)="openReleaseDetails(releaseNode)"
           >
             <circle r="20" [attr.fill]="releaseNode.color" />
             <text y="-30">
@@ -24,8 +33,15 @@
             </text>
           </g>
         }
-        @for (releaseLink of releaseLinks; track releaseLink) {
-          <path [attr.data-cy]="'link-' + releaseLink.id" [attr.d]="getCustomPath(releaseLink)" />
+
+        @for (branchLabel of branchLabels; track branchLabel.label) {
+          <text
+                  class="branch-label"
+                  [attr.x]="branchLabel.x"
+                  [attr.y]="branchLabel.y"
+          >
+            {{ branchLabel.label }}
+          </text>
         }
       </g>
     </svg>
