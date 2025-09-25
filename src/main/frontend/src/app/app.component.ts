@@ -9,7 +9,7 @@ import {
 } from '@angular/router';
 import { LoaderComponent } from './components/loader/loader.component';
 import { HeaderComponent } from './pages/header/header.component';
-import { TooltipComponent } from './components/tooltip/tooltip.component';
+import { TooltipComponent } from './pages/release-roadmap/issue-bar/tooltip/tooltip.component';
 
 @Component({
   selector: 'app-root',

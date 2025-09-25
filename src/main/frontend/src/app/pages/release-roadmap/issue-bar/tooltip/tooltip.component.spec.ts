@@ -4,8 +4,8 @@ import { BehaviorSubject } from 'rxjs';
 
 import { TooltipComponent } from './tooltip.component';
 import { TooltipData, TooltipService } from './tooltip.service';
-import { GitHubStates } from '../../app.service';
-import { Issue } from '../../services/issue.service';
+import { GitHubStates } from '../../../../app.service';
+import { Issue } from '../../../../services/issue.service';
 
 const MOCK_ISSUE: Issue = {
   id: '1',

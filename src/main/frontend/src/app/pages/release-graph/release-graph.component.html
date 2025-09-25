@@ -40,8 +40,6 @@
                   [attr.data-cy]="'skip-node-' + skipNode.id"
                   [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
                   (click)="openSkipNodeDetails(skipNode)"
-                  (mouseenter)="onSkipNodeMouseEnter($event, skipNode)"
-                  (mouseleave)="onSkipNodeMouseLeave()"
           >
             <circle r="20" class="skip-circle" />
             <text y="4" class="skip-text">{{ skipNode.skippedCount }}</text>

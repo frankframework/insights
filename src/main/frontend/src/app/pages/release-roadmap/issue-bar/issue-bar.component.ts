@@ -2,7 +2,7 @@ import { Component, Input, OnInit, ElementRef, ViewChild, inject } from '@angula
 import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
-import { TooltipService } from '../../../components/tooltip/tooltip.service';
+import { TooltipService } from './tooltip/tooltip.service';
 
 @Component({
   selector: 'app-issue-bar',

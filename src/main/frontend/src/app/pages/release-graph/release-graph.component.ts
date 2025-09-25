@@ -10,7 +10,6 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
-import { TooltipService } from '../../components/tooltip/tooltip.service';
 
 @Component({
   selector: 'app-release-graph',
@@ -50,7 +49,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
   private toastService = inject(ToastrService);
-  private tooltipService = inject(TooltipService);
 
   ngOnInit(): void {
     this.isLoading = true;
@@ -192,19 +190,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       }
     }
   }
-
-  public onSkipNodeMouseEnter(event: MouseEvent, skipNode: SkipNode): void {
-    const target = event.target as HTMLElement;
-    this.tooltipService.show(target, skipNode, true);
-  }
-
-  public onSkipNodeMouseLeave(): void {
-    // For release graph, add delay to allow moving to tooltip
-    setTimeout(() => {
-      this.tooltipService.hide();
-    }, 100);
-  }
-
 
   private getAllReleases(): void {
     this.releaseService

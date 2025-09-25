@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Issue } from '../../services/issue.service';
-import { SkipNode } from '../../pages/release-graph/release-link.service';
+import { Issue } from '../../../../services/issue.service';
+import { SkipNode } from '../../../release-graph/release-link.service';
 
 export interface TooltipData {
   issue?: Issue;
