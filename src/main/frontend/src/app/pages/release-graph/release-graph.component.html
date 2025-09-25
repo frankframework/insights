@@ -34,14 +34,19 @@
           </g>
         }
 
-        @for (branchLabel of branchLabels; track branchLabel.label) {
-          <text
-                  class="branch-label"
-                  [attr.x]="branchLabel.x"
-                  [attr.y]="branchLabel.y"
+        @for (skipNode of skipNodes; track skipNode.id) {
+          <g
+                  class="skip-node"
+                  [attr.data-cy]="'skip-node-' + skipNode.id"
+                  [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
+                  (click)="openSkipNodeDetails(skipNode)"
+                  (mouseenter)="onSkipNodeMouseEnter($event, skipNode)"
+                  (mouseleave)="onSkipNodeMouseLeave()"
           >
-            {{ branchLabel.label }}
-          </text>
+            <circle r="20" class="skip-circle" />
+            <text y="4" class="skip-text">{{ skipNode.skippedCount }}</text>
+            <text y="-30" class="skip-label">{{ skipNode.label }}</text>
+          </g>
         }
       </g>
     </svg>
@@ -49,6 +54,12 @@
     @if (selectedRelease$ | async; as release) {
       <app-release-off-canvas [release]="release" (closeCanvas)="closeReleaseDetails()" />
     }
+
+    <div class="branch-labels-sticky d-none d-lg-block">
+      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
+        <span class="sticky-branch-label" [style.top.px]="stickyLabel.screenY - 75">{{ stickyLabel.label }}</span>
+      }
+    </div>
 
     <app-release-catalogus [selectedRelease]="selectedRelease$ | async" />
   } @else {

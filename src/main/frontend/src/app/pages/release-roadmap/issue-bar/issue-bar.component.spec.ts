@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 import { IssueBarComponent } from './issue-bar.component';
 import { Issue, IssuePriority } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
-import { TooltipService } from './tooltip/tooltip.service';
+import { TooltipService } from '../../../components/tooltip/tooltip.service';
 
 const MOCK_ISSUE: Issue = {
   id: '1',

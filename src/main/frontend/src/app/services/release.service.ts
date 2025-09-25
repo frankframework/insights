@@ -11,7 +11,7 @@ export interface Release {
 }
 
 export interface Branch {
-  id: string;
+  id?: string;
   name: string;
 }
 

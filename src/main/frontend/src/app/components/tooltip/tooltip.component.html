@@ -1,0 +1,32 @@
+@if (tooltipState$ | async; as state) {
+  <div class="tooltip"
+       [class.release-graph-tooltip]="state.isReleaseGraph"
+       [style.top]="state.top"
+       [style.left]="state.left"
+       (mouseenter)="onTooltipMouseEnter()"
+       (mouseleave)="onTooltipMouseLeave()">
+    @if (state.issue) {
+      <!-- Issue tooltip -->
+      <h4 class="tooltip-title">{{ state.issue.title }}</h4>
+      @if (state.issue.issuePriority) {
+        <p class="tooltip-detail"><strong>Priority:</strong> {{ state.issue.issuePriority.name }}</p>
+      }
+      @if (state.issue.points) {
+        <p class="tooltip-detail"><strong>Points:</strong> {{ state.issue.points }}</p>
+      }
+    } @else if (state.skipNode) {
+      <!-- Skip node tooltip -->
+      <h4 class="tooltip-title">{{ state.skipNode.label }}</h4>
+      <p class="tooltip-detail"><strong>Filtered versions:</strong></p>
+      <div class="branch-structure">
+        @for (version of state.skipNode.skippedVersions; track version) {
+          <div class="branch-item">
+            <span class="branch-indent">└─</span>
+            <span class="branch-version">{{ version }}</span>
+          </div>
+        }
+      </div>
+      <p class="tooltip-hint">Click for details</p>
+    }
+  </div>
+}

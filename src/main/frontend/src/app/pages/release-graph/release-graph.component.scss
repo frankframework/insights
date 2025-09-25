@@ -26,13 +26,32 @@
     text-anchor: middle;
   }
 
-  .branch-label {
-    font-size: 12px;
-    font-weight: bold;
-    text-anchor: start;
-    fill: #818080;
-    dominant-baseline: central;
-    opacity: 0.8;
+  @media (min-width: 992px) {
+    .branch-labels-sticky {
+      width: 100px;
+      height: 100%;
+      background-color: white;
+      padding-left: 2rem;
+      position: fixed;
+      left: 0;
+      top: 75px;
+      pointer-events: none;
+      box-shadow: #444444 0px 0px 10px -5px;
+
+
+      .sticky-branch-label {
+        position: absolute;
+        font-size: 14px;
+        color: #818080;
+        background: white;
+        white-space: nowrap;
+        transform: translateY(-50%);
+        font-weight: bold;
+        text-anchor: start;
+        dominant-baseline: central;
+        opacity: 0.8;
+      }
+    }
   }
 
   path {
@@ -45,6 +64,39 @@
     stroke-width: 2.2px;
     stroke-dasharray: 8, 4;
   }
+
+  .skip-node {
+    cursor: pointer;
+
+    .skip-circle {
+      fill: #f8f9fa;
+      stroke: #adb5bd;
+      stroke-width: 2;
+      stroke-dasharray: 4, 3;
+    }
+
+    .skip-text {
+      font-size: 10px;
+      font-weight: bold;
+      text-anchor: middle;
+      fill: #6c757d;
+      dominant-baseline: middle;
+    }
+
+    .skip-label {
+      font-size: 11px;
+      font-weight: normal;
+      text-anchor: middle;
+      fill: #6c757d;
+      font-style: italic;
+    }
+
+    &:hover .skip-circle {
+      fill: #e9ecef;
+      stroke: #868e96;
+    }
+  }
+
 
   .gap-icon {
     font-size: 24px;
