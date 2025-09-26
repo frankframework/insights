@@ -206,10 +206,43 @@ export class ReleaseNodeService {
   }
 
   private positionMasterNodes(nodes: ReleaseNode[]): void {
-    const SPACING = 250;
+    const BASE_SPACING = 250;
+    let currentX = 0;
+
+    // Check if there's a gap before the first node
+    if (nodes.length > 0) {
+      const firstNode = nodes[0];
+      const hasInitialGap = this.hasInitialVersionGap(firstNode);
+      if (hasInitialGap) {
+        currentX = BASE_SPACING * 1.8;
+      }
+    }
+
     nodes.forEach((node, index) => {
-      node.position = { x: index * SPACING, y: 0 };
+      node.position = { x: currentX, y: 0 };
+
+      if (index < nodes.length - 1) {
+        const nextNode = nodes[index + 1];
+        const hasVersionGap = this.isVersionGap(node, nextNode);
+        const spacing = hasVersionGap ? BASE_SPACING * 1.8 : BASE_SPACING;
+        currentX += spacing;
+      }
     });
+  }
+
+  private hasInitialVersionGap(firstNode: ReleaseNode): boolean {
+    const vFirst = this.getVersionInfo(firstNode);
+    if (!vFirst) return false;
+    return vFirst.major > 1 || (vFirst.major === 1 && vFirst.minor > 0);
+  }
+
+  private isVersionGap(source: ReleaseNode, target: ReleaseNode): boolean {
+    const vSource = this.getVersionInfo(source);
+    const vTarget = this.getVersionInfo(target);
+    if (!vSource || !vTarget) return false;
+    const majorGap = vTarget.major > vSource.major + 1;
+    const minorGap = vSource.major === vTarget.major && vTarget.minor > vSource.minor + 1;
+    return majorGap || minorGap;
   }
 
   private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
