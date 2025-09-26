@@ -98,12 +98,15 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   private findNodeById(id: string): ReleaseNode | undefined {
     if (id.startsWith('start-node-') && this.releaseNodes.length > 0) {
-      const firstNode = this.releaseNodes.find((n) => n.position.x === 0);
+      const firstNode = this.releaseNodes[0];
+      const hasInitialSkip = this.skipNodes.some(s => s.id.startsWith('skip-initial-'));
+      const startDistance = hasInitialSkip ? 450 : 350;
+
       if (firstNode) {
         return {
           ...firstNode,
           id: id,
-          position: { x: firstNode.position.x - 350, y: firstNode.position.y }, // Increased from 250 to 400 for longer fade-in line
+          position: { x: firstNode.position.x - startDistance, y: firstNode.position.y },
         };
       }
     }
@@ -223,7 +226,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const skipNodeLinks = this.linkService.createSkipNodeLinks(this.skipNodes, masterNodes);
 
     // Combine regular links with skip node links
-    this.allLinks = [...this.linkService.createLinks(sortedGroups), ...skipNodeLinks];
+    this.allLinks = [...this.linkService.createLinks(sortedGroups, this.skipNodes), ...skipNodeLinks];
     this.branchLabels = this.createBranchLabels(releaseNodeMap, this.releases);
 
     this.checkReleaseGraphLoading();

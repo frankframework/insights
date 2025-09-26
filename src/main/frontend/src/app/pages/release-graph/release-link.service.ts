@@ -23,7 +23,7 @@ export class ReleaseLinkService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private nodeService = inject(ReleaseNodeService);
 
-  public createLinks(structuredGroups: Map<string, ReleaseNode[]>[]): ReleaseLink[] {
+  public createLinks(structuredGroups: Map<string, ReleaseNode[]>[], skipNodes: SkipNode[]): ReleaseLink[] {
     if (structuredGroups.length === 0) return [];
 
     const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
@@ -33,7 +33,7 @@ export class ReleaseLinkService {
     return [
       ...this.createIntraBranchLinks(masterNodes), // Now skips gaps
       ...this.createSubBranchLinks(structuredGroups.slice(1), masterNodes),
-      ...this.createSpecialLinks(masterNodes), // Now fills the gaps
+      ...this.createSpecialLinks(masterNodes, skipNodes), // Now fills the gaps
     ];
   }
 
@@ -81,9 +81,12 @@ export class ReleaseLinkService {
       });
 
       if (minorReleases.length > 0) {
+        const extendedSpacing = 450; // Same extended spacing as between-node gaps
+        const skipNodeX = firstNode.position.x - extendedSpacing / 2;
+
         skipNodes.push({
           id: `skip-initial-${firstNode.id}`,
-          x: firstNode.position.x - 175,
+          x: skipNodeX,
           y: firstNode.position.y,
           skippedCount: minorReleases.length,
           skippedVersions: skippedReleases.map(r => r.name.startsWith('v') ? r.name : `v${r.name}`),
@@ -143,14 +146,6 @@ export class ReleaseLinkService {
       if (skipNode.id.startsWith('skip-initial-')) {
         const firstNode = masterNodes[0];
         if (firstNode) {
-          // Create dotted link from fade-in to skip node
-          links.push({
-            id: `fade-in-to-${skipNode.id}`,
-            source: `start-node-${firstNode.id}`,
-            target: skipNode.id,
-            isGap: true
-          });
-
           // Create dotted link from skip node to first actual node
           links.push({
             id: `${skipNode.id}-to-${firstNode.id}`,
@@ -237,19 +232,32 @@ export class ReleaseLinkService {
   /**
    * Creates the fade-in line at the start. Skip nodes may override this.
    */
-  private createSpecialLinks(masterNodes: ReleaseNode[]): ReleaseLink[] {
+  private createSpecialLinks(masterNodes: ReleaseNode[], skipNodes: SkipNode[]): ReleaseLink[] {
     if (masterNodes.length === 0) return [];
 
     const links: ReleaseLink[] = [];
     const firstNode = masterNodes[0];
 
-    // Create the initial fade-in link (this may be overridden by skip node links)
-    links.push({
-      id: `fade-in-link`,
-      source: `start-node-${firstNode.id}`,
-      target: firstNode.id,
-      isFadeIn: true,
-    });
+    // Check if there's an initial skip node
+    const initialSkipNode = skipNodes.find(s => s.id.startsWith('skip-initial-'));
+
+    if (initialSkipNode) {
+      // Create dotted line to the skip node
+      links.push({
+        id: `fade-in-to-skip`,
+        source: `start-node-${firstNode.id}`,
+        target: initialSkipNode.id,
+        isGap: true,
+      });
+    } else {
+      // Create dotted line to the first release node (always dotted now)
+      links.push({
+        id: `fade-in-link`,
+        source: `start-node-${firstNode.id}`,
+        target: firstNode.id,
+        isGap: true,
+      });
+    }
 
     return links;
   }
