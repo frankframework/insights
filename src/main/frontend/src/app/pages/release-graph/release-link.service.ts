@@ -5,8 +5,8 @@ export interface ReleaseLink {
   id: string;
   source: string;
   target: string;
-  isGap?: boolean; // Flag for styling gap links
-  isFadeIn?: boolean; // Flag for the initial animation
+  isGap?: boolean;
+  isFadeIn?: boolean;
 }
 
 export interface SkipNode {
@@ -14,8 +14,19 @@ export interface SkipNode {
   x: number;
   y: number;
   skippedCount: number;
-  skippedVersions: string[]; // The actual version numbers that were skipped
-  label: string; // e.g., "3 skipped"
+  skippedVersions: string[];
+  label: string;
+}
+
+export interface Release {
+  id: string;
+  name: string;
+  branch: { name: string };
+}
+
+interface SkipNodeContext {
+  masterNodes: ReleaseNode[];
+  allNodes: ReleaseNode[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,163 +40,180 @@ export class ReleaseLinkService {
     const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
     if (masterNodes.length === 0) return [];
 
-    // The functions now generate a single, non-overlapping set of links.
     return [
-      ...this.createIntraBranchLinks(masterNodes), // Now skips gaps
+      ...this.createIntraBranchLinks(masterNodes),
       ...this.createSubBranchLinks(structuredGroups.slice(1), masterNodes),
-      ...this.createSpecialLinks(masterNodes, skipNodes), // Now fills the gaps
+      ...this.createSpecialLinks(masterNodes, skipNodes),
     ];
   }
 
-  public createSkipNodes(structuredGroups: Map<string, ReleaseNode[]>[], allReleases: any[]): SkipNode[] {
-    if (structuredGroups.length === 0) return [];
-
-    const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
-    if (masterNodes.length === 0) return [];
+  public createSkipNodes(structuredGroups: Map<string, ReleaseNode[]>[], allReleases: Release[]): SkipNode[] {
+    const context = this.validateAndPrepareSkipNodeContext(structuredGroups);
+    if (!context) return [];
 
     const skipNodes: SkipNode[] = [];
-    const allNodes = [...structuredGroups.values()].flat().flatMap(nodes => [...nodes.values()]).flat();
 
-    // Create skip nodes for version gaps between existing nodes
-    for (let i = 0; i < masterNodes.length - 1; i++) {
-      const source = masterNodes[i];
-      const target = masterNodes[i + 1];
-
-      if (this.isVersionGap(source, target)) {
-        const skippedReleases = this.findSkippedReleasesBetweenNodes(source, target, allNodes, allReleases);
-        const minorReleases = skippedReleases.filter(r => {
-          const info = this.nodeService.getVersionInfo({ label: r.name } as ReleaseNode);
-          return info?.type === 'minor';
-        });
-
-        if (minorReleases.length > 0) {
-          skipNodes.push({
-            id: `skip-${source.id}-${target.id}`,
-            x: (source.position.x + target.position.x) / 2,
-            y: source.position.y,
-            skippedCount: minorReleases.length,
-            skippedVersions: skippedReleases.map(r => r.name.startsWith('v') ? r.name : `v${r.name}`),
-            label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`
-          });
-        }
-      }
-    }
-
-    // Check for initial gap before first release
-    if (masterNodes.length > 0) {
-      const firstNode = masterNodes[0];
-      const skippedReleases = this.findSkippedReleasesBeforeNode(firstNode, allNodes, allReleases);
-      const minorReleases = skippedReleases.filter(r => {
-        const info = this.nodeService.getVersionInfo({ label: r.name } as ReleaseNode);
-        return info?.type === 'minor';
-      });
-
-      if (minorReleases.length > 0) {
-        const extendedSpacing = 450; // Same extended spacing as between-node gaps
-        const skipNodeX = firstNode.position.x - extendedSpacing / 2;
-
-        skipNodes.push({
-          id: `skip-initial-${firstNode.id}`,
-          x: skipNodeX,
-          y: firstNode.position.y,
-          skippedCount: minorReleases.length,
-          skippedVersions: skippedReleases.map(r => r.name.startsWith('v') ? r.name : `v${r.name}`),
-          label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`
-        });
-      }
-    }
+    this.addBetweenReleaseSkipNodes(context, allReleases, skipNodes);
+    this.addInitialSkipNode(context, allReleases, skipNodes);
 
     return skipNodes;
-  }
-
-  private findSkippedReleasesBetweenNodes(source: ReleaseNode, target: ReleaseNode, allNodes: ReleaseNode[], allReleases: any[]): any[] {
-    const vSource = this.nodeService.getVersionInfo(source);
-    const vTarget = this.nodeService.getVersionInfo(target);
-    if (!vSource || !vTarget) return [];
-
-    return allReleases.filter(release => {
-      const vRelease = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
-      if (!vRelease) return false;
-
-      const releaseInGraph = allNodes.some(node => node.id === release.id);
-      if (releaseInGraph) return false;
-
-      if (vSource.major === vTarget.major) {
-        return vRelease.major === vSource.major &&
-               vRelease.minor > vSource.minor &&
-               vRelease.minor < vTarget.minor;
-      } else {
-        return (vRelease.major > vSource.major && vRelease.major < vTarget.major) ||
-               (vRelease.major === vSource.major && vRelease.minor > vSource.minor) ||
-               (vRelease.major === vTarget.major && vRelease.minor < vTarget.minor);
-      }
-    });
-  }
-
-  private findSkippedReleasesBeforeNode(firstNode: ReleaseNode, allNodes: ReleaseNode[], allReleases: any[]): any[] {
-    const vFirst = this.nodeService.getVersionInfo(firstNode);
-    if (!vFirst) return [];
-
-    return allReleases.filter(release => {
-      const vRelease = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
-      if (!vRelease) return false;
-
-      const releaseInGraph = allNodes.some(node => node.id === release.id);
-      if (releaseInGraph) return false;
-
-      return (vRelease.major < vFirst.major) ||
-             (vRelease.major === vFirst.major && vRelease.minor < vFirst.minor);
-    });
   }
 
   public createSkipNodeLinks(skipNodes: SkipNode[], masterNodes: ReleaseNode[]): ReleaseLink[] {
     const links: ReleaseLink[] = [];
 
     for (const skipNode of skipNodes) {
-      // Handle initial skip node (before first release)
       if (skipNode.id.startsWith('skip-initial-')) {
-        const firstNode = masterNodes[0];
-        if (firstNode) {
-          // Create dotted link from skip node to first actual node
-          links.push({
-            id: `${skipNode.id}-to-${firstNode.id}`,
-            source: skipNode.id,
-            target: firstNode.id,
-            isGap: true
-          });
-        }
+        this.handleInitialSkipNode(skipNode, masterNodes, links);
       } else {
-        // Handle regular gap skip nodes
-        const sourceNodeIndex = masterNodes.findIndex((_, index) => {
-          const nextNode = masterNodes[index + 1];
-          return nextNode && this.isVersionGap(masterNodes[index], nextNode) &&
-                 skipNode.x === (masterNodes[index].position.x + nextNode.position.x) / 2;
-        });
-
-        if (sourceNodeIndex >= 0 && sourceNodeIndex < masterNodes.length - 1) {
-          const sourceNode = masterNodes[sourceNodeIndex];
-          const targetNode = masterNodes[sourceNodeIndex + 1];
-
-          // Create dotted link from source to skip node
-          links.push({
-            id: `${sourceNode.id}-to-${skipNode.id}`,
-            source: sourceNode.id,
-            target: skipNode.id,
-            isGap: true
-          });
-
-          // Create dotted link from skip node to target
-          links.push({
-            id: `${skipNode.id}-to-${targetNode.id}`,
-            source: skipNode.id,
-            target: targetNode.id,
-            isGap: true
-          });
-        }
+        this.handleRegularSkipNode(skipNode, masterNodes, links);
       }
     }
 
     return links;
+  }
+
+  private validateAndPrepareSkipNodeContext(structuredGroups: Map<string, ReleaseNode[]>[]): SkipNodeContext | null {
+    if (!structuredGroups?.length) return null;
+
+    const masterNodes = structuredGroups[0]?.get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
+    if (masterNodes.length === 0) return null;
+
+    const allNodes = this.getAllNodesFlat(structuredGroups);
+    return { masterNodes, allNodes };
+  }
+
+  private addBetweenReleaseSkipNodes(context: SkipNodeContext, allReleases: Release[], skipNodes: SkipNode[]): void {
+    this.createSkipNodesBetweenReleases(context.masterNodes, context.allNodes, allReleases, skipNodes);
+  }
+
+  private addInitialSkipNode(context: SkipNodeContext, allReleases: Release[], skipNodes: SkipNode[]): void {
+    this.createInitialSkipNode(context.masterNodes, context.allNodes, allReleases, skipNodes);
+  }
+
+  private getAllNodesFlat(structuredGroups: Map<string, ReleaseNode[]>[]): ReleaseNode[] {
+    return [...structuredGroups.values()]
+      .flat()
+      .flatMap((nodes) => [...nodes.values()])
+      .flat();
+  }
+
+  private createSkipNodesBetweenReleases(
+    masterNodes: ReleaseNode[],
+    allNodes: ReleaseNode[],
+    allReleases: Release[],
+    skipNodes: SkipNode[],
+  ): void {
+    for (let index = 0; index < masterNodes.length - 1; index++) {
+      const source = masterNodes[index];
+      const target = masterNodes[index + 1];
+
+      if (this.isVersionGap(source, target)) {
+        const skipNode = this.createSkipNodeBetween(source, target, allNodes, allReleases);
+        if (skipNode) {
+          skipNodes.push(skipNode);
+        }
+      }
+    }
+  }
+
+  private createSkipNodeBetween(
+    source: ReleaseNode,
+    target: ReleaseNode,
+    allNodes: ReleaseNode[],
+    allReleases: Release[],
+  ): SkipNode | null {
+    const skippedReleases = this.findSkippedReleasesBetweenNodes(source, target, allNodes, allReleases);
+    const minorReleases = this.filterMinorReleases(skippedReleases);
+
+    if (minorReleases.length === 0) return null;
+
+    return {
+      id: `skip-${source.id}-${target.id}`,
+      x: (source.position.x + target.position.x) / 2,
+      y: source.position.y,
+      skippedCount: minorReleases.length,
+      skippedVersions: skippedReleases.map((r) => (r.name.startsWith('v') ? r.name : `v${r.name}`)),
+      label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`,
+    };
+  }
+
+  private createInitialSkipNode(
+    masterNodes: ReleaseNode[],
+    allNodes: ReleaseNode[],
+    allReleases: Release[],
+    skipNodes: SkipNode[],
+  ): void {
+    if (masterNodes.length === 0) return;
+
+    const firstNode = masterNodes[0];
+    const skippedReleases = this.findSkippedReleasesBeforeNode(firstNode, allNodes, allReleases);
+    const minorReleases = this.filterMinorReleases(skippedReleases);
+
+    if (minorReleases.length > 0) {
+      const extendedSpacing = 450;
+      const skipNodeX = firstNode.position.x - extendedSpacing / 2;
+
+      skipNodes.push({
+        id: `skip-initial-${firstNode.id}`,
+        x: skipNodeX,
+        y: firstNode.position.y,
+        skippedCount: minorReleases.length,
+        skippedVersions: skippedReleases.map((r) => (r.name.startsWith('v') ? r.name : `v${r.name}`)),
+        label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`,
+      });
+    }
+  }
+
+  private filterMinorReleases(releases: Release[]): Release[] {
+    return releases.filter((r) => {
+      const info = this.nodeService.getVersionInfo({ label: r.name } as ReleaseNode);
+      return info?.type === 'minor';
+    });
+  }
+
+  private findSkippedReleasesBetweenNodes(
+    source: ReleaseNode,
+    target: ReleaseNode,
+    allNodes: ReleaseNode[],
+    allReleases: Release[],
+  ): Release[] {
+    const vSource = this.nodeService.getVersionInfo(source);
+    const vTarget = this.nodeService.getVersionInfo(target);
+    if (!vSource || !vTarget) return [];
+
+    return allReleases.filter((release) => {
+      const vRelease = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!vRelease) return false;
+
+      const releaseInGraph = allNodes.some((node) => node.id === release.id);
+      if (releaseInGraph) return false;
+
+      return vSource.major === vTarget.major
+        ? vRelease.major === vSource.major && vRelease.minor > vSource.minor && vRelease.minor < vTarget.minor
+        : (vRelease.major > vSource.major && vRelease.major < vTarget.major) ||
+            (vRelease.major === vSource.major && vRelease.minor > vSource.minor) ||
+            (vRelease.major === vTarget.major && vRelease.minor < vTarget.minor);
+    });
+  }
+
+  private findSkippedReleasesBeforeNode(
+    firstNode: ReleaseNode,
+    allNodes: ReleaseNode[],
+    allReleases: Release[],
+  ): Release[] {
+    const vFirst = this.nodeService.getVersionInfo(firstNode);
+    if (!vFirst) return [];
+
+    return allReleases.filter((release) => {
+      const vRelease = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!vRelease) return false;
+
+      const releaseInGraph = allNodes.some((node) => node.id === release.id);
+      if (releaseInGraph) return false;
+
+      return vRelease.major < vFirst.major || (vRelease.major === vFirst.major && vRelease.minor < vFirst.minor);
+    });
   }
 
   private createSubBranchLinks(subGroups: Map<string, ReleaseNode[]>[], masterNodes: ReleaseNode[]): ReleaseLink[] {
@@ -212,16 +240,12 @@ export class ReleaseLinkService {
     return anchorNodeOnMaster ? this.buildLink(anchorNodeOnMaster, firstSubNode) : null;
   }
 
-  /**
-   * Creates sequential links but now intelligently SKIPS creating a link if there's a version gap.
-   */
   private createIntraBranchLinks(nodes: ReleaseNode[]): ReleaseLink[] {
     const links: ReleaseLink[] = [];
-    for (let i = 0; i < nodes.length - 1; i++) {
-      const source = nodes[i];
-      const target = nodes[i + 1];
+    for (let index = 0; index < nodes.length - 1; index++) {
+      const source = nodes[index];
+      const target = nodes[index + 1];
 
-      // Only build a solid link if it's NOT a gap.
       if (!this.isVersionGap(source, target)) {
         links.push(this.buildLink(source, target));
       }
@@ -229,20 +253,16 @@ export class ReleaseLinkService {
     return links;
   }
 
-  /**
-   * Creates the fade-in line at the start. Skip nodes may override this.
-   */
+
   private createSpecialLinks(masterNodes: ReleaseNode[], skipNodes: SkipNode[]): ReleaseLink[] {
     if (masterNodes.length === 0) return [];
 
     const links: ReleaseLink[] = [];
     const firstNode = masterNodes[0];
 
-    // Check if there's an initial skip node
-    const initialSkipNode = skipNodes.find(s => s.id.startsWith('skip-initial-'));
+    const initialSkipNode = skipNodes.find((s) => s.id.startsWith('skip-initial-'));
 
     if (initialSkipNode) {
-      // Create dotted line to the skip node
       links.push({
         id: `fade-in-to-skip`,
         source: `start-node-${firstNode.id}`,
@@ -250,7 +270,6 @@ export class ReleaseLinkService {
         isGap: true,
       });
     } else {
-      // Create dotted line to the first release node (always dotted now)
       links.push({
         id: `fade-in-link`,
         source: `start-node-${firstNode.id}`,
@@ -280,5 +299,52 @@ export class ReleaseLinkService {
       source: source.id,
       target: target.id,
     };
+  }
+
+  private handleInitialSkipNode(skipNode: SkipNode, masterNodes: ReleaseNode[], links: ReleaseLink[]): void {
+    const firstNode = masterNodes[0];
+    if (firstNode) {
+      links.push({
+        id: `${skipNode.id}-to-${firstNode.id}`,
+        source: skipNode.id,
+        target: firstNode.id,
+        isGap: true,
+      });
+    }
+  }
+
+  private handleRegularSkipNode(skipNode: SkipNode, masterNodes: ReleaseNode[], links: ReleaseLink[]): void {
+    const sourceNodeIndex = this.findSourceNodeIndex(skipNode, masterNodes);
+
+    if (sourceNodeIndex !== -1 && sourceNodeIndex < masterNodes.length - 1) {
+      const sourceNode = masterNodes[sourceNodeIndex];
+      const targetNode = masterNodes[sourceNodeIndex + 1];
+
+      links.push(
+        {
+          id: `${sourceNode.id}-to-${skipNode.id}`,
+          source: sourceNode.id,
+          target: skipNode.id,
+          isGap: true,
+        },
+        {
+          id: `${skipNode.id}-to-${targetNode.id}`,
+          source: skipNode.id,
+          target: targetNode.id,
+          isGap: true,
+        },
+      );
+    }
+  }
+
+  private findSourceNodeIndex(skipNode: SkipNode, masterNodes: ReleaseNode[]): number {
+    return masterNodes.findIndex((_, index) => {
+      const nextNode = masterNodes[index + 1];
+      return (
+        nextNode &&
+        this.isVersionGap(masterNodes[index], nextNode) &&
+        skipNode.x === (masterNodes[index].position.x + nextNode.position.x) / 2
+      );
+    });
   }
 }

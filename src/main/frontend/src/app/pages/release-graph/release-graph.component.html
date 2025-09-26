@@ -1,31 +1,31 @@
 <div class="graph-container">
   @if (!isLoading) {
     <svg
-            #svgElement
-            id="svgElement"
-            [attr.viewBox]="viewBox"
-            (wheel)="onWheel($event)"
-            (mousedown)="onMouseDown($event)"
-            (mouseup)="onMouseUp()"
-            (mousemove)="onMouseMove($event)"
-            (mouseleave)="onMouseUp()"
+      #svgElement
+      id="svgElement"
+      [attr.viewBox]="viewBox"
+      (wheel)="onWheel($event)"
+      (mousedown)="onMouseDown($event)"
+      (mouseup)="onMouseUp()"
+      (mousemove)="onMouseMove($event)"
+      (mouseleave)="onMouseUp()"
     >
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
         @for (link of allLinks; track link) {
           <path
-                  [attr.data-cy]="'link-' + link.id"
-                  [attr.d]="getCustomPath(link)"
-                  [class.dotted]="link.isGap || link.isFadeIn"
-                  [class.fade-in]="link.isFadeIn"
+            [attr.data-cy]="'link-' + link.id"
+            [attr.d]="getCustomPath(link)"
+            [class.dotted]="link.isGap || link.isFadeIn"
+            [class.fade-in]="link.isFadeIn"
           />
         }
 
         @for (releaseNode of releaseNodes; track releaseNode) {
           <g
-                  id="node"
-                  [attr.data-cy]="'node-' + releaseNode.label"
-                  [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
-                  (click)="openReleaseDetails(releaseNode)"
+            id="node"
+            [attr.data-cy]="'node-' + releaseNode.label"
+            [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
+            (click)="openReleaseDetails(releaseNode)"
           >
             <circle r="20" [attr.fill]="releaseNode.color" />
             <text y="-30">
@@ -36,10 +36,10 @@
 
         @for (skipNode of skipNodes; track skipNode.id) {
           <g
-                  class="skip-node"
-                  [attr.data-cy]="'skip-node-' + skipNode.id"
-                  [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
-                  (click)="openSkipNodeDetails(skipNode)"
+            class="skip-node"
+            [attr.data-cy]="'skip-node-' + skipNode.id"
+            [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
+            (click)="openSkipNodeDetails(skipNode)"
           >
             <circle r="20" class="skip-circle" />
             <text y="2" class="skip-text">{{ skipNode.skippedCount }}</text>
@@ -52,7 +52,7 @@
       <app-release-off-canvas [release]="release" (closeCanvas)="closeReleaseDetails()" />
     }
 
-    <div class="branch-labels-sticky d-none d-lg-block">
+    <div class="branch-labels-sticky">
       @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
         <span class="sticky-branch-label" [style.top.px]="stickyLabel.screenY - 75">{{ stickyLabel.label }}</span>
       }

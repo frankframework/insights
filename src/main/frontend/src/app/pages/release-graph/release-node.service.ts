@@ -22,7 +22,6 @@ export const SupportColors = {
   NONE: '#FD230E',
 } as const;
 
-// New interface to hold detailed version information
 interface VersionInfo {
   major: number;
   minor: number;
@@ -44,13 +43,11 @@ export class ReleaseNodeService {
     const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
     this.sortGroupedReleases(groupedByBranch);
 
-    // Prune unsupported minor branches BEFORE moving anchors to master
     this.pruneUnsupportedMinorBranches(groupedByBranch);
 
     const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     const masterNodes = this.createReleaseNodes(masterReleases);
 
-    // Filter out unsupported minor releases from master branch as well
     const filteredMasterNodes = this.filterUnsupportedMinorReleases(masterNodes);
 
     groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
@@ -105,8 +102,26 @@ export class ReleaseNodeService {
     return allNodes;
   }
 
+  public getVersionInfo(release: ReleaseNode): VersionInfo | null {
+    const match = release.label.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?/i);
+    if (!match) return null;
+
+    const major = Number.parseInt(match[1], 10);
+    const minor = Number.parseInt(match[2], 10);
+    const patch = Number.parseInt(match[3] ?? '0', 10);
+
+    let type: VersionInfo['type'] = 'patch';
+    if (patch === 0 && minor > 0) {
+      type = 'minor';
+    } else if (patch === 0 && minor === 0) {
+      type = 'major';
+    }
+
+    return { major, minor, patch, type };
+  }
+
   /**
-   * NEW: Removes minor release branches entirely if all their nodes are unsupported.
+   * Removes minor release branches entirely if all their nodes are unsupported.
    */
   private pruneUnsupportedMinorBranches(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): void {
     for (const [branchName, releases] of groupedByBranch.entries()) {
@@ -117,7 +132,6 @@ export class ReleaseNodeService {
       const firstReleaseNode = this.createReleaseNodes([releases[0]])[0];
       const versionInfo = this.getVersionInfo(firstReleaseNode);
 
-      // Only check minors; majors are preserved on the master line regardless
       if (versionInfo?.type === 'minor') {
         const allUnsupported = this.createReleaseNodes(releases).every((node) => this.isUnsupported(node));
         if (allUnsupported) {
@@ -128,29 +142,25 @@ export class ReleaseNodeService {
   }
 
   /**
-   * NEW: Filters out unsupported minor releases from the master branch that don't have patch versions.
+   * Filters out unsupported minor releases from the master branch that don't have patch versions.
    * These are versions like v6.1, v7.4 that should be hidden if they don't have supported patches.
    */
   private filterUnsupportedMinorReleases(masterNodes: ReleaseNode[]): ReleaseNode[] {
     return masterNodes.filter((node) => {
       const versionInfo = this.getVersionInfo(node);
 
-      // Keep nightly releases
       if (node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
         return true;
       }
 
-      // Keep major releases (like v6.0, v7.0)
       if (versionInfo?.type === 'major') {
         return true;
       }
 
-      // For minor releases (like v6.1, v7.4), check if they have support
       if (versionInfo?.type === 'minor') {
         return !this.isUnsupported(node);
       }
 
-      // Keep patch releases
       return true;
     });
   }
@@ -209,7 +219,6 @@ export class ReleaseNodeService {
     const BASE_SPACING = 250;
     let currentX = 0;
 
-    // Check if there's a gap before the first node
     if (nodes.length > 0) {
       const firstNode = nodes[0];
       const hasInitialGap = this.hasInitialVersionGap(firstNode);
@@ -218,7 +227,7 @@ export class ReleaseNodeService {
       }
     }
 
-    nodes.forEach((node, index) => {
+    for (const [index, node] of nodes.entries()) {
       node.position = { x: currentX, y: 0 };
 
       if (index < nodes.length - 1) {
@@ -227,7 +236,7 @@ export class ReleaseNodeService {
         const spacing = hasVersionGap ? BASE_SPACING * 1.8 : BASE_SPACING;
         currentX += spacing;
       }
-    });
+    }
   }
 
   private hasInitialVersionGap(firstNode: ReleaseNode): boolean {
@@ -259,7 +268,9 @@ export class ReleaseNodeService {
 
   private getVersionFromBranchName(branchName: string): { major: number; minor: number } | null {
     const match = branchName.match(/(\d+)\.(\d+)/);
-    return match && match[1] && match[2] ? { major: parseInt(match[1], 10), minor: parseInt(match[2], 10) } : null;
+    return match && match[1] && match[2]
+      ? { major: Number.parseInt(match[1], 10), minor: Number.parseInt(match[2], 10) }
+      : null;
   }
 
   private positionSubBranches(
@@ -324,9 +335,6 @@ export class ReleaseNodeService {
     return new Date() > supportDates.securitySupportEnd;
   }
 
-  /**
-   * REWRITTEN: Now correctly identifies version type for accurate support duration.
-   */
   private getSupportEndDates(release: ReleaseNode): { fullSupportEnd: Date; securitySupportEnd: Date } | null {
     const versionInfo = this.getVersionInfo(release);
     if (!versionInfo) return null;
@@ -341,26 +349,5 @@ export class ReleaseNodeService {
     securitySupportEnd.setMonth(published.getMonth() + securitySupportMonths);
 
     return { fullSupportEnd, securitySupportEnd };
-  }
-
-  /**
-   * NEW: Robustly parses a version string to determine its type (major, minor, patch).
-   */
-  public getVersionInfo(release: ReleaseNode): VersionInfo | null {
-    const match = release.label.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?/i);
-    if (!match) return null;
-
-    const major = parseInt(match[1], 10);
-    const minor = parseInt(match[2], 10);
-    const patch = parseInt(match[3] ?? '0', 10);
-
-    let type: VersionInfo['type'] = 'patch';
-    if (patch === 0 && minor > 0) {
-      type = 'minor';
-    } else if (patch === 0 && minor === 0) {
-      type = 'major';
-    }
-
-    return { major, minor, patch, type };
   }
 }

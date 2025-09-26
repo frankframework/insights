@@ -1,12 +1,17 @@
 @if (skipNode) {
   <app-modal [title]="'Skipped Releases (' + skipNode.skippedCount + ')'" (closed)="closeModal()">
+    <p class="info">
+      A skip node represents unsupported release sequences that are less relevant to the main timeline. They show how
+      many unsupported releases were collapsed between major graph nodes. Click on skip nodes to see which specific
+      versions were released but hidden due to their unsupported status.
+    </p>
     <div class="skipped-versions-list">
       @if (releaseTree.length === 0) {
         <div class="no-releases">No actual releases were skipped between these nodes.</div>
       } @else {
         @for (node of releaseTree; track node.version) {
           @if (node.release) {
-            <div class="version-root" (click)="onVersionClick(node.version)">
+            <div class="version-root" tabindex="0" (click)="onVersionClick(node.version)">
               {{ node.version }}
               @if (node.type === 'major') {
                 <span class="version-type-badge major">MAJOR</span>
@@ -17,7 +22,11 @@
           }
           @if (node.patches.length > 0) {
             @for (patch of node.patches; track patch.id) {
-              <div class="version-patch" (click)="onVersionClick(patch.name.startsWith('v') ? patch.name : 'v' + patch.name)">
+              <div
+                class="version-patch"
+                tabindex="0"
+                (click)="onVersionClick(patch.name.startsWith('v') ? patch.name : 'v' + patch.name)"
+              >
                 <span class="patch-indent">└─</span>
                 <span>{{ patch.name.startsWith('v') ? patch.name : 'v' + patch.name }}</span>
                 <span class="version-type-badge patch">PATCH</span>

@@ -1,3 +1,9 @@
+p {
+  border-left: #444444 3px solid;
+  padding-inline: 1rem;
+  padding-block: 0.25rem;
+}
+
 .skipped-versions-list {
   max-height: 60vh;
   overflow-y: auto;

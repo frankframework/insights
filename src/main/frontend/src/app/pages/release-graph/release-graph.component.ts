@@ -31,6 +31,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public branchLabels: { label: string; y: number; x: number }[] = [];
   public stickyBranchLabels: { label: string; screenY: number }[] = [];
   public skipNodes: SkipNode[] = [];
+  public dataForSkipModal: SkipNode | null = null;
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -96,37 +97,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.updateStickyBranchLabels();
   }
 
-  private findNodeById(id: string): ReleaseNode | undefined {
-    if (id.startsWith('start-node-') && this.releaseNodes.length > 0) {
-      const firstNode = this.releaseNodes[0];
-      const hasInitialSkip = this.skipNodes.some(s => s.id.startsWith('skip-initial-'));
-      const startDistance = hasInitialSkip ? 450 : 350;
-
-      if (firstNode) {
-        return {
-          ...firstNode,
-          id: id,
-          position: { x: firstNode.position.x - startDistance, y: firstNode.position.y },
-        };
-      }
-    }
-
-    // Check if it's a skip node
-    const skipNode = this.skipNodes.find(s => s.id === id);
-    if (skipNode) {
-      return {
-        id: skipNode.id,
-        label: skipNode.label,
-        position: { x: skipNode.x, y: skipNode.y },
-        color: '#ccc', // Skip nodes have gray color
-        branch: 'skip',
-        publishedAt: new Date()
-      };
-    }
-
-    return this.releaseNodes.find((n) => n.id === id);
-  }
-
   public getCustomPath(link: ReleaseLink): string {
     const source = this.findNodeById(link.source);
     const target = this.findNodeById(link.target);
@@ -172,8 +142,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this._selectedRelease.next(null);
   }
 
-  public dataForSkipModal: SkipNode | null = null;
-
   public openSkipNodeDetails(skipNode: SkipNode): void {
     this.dataForSkipModal = skipNode;
   }
@@ -188,6 +156,36 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     if (release) {
       this._selectedRelease.next(release);
     }
+  }
+
+  private findNodeById(id: string): ReleaseNode | undefined {
+    if (id.startsWith('start-node-') && this.releaseNodes.length > 0) {
+      const firstNode = this.releaseNodes[0];
+      const hasInitialSkip = this.skipNodes.some((s) => s.id.startsWith('skip-initial-'));
+      const startDistance = hasInitialSkip ? 450 : 350;
+
+      if (firstNode) {
+        return {
+          ...firstNode,
+          id: id,
+          position: { x: firstNode.position.x - startDistance, y: firstNode.position.y },
+        };
+      }
+    }
+
+    const skipNode = this.skipNodes.find((s) => s.id === id);
+    if (skipNode) {
+      return {
+        id: skipNode.id,
+        label: skipNode.label,
+        position: { x: skipNode.x, y: skipNode.y },
+        color: '#ccc',
+        branch: 'skip',
+        publishedAt: new Date(),
+      };
+    }
+
+    return this.releaseNodes.find((n) => n.id === id);
   }
 
   private getAllReleases(): void {
@@ -220,26 +218,35 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const releaseNodeMap = this.nodeService.calculateReleaseCoordinates(sortedGroups);
     this.releaseNodes = this.nodeService.assignReleaseColors(releaseNodeMap);
 
-    // Create skip nodes and their links
     this.skipNodes = this.linkService.createSkipNodes(sortedGroups, this.releases);
     const masterNodes = releaseNodeMap.get('master') ?? [];
     const skipNodeLinks = this.linkService.createSkipNodeLinks(this.skipNodes, masterNodes);
 
-    // Combine regular links with skip node links
     this.allLinks = [...this.linkService.createLinks(sortedGroups, this.skipNodes), ...skipNodeLinks];
     this.branchLabels = this.createBranchLabels(releaseNodeMap, this.releases);
 
     this.checkReleaseGraphLoading();
   }
 
-  private createBranchLabels(releaseNodeMap: Map<string, ReleaseNode[]>, releases: Release[]): { label: string; y: number; x: number }[] {
+  private createBranchLabels(
+    releaseNodeMap: Map<string, ReleaseNode[]>,
+    releases: Release[],
+  ): { label: string; y: number; x: number }[] {
     const labels: { label: string; y: number; x: number }[] = [];
-
     const allNodes = [...releaseNodeMap.values()].flat();
-    const minX = Math.min(...allNodes.map(n => n.position.x));
-    const labelX = minX - 550; // Position labels further to the left of the fade-in line
+    const labelX = Math.min(...allNodes.map((n) => n.position.x)) - 550;
+    const nodesByY = this.groupNodesByYPosition(allNodes);
+    const sortedYPositions = [...nodesByY.keys()].sort((a, b) => a - b);
 
-    // Group nodes by Y position to find the most common branch at each level
+    for (const yPosition of sortedYPositions) {
+      const branchLabel = this.determineBranchLabel(yPosition, nodesByY.get(yPosition)!, releases);
+      this.addUniqueBranchLabel(labels, branchLabel, yPosition, labelX);
+    }
+
+    return labels;
+  }
+
+  private groupNodesByYPosition(allNodes: ReleaseNode[]): Map<number, ReleaseNode[]> {
     const nodesByY = new Map<number, ReleaseNode[]>();
     for (const node of allNodes) {
       if (!nodesByY.has(node.position.y)) {
@@ -247,55 +254,56 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       }
       nodesByY.get(node.position.y)!.push(node);
     }
+    return nodesByY;
+  }
 
-    // Sort Y positions to ensure consistent ordering
-    const sortedYPositions = Array.from(nodesByY.keys()).sort((a, b) => a - b);
+  private determineBranchLabel(yPosition: number, nodesAtY: ReleaseNode[], releases: Release[]): string {
+    return yPosition === 0 ? this.getMasterBranchLabel(nodesAtY, releases) : this.getSubBranchLabel(nodesAtY, releases);
+  }
 
-    // For each Y level, find the appropriate branch name
-    for (const yPosition of sortedYPositions) {
-      const nodesAtY = nodesByY.get(yPosition)!;
-      let branchLabel = 'unknown';
+  private getMasterBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
+    const masterNodes = nodesAtY.filter((node) => !node.originalBranch);
+    if (masterNodes.length > 0) {
+      const masterRelease = releases.find((r) => r.id === masterNodes[0].id);
+      return masterRelease?.branch?.name || 'master';
+    }
+    return 'master';
+  }
 
-      if (yPosition === 0) {
-        // For the top level (master line), look for actual master nodes
-        const masterNodes = nodesAtY.filter(node => !node.originalBranch);
-        if (masterNodes.length > 0) {
-          const masterRelease = releases.find(r => r.id === masterNodes[0].id);
-          branchLabel = masterRelease?.branch?.name || 'master';
-        } else {
-          branchLabel = 'master';
-        }
-      } else {
-        // For sub-branches, find the most common branch name
-        const branchCounts = new Map<string, number>();
+  private getSubBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
+    const branchCounts = new Map<string, number>();
 
-        for (const node of nodesAtY) {
-          const release = releases.find(r => r.id === node.id);
-          const branchName = release?.branch?.name || 'unknown';
-          branchCounts.set(branchName, (branchCounts.get(branchName) || 0) + 1);
-        }
-
-        let maxCount = 0;
-        for (const [branchName, count] of branchCounts.entries()) {
-          if (count > maxCount) {
-            maxCount = count;
-            branchLabel = branchName;
-          }
-        }
-      }
-
-      // Only add unique branch labels to avoid duplicates
-      const existingLabel = labels.find(l => l.y === yPosition);
-      if (!existingLabel) {
-        labels.push({
-          label: branchLabel,
-          y: yPosition,
-          x: labelX
-        });
-      }
+    for (const node of nodesAtY) {
+      const release = releases.find((r) => r.id === node.id);
+      const branchName = release?.branch?.name || 'unknown';
+      branchCounts.set(branchName, (branchCounts.get(branchName) || 0) + 1);
     }
 
-    return labels;
+    let maxCount = 0;
+    let branchLabel = 'unknown';
+    for (const [branchName, count] of branchCounts.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        branchLabel = branchName;
+      }
+    }
+    return branchLabel;
+  }
+
+  private addUniqueBranchLabel(
+    labels: { label: string; y: number; x: number }[],
+    branchLabel: string,
+    yPosition: number,
+    labelX: number,
+  ): void {
+    const existingLabel = labels.find((l) => l.y === yPosition);
+    if (!existingLabel) {
+      labels.push({
+        label: branchLabel,
+        y: yPosition,
+        x: labelX,
+      });
+    }
   }
 
   private centerGraph(): void {
@@ -307,8 +315,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private updateStickyBranchLabels(): void {
     if (!this.svgElement?.nativeElement) return;
 
-    this.stickyBranchLabels = this.branchLabels.map(label => {
-      // Convert SVG coordinates to screen coordinates
+    this.stickyBranchLabels = this.branchLabels.map((label) => {
       const svgY = label.y * this.scale + this.translateY;
       const svg = this.svgElement.nativeElement;
       const svgRect = svg.getBoundingClientRect();
@@ -316,7 +323,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
       return {
         label: label.label,
-        screenY: screenY
+        screenY: screenY,
       };
     });
   }
@@ -326,24 +333,23 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const W = svg.clientWidth;
     const H = svg.clientHeight;
 
-    // Calculate bounds based on link coordinates (including fade-in line)
     const allCoordinates: { x: number; y: number }[] = [];
 
-    // Add all node coordinates
-    allCoordinates.push(...nodes.map(n => ({ x: n.position.x, y: n.position.y })));
+    allCoordinates.push(...nodes.map((n) => ({ x: n.position.x, y: n.position.y })));
 
-    // Add link endpoint coordinates (including virtual start nodes)
     for (const link of this.allLinks) {
       const source = this.findNodeById(link.source);
       const target = this.findNodeById(link.target);
       if (source && target) {
-        allCoordinates.push({ x: source.position.x, y: source.position.y });
-        allCoordinates.push({ x: target.position.x, y: target.position.y });
+        allCoordinates.push(
+          { x: source.position.x, y: source.position.y },
+          { x: target.position.x, y: target.position.y },
+        );
       }
     }
 
-    const xs = allCoordinates.map(coord => coord.x);
-    const ys = allCoordinates.map(coord => coord.y);
+    const xs = allCoordinates.map((coord) => coord.x);
+    const ys = allCoordinates.map((coord) => coord.y);
     const minX = Math.min(...xs);
     const maxX = Math.max(...xs);
     const minY = Math.min(...ys);

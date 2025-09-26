@@ -1,8 +1,7 @@
 .tooltip {
-  position: fixed; // Positioned relative to the viewport
-  transform: translate(-50%, -100%); // Center horizontally, and move up by its own height
+  position: fixed;
+  transform: translate(-50%, -100%);
 
-  // All other visual styles from your old tooltip
   background-color: #1f2937;
   color: #f9fafb;
   border-radius: 0.5rem;
@@ -11,11 +10,7 @@
   width: 300px;
   max-width: 90vw;
   z-index: 100;
-  pointer-events: none; // Prevent the tooltip from capturing mouse events
-
-  &.release-graph-tooltip {
-    pointer-events: auto; // Allow hovering for release graph tooltips
-  }
+  pointer-events: none;
 
   .tooltip-title {
     font-weight: 600;
@@ -27,52 +22,5 @@
     font-size: 0.875rem;
     color: #d1d5db;
     margin: 0.25rem 0;
-  }
-
-  .skip-versions-list {
-    list-style: none;
-    padding: 0;
-    margin: 0.5rem 0;
-
-    li {
-      font-size: 0.875rem;
-      color: #f3f4f6;
-      padding: 0.125rem 0;
-      border-left: 2px solid #6b7280;
-      padding-left: 0.5rem;
-      margin: 0.25rem 0;
-    }
-  }
-
-  .branch-structure {
-    margin: 0.5rem 0;
-
-    .branch-item {
-      display: flex;
-      align-items: center;
-      margin: 0.25rem 0;
-      font-size: 0.875rem;
-      color: #f3f4f6;
-
-      .branch-indent {
-        color: #9ca3af;
-        margin-right: 0.5rem;
-        font-family: monospace;
-        min-width: 20px;
-      }
-
-      .branch-version {
-        padding-left: 0.25rem;
-      }
-    }
-  }
-
-  .tooltip-hint {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    font-style: italic;
-    margin-top: 0.5rem;
-    border-top: 1px solid #374151;
-    padding-top: 0.5rem;
   }
 }

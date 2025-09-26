@@ -26,12 +26,18 @@
     text-anchor: middle;
   }
 
+  .branch-labels-sticky {
+    display: none;
+  }
+
   @media (min-width: 992px) {
     .branch-labels-sticky {
+      display: flex;
+      justify-content: center;
+      padding-inline: 1rem;
       width: 100px;
       height: 100%;
       background-color: white;
-      padding-left: 2rem;
       position: fixed;
       left: 0;
       top: 75px;
@@ -49,7 +55,7 @@
         font-weight: bold;
         text-anchor: start;
         dominant-baseline: central;
-        opacity: 0.8;
+        opacity: 0.9;
       }
     }
   }
