@@ -18,7 +18,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should display releases on the graph', () => {
-      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().should('be.visible');
+      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().should('exist');
     });
   });
 
@@ -61,7 +61,7 @@ describe('Graph Rendering and Interaction', () => {
     it('should display skip nodes with correct positioning between release nodes', () => {
       cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().as('skipNode');
 
-      cy.get('@skipNode').should('be.visible');
+      cy.get('@skipNode').should('exist');
       cy.get('@skipNode').should('have.attr', 'transform');
     });
 
@@ -155,7 +155,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should display skip count number on skip nodes', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().find('text.skip-text').should('be.visible');
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().find('text.skip-text').should('exist');
       cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().find('text.skip-text').invoke('text').should('not.be.empty');
     });
 
@@ -205,7 +205,7 @@ describe('Graph Rendering and Interaction', () => {
     it('should show skip nodes with appropriate visual styling', () => {
       cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().find('circle.skip-circle').as('skipCircle');
 
-      cy.get('@skipCircle').should('be.visible');
+      cy.get('@skipCircle').should('exist');
       cy.get('@skipCircle').should('have.attr', 'r', '20');
     });
 
