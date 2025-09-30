@@ -1,7 +1,7 @@
 @if (skipNode) {
   <app-modal [title]="'Skipped Releases (' + skipNode.skippedCount + ')'" (closed)="closeModal()">
     <p class="info">
-      A skip node represents unsupported release sequences that are less relevant to the main timeline. They show how
+      A skipped release represents unsupported release sequences that are less relevant to the main timeline. They show how
       many unsupported releases were collapsed between major graph nodes. Click on skip nodes to see which specific
       versions were released but hidden due to their unsupported status.
     </p>
