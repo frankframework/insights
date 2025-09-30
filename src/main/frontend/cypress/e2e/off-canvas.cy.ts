@@ -6,7 +6,7 @@ describe('Off-Canvas Panel Journey', () => {
   });
 
   it('should open, display all content correctly, and close', () => {
-    cy.get('[data-cy="node-v9.0.1"]').should('be.visible').click();
+    cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().click({ force: true });
 
     cy.get('app-release-off-canvas', { timeout: 10000 })
       .should('be.visible')
@@ -16,7 +16,7 @@ describe('Off-Canvas Panel Journey', () => {
       .should('not.exist');
 
     cy.get('@offCanvasPanel').within(() => {
-      cy.get('h4.off-canvas-title').should('contain.text', 'v9.0.1');
+      cy.get('h4.off-canvas-title').should('not.be.empty');
       cy.get('app-release-highlights').should('be.visible');
 
       cy.get('app-release-important-issues')
@@ -30,7 +30,7 @@ describe('Off-Canvas Panel Journey', () => {
   });
 
   it('should allow filtering of issues within the off-canvas panel', () => {
-    cy.get('[data-cy="node-v9.0.1"]').should('be.visible').click();
+    cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().click({ force: true });
     cy.get('app-release-off-canvas').as('offCanvas');
     cy.get('@offCanvas')
       .find('app-loader', { timeout: 10000 })

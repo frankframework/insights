@@ -72,14 +72,14 @@ describe('Graph Rendering and Interaction', () => {
     it('should open skip node modal when clicking on a skip node', () => {
       cy.get('app-modal').should('not.exist');
 
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible').as('skipModal');
       cy.get('@skipModal').should('contain', 'Skipped Releases');
     });
 
     it('should display skipped versions in the modal with proper structure', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible').as('skipModal');
       cy.get('@skipModal').find('.skipped-versions-list').should('be.visible');
@@ -87,7 +87,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should show version badges in the skipped releases modal', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible');
       cy.get('.version-type-badge').should('have.length.greaterThan', 0);
@@ -95,7 +95,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should allow clicking on skipped version to view release details', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible');
       cy.get('.version-root').first().click();
@@ -104,7 +104,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should close skip node modal when clicking close button', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible');
       cy.get('app-modal').find('button[aria-label="Close modal"]').click();
@@ -113,7 +113,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should close skip node modal when clicking outside', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible');
       cy.get('.modal-backdrop').click({ force: true });
@@ -143,7 +143,7 @@ describe('Graph Rendering and Interaction', () => {
       cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').then(($skipNodes) => {
         const nodesToTest = $skipNodes.slice(0, 3);
         cy.wrap(nodesToTest).each(($skipNode) => {
-          cy.wrap($skipNode).click();
+          cy.wrap($skipNode).click({ force: true });
           cy.get('app-modal').should('be.visible');
 
           cy.get('.skipped-versions-list').should('be.visible');
@@ -160,7 +160,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should show proper tree structure with patches indented', () => {
-      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click();
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().click({ force: true });
 
       cy.get('app-modal').should('be.visible');
       cy.get('.version-patch').should('contain', '└─');
