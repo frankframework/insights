@@ -131,10 +131,11 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should show proper fade-in links from start position if they exist', () => {
-      cy.get('@graphSvg').find('path[data-cy^="link-start-node-"]').then(($links) => {
-        if ($links.length > 0) {
-          expect($links).to.have.length.greaterThan(0);
-          expect($links.first()).to.have.class('dotted');
+      cy.get('@graphSvg').then(($svg) => {
+        const links = $svg.find('path[data-cy^="link-start-node-"]');
+        if (links.length > 0) {
+          expect(links).to.have.length.greaterThan(0);
+          expect(links.first()).to.have.class('dotted');
         }
       });
     });
