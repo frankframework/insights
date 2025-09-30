@@ -71,7 +71,6 @@ public class ReleaseService {
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
                     branchService.getBranchPullRequestsByBranches(allBranches);
 
-            // Separate valid releases from beta/RC releases
             Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
                     .collect(Collectors.partitioningBy(this::isValidRelease));
 
