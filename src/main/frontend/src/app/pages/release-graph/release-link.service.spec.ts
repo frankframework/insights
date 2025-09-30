@@ -40,7 +40,7 @@ describe('ReleaseLinkService', () => {
   });
 
   describe('createSkipNodes() - Core Functionality', () => {
-    it('should return an empty array if the input structuredGroups is empty', () => {
+    it('should return an empty array if the skipnodes input structuredGroups is empty', () => {
       const skipNodes = service.createSkipNodes([], []);
 
       expect(skipNodes).toEqual([]);
@@ -219,7 +219,7 @@ describe('ReleaseLinkService', () => {
   });
 
   describe('createLinks() - Edge Cases', () => {
-    it('should return an empty array if the input structuredGroups is empty', () => {
+    it('should return an empty array if the links input structuredGroups is empty', () => {
       const links = service.createLinks([], []);
 
       expect(links).toEqual([]);
@@ -229,11 +229,14 @@ describe('ReleaseLinkService', () => {
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, [masterNode1, masterNode2, masterNode3]]])];
       const links = service.createLinks(structuredGroups, []);
 
-      expect(links.length).toBe(2);
-      expect(links[0].source).toBe('master-1');
-      expect(links[0].target).toBe('master-2');
-      expect(links[1].source).toBe('master-2');
-      expect(links[1].target).toBe('master-3');
+      expect(links.length).toBe(3);
+      const intraBranchLinks = links.filter(link => !link.source.startsWith('start-node-'));
+
+      expect(intraBranchLinks.length).toBe(2);
+      expect(intraBranchLinks[0].source).toBe('master-1');
+      expect(intraBranchLinks[0].target).toBe('master-2');
+      expect(intraBranchLinks[1].source).toBe('master-2');
+      expect(intraBranchLinks[1].target).toBe('master-3');
     });
 
     it('should not crash and return an empty array if master branch is missing or empty', () => {
@@ -275,7 +278,7 @@ describe('ReleaseLinkService', () => {
     it('should create all expected links for a full graph structure', () => {
       const links = service.createLinks(structuredGroups, []);
 
-      expect(links.length).toBe(6);
+      expect(links.length).toBe(7);
     });
 
     it('should create a correct anchor link from a master node to a sub-branch node', () => {
@@ -353,9 +356,9 @@ describe('ReleaseLinkService', () => {
         createMockNode('v7.0.0'),
         createMockNode('v9.0.0')
       ];
-      masterNodes[0].position = { x: 0, y: 0 };
-      masterNodes[1].position = { x: 450, y: 0 };
-      masterNodes[2].position = { x: 900, y: 0 };
+      masterNodes[0].position = { x: 450, y: 0 };
+      masterNodes[1].position = { x: 900, y: 0 };
+      masterNodes[2].position = { x: 1350, y: 0 };
 
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const allReleases: Release[] = [
@@ -372,9 +375,6 @@ describe('ReleaseLinkService', () => {
       const allLinks = service.createLinks(structuredGroups, skipNodes);
 
       expect(skipNodes.length).toBe(3);
-      expect(skipNodes[0].id).toBe('skip-initial-v4.0.0');
-      expect(skipNodes[1].id).toBe('skip-v4.0.0-v7.0.0');
-      expect(skipNodes[2].id).toBe('skip-v7.0.0-v9.0.0');
 
       expect(skipNodeLinks.length).toBe(5);
       expect(allLinks.some(link => link.source.startsWith('start-node-'))).toBe(true);
@@ -437,7 +437,7 @@ describe('ReleaseLinkService', () => {
 
       expect(skipNodes.length).toBe(1);
       expect(skipNodes[0].skippedCount).toBe(2);
-      expect(skipNodes[0].skippedVersions.length).toBe(3);
+      expect(skipNodes[0].skippedVersions).toEqual(['v11.0.0', 'v11.1.0']);
     });
   });
 

@@ -168,7 +168,7 @@ export class ReleaseLinkService {
   private filterMinorReleases(releases: Release[]): Release[] {
     return releases.filter((r) => {
       const info = this.nodeService.getVersionInfo({ label: r.name } as ReleaseNode);
-      return info?.type === 'minor';
+      return info?.type === 'minor' || info?.type === 'major';
     });
   }
 
@@ -252,7 +252,6 @@ export class ReleaseLinkService {
     }
     return links;
   }
-
 
   private createSpecialLinks(masterNodes: ReleaseNode[], skipNodes: SkipNode[]): ReleaseLink[] {
     if (masterNodes.length === 0) return [];

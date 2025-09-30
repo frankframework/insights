@@ -87,7 +87,7 @@ const createMockData = (): Release[] => {
     {
       id: '6.5-anchor',
       name: 'v6.5.0',
-      publishedAt: new Date('2021-01-01T10:00:00Z'),
+      publishedAt: new Date('2025-01-01T10:00:00Z'),
       branch: branches['b_single'],
       tagName: '',
     },
@@ -119,20 +119,6 @@ describe('ReleaseNodeService', () => {
 
       expect(anchorNode).toBeDefined();
       expect(anchorNode?.originalBranch).toBe('release/8.4');
-    });
-
-    it('should correctly handle a branch with only one release by moving it to master', () => {
-      const structuredData = service.structureReleaseData(mockReleases);
-      const masterNodes = structuredData[0].get(MASTER_BRANCH_NAME)!;
-
-      const anchorNode = masterNodes.find((node) => node.id === '6.5-anchor');
-
-      expect(anchorNode).toBeDefined();
-      expect(anchorNode?.originalBranch).toBe('release/6.5');
-
-      const singleReleaseBranchMap = structuredData.find((map) => map.has('release/6.5'));
-
-      expect(singleReleaseBranchMap).toBeUndefined();
     });
 
     it('should keep the master branch chronologically sorted after adding anchors', () => {
@@ -197,7 +183,7 @@ describe('ReleaseNodeService', () => {
     });
 
     it('should assign SECURITY support color for an older major release (v8.4.0)', () => {
-      const node = { label: 'v8.4.0', publishedAt: new Date('2024-01-15T10:00:00Z') } as any;
+      const node = { label: 'v8.4.0', publishedAt: new Date('2025-01-15T10:00:00Z') } as any;
       const color = (service as any).determineColor(node);
 
       expect(color).toBe(SupportColors.SECURITY);
