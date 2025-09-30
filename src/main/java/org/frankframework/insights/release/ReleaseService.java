@@ -71,8 +71,14 @@ public class ReleaseService {
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
                     branchService.getBranchPullRequestsByBranches(allBranches);
 
-            Set<Release> releases = releaseDTOs.stream()
-                    .filter(this::isValidRelease)
+            // Separate valid releases from beta/RC releases
+            Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
+                    .collect(Collectors.partitioningBy(this::isValidRelease));
+
+            List<ReleaseDTO> validReleaseDTOs = partitionedReleases.get(true);
+            List<ReleaseDTO> invalidReleaseDTOs = partitionedReleases.get(false);
+
+            Set<Release> releases = validReleaseDTOs.stream()
                     .map(dto -> mapToRelease(dto, allBranches))
                     .collect(Collectors.toSet());
 
@@ -90,7 +96,10 @@ public class ReleaseService {
                                     .sorted(Comparator.comparing(Release::getPublishedAt))
                                     .collect(Collectors.toList()))));
 
-            processAndAssignPullsAndCommits(releasesByBranch, pullRequestsByBranch);
+            // Create a map of earliest beta/RC dates for each valid release
+            Map<String, OffsetDateTime> earliestBetaRCDates = buildEarliestBetaRCDatesMap(validReleaseDTOs, invalidReleaseDTOs);
+
+            processAndAssignPullsAndCommits(releasesByBranch, pullRequestsByBranch, earliestBetaRCDates);
         } catch (Exception e) {
             throw new ReleaseInjectionException("Error injecting GitHub releases.", e);
         }
@@ -114,6 +123,39 @@ public class ReleaseService {
         Pattern betaPattern = Pattern.compile("-B\\d+", Pattern.CASE_INSENSITIVE);
 
         return !rcPattern.matcher(releaseName).find() && !betaPattern.matcher(releaseName).find();
+    }
+
+    /**
+     * Builds a map of the earliest beta/RC dates for each valid release.
+     * This allows PRs to be assigned to the final release even if they were merged during the beta/RC period.
+     *
+     * @param validReleaseDTOs The list of valid (non-beta/RC) releases.
+     * @param invalidReleaseDTOs The list of beta/RC releases.
+     * @return A map of release tag names to their earliest beta/RC publish dates.
+     */
+    private Map<String, OffsetDateTime> buildEarliestBetaRCDatesMap(
+            List<ReleaseDTO> validReleaseDTOs, List<ReleaseDTO> invalidReleaseDTOs) {
+        Map<String, OffsetDateTime> earliestBetaRCDates = new HashMap<>();
+
+        for (ReleaseDTO validRelease : validReleaseDTOs) {
+            String validTagName = validRelease.tagName();
+            if (validTagName == null) continue;
+
+            // Extract the base version (e.g., "v7.8" from "v7.8.0")
+            Optional<String> baseVersion = extractMajorMinor(validTagName);
+            if (baseVersion.isEmpty()) continue;
+
+            // Find all beta/RC releases that match this base version
+			invalidReleaseDTOs.stream()
+					.filter(invalidRelease -> invalidRelease.tagName() != null
+							&& invalidRelease.tagName().startsWith(baseVersion.get()))
+					.map(ReleaseDTO::publishedAt)
+					.filter(Objects::nonNull)
+					.min(Comparator.naturalOrder()).ifPresent(earliestDate -> earliestBetaRCDates.put(validTagName, earliestDate));
+
+		}
+
+        return earliestBetaRCDates;
     }
 
     /**
@@ -181,9 +223,11 @@ public class ReleaseService {
      *
      * @param releasesByBranch A map of branches to their associated releases.
      * @param pullRequestsByBranch A map of branch IDs to their associated pull requests.
+     * @param earliestBetaRCDates A map of release tag names to their earliest beta/RC dates.
      */
     private void processAndAssignPullsAndCommits(
-            Map<Branch, List<Release>> releasesByBranch, Map<String, Set<BranchPullRequest>> pullRequestsByBranch) {
+            Map<Branch, List<Release>> releasesByBranch, Map<String, Set<BranchPullRequest>> pullRequestsByBranch,
+            Map<String, OffsetDateTime> earliestBetaRCDates) {
 
         List<Release> masterReleases = new ArrayList<>();
         Branch masterBranch = releasesByBranch.keySet().stream()
@@ -201,7 +245,7 @@ public class ReleaseService {
             if (releases.size() == 1) {
                 masterReleases.add(releases.getFirst());
             } else {
-                List<Release> sortedReleases = assignToReleases(releases, prs);
+                List<Release> sortedReleases = assignToReleases(releases, prs, earliestBetaRCDates);
                 masterReleases.add(sortedReleases.getFirst());
             }
         }
@@ -214,7 +258,7 @@ public class ReleaseService {
 
             Set<BranchPullRequest> masterPRs = pullRequestsByBranch.getOrDefault(masterBranch.getId(), Set.of());
 
-            assignToReleases(combined, masterPRs);
+            assignToReleases(combined, masterPRs, earliestBetaRCDates);
         }
     }
 
@@ -226,9 +270,11 @@ public class ReleaseService {
      *
      * @param releases The list of releases to assign pull requests to.
      * @param prs The set of branch pull requests to consider for assignment.
+     * @param earliestBetaRCDates A map of release tag names to their earliest beta/RC dates.
      * @return A list of releases with assigned pull requests.
      */
-    private List<Release> assignToReleases(List<Release> releases, Set<BranchPullRequest> prs) {
+    private List<Release> assignToReleases(List<Release> releases, Set<BranchPullRequest> prs,
+            Map<String, OffsetDateTime> earliestBetaRCDates) {
         releases.sort(getReleaseSortingComparator());
 
         for (int i = FIRST_RELEASE_INDEX; i < releases.size(); i++) {
@@ -238,7 +284,8 @@ public class ReleaseService {
             // It serves as the starting point for the next releases time window.
             if (i > FIRST_RELEASE_INDEX) {
                 OffsetDateTime from = releases.get(i - 1).getPublishedAt();
-                OffsetDateTime to = current.getPublishedAt();
+                // Use the earliest beta/RC date if available, otherwise use the final release date
+                OffsetDateTime to = earliestBetaRCDates.getOrDefault(current.getTagName(), current.getPublishedAt());
                 assignPullRequests(current, prs, from, to);
             }
         }
