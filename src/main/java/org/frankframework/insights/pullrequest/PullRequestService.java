@@ -265,7 +265,7 @@ public class PullRequestService {
 				.collect(Collectors.toMap(
 						PullRequestDTO::number,
 						Function.identity(),
-						(existing, _) -> existing,
+						(existing, replacement) -> existing,
 						LinkedHashMap::new));
 
 		return new LinkedHashSet<>(deduplicatedPRs.values());
