@@ -22,7 +22,7 @@
 
         @for (releaseNode of releaseNodes; track releaseNode) {
           <g
-            id="node"
+            class="release-node"
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
             (click)="openReleaseDetails(releaseNode)"
