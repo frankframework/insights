@@ -2,8 +2,6 @@ package org.frankframework.insights.release;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.branch.Branch;
@@ -33,8 +31,6 @@ public class ReleaseService {
     private static final String MASTER_BRANCH_NAME = "master";
     private static final String NIGHTLY_RELEASE_NAME = "nightly";
     private static final int FIRST_RELEASE_INDEX = 0;
-    private static final int MAJOR = 1;
-    private static final int MINOR = 2;
 
     /**
      * Constructor for ReleaseService.
@@ -71,11 +67,11 @@ public class ReleaseService {
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
                     branchService.getBranchPullRequestsByBranches(allBranches);
 
-            Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
-                    .collect(Collectors.partitioningBy(this::isValidRelease));
+            Map<Boolean, List<ReleaseDTO>> partitionedDTOs = releaseDTOs.stream()
+                    .collect(Collectors.partitioningBy(ReleaseDTO::isValid));
 
-            List<ReleaseDTO> validReleaseDTOs = partitionedReleases.get(true);
-            List<ReleaseDTO> invalidReleaseDTOs = partitionedReleases.get(false);
+            List<ReleaseDTO> validReleaseDTOs = partitionedDTOs.get(true);
+            List<ReleaseDTO> invalidReleaseDTOs = partitionedDTOs.get(false);
 
             Set<Release> releases = validReleaseDTOs.stream()
                     .map(dto -> mapToRelease(dto, allBranches))
@@ -104,25 +100,6 @@ public class ReleaseService {
     }
 
     /**
-     * Checks if a release is valid (not a release candidate or beta release).
-     * Filters out releases with patterns like -RCX or -BX.
-     *
-     * @param dto The ReleaseDTO to validate.
-     * @return True if the release is valid, false otherwise.
-     */
-    private boolean isValidRelease(ReleaseDTO dto) {
-        String releaseName = dto.name();
-        if (releaseName == null) {
-            return false;
-        }
-
-        Pattern rcPattern = Pattern.compile("-RC\\d+", Pattern.CASE_INSENSITIVE);
-        Pattern betaPattern = Pattern.compile("-B\\d+", Pattern.CASE_INSENSITIVE);
-
-        return !rcPattern.matcher(releaseName).find() && !betaPattern.matcher(releaseName).find();
-    }
-
-    /**
      * Builds a map of the earliest beta/RC dates for each valid release.
      * This allows PRs to be assigned to the final release even if they were merged during the beta/RC period.
      *
@@ -138,7 +115,7 @@ public class ReleaseService {
             String validTagName = validRelease.tagName();
             if (validTagName == null) continue;
 
-            Optional<String> baseVersion = extractMajorMinor(validTagName);
+            Optional<String> baseVersion = validRelease.extractMajorMinor();
             if (baseVersion.isEmpty()) continue;
 
 			invalidReleaseDTOs.stream()
@@ -161,32 +138,16 @@ public class ReleaseService {
      * @return The mapped Release entity.
      */
     private Release mapToRelease(ReleaseDTO dto, List<Branch> branches) {
-        String releaseName = dto.name();
+        Optional<Branch> matchingBranch = dto.extractMajorMinor()
+                .flatMap(version -> findBranchByVersion(branches, version));
 
-        Optional<String> majorMinor = extractMajorMinor(releaseName);
-        Optional<Branch> matchingBranch = majorMinor.flatMap(version -> findBranchByVersion(branches, version));
-
-        Branch selectedBranch = matchingBranch.orElse(null);
-
-        if (selectedBranch == null) {
-            selectedBranch = findMasterBranch(branches).orElse(null);
-        }
+        Branch selectedBranch = matchingBranch.orElseGet(() -> findMasterBranch(branches).orElse(null));
 
         Release release = mapper.toEntity(dto, Release.class);
         release.setBranch(selectedBranch);
         return release;
     }
 
-    /**
-     * Extracts the major and minor version from a release tag name.
-     *
-     * @param tagName The tag name to extract from.
-     * @return An Optional containing the major and minor version, or empty if not found.
-     */
-    private Optional<String> extractMajorMinor(String tagName) {
-        Matcher matcher = Pattern.compile("v(\\d+)\\.(\\d+)").matcher(tagName);
-        return matcher.find() ? Optional.of(matcher.group(MAJOR) + "." + matcher.group(MINOR)) : Optional.empty();
-    }
 
     /**
      * Finds a branch by matching its name with a version string.
