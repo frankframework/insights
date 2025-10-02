@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.properties.GitHubProperties;
+import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
@@ -34,7 +34,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
     private final VulnerabilityService vulnerabilityService;
-    private final Boolean gitHubFetchEnabled;
+    private final Boolean dataFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -47,7 +47,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             PullRequestService pullRequestService,
             ReleaseService releaseService,
             VulnerabilityService vulnerabilityService,
-            GitHubProperties gitHubProperties) {
+            DataProperties dataProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -58,7 +58,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
         this.vulnerabilityService = vulnerabilityService;
-        this.gitHubFetchEnabled = gitHubProperties.getFetch();
+        this.dataFetchEnabled = dataProperties.isFetchEnabled();
     }
 
     /**
@@ -91,25 +91,25 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
-            if (!gitHubFetchEnabled) {
-                log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+            if (!dataFetchEnabled) {
+                log.info("Skipping data fetch: skipping due to build/test configuration.");
                 return;
             }
 
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
         } catch (GitHubClientException e) {
-            log.error("Error fetching GitHub statistics", e);
+            log.error("Error fetching data statistics", e);
         }
     }
 
     /**
-     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub and dependencies and vulnerabilities from Nexus.
+     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, releases, dependencies and vulnerabilities.
      */
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
-            if (!gitHubFetchEnabled) {
-                log.info("Skipping GitHub and CVE fetch: skipping due to build/test configuration.");
+            if (!dataFetchEnabled) {
+                log.info("Skipping data fetch: skipping due to build/test configuration.");
                 return;
             }
 
@@ -122,12 +122,14 @@ public class SystemDataInitializer implements CommandLineRunner {
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();
             releaseService.injectReleases();
+			log.info("Done fetching all GitHub data");
 
-            cleanUpOwaspLockFile();
+			log.info("Start fetching vulnerability data");
 
+			cleanUpOwaspLockFile();
             vulnerabilityService.executeVulnerabilityScanForAllReleases();
 
-            log.info("Done fetching all GitHub data");
+            log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
         }
@@ -144,7 +146,6 @@ public class SystemDataInitializer implements CommandLineRunner {
                 log.warn("Removed stale OWASP dependency-check lock file on startup: {}", lockFile);
             }
         } catch (Exception e) {
-            // Log an error but do not stop the application startup
             log.error(
                     "Failed to delete stale OWASP lock file. This might cause delays if an update is already in progress.",
                     e);

@@ -47,7 +47,8 @@ public class ReleaseArtifactService {
     private boolean releaseDirectoryExists(Path releaseDir, Release release) throws IOException {
         if (Files.isDirectory(releaseDir)) {
             try (Stream<Path> stream = Files.list(releaseDir)) {
-                if (stream.findFirst().isPresent()) {
+                boolean hasFiles = stream.findFirst().isPresent();
+                if (hasFiles) {
                     log.info("Source code for release {} already exists, skipping download.", release.getName());
                     return true;
                 }

@@ -14,7 +14,6 @@ public class GitHubProperties {
     private String projectId;
     private List<String> branchProtectionRegexes;
     private List<String> includedLabels;
-    private Boolean fetch;
 
     public List<String> getIncludedLabels() {
         return includedLabels.stream().map(String::toUpperCase).toList();
