@@ -9,8 +9,7 @@ import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
-import org.frankframework.insights.dependency.DependencyService;
+import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
@@ -27,6 +26,7 @@ import org.frankframework.insights.pullrequest.PullRequestInjectionException;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
+import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,7 +68,7 @@ public class ShedLockProductionTest {
     private ReleaseService releaseService;
 
     @Mock
-    private DependencyService dependencyService;
+    private VulnerabilityService vulnerabilityService;
 
     @Mock
     private GitHubProperties gitHubProperties;
@@ -89,7 +89,7 @@ public class ShedLockProductionTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                dependencyService,
+                vulnerabilityService,
                 gitHubProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);

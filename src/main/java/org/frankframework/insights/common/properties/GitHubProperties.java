@@ -1,4 +1,4 @@
-package org.frankframework.insights.common.configuration.properties;
+package org.frankframework.insights.common.properties;
 
 import java.util.List;
 import lombok.Getter;
