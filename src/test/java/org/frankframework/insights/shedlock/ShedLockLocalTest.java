@@ -7,7 +7,7 @@ import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.properties.GitHubProperties;
+import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -61,13 +61,13 @@ public class ShedLockLocalTest {
     private VulnerabilityService vulnerabilityService;
 
     @Mock
-    private GitHubProperties gitHubProperties;
+    private DataProperties dataProperties;
 
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
     public void setUp() {
-        when(gitHubProperties.getFetch()).thenReturn(false);
+        when(dataProperties.isFetchEnabled()).thenReturn(false);
 
         systemDataInitializer = new SystemDataInitializer(
                 gitHubRepositoryStatisticsService,
@@ -80,7 +80,7 @@ public class ShedLockLocalTest {
                 pullRequestService,
                 releaseService,
                 vulnerabilityService,
-                gitHubProperties);
+                dataProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
