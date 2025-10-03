@@ -27,8 +27,6 @@ public class ReleaseArtifactService {
 	private static final int MAX_ENTRIES = 1024;
 	private static final double COMPRESSION_RATIO_LIMIT = 10;
 
-	private record ZipArchiveState(long unCompressedSize, int entriesCount) {}
-
 	/**
 	 * Prepares the source code for a release by downloading and unpacking it.
 	 * Skips the download if the artifact directory already exists.
@@ -91,23 +89,22 @@ public class ReleaseArtifactService {
 
 	/**
 	 * Securely unzips a file, preventing Zip Bomb and Path Traversal vulnerabilities.
+	 * This version uses a for-loop to make the entry count check explicit and satisfy static analysis tools.
 	 */
 	private void unzip(Path zipFile, Path destDir) throws IOException {
 		Path normalizedDestDir = destDir.toAbsolutePath().normalize();
-		ZipArchiveState state = new ZipArchiveState(0, 0);
+		long unCompressedSize = 0;
 
 		try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
 			ZipEntry zipEntry;
-			while ((zipEntry = zis.getNextEntry()) != null) {
-				state = new ZipArchiveState(state.unCompressedSize(), state.entriesCount() + 1);
-				if (state.entriesCount() > MAX_ENTRIES) {
+			for (int entryCount = 0; (zipEntry = zis.getNextEntry()) != null; entryCount++) {
+				if (entryCount >= MAX_ENTRIES) {
 					throw new IOException("Archive contains too many entries.");
 				}
 
 				Path validatedPath = validateZipEntryPath(zipEntry, normalizedDestDir);
 
-				long newTotalSize = extractAndValidateEntry(zis, zipEntry, validatedPath, state.unCompressedSize());
-				state = new ZipArchiveState(newTotalSize, state.entriesCount());
+				unCompressedSize = extractAndValidateEntry(zis, zipEntry, validatedPath, unCompressedSize);
 			}
 		}
 	}
@@ -131,6 +128,9 @@ public class ReleaseArtifactService {
 		return resolvedPath;
 	}
 
+	/**
+	 * Extracts a single entry while validating its uncompressed size and compression ratio.
+	 */
 	private long extractAndValidateEntry(ZipInputStream zis, ZipEntry zipEntry, Path filePath, long currentTotalSize) throws IOException {
 		if (filePath == null) {
 			return currentTotalSize;
