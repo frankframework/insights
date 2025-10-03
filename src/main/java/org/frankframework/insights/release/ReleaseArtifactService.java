@@ -30,6 +30,13 @@ public class ReleaseArtifactService {
 
 	private record ZipArchiveState(long unCompressedSize, int entriesCount) {}
 
+	/**
+	 * Prepares the source code for a release by downloading and unpacking it.
+	 * Skips the download if the artifact directory already exists.
+	 *
+	 * @param release The release to prepare artifacts for.
+	 * @return The path to the directory containing the unpacked source code.
+	 */
 	@Transactional
 	public Path prepareReleaseArtifacts(Release release) throws IOException {
 		Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
@@ -83,6 +90,9 @@ public class ReleaseArtifactService {
 		log.debug("Successfully downloaded and unpacked source for {}", zipFile.getFileName());
 	}
 
+	/**
+	 * Securely unzips a file, preventing Zip Bomb and Path Traversal vulnerabilities.
+	 */
 	private void unzip(Path zipFile, Path destDir) throws IOException {
 		Path normalizedDestDir = destDir.toAbsolutePath().normalize();
 		ZipArchiveState state = new ZipArchiveState(0, 0);
@@ -96,6 +106,7 @@ public class ReleaseArtifactService {
 				}
 
 				Path validatedPath = validateZipEntryPath(zipEntry, normalizedDestDir);
+
 				long newTotalSize = extractAndValidateEntry(zis, zipEntry, validatedPath, state.unCompressedSize());
 				state = new ZipArchiveState(newTotalSize, state.entriesCount());
 
@@ -104,8 +115,19 @@ public class ReleaseArtifactService {
 		}
 	}
 
+	/**
+	 * Validates a zip entry's path to prevent the "Zip Slip" vulnerability.
+	 * It also handles the removal of the top-level directory typical of GitHub archives.
+	 */
 	private Path validateZipEntryPath(ZipEntry zipEntry, Path normalizedDestDir) throws IOException {
-		Path resolvedPath = normalizedDestDir.resolve(zipEntry.getName()).normalize();
+		Path entryPath = Paths.get(zipEntry.getName());
+		if (entryPath.getNameCount() <= 1) {
+			return null;
+		}
+
+		Path strippedPath = entryPath.subpath(1, entryPath.getNameCount());
+		Path resolvedPath = normalizedDestDir.resolve(strippedPath.toString()).normalize();
+
 		if (!resolvedPath.startsWith(normalizedDestDir)) {
 			throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
 		}
@@ -113,6 +135,10 @@ public class ReleaseArtifactService {
 	}
 
 	private long extractAndValidateEntry(ZipInputStream zis, ZipEntry zipEntry, Path filePath, long currentTotalSize) throws IOException {
+		if (filePath == null) {
+			return currentTotalSize;
+		}
+
 		if (zipEntry.isDirectory()) {
 			Files.createDirectories(filePath);
 			return currentTotalSize;
