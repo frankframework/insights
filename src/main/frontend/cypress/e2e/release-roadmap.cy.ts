@@ -2,8 +2,8 @@ describe('Release Roadmap End-to-End Tests', () => {
   const TODAY = new Date();
   TODAY.setHours(12, 0, 0, 0);
 
-  const getPeriodLabel = (date) => {
-    const getQuarter = (d) => Math.floor(d.getMonth() / 3) + 1;
+  const getPeriodLabel = (date: Date) => {
+    const getQuarter = (d: Date) => Math.floor(d.getMonth() / 3) + 1;
     const startYear = date.getFullYear();
     const startQuarter = getQuarter(date);
 
@@ -90,31 +90,18 @@ describe('Release Roadmap End-to-End Tests', () => {
 
   context('Issue Rendering and Layout Logic', () => {
     it('should display closed issues before "today" and open issues after "today"', () => {
-      cy.get('app-milestone-row').eq(1).as('firstMilestoneRow');
       cy.get('.today-marker').invoke('css', 'left').then(left => {
         const todayPosition = parseFloat(left as unknown as string);
 
-        cy.get('@firstMilestoneRow')
-          .find('a.issue-bar[href*="203"]')
-          .invoke('css', 'left')
-          .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.lessThan(todayPosition));
-        cy.get('@firstMilestoneRow')
-          .find('a.issue-bar[href*="204"]')
-          .invoke('css', 'left')
-          .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.lessThan(todayPosition));
+        cy.get('.milestone-lanes').find('.issue-bar.issue-closed').each($issue => {
+          const issuePosition = parseFloat($issue.css('left'));
+          expect(issuePosition).to.be.lessThan(todayPosition);
+        });
 
-        cy.get('@firstMilestoneRow')
-          .find('a.issue-bar[href*="205"]')
-          .invoke('css', 'left')
-          .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
-        cy.get('@firstMilestoneRow')
-          .find('a.issue-bar[href*="206"]')
-          .invoke('css', 'left')
-          .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
-        cy.get('@firstMilestoneRow')
-          .find('a.issue-bar[href*="207"]')
-          .invoke('css', 'left')
-          .then((pos) => expect(parseFloat(pos as unknown as string)).to.be.greaterThan(todayPosition));
+        cy.get('.milestone-lanes').find('.issue-bar.issue-open').each($issue => {
+          const issuePosition = parseFloat($issue.css('left'));
+          expect(issuePosition).to.be.greaterThan(todayPosition);
+        });
       });
     });
 
