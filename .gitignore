@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 
 **/node_modules/
+/release-archive
 
 ### STS ###
 .apt_generated

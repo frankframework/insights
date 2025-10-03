@@ -1,7 +1,7 @@
 package org.frankframework.insights.common.configuration;
 
 import java.util.List;
-import org.frankframework.insights.common.configuration.properties.CorsProperties;
+import org.frankframework.insights.common.properties.CorsProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;

@@ -1,9 +1,13 @@
 package org.frankframework.insights.common.configuration;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
@@ -13,6 +17,8 @@ import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
+import org.frankframework.insights.vulnerability.VulnerabilityService;
+import org.owasp.dependencycheck.utils.Settings;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,7 +35,8 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
-    private final Boolean gitHubFetchEnabled;
+    private final VulnerabilityService vulnerabilityService;
+    private final Boolean dataFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -41,7 +48,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
-            GitHubProperties gitHubProperties) {
+            VulnerabilityService vulnerabilityService,
+            DataProperties dataProperties) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -51,7 +59,8 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
-        this.gitHubFetchEnabled = gitHubProperties.getFetch();
+        this.vulnerabilityService = vulnerabilityService;
+        this.dataFetchEnabled = dataProperties.isFetchEnabled();
     }
 
     /**
@@ -84,25 +93,25 @@ public class SystemDataInitializer implements CommandLineRunner {
     @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
-            if (!gitHubFetchEnabled) {
-                log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+            if (!dataFetchEnabled) {
+                log.info("Skipping data fetch: skipping due to build/test configuration.");
                 return;
             }
 
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
         } catch (GitHubClientException e) {
-            log.error("Error fetching GitHub statistics", e);
+            log.error("Error fetching data statistics", e);
         }
     }
 
     /**
-     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, and releases from GitHub.
+     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, releases, dependencies and vulnerabilities.
      */
     @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
-            if (!gitHubFetchEnabled) {
-                log.info("Skipping GitHub fetch: skipping due to build/test configuration.");
+            if (!dataFetchEnabled) {
+                log.info("Skipping data fetch: skipping due to build/test configuration.");
                 return;
             }
 
@@ -115,10 +124,45 @@ public class SystemDataInitializer implements CommandLineRunner {
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();
             releaseService.injectReleases();
-
             log.info("Done fetching all GitHub data");
+
+            log.info("Start fetching vulnerability data");
+
+            cleanUpOwaspLockFile();
+            vulnerabilityService.executeVulnerabilityScanForAllReleases();
+
+            log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
+        }
+    }
+
+    /**
+     * Cleans up any stale OWASP Dependency-Check lock files on startup to prevent the scanner
+     * from getting stuck.
+     */
+    private void cleanUpOwaspLockFile() {
+        try {
+            Settings settings = new Settings();
+            Path dataDirectory = settings.getDataDirectory().toPath();
+
+            if (Files.isDirectory(dataDirectory)) {
+                try (Stream<Path> files = Files.list(dataDirectory)) {
+                    files.filter(path -> path.toString().toLowerCase().endsWith(".lock"))
+                            .forEach(lockFile -> {
+                                try {
+                                    Files.delete(lockFile);
+                                    log.warn("Removed stale OWASP dependency-check lock file on startup: {}", lockFile);
+                                } catch (IOException e) {
+                                    log.error("Failed to delete stale OWASP lock file: {}", lockFile, e);
+                                }
+                            });
+                }
+            }
+        } catch (Exception e) {
+            log.error(
+                    "Failed to clean up stale OWASP lock files. This might cause delays if an update is already in progress.",
+                    e);
         }
     }
 }

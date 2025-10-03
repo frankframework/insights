@@ -7,7 +7,7 @@ import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -16,6 +16,7 @@ import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
+import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,13 +58,16 @@ public class ShedLockLocalTest {
     private ReleaseService releaseService;
 
     @Mock
-    private GitHubProperties gitHubProperties;
+    private VulnerabilityService vulnerabilityService;
+
+    @Mock
+    private DataProperties dataProperties;
 
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
     public void setUp() {
-        when(gitHubProperties.getFetch()).thenReturn(false);
+        when(dataProperties.isFetchEnabled()).thenReturn(false);
 
         systemDataInitializer = new SystemDataInitializer(
                 gitHubRepositoryStatisticsService,
@@ -75,7 +79,8 @@ public class ShedLockLocalTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                gitHubProperties);
+                vulnerabilityService,
+                dataProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }

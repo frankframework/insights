@@ -13,7 +13,7 @@ import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -22,6 +22,7 @@ import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
+import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +63,10 @@ public class ShedLockTest {
     private ReleaseService releaseService;
 
     @Mock
-    private GitHubProperties gitHubProperties;
+    private VulnerabilityService vulnerabilityService;
+
+    @Mock
+    private DataProperties dataProperties;
 
     private SystemDataInitializer systemDataInitializer;
 
@@ -78,7 +82,8 @@ public class ShedLockTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                gitHubProperties);
+                vulnerabilityService,
+                dataProperties);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }

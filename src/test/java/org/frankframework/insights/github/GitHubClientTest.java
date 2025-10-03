@@ -6,7 +6,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
 import org.frankframework.insights.branch.BranchDTO;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
+import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.issuePriority.IssuePriorityDTO;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
