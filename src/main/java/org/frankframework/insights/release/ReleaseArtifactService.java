@@ -23,9 +23,9 @@ public class ReleaseArtifactService {
 			"https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
 
 	private static final int BUFFER_SIZE = 4096;
-	private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024;
+	private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024; // 1 GB
 	private static final int MAX_ENTRIES = 1024;
-	private static final double COMPRESSION_RATIO_LIMIT = 10;
+	private static final double COMPRESSION_RATIO_LIMIT = 10.0;
 
 	/**
 	 * Prepares the source code for a release by downloading and unpacking it.
@@ -89,83 +89,70 @@ public class ReleaseArtifactService {
 
 	/**
 	 * Securely unzips a file, preventing Zip Bomb and Path Traversal vulnerabilities.
-	 * This version uses a for-loop to make the entry count check explicit and satisfy static analysis tools.
+	 * The logic from the original `extractAndValidateEntry` and `validateZipEntryPath` methods
+	 * has been merged into this single method to make the validation checks more explicit
+	 * for static analysis tools like SonarQube.
 	 */
 	private void unzip(Path zipFile, Path destDir) throws IOException {
 		Path normalizedDestDir = destDir.toAbsolutePath().normalize();
-		long unCompressedSize = 0;
+		long totalUncompressedSize = 0;
+		int entryCount = 0;
 
 		try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
 			ZipEntry zipEntry;
-			for (int entryCount = 0; (zipEntry = zis.getNextEntry()) != null; entryCount++) {
-				if (entryCount >= MAX_ENTRIES) {
+			while ((zipEntry = zis.getNextEntry()) != null) {
+				// 1. Check for too many entries (Zip Bomb)
+				if (++entryCount > MAX_ENTRIES) {
 					throw new IOException("Archive contains too many entries.");
 				}
 
-				Path validatedPath = validateZipEntryPath(zipEntry, normalizedDestDir);
+				// 2. Validate entry path for Path Traversal (Zip Slip)
+				// This logic also strips the top-level directory from GitHub archives.
+				Path entryPath = Paths.get(zipEntry.getName());
+				if (entryPath.getNameCount() <= 1) {
+					// Skip the root directory or invalid entries
+					zis.closeEntry();
+					continue;
+				}
 
-				unCompressedSize = extractAndValidateEntry(zis, zipEntry, validatedPath, unCompressedSize);
-			}
-		}
-	}
+				Path strippedPath = entryPath.subpath(1, entryPath.getNameCount());
+				Path resolvedPath = normalizedDestDir.resolve(strippedPath.toString()).normalize();
 
-	/**
-	 * Validates a zip entry's path to prevent the "Zip Slip" vulnerability.
-	 * It also handles the removal of the top-level directory typical of GitHub archives.
-	 */
-	private Path validateZipEntryPath(ZipEntry zipEntry, Path normalizedDestDir) throws IOException {
-		Path entryPath = Paths.get(zipEntry.getName());
-		if (entryPath.getNameCount() <= 1) {
-			return null;
-		}
+				if (!resolvedPath.startsWith(normalizedDestDir)) {
+					throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
+				}
 
-		Path strippedPath = entryPath.subpath(1, entryPath.getNameCount());
-		Path resolvedPath = normalizedDestDir.resolve(strippedPath.toString()).normalize();
+				if (zipEntry.isDirectory()) {
+					Files.createDirectories(resolvedPath);
+				} else {
+					Files.createDirectories(resolvedPath.getParent());
+					long totalEntrySize = 0;
 
-		if (!resolvedPath.startsWith(normalizedDestDir)) {
-			throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
-		}
-		return resolvedPath;
-	}
+					try (var out = Files.newOutputStream(resolvedPath)) {
+						byte[] buffer = new byte[BUFFER_SIZE];
+						int nBytes;
+						while ((nBytes = zis.read(buffer)) > 0) {
+							out.write(buffer, 0, nBytes);
+							totalEntrySize += nBytes;
+							totalUncompressedSize += nBytes;
 
-	/**
-	 * Extracts a single entry while validating its uncompressed size and compression ratio.
-	 */
-	private long extractAndValidateEntry(ZipInputStream zis, ZipEntry zipEntry, Path filePath, long currentTotalSize) throws IOException {
-		if (filePath == null) {
-			return currentTotalSize;
-		}
+							// 3. Check compression ratio for each entry (Zip Bomb)
+							if (zipEntry.getCompressedSize() > 0) {
+								double compressionRatio = (double) totalEntrySize / zipEntry.getCompressedSize();
+								if (compressionRatio > COMPRESSION_RATIO_LIMIT) {
+									throw new IOException("Compression ratio for entry " + zipEntry.getName() + " is too high (Zip Bomb suspected).");
+								}
+							}
 
-		if (zipEntry.isDirectory()) {
-			Files.createDirectories(filePath);
-			return currentTotalSize;
-		}
-
-		Files.createDirectories(filePath.getParent());
-
-		long totalEntrySize = 0;
-		long newTotalArchiveSize = currentTotalSize;
-
-		try (var out = Files.newOutputStream(filePath)) {
-			byte[] buffer = new byte[BUFFER_SIZE];
-			int nBytes;
-			while ((nBytes = zis.read(buffer)) > 0) {
-				out.write(buffer, 0, nBytes);
-				totalEntrySize += nBytes;
-				newTotalArchiveSize += nBytes;
-
-				if (zipEntry.getCompressedSize() > 0) {
-					double compressionRatio = (double) totalEntrySize / zipEntry.getCompressedSize();
-					if (compressionRatio > COMPRESSION_RATIO_LIMIT) {
-						throw new IOException("Compression ratio for entry " + zipEntry.getName() + " is too high (Zip Bomb suspected).");
+							// 4. Check total uncompressed size (Zip Bomb)
+							if (totalUncompressedSize > MAX_ARCHIVE_SIZE) {
+								throw new IOException("Archive is too large when uncompressed.");
+							}
+						}
 					}
 				}
-
-				if (newTotalArchiveSize > MAX_ARCHIVE_SIZE) {
-					throw new IOException("Archive is too large when uncompressed.");
-				}
+				zis.closeEntry();
 			}
 		}
-		return newTotalArchiveSize;
 	}
 }
