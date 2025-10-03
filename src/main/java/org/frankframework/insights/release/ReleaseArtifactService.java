@@ -22,11 +22,10 @@ public class ReleaseArtifactService {
 	private static final String GITHUB_ZIP_URL_FORMAT =
 			"https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
 
-	// --- Security Constants for Unzipping ---
-	private static final int BUFFER_SIZE = 4096; // 4KB buffer for reading chunks
-	private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024; // 1 GB Total
+	private static final int BUFFER_SIZE = 4096;
+	private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024;
 	private static final int MAX_ENTRIES = 1024;
-	private static final double COMPRESSION_RATIO_LIMIT = 10; // Uncompressed size cannot be more than 10x compressed size
+	private static final double COMPRESSION_RATIO_LIMIT = 10;
 
 	private record ZipArchiveState(long unCompressedSize, int entriesCount) {}
 
@@ -98,8 +97,8 @@ public class ReleaseArtifactService {
 		ZipArchiveState state = new ZipArchiveState(0, 0);
 
 		try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
-			ZipEntry zipEntry = zis.getNextEntry();
-			while (zipEntry != null) {
+			ZipEntry zipEntry;
+			while ((zipEntry = zis.getNextEntry()) != null) {
 				state = new ZipArchiveState(state.unCompressedSize(), state.entriesCount() + 1);
 				if (state.entriesCount() > MAX_ENTRIES) {
 					throw new IOException("Archive contains too many entries.");
@@ -109,8 +108,6 @@ public class ReleaseArtifactService {
 
 				long newTotalSize = extractAndValidateEntry(zis, zipEntry, validatedPath, state.unCompressedSize());
 				state = new ZipArchiveState(newTotalSize, state.entriesCount());
-
-				zipEntry = zis.getNextEntry();
 			}
 		}
 	}
