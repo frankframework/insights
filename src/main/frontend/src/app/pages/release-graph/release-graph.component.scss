@@ -10,11 +10,6 @@
     user-select: none;
   }
 
-  .line {
-    fill: none;
-    stroke-width: 2;
-  }
-
   #node {
     cursor: pointer;
   }
@@ -31,9 +26,93 @@
     text-anchor: middle;
   }
 
+  .branch-labels-sticky {
+    display: none;
+  }
+
+  @media (min-width: 992px) {
+    .branch-labels-sticky {
+      display: flex;
+      justify-content: center;
+      padding-inline: 1rem;
+      width: 100px;
+      height: 100%;
+      background-color: white;
+      position: fixed;
+      left: 0;
+      top: 75px;
+      pointer-events: none;
+      box-shadow: #444444 0px 0px 10px -5px;
+
+
+      .sticky-branch-label {
+        position: absolute;
+        font-size: 14px;
+        color: #818080;
+        background: white;
+        white-space: nowrap;
+        transform: translateY(-50%);
+        font-weight: bold;
+        text-anchor: start;
+        dominant-baseline: central;
+        opacity: 0.9;
+      }
+    }
+  }
+
   path {
     stroke: #999;
-    stroke-width: 2;
+    stroke-width: 2px;
     fill: none;
+  }
+
+  .dotted {
+    stroke-width: 2.2px;
+    stroke-dasharray: 8, 4;
+  }
+
+  .skip-node {
+    cursor: pointer;
+
+    .skip-circle {
+      fill: #f8f9fa;
+      stroke: #adb5bd;
+      stroke-width: 2;
+      stroke-dasharray: 4, 3;
+    }
+
+    .skip-text {
+      font-size: 13px;
+      font-weight: bold;
+      text-anchor: middle;
+      fill: #6c757d;
+      dominant-baseline: middle;
+    }
+
+    .skip-label {
+      font-size: 11px;
+      font-weight: normal;
+      text-anchor: middle;
+      fill: #6c757d;
+      font-style: italic;
+    }
+
+    &:hover .skip-circle {
+      fill: #e9ecef;
+      stroke: #868e96;
+    }
+  }
+
+
+  .gap-icon {
+    font-size: 24px;
+    font-weight: bold;
+    fill: #999;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    stroke: white;
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    paint-order: stroke;
   }
 }

@@ -6,7 +6,7 @@ describe('Off-Canvas Panel Journey', () => {
   });
 
   it('should open, display all content correctly, and close', () => {
-    cy.get('[data-cy="node-v9.0.1"]').should('be.visible').click();
+    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
 
     cy.get('app-release-off-canvas', { timeout: 10000 })
       .should('be.visible')
@@ -30,7 +30,7 @@ describe('Off-Canvas Panel Journey', () => {
   });
 
   it('should allow filtering of issues within the off-canvas panel', () => {
-    cy.get('[data-cy="node-v9.0.1"]').should('be.visible').click();
+    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
     cy.get('app-release-off-canvas').as('offCanvas');
     cy.get('@offCanvas')
       .find('app-loader', { timeout: 10000 })

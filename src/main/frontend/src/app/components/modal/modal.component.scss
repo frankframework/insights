@@ -7,6 +7,7 @@
   justify-content: center;
   outline: none;
   z-index: 30;
+  padding: 1rem;
 }
 
 .modal-title {
@@ -16,13 +17,22 @@
 }
 
 .modal-content {
-  max-width: 375px;
+  max-width: 30vw;
+  max-height: 90vh;
   background: white;
   border-radius: .7rem;
   padding: 4rem 2rem 1rem 2rem;
   position: relative;
   box-shadow: 0 2px 18px #0002;
   outline: none;
+  overflow-y: auto;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+    margin: 0;
+    padding: 3rem 1rem 1rem 1rem;
+    border-radius: .5rem;
+  }
 }
 
 .close-btn {

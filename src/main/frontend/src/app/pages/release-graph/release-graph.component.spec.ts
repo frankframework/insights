@@ -41,7 +41,7 @@ describe('ReleaseGraphComponent', () => {
       'calculateReleaseCoordinates',
       'assignReleaseColors',
     ]);
-    mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks']);
+    mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
     mockToastService = jasmine.createSpyObj('ToastrService', ['error']);
     routerEventsSubject = new ReplaySubject<NavigationEnd>(1);
 
@@ -66,6 +66,8 @@ describe('ReleaseGraphComponent', () => {
     mockNodeService.calculateReleaseCoordinates.and.returnValue(mockReleaseNodeMap);
     mockNodeService.assignReleaseColors.and.returnValue(mockNodes);
     mockLinkService.createLinks.and.returnValue(mockLinks);
+    mockLinkService.createSkipNodes.and.returnValue([]);
+    mockLinkService.createSkipNodeLinks.and.returnValue([]);
 
     fixture = TestBed.createComponent(ReleaseGraphComponent);
     component = fixture.componentInstance;
@@ -114,7 +116,7 @@ describe('ReleaseGraphComponent', () => {
 
       expect(component.releases).toEqual(mockReleases);
       expect(component.releaseNodes).toEqual(mockNodes);
-      expect(component.releaseLinks).toEqual(mockLinks);
+      expect(component.allLinks).toEqual(mockLinks);
       expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases);
     });
 

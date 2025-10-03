@@ -1,8 +1,7 @@
 .tooltip {
-  position: fixed; // Positioned relative to the viewport
-  transform: translate(-50%, -100%); // Center horizontally, and move up by its own height
+  position: fixed;
+  transform: translate(-50%, -100%);
 
-  // All other visual styles from your old tooltip
   background-color: #1f2937;
   color: #f9fafb;
   border-radius: 0.5rem;
@@ -11,7 +10,7 @@
   width: 300px;
   max-width: 90vw;
   z-index: 100;
-  pointer-events: none; // Prevent the tooltip from capturing mouse events
+  pointer-events: none;
 
   .tooltip-title {
     font-weight: 600;

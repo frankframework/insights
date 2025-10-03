@@ -1,3 +1,4 @@
+
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
@@ -54,6 +55,7 @@ describe('TooltipService', () => {
   });
 
   it('should emit null on hide()', (done) => {
+
     service.show(document.createElement('div'), MOCK_ISSUE);
 
     service.tooltipState$.subscribe((data) => {
@@ -77,7 +79,9 @@ describe('TooltipComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [TooltipComponent],
-      providers: [{ provide: TooltipService, useValue: { tooltipState$: tooltipSubject.asObservable() } }],
+      providers: [
+        { provide: TooltipService, useValue: { tooltipState$: tooltipSubject.asObservable() } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TooltipComponent);

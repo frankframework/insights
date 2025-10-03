@@ -1,0 +1,92 @@
+p {
+  border-left: #444444 3px solid;
+  padding-inline: 1rem;
+  padding-block: 0.25rem;
+}
+
+.skipped-versions-list {
+  max-height: 60vh;
+  overflow-y: auto;
+
+  .no-releases {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 2rem;
+    font-size: 1rem;
+  }
+
+  .version-root, .version-patch {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f8f9fa;
+    }
+  }
+
+  .version-root {
+    font-weight: bold;
+    margin-top: 0.75rem;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .version-patch {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #333;
+    margin-left: 1.5rem;
+    margin-top: 0.25rem;
+    gap: 0.5rem;
+  }
+
+  .patch-indent {
+    color: #999;
+    font-family: monospace;
+    font-size: 0.8rem;
+  }
+
+  .version-type-badge {
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.2rem;
+    text-transform: uppercase;
+
+    &.major {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    &.minor {
+      background-color: #fd7e14;
+      color: white;
+    }
+
+    &.patch {
+      background-color: #198754;
+      color: white;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .version-root {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+    }
+
+    .version-patch {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+      margin-left: 1rem;
+    }
+  }
+}
