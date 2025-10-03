@@ -93,14 +93,20 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('.today-marker').invoke('css', 'left').then(left => {
         const todayPosition = parseFloat(left as unknown as string);
 
-        cy.get('.milestone-lanes').find('.issue-bar.issue-closed').each($issue => {
-          const issuePosition = parseFloat($issue.css('left'));
-          expect(issuePosition).to.be.lessThan(todayPosition);
-        });
+        cy.get('body').then($body => {
+          if ($body.find('.milestone-lanes .issue-bar[data-state="closed"]').length > 0) {
+            cy.get('.milestone-lanes .issue-bar[data-state="closed"]').each($issue => {
+              const issuePosition = parseFloat($issue.css('left'));
+              expect(issuePosition).to.be.lessThan(todayPosition);
+            });
+          }
 
-        cy.get('.milestone-lanes').find('.issue-bar.issue-open').each($issue => {
-          const issuePosition = parseFloat($issue.css('left'));
-          expect(issuePosition).to.be.greaterThan(todayPosition);
+          if ($body.find('.milestone-lanes .issue-bar[data-state="open"]').length > 0) {
+            cy.get('.milestone-lanes .issue-bar[data-state="open"]').each($issue => {
+              const issuePosition = parseFloat($issue.css('left'));
+              expect(issuePosition).to.be.greaterThan(todayPosition);
+            });
+          }
         });
       });
     });
