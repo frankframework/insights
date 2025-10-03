@@ -9,5 +9,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 public class NVDProperties {
     private String key;
-    private String delay;
+    private int delay;
 }
