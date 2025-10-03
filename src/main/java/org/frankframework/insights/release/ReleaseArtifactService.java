@@ -69,6 +69,14 @@ public class ReleaseArtifactService {
 		return String.format(GITHUB_ZIP_URL_FORMAT, tagName);
 	}
 
+	/**
+	 * Downloads the release zip file from the given URL into the specified directory.
+	 * @param releaseDir The directory to download the zip file into.
+	 * @param zipUrl The URL of the zip file to download.
+	 * @param release The release information for logging purposes.
+	 * @return The path to the downloaded zip file.
+	 * @throws IOException If an I/O error occurs during download.
+	 */
 	private Path downloadReleaseZip(Path releaseDir, String zipUrl, Release release) throws IOException {
 		log.info("Downloading source for {} from {}", release.getName(), zipUrl);
 		Files.createDirectories(releaseDir);
@@ -80,6 +88,12 @@ public class ReleaseArtifactService {
 		return zipFile;
 	}
 
+	/**
+	 * Unpacks the zip file into the release directory and deletes the zip file afterwards.
+	 * @param zipFile The path to the zip file to unpack.
+	 * @param releaseDir The directory to unpack the zip file into.
+	 * @throws IOException If an I/O error occurs during unpacking or deletion.
+	 */
 	private void unpackAndCleanup(Path zipFile, Path releaseDir) throws IOException {
 		log.debug("Unpacking archive for {}", zipFile.getFileName());
 		unzip(zipFile, releaseDir);
@@ -88,10 +102,10 @@ public class ReleaseArtifactService {
 	}
 
 	/**
-	 * Securely unzips a file, preventing Zip Bomb and Path Traversal vulnerabilities.
-	 * The logic from the original `extractAndValidateEntry` and `validateZipEntryPath` methods
-	 * has been merged into this single method to make the validation checks more explicit
-	 * for static analysis tools like SonarQube.
+	 * Unzips a zip file to the specified destination directory with security checks against Zip Slip and Zip Bomb vulnerabilities.
+	 * @param zipFile The path to the zip file to unzip.
+	 * @param destDir The destination directory to unzip into.
+	 * @throws IOException If an I/O error occurs or security checks fail.
 	 */
 	private void unzip(Path zipFile, Path destDir) throws IOException {
 		Path normalizedDestDir = destDir.toAbsolutePath().normalize();
@@ -101,58 +115,82 @@ public class ReleaseArtifactService {
 		try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
 			ZipEntry zipEntry;
 			while ((zipEntry = zis.getNextEntry()) != null) {
-				// 1. Check for too many entries (Zip Bomb)
 				if (++entryCount > MAX_ENTRIES) {
 					throw new IOException("Archive contains too many entries.");
 				}
 
-				// 2. Validate entry path for Path Traversal (Zip Slip)
-				// This logic also strips the top-level directory from GitHub archives.
-				Path entryPath = Paths.get(zipEntry.getName());
-				if (entryPath.getNameCount() <= 1) {
-					// Skip the root directory or invalid entries
+				Path resolvedPath = validateAndStripEntryPath(zipEntry, normalizedDestDir);
+				if (resolvedPath == null) {
 					zis.closeEntry();
 					continue;
-				}
-
-				Path strippedPath = entryPath.subpath(1, entryPath.getNameCount());
-				Path resolvedPath = normalizedDestDir.resolve(strippedPath.toString()).normalize();
-
-				if (!resolvedPath.startsWith(normalizedDestDir)) {
-					throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
 				}
 
 				if (zipEntry.isDirectory()) {
 					Files.createDirectories(resolvedPath);
 				} else {
-					Files.createDirectories(resolvedPath.getParent());
-					long totalEntrySize = 0;
-
-					try (var out = Files.newOutputStream(resolvedPath)) {
-						byte[] buffer = new byte[BUFFER_SIZE];
-						int nBytes;
-						while ((nBytes = zis.read(buffer)) > 0) {
-							out.write(buffer, 0, nBytes);
-							totalEntrySize += nBytes;
-							totalUncompressedSize += nBytes;
-
-							// 3. Check compression ratio for each entry (Zip Bomb)
-							if (zipEntry.getCompressedSize() > 0) {
-								double compressionRatio = (double) totalEntrySize / zipEntry.getCompressedSize();
-								if (compressionRatio > COMPRESSION_RATIO_LIMIT) {
-									throw new IOException("Compression ratio for entry " + zipEntry.getName() + " is too high (Zip Bomb suspected).");
-								}
-							}
-
-							// 4. Check total uncompressed size (Zip Bomb)
-							if (totalUncompressedSize > MAX_ARCHIVE_SIZE) {
-								throw new IOException("Archive is too large when uncompressed.");
-							}
-						}
-					}
+					totalUncompressedSize = extractFileEntry(zis, zipEntry, resolvedPath, totalUncompressedSize);
 				}
 				zis.closeEntry();
 			}
 		}
 	}
+
+	/**
+	 * Validates a zip entry's path to prevent "Zip Slip" and strips the top-level directory.
+	 * @return The resolved, safe path for the entry, or null if the entry should be skipped.
+	 */
+	private Path validateAndStripEntryPath(ZipEntry zipEntry, Path normalizedDestDir) throws IOException {
+		Path entryPath = Paths.get(zipEntry.getName());
+
+		if (entryPath.getNameCount() <= 1) {
+			return null;
+		}
+
+		Path strippedPath = entryPath.subpath(1, entryPath.getNameCount());
+		Path resolvedPath = normalizedDestDir.resolve(strippedPath.toString()).normalize();
+
+		if (!resolvedPath.startsWith(normalizedDestDir)) {
+			throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
+		}
+		return resolvedPath;
+	}
+
+	/**
+	 * Extracts a single file entry, performing security checks for Zip Bomb vulnerabilities.
+	 * @return The new total uncompressed size of the archive after extraction.
+	 */
+	private long extractFileEntry(ZipInputStream zis, ZipEntry zipEntry, Path filePath, long currentTotalSize) throws IOException {
+		Files.createDirectories(filePath.getParent());
+		long totalEntrySize = 0;
+		long newTotalArchiveSize = currentTotalSize;
+
+		try (var out = Files.newOutputStream(filePath)) {
+			byte[] buffer = new byte[BUFFER_SIZE];
+			int nBytes;
+			while ((nBytes = zis.read(buffer)) > 0) {
+				out.write(buffer, 0, nBytes);
+				totalEntrySize += nBytes;
+				newTotalArchiveSize += nBytes;
+
+				validateCompressionRatio(zipEntry, totalEntrySize);
+				if (newTotalArchiveSize > MAX_ARCHIVE_SIZE) {
+					throw new IOException("Archive is too large when uncompressed.");
+				}
+			}
+		}
+		return newTotalArchiveSize;
+	}
+
+	/**
+	 * Checks if the compression ratio of an entry exceeds the defined limit.
+	 */
+	private void validateCompressionRatio(ZipEntry zipEntry, long totalEntrySize) throws IOException {
+		if (zipEntry.getCompressedSize() > 0) {
+			double compressionRatio = (double) totalEntrySize / zipEntry.getCompressedSize();
+			if (compressionRatio > COMPRESSION_RATIO_LIMIT) {
+				throw new IOException("Compression ratio for entry " + zipEntry.getName() + " is too high (Zip Bomb suspected).");
+			}
+		}
+	}
 }
+
