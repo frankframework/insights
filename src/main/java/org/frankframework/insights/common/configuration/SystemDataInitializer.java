@@ -122,11 +122,11 @@ public class SystemDataInitializer implements CommandLineRunner {
             issueService.injectIssues();
             pullRequestService.injectBranchPullRequests();
             releaseService.injectReleases();
-			log.info("Done fetching all GitHub data");
+            log.info("Done fetching all GitHub data");
 
-			log.info("Start fetching vulnerability data");
+            log.info("Start fetching vulnerability data");
 
-			cleanUpOwaspLockFile();
+            cleanUpOwaspLockFile();
             vulnerabilityService.executeVulnerabilityScanForAllReleases();
 
             log.info("Done fetching all vulnerability data");

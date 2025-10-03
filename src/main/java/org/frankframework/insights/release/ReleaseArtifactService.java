@@ -21,6 +21,9 @@ public class ReleaseArtifactService {
     private static final Path ARCHIVE_DIR = Paths.get("release-archive");
     private static final String GITHUB_ZIP_URL_FORMAT =
             "https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
+    private static final long MAX_FILE_SIZE = 1024 * 1024 * 100; // 100 MB
+    private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024; // 1 GB
+    private static final int MAX_ENTRIES = 1024;
 
     /**
      * Prepares the source code for a release by downloading and unpacking it.
@@ -29,7 +32,7 @@ public class ReleaseArtifactService {
      * @param release The release to prepare artifacts for.
      * @return The path to the directory containing the unpacked source code.
      */
-	@Transactional
+    @Transactional
     public Path prepareReleaseArtifacts(Release release) throws IOException {
         Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
 
@@ -84,43 +87,62 @@ public class ReleaseArtifactService {
     }
 
     private void unzip(Path zipFile, Path destDir) throws IOException {
+        Path normalizedDestDir = destDir.toAbsolutePath().normalize();
+        ZipArchiveState state = new ZipArchiveState(0, 0);
+
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
             ZipEntry zipEntry = zis.getNextEntry();
             while (zipEntry != null) {
-                extractZipEntry(zis, zipEntry, destDir);
+                state = validateArchiveLimits(zipEntry, state);
+                Path validatedPath = validateZipEntryPath(zipEntry, normalizedDestDir);
+                extractZipEntry(zis, zipEntry, validatedPath);
+
                 zipEntry = zis.getNextEntry();
             }
         }
     }
 
-    private void extractZipEntry(ZipInputStream zis, ZipEntry zipEntry, Path destDir) throws IOException {
-        Path entryPath = Paths.get(zipEntry.getName());
-
-        if (shouldSkipEntry(entryPath)) {
-            return;
+    private ZipArchiveState validateArchiveLimits(ZipEntry entry, ZipArchiveState currentState) throws IOException {
+        int newCount = currentState.entriesCount() + 1;
+        if (newCount > MAX_ENTRIES) {
+            throw new IOException("Archive contains too many entries.");
         }
 
-        Path newPath = resolveEntryPath(entryPath, destDir);
+        long entrySize = entry.getSize();
+        if (entrySize > MAX_FILE_SIZE) {
+            throw new IOException("Archive contains a file that is too large: " + entry.getName());
+        }
 
+        long newTotalSize = currentState.unCompressedSize() + entrySize;
+        if (newTotalSize > MAX_ARCHIVE_SIZE) {
+            throw new IOException("Archive is too large when uncompressed.");
+        }
+
+        return new ZipArchiveState(newTotalSize, newCount);
+    }
+
+    private Path validateZipEntryPath(ZipEntry zipEntry, Path normalizedDestDir) throws IOException {
+        Path resolvedPath = normalizedDestDir.resolve(zipEntry.getName()).normalize();
+
+        if (!resolvedPath.startsWith(normalizedDestDir)) {
+            throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
+        }
+        return resolvedPath;
+    }
+
+    /**
+     * Extracts a single ZipEntry to the specified file path.
+     * @param zis the ZipInputStream positioned at the entry to extract
+     * @param zipEntry the ZipEntry to extract
+     * @param filePath the destination file path
+     * @throws IOException if an I/O error occurs
+     */
+    private void extractZipEntry(InputStream zis, ZipEntry zipEntry, Path filePath) throws IOException {
         if (zipEntry.isDirectory()) {
-            Files.createDirectories(newPath);
+            Files.createDirectories(filePath);
         } else {
-            extractFile(zis, newPath);
+            Files.createDirectories(filePath.getParent());
+            Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
         }
-    }
-
-    private boolean shouldSkipEntry(Path entryPath) {
-        return entryPath.getNameCount() <= 1;
-    }
-
-    private Path resolveEntryPath(Path entryPath, Path destDir) {
-        return destDir.resolve(entryPath.subpath(1, entryPath.getNameCount()).toString());
-    }
-
-    private void extractFile(ZipInputStream zis, Path newPath) throws IOException {
-        if (newPath.getParent() != null) {
-            Files.createDirectories(newPath.getParent());
-        }
-        Files.copy(zis, newPath, StandardCopyOption.REPLACE_EXISTING);
     }
 }
