@@ -18,131 +18,131 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ReleaseArtifactService {
 
-    private static final Path ARCHIVE_DIR = Paths.get("release-archive");
-    private static final String GITHUB_ZIP_URL_FORMAT =
-            "https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
-    private static final long MAX_FILE_SIZE = 1024 * 1024 * 100; // 100 MB
-    private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024; // 1 GB
-    private static final int MAX_ENTRIES = 1024;
+	private static final Path ARCHIVE_DIR = Paths.get("release-archive");
+	private static final String GITHUB_ZIP_URL_FORMAT =
+			"https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
 
-    /**
-     * Prepares the source code for a release by downloading and unpacking it.
-     * Skips the download if the artifact directory already exists.
-     *
-     * @param release The release to prepare artifacts for.
-     * @return The path to the directory containing the unpacked source code.
-     */
-    @Transactional
-    public Path prepareReleaseArtifacts(Release release) throws IOException {
-        Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
+	// --- Security Constants for Unzipping ---
+	private static final int BUFFER_SIZE = 4096; // 4KB buffer for reading chunks
+	private static final long MAX_ARCHIVE_SIZE = 1024 * 1024 * 1024; // 1 GB Total
+	private static final int MAX_ENTRIES = 1024;
+	private static final double COMPRESSION_RATIO_LIMIT = 10; // Uncompressed size cannot be more than 10x compressed size
 
-        if (releaseDirectoryExists(releaseDir, release)) {
-            return releaseDir;
-        }
+	private record ZipArchiveState(long unCompressedSize, int entriesCount) {}
 
-        String zipUrl = buildZipUrl(release);
-        Path zipFile = downloadReleaseZip(releaseDir, zipUrl, release);
-        unpackAndCleanup(zipFile, releaseDir, release);
+	@Transactional
+	public Path prepareReleaseArtifacts(Release release) throws IOException {
+		Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
 
-        return releaseDir;
-    }
+		if (releaseDirectoryExists(releaseDir, release)) {
+			return releaseDir;
+		}
 
-    private boolean releaseDirectoryExists(Path releaseDir, Release release) throws IOException {
-        if (Files.isDirectory(releaseDir)) {
-            try (Stream<Path> stream = Files.list(releaseDir)) {
-                boolean hasFiles = stream.findFirst().isPresent();
-                if (hasFiles) {
-                    log.info("Source code for release {} already exists, skipping download.", release.getName());
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+		String zipUrl = buildZipUrl(release);
+		Path zipFile = downloadReleaseZip(releaseDir, zipUrl, release);
+		unpackAndCleanup(zipFile, releaseDir);
 
-    private String buildZipUrl(Release release) throws IOException {
-        String tagName = release.getTagName();
-        if (tagName == null || tagName.isBlank()) {
-            throw new IOException("Release " + release.getName() + " is missing a tagName.");
-        }
-        return String.format(GITHUB_ZIP_URL_FORMAT, tagName);
-    }
+		return releaseDir;
+	}
 
-    private Path downloadReleaseZip(Path releaseDir, String zipUrl, Release release) throws IOException {
-        log.info("Downloading source for {} from {}", release.getName(), zipUrl);
-        Files.createDirectories(releaseDir);
-        Path zipFile = releaseDir.resolve(release.getName() + ".zip");
+	private boolean releaseDirectoryExists(Path releaseDir, Release release) throws IOException {
+		if (Files.isDirectory(releaseDir)) {
+			try (Stream<Path> stream = Files.list(releaseDir)) {
+				if (stream.findFirst().isPresent()) {
+					log.info("Source code for release {} already exists, skipping download.", release.getName());
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
-        try (InputStream in = URI.create(zipUrl).toURL().openStream()) {
-            Files.copy(in, zipFile, StandardCopyOption.REPLACE_EXISTING);
-        }
-        return zipFile;
-    }
+	private String buildZipUrl(Release release) throws IOException {
+		String tagName = release.getTagName();
+		if (tagName == null || tagName.isBlank()) {
+			throw new IOException("Release " + release.getName() + " is missing a tagName.");
+		}
+		return String.format(GITHUB_ZIP_URL_FORMAT, tagName);
+	}
 
-    private void unpackAndCleanup(Path zipFile, Path releaseDir, Release release) throws IOException {
-        log.debug("Unpacking archive for {}", release.getName());
-        unzip(zipFile, releaseDir);
-        Files.delete(zipFile);
-        log.debug("Successfully downloaded and unpacked source for {}", release.getName());
-    }
+	private Path downloadReleaseZip(Path releaseDir, String zipUrl, Release release) throws IOException {
+		log.info("Downloading source for {} from {}", release.getName(), zipUrl);
+		Files.createDirectories(releaseDir);
+		Path zipFile = releaseDir.resolve(release.getName() + ".zip");
 
-    private void unzip(Path zipFile, Path destDir) throws IOException {
-        Path normalizedDestDir = destDir.toAbsolutePath().normalize();
-        ZipArchiveState state = new ZipArchiveState(0, 0);
+		try (InputStream in = URI.create(zipUrl).toURL().openStream()) {
+			Files.copy(in, zipFile, StandardCopyOption.REPLACE_EXISTING);
+		}
+		return zipFile;
+	}
 
-        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
-            ZipEntry zipEntry = zis.getNextEntry();
-            while (zipEntry != null) {
-                state = validateArchiveLimits(zipEntry, state);
-                Path validatedPath = validateZipEntryPath(zipEntry, normalizedDestDir);
-                extractZipEntry(zis, zipEntry, validatedPath);
+	private void unpackAndCleanup(Path zipFile, Path releaseDir) throws IOException {
+		log.debug("Unpacking archive for {}", zipFile.getFileName());
+		unzip(zipFile, releaseDir);
+		Files.delete(zipFile);
+		log.debug("Successfully downloaded and unpacked source for {}", zipFile.getFileName());
+	}
 
-                zipEntry = zis.getNextEntry();
-            }
-        }
-    }
+	private void unzip(Path zipFile, Path destDir) throws IOException {
+		Path normalizedDestDir = destDir.toAbsolutePath().normalize();
+		ZipArchiveState state = new ZipArchiveState(0, 0);
 
-    private ZipArchiveState validateArchiveLimits(ZipEntry entry, ZipArchiveState currentState) throws IOException {
-        int newCount = currentState.entriesCount() + 1;
-        if (newCount > MAX_ENTRIES) {
-            throw new IOException("Archive contains too many entries.");
-        }
+		try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
+			ZipEntry zipEntry = zis.getNextEntry();
+			while (zipEntry != null) {
+				state = new ZipArchiveState(state.unCompressedSize(), state.entriesCount() + 1);
+				if (state.entriesCount() > MAX_ENTRIES) {
+					throw new IOException("Archive contains too many entries.");
+				}
 
-        long entrySize = entry.getSize();
-        if (entrySize > MAX_FILE_SIZE) {
-            throw new IOException("Archive contains a file that is too large: " + entry.getName());
-        }
+				Path validatedPath = validateZipEntryPath(zipEntry, normalizedDestDir);
+				long newTotalSize = extractAndValidateEntry(zis, zipEntry, validatedPath, state.unCompressedSize());
+				state = new ZipArchiveState(newTotalSize, state.entriesCount());
 
-        long newTotalSize = currentState.unCompressedSize() + entrySize;
-        if (newTotalSize > MAX_ARCHIVE_SIZE) {
-            throw new IOException("Archive is too large when uncompressed.");
-        }
+				zipEntry = zis.getNextEntry();
+			}
+		}
+	}
 
-        return new ZipArchiveState(newTotalSize, newCount);
-    }
+	private Path validateZipEntryPath(ZipEntry zipEntry, Path normalizedDestDir) throws IOException {
+		Path resolvedPath = normalizedDestDir.resolve(zipEntry.getName()).normalize();
+		if (!resolvedPath.startsWith(normalizedDestDir)) {
+			throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
+		}
+		return resolvedPath;
+	}
 
-    private Path validateZipEntryPath(ZipEntry zipEntry, Path normalizedDestDir) throws IOException {
-        Path resolvedPath = normalizedDestDir.resolve(zipEntry.getName()).normalize();
+	private long extractAndValidateEntry(ZipInputStream zis, ZipEntry zipEntry, Path filePath, long currentTotalSize) throws IOException {
+		if (zipEntry.isDirectory()) {
+			Files.createDirectories(filePath);
+			return currentTotalSize;
+		}
 
-        if (!resolvedPath.startsWith(normalizedDestDir)) {
-            throw new IOException("Bad zip entry: " + zipEntry.getName() + " (Path Traversal attempt)");
-        }
-        return resolvedPath;
-    }
+		Files.createDirectories(filePath.getParent());
 
-    /**
-     * Extracts a single ZipEntry to the specified file path.
-     * @param zis the ZipInputStream positioned at the entry to extract
-     * @param zipEntry the ZipEntry to extract
-     * @param filePath the destination file path
-     * @throws IOException if an I/O error occurs
-     */
-    private void extractZipEntry(InputStream zis, ZipEntry zipEntry, Path filePath) throws IOException {
-        if (zipEntry.isDirectory()) {
-            Files.createDirectories(filePath);
-        } else {
-            Files.createDirectories(filePath.getParent());
-            Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
-        }
-    }
+		long totalEntrySize = 0;
+		long newTotalArchiveSize = currentTotalSize;
+
+		try (var out = Files.newOutputStream(filePath)) {
+			byte[] buffer = new byte[BUFFER_SIZE];
+			int nBytes;
+			while ((nBytes = zis.read(buffer)) > 0) {
+				out.write(buffer, 0, nBytes);
+				totalEntrySize += nBytes;
+				newTotalArchiveSize += nBytes;
+
+				if (zipEntry.getCompressedSize() > 0) {
+					double compressionRatio = (double) totalEntrySize / zipEntry.getCompressedSize();
+					if (compressionRatio > COMPRESSION_RATIO_LIMIT) {
+						throw new IOException("Compression ratio for entry " + zipEntry.getName() + " is too high (Zip Bomb suspected).");
+					}
+				}
+
+				if (newTotalArchiveSize > MAX_ARCHIVE_SIZE) {
+					throw new IOException("Archive is too large when uncompressed.");
+				}
+			}
+		}
+		return newTotalArchiveSize;
+	}
 }
