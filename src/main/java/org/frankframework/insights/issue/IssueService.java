@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class IssueService {
     private static final String ISSUE_TYPE_EPIC_NAME = "Epic";
+    private static final double DEFAULT_POINTS = 3.0;
 
     private final GitHubClient gitHubClient;
     private final Mapper mapper;
@@ -253,7 +254,8 @@ public class IssueService {
      */
     public Set<IssueResponse> getIssuesByMilestoneId(String milestoneId) throws MilestoneNotFoundException {
         Milestone milestone = milestoneService.checkIfMilestoneExists(milestoneId);
-        Set<Issue> rootIssues = issueRepository.findDistinctByMilestoneId(milestone.getId());
+        Set<Issue> allIssues = issueRepository.findDistinctByMilestoneId(milestone.getId());
+        Set<Issue> rootIssues = filterRootIssues(allIssues);
         return buildIssueResponseTree(rootIssues);
     }
 
@@ -264,6 +266,23 @@ public class IssueService {
     public Set<IssueResponse> getFutureEpicIssues() {
         Set<Issue> futureEpicIssues = issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull(ISSUE_TYPE_EPIC_NAME);
         return buildIssueResponseTree(futureEpicIssues);
+    }
+
+    /**
+     * Filters out issues that are sub-issues of other issues in the set.
+     * @param issues the set of all issues
+     * @return a set of root issues (issues that are not sub-issues of other issues in the set)
+     */
+    private Set<Issue> filterRootIssues(Set<Issue> issues) {
+        Set<String> allSubIssueIds = issues.stream()
+                .filter(issue -> issue.getSubIssues() != null)
+                .flatMap(issue -> issue.getSubIssues().stream())
+                .map(Issue::getId)
+                .collect(Collectors.toSet());
+
+        return issues.stream()
+                .filter(issue -> !allSubIssueIds.contains(issue.getId()))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -330,6 +349,10 @@ public class IssueService {
 
         response.setLabels(labelsMap.getOrDefault(issue.getId(), Set.of()));
         response.setSubIssues(mapSubIssuesToResponses(issue, labelsMap));
+
+        double totalPoints = calculateTotalPoints(issue, response);
+        response.setPoints(totalPoints);
+
         return response;
     }
 
@@ -397,6 +420,26 @@ public class IssueService {
             return issueResponse.getSubIssues().stream().anyMatch(this::hasRelevantLabelsRecursively);
         }
         return false;
+    }
+
+    /**
+     * Calculates the total points for an issue, including its own points and all sub-issue points.
+     * Uses DEFAULT_POINTS (3.0) for issues without assigned points.
+     * @param issue the issue entity
+     * @param response the issue response with mapped sub-issues
+     * @return the total points for the issue and all its sub-issues
+     */
+    private double calculateTotalPoints(Issue issue, IssueResponse response) {
+        double issuePoints = issue.getPoints() != null ? issue.getPoints() : DEFAULT_POINTS;
+
+        if (response.getSubIssues() != null && !response.getSubIssues().isEmpty()) {
+            double subIssuesPoints = response.getSubIssues().stream()
+                    .mapToDouble(IssueResponse::getPoints)
+                    .sum();
+            return issuePoints + subIssuesPoints;
+        }
+
+        return issuePoints;
     }
 
     /**
