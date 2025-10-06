@@ -265,7 +265,7 @@ public class IssueService {
      */
     public Set<IssueResponse> getFutureEpicIssues() {
         Set<Issue> futureEpicIssues = issueRepository.findIssuesByIssueTypeNameAndMilestoneIsNull(ISSUE_TYPE_EPIC_NAME);
-        return buildIssueResponseTree(futureEpicIssues);
+        return buildIssueResponseTreeWithoutFiltering(futureEpicIssues);
     }
 
     /**
@@ -296,6 +296,19 @@ public class IssueService {
         return rootIssues.stream()
                 .map(issue -> mapIssueTreeWithLabels(issue, labelsMap))
                 .filter(this::hasRelevantLabelsRecursively)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Builds a tree of IssueResponse objects without filtering by labels.
+     * @param rootIssues the set of root issues to build the tree from
+     * @return a set of IssueResponse objects representing the root issues and their sub-issues, with labels included
+     */
+    private Set<IssueResponse> buildIssueResponseTreeWithoutFiltering(Set<Issue> rootIssues) {
+        Set<String> allIds = collectAllIssueIdsRecursively(rootIssues);
+        Map<String, Set<LabelResponse>> labelsMap = fetchLabelsForIssueIds(allIds);
+        return rootIssues.stream()
+                .map(issue -> mapIssueTreeWithLabels(issue, labelsMap))
                 .collect(Collectors.toSet());
     }
 

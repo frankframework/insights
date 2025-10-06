@@ -1,6 +1,7 @@
 package org.frankframework.insights.label;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -266,6 +267,29 @@ public class LabelServiceTest {
         when(issueLabelRepository.findAllByIssue_Id("i99")).thenReturn(Collections.emptySet());
         Set<Label> result = labelService.getLabelsByIssueId("i99");
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void shouldReturnTrueForIncludedLabelColor() {
+        Label label = createLabel("l1", "bug", "desc", "D73A4A");
+        assertTrue(labelService.isLabelIncluded(label));
+    }
+
+    @Test
+    public void shouldReturnTrueForIncludedLabelColorCaseInsensitive() {
+        Label label = createLabel("l1", "bug", "desc", "d73a4a");
+        assertTrue(labelService.isLabelIncluded(label));
+    }
+
+    @Test
+    public void shouldReturnFalseForNotIncludedLabelColor() {
+        Label label = createLabel("l1", "wontfix", "desc", "EEEEEE");
+        assertFalse(labelService.isLabelIncluded(label));
+    }
+
+    @Test
+    public void shouldReturnFalseForNullLabel() {
+        assertFalse(labelService.isLabelIncluded(null));
     }
 
     private Label createLabel(String id, String name, String description, String color) {
