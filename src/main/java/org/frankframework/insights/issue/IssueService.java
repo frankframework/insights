@@ -276,6 +276,7 @@ public class IssueService {
         Map<String, Set<LabelResponse>> labelsMap = fetchLabelsForIssueIds(allIds);
         return rootIssues.stream()
                 .map(issue -> mapIssueTreeWithLabels(issue, labelsMap))
+                .filter(this::hasRelevantLabelsRecursively)
                 .collect(Collectors.toSet());
     }
 
@@ -309,6 +310,7 @@ public class IssueService {
     private Map<String, Set<LabelResponse>> fetchLabelsForIssueIds(Set<String> issueIds) {
         Set<IssueLabel> labels = issueLabelRepository.findAllByIssue_IdIn(new ArrayList<>(issueIds));
         return labels.stream()
+                .filter(l -> labelService.isLabelIncluded(l.getLabel()))
                 .collect(Collectors.groupingBy(
                         l -> l.getIssue().getId(),
                         Collectors.mapping(l -> mapper.toDTO(l.getLabel(), LabelResponse.class), Collectors.toSet())));
@@ -374,10 +376,27 @@ public class IssueService {
         if (issue.getSubIssues() != null && !issue.getSubIssues().isEmpty()) {
             return issue.getSubIssues().stream()
                     .map(sub -> mapIssueTreeWithLabels(sub, labelsMap))
+                    .filter(this::hasRelevantLabelsRecursively)
                     .collect(Collectors.toSet());
         } else {
             return Set.of();
         }
+    }
+
+    /**
+     * Checks if an issue or any of its sub-issues have relevant labels.
+     * @param issueResponse the issue response to check
+     * @return true if the issue or any of its sub-issues have at least one relevant label
+     */
+    private boolean hasRelevantLabelsRecursively(IssueResponse issueResponse) {
+        if (issueResponse.getLabels() != null && !issueResponse.getLabels().isEmpty()) {
+            return true;
+        }
+        if (issueResponse.getSubIssues() != null
+                && !issueResponse.getSubIssues().isEmpty()) {
+            return issueResponse.getSubIssues().stream().anyMatch(this::hasRelevantLabelsRecursively);
+        }
+        return false;
     }
 
     /**

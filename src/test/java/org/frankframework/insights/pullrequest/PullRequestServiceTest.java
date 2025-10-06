@@ -351,7 +351,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldNotSaveExistingPullRequests()
+    public void injectBranchPullRequests_shouldNotSaveExistingPullRequests()
             throws GitHubClientException, PullRequestInjectionException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         PullRequestDTO prDto = mock(PullRequestDTO.class);
@@ -366,7 +366,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldDoNothingIfNoBranchesExist() throws PullRequestInjectionException {
+    public void injectBranchPullRequests_shouldDoNothingIfNoBranchesExist() throws PullRequestInjectionException {
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
 
         pullRequestService.injectBranchPullRequests();
@@ -383,7 +383,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldSkipBranchOnMappingError()
+    public void injectBranchPullRequests_shouldSkipBranchOnMappingError()
             throws PullRequestInjectionException, GitHubClientException, MappingException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         PullRequestDTO prDto = mock(PullRequestDTO.class);
@@ -399,7 +399,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldThrowPullRequestInjectionException_whenMasterPullRequestFails()
+    public void injectBranchPullRequests_shouldThrowPullRequestInjectionException_whenMasterPullRequestFails()
             throws GitHubClientException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenThrow(new RuntimeException("GitHub API failure"));
@@ -411,14 +411,15 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void fetchCombinedPullRequestsForBranch_shouldFetchBothCurrentAndHistoricalNames_whenBranchMatchesNewPattern()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+    public void
+            fetchCombinedPullRequestsForBranch_shouldFetchBothCurrentAndHistoricalNames_whenBranchMatchesNewPattern()
+                    throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/7.8");
 
-        PullRequestDTO prFromNewName = new PullRequestDTO(
-                "id-new", 100, "new PR", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO prFromNewName =
+                new PullRequestDTO("id-new", 100, "new PR", null, OffsetDateTime.now(), null, null, null);
         PullRequestDTO prFromOldName = new PullRequestDTO(
                 "id-old", 101, "old PR", null, OffsetDateTime.now().minusDays(2), null, null, null);
 
@@ -436,7 +437,8 @@ public class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("7.8-release")).thenReturn(Set.of(prFromOldName));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntityNew, prEntityOld));
-        when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId())).thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId()))
+                .thenReturn(Collections.emptySet());
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prEntityNew, prEntityOld));
         when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
@@ -449,14 +451,14 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void fetchCombinedPullRequestsForBranch_shouldOnlyFetchCurrentName_whenBranchDoesNotMatchPattern()
+    public void fetchCombinedPullRequestsForBranch_shouldOnlyFetchCurrentName_whenBranchDoesNotMatchPattern()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch featureBranch = new Branch();
         featureBranch.setId(UUID.randomUUID().toString());
         featureBranch.setName("feature/xyz");
 
-        PullRequestDTO prFromFeature = new PullRequestDTO(
-                "id-feature", 200, "feature PR", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO prFromFeature =
+                new PullRequestDTO("id-feature", 200, "feature PR", null, OffsetDateTime.now(), null, null, null);
 
         PullRequest prEntity = new PullRequest();
         prEntity.setId("id-feature");
@@ -467,7 +469,8 @@ public class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("feature/xyz")).thenReturn(Set.of(prFromFeature));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
-        when(branchPullRequestRepository.findAllByBranch_Id(featureBranch.getId())).thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(featureBranch.getId()))
+                .thenReturn(Collections.emptySet());
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prEntity));
         when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
@@ -479,14 +482,14 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void fetchCombinedPullRequestsForBranch_shouldHandleVersionWithMultipleDigits()
+    public void fetchCombinedPullRequestsForBranch_shouldHandleVersionWithMultipleDigits()
             throws GitHubClientException, PullRequestInjectionException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/10.15");
 
-        PullRequestDTO prFromNewName = new PullRequestDTO(
-                "id-new", 500, "new PR", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO prFromNewName =
+                new PullRequestDTO("id-new", 500, "new PR", null, OffsetDateTime.now(), null, null, null);
 
         when(branchService.getAllBranches()).thenReturn(List.of(releaseBranch));
         when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
@@ -500,14 +503,14 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void fetchCombinedPullRequestsForBranch_shouldDeduplicatePullRequests_whenSamePRExistsInBothNames()
+    public void fetchCombinedPullRequestsForBranch_shouldDeduplicatePullRequests_whenSamePRExistsInBothNames()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/9.0");
 
-        PullRequestDTO duplicatePR = new PullRequestDTO(
-                "id-dup", 300, "duplicate PR", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO duplicatePR =
+                new PullRequestDTO("id-dup", 300, "duplicate PR", null, OffsetDateTime.now(), null, null, null);
 
         PullRequest prEntity = new PullRequest();
         prEntity.setId("id-dup");
@@ -519,7 +522,8 @@ public class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("9.0-release")).thenReturn(Set.of(duplicatePR));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
-        when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId())).thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId()))
+                .thenReturn(Collections.emptySet());
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prEntity));
         when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
@@ -538,8 +542,8 @@ public class PullRequestServiceTest {
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/8.1");
 
-        PullRequestDTO prFromNewName = new PullRequestDTO(
-                "id-new", 400, "new PR only", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO prFromNewName =
+                new PullRequestDTO("id-new", 400, "new PR only", null, OffsetDateTime.now(), null, null, null);
 
         PullRequest prEntity = new PullRequest();
         prEntity.setId("id-new");
@@ -551,7 +555,8 @@ public class PullRequestServiceTest {
         when(gitHubClient.getBranchPullRequests("8.1-release")).thenReturn(Collections.emptySet());
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
-        when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId())).thenReturn(Collections.emptySet());
+        when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId()))
+                .thenReturn(Collections.emptySet());
         when(pullRequestRepository.saveAll(anySet())).thenReturn(List.of(prEntity));
         when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
@@ -564,7 +569,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void fetchCombinedPullRequestsForBranch_shouldHandleHistoricalNameQueryFailure()
+    public void fetchCombinedPullRequestsForBranch_shouldHandleHistoricalNameQueryFailure()
             throws GitHubClientException, PullRequestInjectionException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
@@ -584,14 +589,13 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldAssignMilestonesToPullRequests()
+    public void injectBranchPullRequests_shouldAssignMilestonesToPullRequests()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/milestone");
 
-        MilestoneDTO milestoneDTO =
-                new MilestoneDTO("m1", 1, null, null, null, null, 0, 0);
+        MilestoneDTO milestoneDTO = new MilestoneDTO("m1", 1, null, null, null, null, 0, 0);
         PullRequestDTO prDto = new PullRequestDTO(
                 "id-m", 600, "pr with milestone", null, OffsetDateTime.now(), null, milestoneDTO, null);
 
@@ -621,14 +625,14 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldHandleNullMilestone()
+    public void injectBranchPullRequests_shouldHandleNullMilestone()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/nomilestone");
 
-        PullRequestDTO prDto = new PullRequestDTO(
-                "id-nm", 700, "pr without milestone", null, OffsetDateTime.now(), null, null, null);
+        PullRequestDTO prDto =
+                new PullRequestDTO("id-nm", 700, "pr without milestone", null, OffsetDateTime.now(), null, null, null);
 
         PullRequest prEntity = new PullRequest();
         prEntity.setId("id-nm");
@@ -651,7 +655,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldSkipLabelsNotFoundInLabelService()
+    public void injectBranchPullRequests_shouldSkipLabelsNotFoundInLabelService()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
@@ -683,7 +687,7 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldSkipNullIssueNodes()
+    public void injectBranchPullRequests_shouldSkipNullIssueNodes()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
@@ -714,14 +718,14 @@ public class PullRequestServiceTest {
     }
 
     @Test
-	public void injectBranchPullRequests_shouldSkipIssuesNotFoundInIssueService()
+    public void injectBranchPullRequests_shouldSkipIssuesNotFoundInIssueService()
             throws GitHubClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/issues-missing");
 
-        IssueDTO issueDTO =
-                new IssueDTO("i-unknown", 999, "unknown issue", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
+        IssueDTO issueDTO = new IssueDTO(
+                "i-unknown", 999, "unknown issue", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
         GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>(issueDTO);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>(List.of(issueNode));
 
