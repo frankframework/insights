@@ -2,9 +2,9 @@ import { Component, Input, OnChanges, inject } from '@angular/core';
 import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
-import { Label } from '../../../../services/label.service';
-import { Issue } from '../../../../services/issue.service';
-import { ColorService } from '../../../../services/color.service';
+import { Label } from '../../../services/label.service';
+import { Issue } from '../../../services/issue.service';
+import { ColorService } from '../../../services/color.service';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 

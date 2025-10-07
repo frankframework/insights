@@ -48,6 +48,7 @@ describe('ReleaseGraphComponent', () => {
     const mockRouter = {
       events: routerEventsSubject.asObservable(),
       url: '/graph',
+      navigate: jasmine.createSpy('navigate'),
     };
 
     await TestBed.configureTestingModule({
@@ -145,19 +146,11 @@ describe('ReleaseGraphComponent', () => {
       expect(component.translateX).toBe(-100);
     });
 
-    it('should emit the correct release on openReleaseDetails', () => {
-      spyOn(component._selectedRelease, 'next');
-      component.releases = mockReleases;
-      component.openReleaseDetails(mockNodes[0]);
+    it('should navigate to release details on openReleaseNodeDetails', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      component.openReleaseNodeDetails('release-id-123');
 
-      expect(component._selectedRelease.next).toHaveBeenCalledWith(mockReleases[0]);
-    });
-
-    it('should emit null on closeReleaseDetails', () => {
-      spyOn(component._selectedRelease, 'next');
-      component.closeReleaseDetails();
-
-      expect(component._selectedRelease.next).toHaveBeenCalledWith(null);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-id-123']);
     });
   });
 

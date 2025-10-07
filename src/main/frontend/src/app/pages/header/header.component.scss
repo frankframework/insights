@@ -10,6 +10,7 @@
   background-color: white;
   z-index: 20;
   width: 100%;
+  box-shadow: 0 .1rem .5rem rgba(#000000, .15);
 
   @media (max-width: 768px) {
     & {

@@ -79,4 +79,26 @@ public class ReleaseControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+    @Test
+    public void getReleaseByReleaseId_returnsOk() throws Exception {
+        BranchResponse branchResponse = Mockito.mock(BranchResponse.class);
+        ReleaseResponse response =
+                new ReleaseResponse("id1", "tag1", "name1", OffsetDateTime.now(), "sha1", branchResponse);
+        when(releaseService.getReleaseById("rel1")).thenReturn(response);
+
+        mockMvc.perform(get("/api/releases/rel1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").value("id1"))
+                .andExpect(jsonPath("$.tagName").value("tag1"))
+                .andExpect(jsonPath("$.name").value("name1"));
+    }
+
+    @Test
+    public void getIssuesByReleaseId_throwsReleaseNotFoundException_returns404() throws Exception {
+        when(releaseService.getReleaseById("relX")).thenThrow(new ReleaseNotFoundException("Not found", null));
+
+        mockMvc.perform(get("/api/releases/relX")).andExpect(status().isNotFound());
+    }
 }

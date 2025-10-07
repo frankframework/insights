@@ -25,7 +25,7 @@
             class="release-node"
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
-            (click)="openReleaseDetails(releaseNode)"
+            (click)="openReleaseNodeDetails(releaseNode.id)"
           >
             <circle r="20" [attr.fill]="releaseNode.color" />
             <text y="-30">
@@ -39,7 +39,7 @@
             class="skip-node"
             [attr.data-cy]="'skip-node-' + skipNode.id"
             [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
-            (click)="openSkipNodeDetails(skipNode)"
+            (click)="openReleaseNodeDetails(skipNode.id)"
           >
             <circle r="20" class="skip-circle" />
             <text y="2" class="skip-text">{{ skipNode.skippedCount }}</text>
@@ -48,17 +48,13 @@
       </g>
     </svg>
 
-    @if (selectedRelease$ | async; as release) {
-      <app-release-off-canvas [release]="release" (closeCanvas)="closeReleaseDetails()" />
-    }
-
     <div class="branch-labels-sticky">
       @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
         <span class="sticky-branch-label" [style.top.px]="stickyLabel.screenY - 75">{{ stickyLabel.label }}</span>
       }
     </div>
 
-    <app-release-catalogus [selectedRelease]="selectedRelease$ | async" />
+    <app-release-catalogus />
 
     @if (dataForSkipModal) {
       <app-skipped-versions-modal
