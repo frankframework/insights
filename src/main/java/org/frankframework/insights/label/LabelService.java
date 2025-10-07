@@ -164,4 +164,13 @@ public class LabelService {
         List<Label> savedLabels = labelRepository.saveAll(labels);
         log.info("Successfully saved {} labels", savedLabels.size());
     }
+
+    /**
+     * Checks if a label is included based on its color.
+     * @param label the label to check
+     * @return true if the label's color is in the included labels list, false otherwise
+     */
+    public boolean isLabelIncluded(Label label) {
+        return label != null && includedLabels.contains(label.getColor().toUpperCase());
+    }
 }

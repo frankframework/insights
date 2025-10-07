@@ -25,7 +25,7 @@ jobs:
           distribution: 'zulu'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f2b2b233b538f500472c7274c7012f57857d8ce0
         with:
           version: 10.4.0
 

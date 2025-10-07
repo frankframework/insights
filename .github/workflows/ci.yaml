@@ -31,7 +31,7 @@ jobs:
           cache: 'maven'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f2b2b233b538f500472c7274c7012f57857d8ce0
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -96,7 +96,7 @@ jobs:
           cache: 'maven'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f2b2b233b538f500472c7274c7012f57857d8ce0
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -154,7 +154,7 @@ jobs:
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d
         with:
           context: .
           file: docker/Dockerfile
