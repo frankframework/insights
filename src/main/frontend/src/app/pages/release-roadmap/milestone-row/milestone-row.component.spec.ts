@@ -3,7 +3,7 @@ import { DatePipe } from '@angular/common';
 import { SimpleChanges } from '@angular/core';
 import { MilestoneRowComponent } from './milestone-row.component';
 import { Milestone } from '../../../services/milestone.service';
-import { Issue, IssuePriority } from '../../../services/issue.service';
+import { Issue } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -176,21 +176,6 @@ describe('MilestoneRowComponent', () => {
       initializeComponent(MOCK_MILESTONE, largeIssues);
 
       expect(component.trackCount).toBeGreaterThan(1);
-    });
-
-    it('should sort issues by priority (critical first) before layout', () => {
-      const lowPrio: Issue = { ...MOCK_OPEN_ISSUE, id: 'low', issuePriority: { name: 'Low Prio' } as IssuePriority };
-      const critPrio: Issue = {
-        ...MOCK_OPEN_ISSUE,
-        id: 'crit',
-        issuePriority: { name: 'Critical Prio' } as IssuePriority,
-      };
-      initializeComponent(MOCK_MILESTONE, [lowPrio, critPrio]);
-
-      const critIndex = component.positionedIssues.findIndex((p) => p.issue.id === 'crit');
-      const lowIndex = component.positionedIssues.findIndex((p) => p.issue.id === 'low');
-
-      expect(critIndex).toBeLessThan(lowIndex);
     });
   });
 });
