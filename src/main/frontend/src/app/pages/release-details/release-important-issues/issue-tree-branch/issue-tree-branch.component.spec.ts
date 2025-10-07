@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { IssueTreeBranchComponent } from './issue-tree-branch.component';
-import { Issue } from '../../../../../services/issue.service';
-import { GitHubStates } from '../../../../../app.service';
-import { IssueTypeTagComponent } from '../../../../../components/issue-type-tag/issue-type-tag.component';
+import { Issue } from '../../../../services/issue.service';
+import { GitHubStates } from '../../../../app.service';
+import { IssueTypeTagComponent } from '../../../../components/issue-type-tag/issue-type-tag.component';
 import { By } from '@angular/platform-browser';
 
 const MOCK_ISSUE: Issue = {

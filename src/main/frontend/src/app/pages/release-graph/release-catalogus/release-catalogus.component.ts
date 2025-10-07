@@ -1,5 +1,4 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Release } from '../../../services/release.service';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
 
@@ -11,9 +10,8 @@ import { ModalComponent } from '../../../components/modal/modal.component';
   imports: [NgStyle, ModalComponent],
 })
 export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
-  @Input() selectedRelease: Release | null = null;
-  modalOpen = false;
-  isSmallScreen = false;
+  public modalOpen = false;
+  public isSmallScreen = false;
   private mediaQueryList: MediaQueryList | null = null;
   private mediaListener: (() => void) | null = null;
 

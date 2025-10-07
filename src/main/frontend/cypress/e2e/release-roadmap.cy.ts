@@ -162,7 +162,7 @@ describe('Release Roadmap End-to-End Tests', () => {
         cy.tick(5000);
       }
 
-      cy.get('app-loader').should('not.exist');
+      cy.get('app-milestone-row').should('not.exist');
       cy.get('.empty-state').should('be.visible').and('contain.text', 'No open milestones');
     });
   });

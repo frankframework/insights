@@ -1,11 +1,9 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
-import { BehaviorSubject, catchError, map, of, tap } from 'rxjs';
+import { catchError, map, of, tap } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
-import { ReleaseOffCanvasComponent } from './release-off-canvas/release-off-canvas.component';
-import { AsyncPipe } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -17,16 +15,12 @@ import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipp
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseOffCanvasComponent, AsyncPipe, ReleaseCatalogusComponent, ReleaseSkippedVersions],
+  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
-  public _selectedRelease = new BehaviorSubject<Release | null>(null);
-  public selectedRelease$ = this._selectedRelease.asObservable();
-
   public releaseNodes: ReleaseNode[] = [];
-  // MODIFIED: One single array for all links
   public allLinks: ReleaseLink[] = [];
   public branchLabels: { label: string; y: number; x: number }[] = [];
   public stickyBranchLabels: { label: string; screenY: number }[] = [];
@@ -133,17 +127,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     ].join(' ');
   }
 
-  public openReleaseDetails(releaseNode: ReleaseNode): void {
-    const release = this.releases.find((r) => r.id === releaseNode.id) ?? null;
-    this._selectedRelease.next(release);
-  }
-
-  public closeReleaseDetails(): void {
-    this._selectedRelease.next(null);
-  }
-
-  public openSkipNodeDetails(skipNode: SkipNode): void {
-    this.dataForSkipModal = skipNode;
+  public openReleaseNodeDetails(releaseNodeId: string): void {
+    this.router.navigate(['/graph', releaseNodeId]);
   }
 
   public closeSkipNodeModal(): void {
@@ -154,7 +139,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.closeSkipNodeModal();
     const release = this.releases.find((r) => r.name === version || `v${r.name}` === version);
     if (release) {
-      this._selectedRelease.next(release);
+      this.router.navigate(['/graph', release.id]);
     }
   }
 

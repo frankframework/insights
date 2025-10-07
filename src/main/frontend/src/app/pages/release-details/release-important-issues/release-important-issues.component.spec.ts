@@ -1,9 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
 import { ReleaseImportantIssuesComponent } from './release-important-issues.component';
-import { Issue } from '../../../../services/issue.service';
-import { ReleaseOffCanvasComponent } from '../release-off-canvas.component';
-import { GitHubStates } from '../../../../app.service';
+import { Issue } from '../../../services/issue.service';
+import { GitHubStates } from '../../../app.service';
 
 const createMockIssue = (id: string, number: number, typeName: string | null, subIssues: Issue[] = []): Issue => ({
   id,
@@ -14,10 +13,6 @@ const createMockIssue = (id: string, number: number, typeName: string | null, su
   issueType: typeName ? { id: typeName, name: typeName, description: '', color: '' } : undefined,
   subIssues,
 });
-
-const mockOffCanvasComponent = {
-  colorNameToRgba: (color: string) => `rgba(${color},0.75)`,
-};
 
 describe('ReleaseImportantIssuesComponent', () => {
   let component: ReleaseImportantIssuesComponent;
@@ -34,7 +29,6 @@ describe('ReleaseImportantIssuesComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseImportantIssuesComponent],
-      providers: [{ provide: ReleaseOffCanvasComponent, useValue: mockOffCanvasComponent }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseImportantIssuesComponent);

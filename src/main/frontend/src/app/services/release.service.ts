@@ -24,4 +24,8 @@ export class ReleaseService {
   public getAllReleases(): Observable<Release[]> {
     return this.appService.get<Release[]>(this.appService.createAPIUrl('releases'));
   }
+
+  public getReleaseById(releaseId: string): Observable<Release> {
+    return this.appService.get<Release>(this.appService.createAPIUrl(`releases/${releaseId}`));
+  }
 }

@@ -1,38 +1,65 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
-import { OffCanvasComponent } from '../../../components/off-canvas/off-canvas.component';
-import { Release } from '../../../services/release.service';
-import { Label, LabelService } from '../../../services/label.service';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { Component, inject, OnInit } from '@angular/core';
+import { Location, CommonModule } from '@angular/common';
+import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
+import { Release, ReleaseService } from '../../services/release.service';
+import { Label, LabelService } from '../../services/label.service';
+import { Issue, IssueService } from '../../services/issue.service';
+import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
-import { Issue, IssueService } from '../../../services/issue.service';
-import { LoaderComponent } from '../../../components/loader/loader.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ToastrService } from 'ngx-toastr';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
-  selector: 'app-release-off-canvas',
+  selector: 'app-release-details',
   standalone: true,
-  imports: [LoaderComponent, OffCanvasComponent, ReleaseHighlightsComponent, ReleaseImportantIssuesComponent],
-  templateUrl: './release-off-canvas.component.html',
-  styleUrl: './release-off-canvas.component.scss',
+  imports: [CommonModule, LoaderComponent, ReleaseHighlightsComponent, ReleaseImportantIssuesComponent],
+  templateUrl: './release-details.component.html',
+  styleUrl: './release-details.component.scss',
 })
-export class ReleaseOffCanvasComponent implements OnChanges {
-  @Input() release!: Release;
-  @Output() closeCanvas = new EventEmitter<void>();
-
+export class ReleaseDetailsComponent implements OnInit {
+  public release?: Release;
   public highlightedLabels?: Label[];
   public releaseIssues?: Issue[];
   public isLoading = true;
 
+  private location = inject(Location);
+  private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
   private toastService = inject(ToastrService);
+  private route = inject(ActivatedRoute);
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['release'] && this.release?.id) {
-      this.isLoading = true;
-      this.fetchData(this.release.id);
-    }
+  ngOnInit(): void {
+    this.route.paramMap
+      .pipe(
+        switchMap((parameters) => {
+          const releaseId = parameters.get('id');
+          if (!releaseId) {
+            this.toastService.error('No release ID provided');
+            return of(null);
+          }
+          this.isLoading = true;
+          return this.releaseService.getReleaseById(releaseId).pipe(
+            catchError((error) => {
+              console.error('Failed to load release:', error);
+              this.toastService.error('Failed to load release. Please try again later.');
+              this.isLoading = false;
+              return of(null);
+            }),
+          );
+        }),
+      )
+      .subscribe((release) => {
+        if (release) {
+          this.release = release;
+          this.fetchData(release.id);
+        }
+      });
+  }
+
+  public goBack(): void {
+    this.location.back();
   }
 
   private fetchData(releaseId: string): void {

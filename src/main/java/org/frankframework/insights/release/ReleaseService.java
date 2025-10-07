@@ -343,6 +343,17 @@ public class ReleaseService {
     }
 
     /**
+     * Retrieves a single release by ID from the database.
+     * @param releaseId the ID of the release to retrieve
+     * @return a ReleaseResponse DTO representing the release
+     * @throws ReleaseNotFoundException if the release does not exist
+     */
+    public ReleaseResponse getReleaseById(String releaseId) throws ReleaseNotFoundException {
+        Release release = checkIfReleaseExists(releaseId);
+        return mapper.toDTO(release, ReleaseResponse.class);
+    }
+
+    /**
      * Checks if a release with the given ID exists in the database.
      * @param releaseId the ID of the release to check
      * @return the Release object if it exists

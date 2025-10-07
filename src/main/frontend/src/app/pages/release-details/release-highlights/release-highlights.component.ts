@@ -2,9 +2,9 @@ import { Component, Input, OnChanges, inject } from '@angular/core';
 import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
-import { Label } from '../../../../services/label.service';
-import { Issue } from '../../../../services/issue.service';
-import { ColorService } from '../../../../services/color.service';
+import { Label } from '../../../services/label.service';
+import { Issue } from '../../../services/issue.service';
+import { ColorService } from '../../../services/color.service';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -39,6 +39,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
   };
 
   public doughnutChartPlugins = [];
+  public legendItems: { label: string; color: string; count: number }[] = [];
 
   private colorService = inject(ColorService);
 
@@ -81,5 +82,11 @@ export class ReleaseHighlightsComponent implements OnChanges {
         },
       ],
     };
+
+    this.legendItems = [...pieDataMap.entries()].map(([label, { count, color }]) => ({
+      label,
+      color,
+      count,
+    }));
   }
 }

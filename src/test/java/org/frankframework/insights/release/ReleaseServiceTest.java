@@ -11,6 +11,7 @@ import org.frankframework.insights.common.entityconnection.branchpullrequest.Bra
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.*;
 import org.frankframework.insights.pullrequest.PullRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -278,6 +279,47 @@ public class ReleaseServiceTest {
     public void checkIfReleaseExists_throwsIfNotFound() {
         when(releaseRepository.findById("id2")).thenReturn(Optional.empty());
         assertThrows(ReleaseNotFoundException.class, () -> releaseService.checkIfReleaseExists("id2"));
+    }
+
+    @Test
+    public void getReleaseById_returnsReleaseResponse() throws ReleaseNotFoundException {
+        ReleaseResponse mockResponse = mock(ReleaseResponse.class);
+        when(releaseRepository.findById("release-1")).thenReturn(Optional.of(rel1));
+        when(mapper.toDTO(rel1, ReleaseResponse.class)).thenReturn(mockResponse);
+
+        ReleaseResponse result = releaseService.getReleaseById("release-1");
+
+        assertEquals(mockResponse, result);
+        verify(releaseRepository).findById("release-1");
+        verify(mapper).toDTO(rel1, ReleaseResponse.class);
+    }
+
+    @Test
+    public void getReleaseById_throwsReleaseNotFoundException_whenReleaseNotFound() throws MappingException {
+        when(releaseRepository.findById("nonexistent-id")).thenReturn(Optional.empty());
+
+        ReleaseNotFoundException exception =
+                assertThrows(ReleaseNotFoundException.class, () -> releaseService.getReleaseById("nonexistent-id"));
+
+        assertEquals("Release with ID [nonexistent-id] not found.", exception.getMessage());
+        verify(releaseRepository).findById("nonexistent-id");
+        verify(mapper, never()).toDTO(any(), eq(ReleaseResponse.class));
+    }
+
+    @Test
+    public void getReleaseById_handlesNullId() {
+        when(releaseRepository.findById(null)).thenReturn(Optional.empty());
+
+        assertThrows(ReleaseNotFoundException.class, () -> releaseService.getReleaseById(null));
+        verify(releaseRepository).findById(null);
+    }
+
+    @Test
+    public void getReleaseById_handlesEmptyString() {
+        when(releaseRepository.findById("")).thenReturn(Optional.empty());
+
+        assertThrows(ReleaseNotFoundException.class, () -> releaseService.getReleaseById(""));
+        verify(releaseRepository).findById("");
     }
 
     @Test

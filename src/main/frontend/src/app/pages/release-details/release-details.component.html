@@ -1,0 +1,51 @@
+<div class="release-details-container">
+  @if (!isLoading && release) {
+    <div class="release-details-header">
+      <button class="back-button" (click)="goBack()">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M12.5 15L7.5 10L12.5 5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Back
+      </button>
+      <h2>{{ release.name }}</h2>
+    </div>
+
+    <div class="release-details-body">
+      <div class="release-details-content">
+        <div class="left-panel">
+          @if (highlightedLabels === undefined && releaseIssues === undefined) {
+            <div class="no-new-features">
+              <p>No new features found towards previous release.</p>
+              <p>Please try again later.</p>
+            </div>
+          } @else {
+            @if (highlightedLabels) {
+              <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
+            } @else {
+              <div class="no-highlights">
+                <p>No new highlights found for this release.</p>
+              </div>
+            }
+            @if (releaseIssues) {
+              <app-release-important-issues [releaseIssues]="releaseIssues" />
+            }
+          }
+        </div>
+
+        <div class="right-panel">
+          <div class="placeholder">
+            <p>Additional vulnerability information will be displayed here soon.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else if (isLoading) {
+    <app-loader />
+  }
+</div>

@@ -1,8 +1,8 @@
 import { Component, EventEmitter, inject, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
-import { SkipNode } from '../../../pages/release-graph/release-link.service';
-import { ReleaseNode, ReleaseNodeService } from '../../../pages/release-graph/release-node.service';
+import { SkipNode } from '../release-link.service';
+import { ReleaseNode, ReleaseNodeService } from '../release-node.service';
 
 interface Release {
   id: string;

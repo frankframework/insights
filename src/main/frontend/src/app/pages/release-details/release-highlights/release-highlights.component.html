@@ -1,0 +1,33 @@
+<div class="highlight-pie">
+  <div class="highlight-info-container">
+    <h4 class="highlight-title">Highlights</h4>
+    @for (highlightedLabel of highlightedLabels; track highlightedLabel) {
+      <div class="highlight-label">
+        <span class="highlight-dot" [style.background]="getDotColor(highlightedLabel.color)"></span>
+        <p>{{ highlightedLabel.name }}</p>
+      </div>
+    }
+  </div>
+  <div class="chart-container">
+    <div class="highlight-donut-chart-wrapper">
+      <canvas
+        baseChart
+        class="highlight-donut-chart"
+        [data]="doughnutChartData"
+        [options]="doughnutChartOptions"
+        [type]="'doughnut'"
+        [plugins]="doughnutChartPlugins"
+      >
+      </canvas>
+    </div>
+    <div class="chart-legend">
+      @for (item of legendItems; track item.label) {
+        <div class="legend-item">
+          <span class="legend-color" [style.background]="item.color"></span>
+          <span class="legend-label">{{ item.label }}</span>
+          <span class="legend-count">({{ item.count }})</span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

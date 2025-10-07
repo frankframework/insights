@@ -1,0 +1,80 @@
+.issue-tree-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &.expanded {
+    margin-bottom: 0.75rem;
+  }
+}
+
+.issue-row {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  gap: 0.875rem;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .issue-fold-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.25rem;
+    color: #6b7280;
+    user-select: none;
+    outline: none;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+
+    &:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    &.expanded {
+      transform: rotate(90deg);
+    }
+  }
+
+  .issue-number {
+    padding: 0.25rem 0.5rem;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: block;
+    transition: all 0.15s ease;
+    border-radius: 4px;
+    white-space: nowrap;
+
+    &:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+  }
+
+  .issue-title {
+    flex: 1;
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1.5;
+  }
+}

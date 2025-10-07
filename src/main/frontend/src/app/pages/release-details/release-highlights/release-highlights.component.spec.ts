@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseHighlightsComponent } from './release-highlights.component';
-import { Issue } from '../../../../services/issue.service';
-import { GitHubStates } from '../../../../app.service';
-import { ColorService } from '../../../../services/color.service';
+import { Issue } from '../../../services/issue.service';
+import { GitHubStates } from '../../../app.service';
+import { ColorService } from '../../../services/color.service';
 
 const mockIssues: Issue[] = [
   {
