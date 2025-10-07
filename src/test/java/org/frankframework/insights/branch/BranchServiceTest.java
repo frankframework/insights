@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.*;
-import org.frankframework.insights.common.configuration.properties.GitHubProperties;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
