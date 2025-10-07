@@ -4,10 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
@@ -36,7 +37,9 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
     private final VulnerabilityService vulnerabilityService;
-    private final Boolean dataFetchEnabled;
+
+	@Value("${data.fetch-enabled}")
+	private boolean dataFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -48,8 +51,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
-            VulnerabilityService vulnerabilityService,
-            DataProperties dataProperties) {
+            VulnerabilityService vulnerabilityService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -60,7 +62,6 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
         this.vulnerabilityService = vulnerabilityService;
-        this.dataFetchEnabled = dataProperties.isFetchEnabled();
     }
 
     /**
@@ -146,23 +147,23 @@ public class SystemDataInitializer implements CommandLineRunner {
             Settings settings = new Settings();
             Path dataDirectory = settings.getDataDirectory().toPath();
 
-            if (Files.isDirectory(dataDirectory)) {
-                try (Stream<Path> files = Files.list(dataDirectory)) {
-                    files.filter(path -> path.toString().toLowerCase().endsWith(".lock"))
-                            .forEach(lockFile -> {
-                                try {
-                                    Files.delete(lockFile);
-                                    log.warn("Removed stale OWASP dependency-check lock file on startup: {}", lockFile);
-                                } catch (IOException e) {
-                                    log.error("Failed to delete stale OWASP lock file: {}", lockFile, e);
-                                }
-                            });
-                }
+            if (!Files.isDirectory(dataDirectory)) {
+                return;
+            }
+
+            try (Stream<Path> files = Files.list(dataDirectory)) {
+                files.filter(path -> path.getFileName().toString().endsWith(".lock"))
+                        .forEach(lockFile -> {
+							try {
+								Files.delete(lockFile);
+								log.warn("Removed stale OWASP dependency-check lock file: {}", lockFile);
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+                        });
             }
         } catch (Exception e) {
-            log.error(
-                    "Failed to clean up stale OWASP lock files. This might cause delays if an update is already in progress.",
-                    e);
+            log.error("Failed to clean up stale OWASP lock files", e);
         }
     }
 }

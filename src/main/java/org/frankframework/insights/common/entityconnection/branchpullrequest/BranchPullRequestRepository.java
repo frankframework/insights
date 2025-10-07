@@ -1,13 +1,12 @@
 package org.frankframework.insights.common.entityconnection.branchpullrequest;
 
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface BranchPullRequestRepository extends JpaRepository<BranchPullRequest, UUID> {
+public interface BranchPullRequestRepository extends JpaRepository<BranchPullRequest, BranchPullRequestId> {
     int countAllByBranch_Id(String branchId);
 
     @EntityGraph(attributePaths = {"pullRequest"})

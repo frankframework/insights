@@ -13,7 +13,6 @@ import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issuePriority.IssuePriorityService;
@@ -65,9 +64,6 @@ public class ShedLockTest {
     @Mock
     private VulnerabilityService vulnerabilityService;
 
-    @Mock
-    private DataProperties dataProperties;
-
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
@@ -82,8 +78,7 @@ public class ShedLockTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                vulnerabilityService,
-                dataProperties);
+                vulnerabilityService);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }

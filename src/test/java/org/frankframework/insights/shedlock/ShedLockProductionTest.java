@@ -2,14 +2,13 @@ package org.frankframework.insights.shedlock;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.common.properties.DataProperties;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
@@ -70,15 +69,10 @@ public class ShedLockProductionTest {
     @Mock
     private VulnerabilityService vulnerabilityService;
 
-    @Mock
-    private DataProperties dataProperties;
-
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
-    public void setUp() {
-        when(dataProperties.isFetchEnabled()).thenReturn(true);
-
+    public void setUp() throws Exception {
         systemDataInitializer = new SystemDataInitializer(
                 gitHubRepositoryStatisticsService,
                 labelService,
@@ -89,8 +83,11 @@ public class ShedLockProductionTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-                vulnerabilityService,
-                dataProperties);
+                vulnerabilityService);
+
+        Field field = SystemDataInitializer.class.getDeclaredField("dataFetchEnabled");
+        field.setAccessible(true);
+        field.set(systemDataInitializer, true);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
