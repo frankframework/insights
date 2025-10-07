@@ -261,10 +261,12 @@ public class IssueServiceTest {
 
         Label label = new Label();
         label.setId("l1");
-        LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
+        label.setColor("RED");
+        LabelResponse lr = new LabelResponse("l1", "bug", "desc", "RED");
 
         IssueLabel issueLabel = new IssueLabel(issue1, label);
         when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Set.of(issueLabel));
+        when(labelService.isLabelIncluded(any(Label.class))).thenReturn(true);
 
         when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
             Issue issue = inv.getArgument(0);
@@ -297,10 +299,12 @@ public class IssueServiceTest {
 
         Label label = new Label();
         label.setId("l1");
-        LabelResponse lr = new LabelResponse("l1", "bug", "desc", "red");
+        label.setColor("RED");
+        LabelResponse lr = new LabelResponse("l1", "bug", "desc", "RED");
 
         IssueLabel issueLabel = new IssueLabel(issue1, label);
         when(issueLabelRepository.findAllByIssue_IdIn(any())).thenReturn(Set.of(issueLabel));
+        when(labelService.isLabelIncluded(any(Label.class))).thenReturn(true);
 
         when(mapper.toDTO(any(Issue.class), eq(IssueResponse.class))).thenAnswer(inv -> {
             Issue issue = inv.getArgument(0);
