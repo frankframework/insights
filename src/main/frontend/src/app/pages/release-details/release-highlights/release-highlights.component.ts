@@ -39,6 +39,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
   };
 
   public doughnutChartPlugins = [];
+  public legendItems: { label: string; color: string; count: number }[] = [];
 
   private colorService = inject(ColorService);
 
@@ -81,5 +82,11 @@ export class ReleaseHighlightsComponent implements OnChanges {
         },
       ],
     };
+
+    this.legendItems = [...pieDataMap.entries()].map(([label, { count, color }]) => ({
+      label,
+      color,
+      count,
+    }));
   }
 }
