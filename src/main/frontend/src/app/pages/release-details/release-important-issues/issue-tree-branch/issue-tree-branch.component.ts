@@ -24,6 +24,6 @@ export class IssueTreeBranchComponent {
 
   public getIndent(): string {
     const d = Math.min(this.depth, IssueTreeBranchComponent.MAX_SUB_ISSUE_DEPTH);
-    return `${d}rem`;
+    return `${d * 2}rem`;
   }
 }

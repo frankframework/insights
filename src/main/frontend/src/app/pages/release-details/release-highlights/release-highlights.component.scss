@@ -6,8 +6,6 @@
 
   @media (max-width: 540px) {
     flex-direction: column;
-    min-height: 0;
-    align-items: flex-start;
   }
 }
 
@@ -22,7 +20,7 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.1);
 
   .highlight-title {
     font-weight: 600;
@@ -67,21 +65,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
-  flex-shrink: 0;
-  width: 450px;
-  padding: 1rem;
-  background: #ffffff;
+  gap: 3rem;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  @media (max-width: 540px) {
-    width: 100%;
-    padding: 1rem 0.5rem;
-    gap: 1.5rem;
-    flex: 0;
-  }
+  box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
 }
 
 .highlight-donut-chart-wrapper {
@@ -135,5 +123,6 @@
 
   @media (max-width: 540px) {
     grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 }
