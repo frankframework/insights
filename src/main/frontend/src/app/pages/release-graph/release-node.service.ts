@@ -44,6 +44,7 @@ export class ReleaseNodeService {
     this.sortGroupedReleases(groupedByBranch);
 
     this.pruneUnsupportedMinorBranches(groupedByBranch);
+    this.filterLowVersionNightliesFromBranches(groupedByBranch);
 
     const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     const masterNodes = this.createReleaseNodes(masterReleases);
@@ -121,6 +122,69 @@ export class ReleaseNodeService {
   }
 
   /**
+   * Removes nightly releases with versions same or lower than the previous release.
+   * Nightlies are removed from the end of each branch array.
+   */
+  private filterLowVersionNightliesFromBranches(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+  ): void {
+    for (const releases of groupedByBranch.values()) {
+      this.removeInvalidNightliesFromBranch(releases);
+    }
+  }
+
+  /**
+   * Removes invalid nightly releases from a single branch.
+   */
+  private removeInvalidNightliesFromBranch(releases: (Release & { publishedAt: Date })[]): void {
+    while (releases.length > 1) {
+      const lastRelease = releases.at(-1);
+      if (!lastRelease || !this.isNightlyRelease(lastRelease.name)) break;
+
+      const previousRelease = this.findPreviousNonNightlyInArray(releases);
+      if (!previousRelease) break;
+
+      if (this.shouldRemoveNightly(lastRelease.name, previousRelease.name)) {
+        releases.pop();
+      } else {
+        break;
+      }
+    }
+  }
+
+  /**
+   * Finds the previous non-nightly release in an array.
+   */
+  private findPreviousNonNightlyInArray(
+    releases: (Release & { publishedAt: Date })[],
+  ): (Release & { publishedAt: Date }) | null {
+    for (let index = releases.length - 2; index >= 0; index--) {
+      if (!this.isNightlyRelease(releases[index].name)) {
+        return releases[index];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Determines if a nightly release should be removed based on version comparison.
+   */
+  private shouldRemoveNightly(nightlyName: string, previousName: string): boolean {
+    const currentVersion = this.getVersionFromName(nightlyName);
+    const previousVersion = this.getVersionFromName(previousName);
+
+    if (!currentVersion || !previousVersion) return false;
+
+    return (
+      currentVersion.major < previousVersion.major ||
+      (currentVersion.major === previousVersion.major && currentVersion.minor < previousVersion.minor) ||
+      (currentVersion.major === previousVersion.major &&
+        currentVersion.minor === previousVersion.minor &&
+        currentVersion.patch <= previousVersion.patch)
+    );
+  }
+
+  /**
    * Removes minor release branches entirely if all their nodes are unsupported.
    */
   private pruneUnsupportedMinorBranches(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): void {
@@ -163,6 +227,34 @@ export class ReleaseNodeService {
 
       return true;
     });
+  }
+
+  /**
+   * Checks if a release is a nightly release based on:
+   * 1. Contains "nightly" in the name
+   * 2. Matches pattern vX.Y.Z-YYYYMMDD.HHMMSS (nightly)
+   */
+  private isNightlyRelease(label: string): boolean {
+    if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+      return true;
+    }
+
+    const timestampPattern = /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/;
+    return timestampPattern.test(label);
+  }
+
+  /**
+   * Extracts version information from a release name (works with both Release and ReleaseNode).
+   */
+  private getVersionFromName(name: string): { major: number; minor: number; patch: number } | null {
+    const match = name.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?/i);
+    if (!match) return null;
+
+    const major = Number.parseInt(match[1], 10);
+    const minor = Number.parseInt(match[2], 10);
+    const patch = Number.parseInt(match[3] ?? '0', 10);
+
+    return { major, minor, patch };
   }
 
   private groupReleasesByBranch(
