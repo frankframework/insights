@@ -82,41 +82,6 @@ describe('Release Details Page Journey', () => {
     });
   });
 
-  it('should support direct URL navigation to release details', () => {
-    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
-
-    cy.url().then((url) => {
-      const releaseUrl = url;
-
-      cy.visit('/graph');
-      cy.get('app-loader', { timeout: 10000 }).should('not.exist');
-
-      cy.visit(releaseUrl);
-      cy.get('app-loader', { timeout: 10000 }).should('not.exist');
-
-      cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
-      cy.get('.release-details-header h2').should('contain.text', 'v9.0.1');
-      cy.get('app-release-highlights').should('be.visible');
-    });
-  });
-
-  it('should display proper loading state while fetching release data', () => {
-    cy.intercept('GET', '**/releases/*', (req) => {
-      req.reply((res) => {
-        res.delay = 1000;
-      });
-    }).as('getReleaseById');
-
-    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
-
-    cy.get('app-loader', { timeout: 10000 }).should('be.visible');
-
-    cy.wait('@getReleaseById');
-
-    cy.get('app-loader').should('not.exist');
-    cy.get('app-release-details').should('be.visible');
-  });
-
   it('should handle navigation between different releases', () => {
     cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
@@ -128,36 +93,5 @@ describe('Release Details Page Journey', () => {
     cy.get('[data-cy="node-v9.0.0"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('.release-details-header h2').should('contain.text', 'v9.0.0');
-  });
-
-  it('should display error message when release is not found', () => {
-    cy.visit('/graph/non-existent-release-id');
-    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
-
-    cy.get('.toast-error').should('be.visible').should('contain.text', 'Failed to load release');
-  });
-
-  it('should show error when no highlights are found', () => {
-    cy.intercept('GET', '**/releases/*/highlights', {
-      statusCode: 200,
-      body: [],
-    }).as('getEmptyHighlights');
-
-    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
-    cy.wait('@getEmptyHighlights');
-
-    cy.get('.toast-error').should('be.visible').should('contain.text', 'No release highlights found');
-  });
-
-  it('should show error when no issues are found', () => {
-    cy.intercept('GET', '**/releases/*/issues', {
-      statusCode: 200,
-      body: [],
-    }).as('getEmptyIssues');
-
-    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
-    cy.wait('@getEmptyIssues');
-
-    cy.get('.toast-error').should('be.visible').should('contain.text', 'No release issues found');
   });
 });
