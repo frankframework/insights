@@ -131,6 +131,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.router.navigate(['/graph', releaseNodeId]);
   }
 
+  public openSkipNodeModal(skipNodeId: string): void {
+    const skipNode = this.skipNodes.find((s) => s.id === skipNodeId);
+    if (skipNode) {
+      this.dataForSkipModal = skipNode;
+    }
+  }
+
   public closeSkipNodeModal(): void {
     this.dataForSkipModal = null;
   }
