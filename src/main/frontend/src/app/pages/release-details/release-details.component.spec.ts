@@ -7,6 +7,7 @@ import { ReleaseDetailsComponent } from './release-details.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { LabelService, Label } from '../../services/label.service';
 import { IssueService, Issue } from '../../services/issue.service';
+import { VulnerabilityService, Vulnerability, VulnerabilitySeverities } from '../../services/vulnerability.service';
 import { ToastrService } from 'ngx-toastr';
 import { GitHubStates } from '../../app.service';
 
@@ -20,6 +21,15 @@ const mockRelease: Release = {
 
 const mockLabels: Label[] = [{ id: 'label-1', name: 'Highlight', color: '0000ff', description: '' }];
 const mockIssues: Issue[] = [{ id: 'issue-1', number: 123, title: 'Test Issue', state: GitHubStates.OPEN, url: '' }];
+const mockVulnerabilities: Vulnerability[] = [
+  {
+    cveId: 'CVE-2024-0001',
+    severity: VulnerabilitySeverities.CRITICAL,
+    cvssScore: 9.8,
+    description: 'Critical vulnerability',
+    cwes: ['CWE-79']
+  }
+];
 
 describe('ReleaseDetailsComponent', () => {
   let component: ReleaseDetailsComponent;
@@ -27,6 +37,7 @@ describe('ReleaseDetailsComponent', () => {
   let mockReleaseService: jasmine.SpyObj<ReleaseService>;
   let mockLabelService: jasmine.SpyObj<LabelService>;
   let mockIssueService: jasmine.SpyObj<IssueService>;
+  let mockVulnerabilityService: jasmine.SpyObj<VulnerabilityService>;
   let mockToastrService: jasmine.SpyObj<ToastrService>;
   let mockLocation: jasmine.SpyObj<Location>;
   let parameterMapSubject: Subject<any>;
@@ -35,6 +46,7 @@ describe('ReleaseDetailsComponent', () => {
     mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getReleaseById']);
     mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
+    mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockToastrService = jasmine.createSpyObj('ToastrService', ['error']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
 
@@ -50,6 +62,7 @@ describe('ReleaseDetailsComponent', () => {
         { provide: ReleaseService, useValue: mockReleaseService },
         { provide: LabelService, useValue: mockLabelService },
         { provide: IssueService, useValue: mockIssueService },
+        { provide: VulnerabilityService, useValue: mockVulnerabilityService },
         { provide: ToastrService, useValue: mockToastrService },
         { provide: Location, useValue: mockLocation },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
@@ -69,6 +82,7 @@ describe('ReleaseDetailsComponent', () => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -84,6 +98,7 @@ describe('ReleaseDetailsComponent', () => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -92,9 +107,11 @@ describe('ReleaseDetailsComponent', () => {
       expect(mockReleaseService.getReleaseById).toHaveBeenCalledWith('release-1');
       expect(mockLabelService.getHighLightsByReleaseId).toHaveBeenCalledWith('release-1');
       expect(mockIssueService.getIssuesByReleaseId).toHaveBeenCalledWith('release-1');
+      expect(mockVulnerabilityService.getVulnerabilitiesByReleaseId).toHaveBeenCalledWith('release-1');
       expect(component.release).toEqual(mockRelease);
       expect(component.highlightedLabels).toEqual(mockLabels);
       expect(component.releaseIssues).toEqual(mockIssues);
+      expect(component.vulnerabilities).toEqual(mockVulnerabilities);
     }));
 
     it('should show error toast if no release ID is provided', fakeAsync(() => {
@@ -126,6 +143,7 @@ describe('ReleaseDetailsComponent', () => {
         throwError(() => new Error('Label API Error')).pipe(delay(0)),
       );
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -146,6 +164,7 @@ describe('ReleaseDetailsComponent', () => {
       mockIssueService.getIssuesByReleaseId.and.returnValue(
         throwError(() => new Error('Issue API Error')).pipe(delay(0)),
       );
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -161,6 +180,7 @@ describe('ReleaseDetailsComponent', () => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -174,6 +194,7 @@ describe('ReleaseDetailsComponent', () => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -187,6 +208,7 @@ describe('ReleaseDetailsComponent', () => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -196,6 +218,36 @@ describe('ReleaseDetailsComponent', () => {
       expect(component.releaseIssues).toBeUndefined();
       expect(mockToastrService.error).toHaveBeenCalledWith('No release highlights found.');
       expect(mockToastrService.error).toHaveBeenCalledWith('No release issues found.');
+    }));
+
+    it('should handle vulnerability fetch error gracefully', fakeAsync(() => {
+      mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
+      mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
+      mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(
+        throwError(() => new Error('Vulnerability API Error')).pipe(delay(0)),
+      );
+
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+
+      expect(component.isLoading).toBe(false);
+      expect(mockToastrService.error).toHaveBeenCalledWith('Failed to load vulnerabilities. Please try again later.');
+      expect(component.vulnerabilities).toEqual([]);
+    }));
+
+    it('should set vulnerabilities to empty array if API returns empty array', fakeAsync(() => {
+      mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
+      mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
+      mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
+
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+
+      expect(component.vulnerabilities).toEqual([]);
     }));
 
     it('should refetch data when route parameter changes', fakeAsync(() => {
@@ -210,6 +262,7 @@ describe('ReleaseDetailsComponent', () => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });

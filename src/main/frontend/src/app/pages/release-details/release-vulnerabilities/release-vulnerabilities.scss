@@ -1,7 +1,7 @@
 .vulnerabilities-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: fit-content;
   gap: 1rem;
 }
 
@@ -15,12 +15,14 @@
 .vulnerabilities-split {
   display: flex;
   gap: 1rem;
-  height: 100%;
-  overflow: hidden;
+  height: fit-content;
+  max-height: 100%;
+  align-items: flex-start;
 }
 
 .cve-list {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -30,6 +32,8 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.1);
+  max-height: 100%;
+  height: fit-content;
 }
 
 .cve-item {
@@ -106,20 +110,40 @@
 
 .cwe-details {
   flex: 1;
+  min-width: 0;
   padding: 1.5rem;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
+  max-height: 100%;
+  height: fit-content;
 }
 
 .cwe-content {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+
+  .cve-header-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+
   h4 {
     font-size: 1.125rem;
     font-weight: 600;
     color: #111827;
-    margin: 0 0 1rem 0;
+    margin: 0;
   }
 
   h5 {
@@ -130,11 +154,48 @@
   }
 }
 
+.description-container {
+  position: relative;
+  min-width: 0;
+}
+
 .cve-description {
   font-size: 0.875rem;
   color: #4b5563;
   line-height: 1.6;
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
+
+  &.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+  }
+}
+
+.see-more-button {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #2563eb;
+    text-decoration: underline;
+  }
+
+  &:focus {
+    outline: none;
+  }
 }
 
 .cwes-section {
@@ -155,6 +216,21 @@
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+    color: #1e3a8a;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 }
 
 .no-vulnerabilities,

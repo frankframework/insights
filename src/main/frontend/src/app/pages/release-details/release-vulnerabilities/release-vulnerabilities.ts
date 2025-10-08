@@ -14,6 +14,8 @@ export class ReleaseVulnerabilities implements OnChanges {
 
   public sortedVulnerabilities: Vulnerability[] = [];
   public selectedVulnerability: Vulnerability | null = null;
+  public isDescriptionExpanded = false;
+  public showSeeMoreButton = false;
 
   private severityOrder: Record<VulnerabilitySeverity, number> = {
     [VulnerabilitySeverities.CRITICAL]: 1,
@@ -29,14 +31,76 @@ export class ReleaseVulnerabilities implements OnChanges {
     if (this.sortedVulnerabilities.length > 0) {
       this.selectedVulnerability = this.sortedVulnerabilities[0];
     }
+    this.isDescriptionExpanded = false;
+    setTimeout(() => this.checkDescriptionOverflow(), 0);
   }
 
   public selectVulnerability(vulnerability: Vulnerability): void {
     this.selectedVulnerability = vulnerability;
+    this.isDescriptionExpanded = false;
+
+    setTimeout(() => {
+      this.smoothScrollToTop();
+      this.checkDescriptionOverflow();
+    }, 10);
+  }
+
+  public toggleDescription(): void {
+    this.isDescriptionExpanded = !this.isDescriptionExpanded;
+  }
+
+  private smoothScrollToTop(): void {
+    const cweDetails = document.querySelector('.cwe-details') as HTMLElement;
+    if (!cweDetails) {
+      return;
+    }
+
+    const offset = 250;
+    const targetPosition = cweDetails.getBoundingClientRect().top + window.pageYOffset - offset;
+    const start = window.pageYOffset;
+    const distance = targetPosition - start;
+    const duration = 800;
+    const startTime = performance.now();
+
+    const easeInOutCubic = (t: number): number => {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+
+    const scroll = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = easeInOutCubic(progress);
+
+      window.scrollTo(0, start + distance * easeProgress);
+
+      if (progress < 1) {
+        requestAnimationFrame(scroll);
+      }
+    };
+
+    requestAnimationFrame(scroll);
+  }
+
+  private checkDescriptionOverflow(): void {
+    const descriptionElement = document.querySelector('.cve-description') as HTMLElement;
+    if (descriptionElement) {
+      this.showSeeMoreButton = descriptionElement.scrollHeight > descriptionElement.clientHeight;
+    } else {
+      this.showSeeMoreButton = false;
+    }
   }
 
   public getSeverityClass(severity: VulnerabilitySeverity): string {
     return `severity-${severity.toLowerCase()}`;
+  }
+
+  public getCweUrl(cwe: string): string {
+    const cweNumber = cwe.match(/\d+/)?.[0];
+    return cweNumber ? `https://cwe.mitre.org/data/definitions/${cweNumber}.html` : '#';
+  }
+
+  public formatCvssScore(score: number): string {
+    return score % 1 === 0 ? score.toString() : score.toFixed(1);
   }
 
   private sortVulnerabilities(): void {
@@ -46,7 +110,8 @@ export class ReleaseVulnerabilities implements OnChanges {
       if (orderA !== orderB) {
         return orderA - orderB;
       }
-      return a.cveId.localeCompare(b.cveId);
+
+      return b.cvssScore - a.cvssScore;
     });
   }
 }
