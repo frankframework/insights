@@ -15,7 +15,13 @@ import { ActivatedRoute } from '@angular/router';
 @Component({
   selector: 'app-release-details',
   standalone: true,
-  imports: [CommonModule, LoaderComponent, ReleaseHighlightsComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
+  imports: [
+    CommonModule,
+    LoaderComponent,
+    ReleaseHighlightsComponent,
+    ReleaseImportantIssuesComponent,
+    ReleaseVulnerabilities,
+  ],
   templateUrl: './release-details.component.html',
   styleUrl: './release-details.component.scss',
 })
@@ -116,11 +122,7 @@ export class ReleaseDetailsComponent implements OnInit {
           }
         }
 
-        if (vulnerabilities && vulnerabilities.length > 0) {
-          this.vulnerabilities = vulnerabilities;
-        } else {
-          this.vulnerabilities = [];
-        }
+        this.vulnerabilities = vulnerabilities && vulnerabilities.length > 0 ? vulnerabilities : [];
       });
   }
 }

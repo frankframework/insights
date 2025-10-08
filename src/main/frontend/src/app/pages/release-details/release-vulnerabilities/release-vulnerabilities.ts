@@ -2,12 +2,16 @@ import { Component, Input, OnChanges } from '@angular/core';
 import { Vulnerability, VulnerabilitySeverities, VulnerabilitySeverity } from '../../../services/vulnerability.service';
 import { CommonModule } from '@angular/common';
 
+const easeInOutCubic = (t: number): number => {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+};
+
 @Component({
   selector: 'app-release-vulnerabilities',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './release-vulnerabilities.html',
-  styleUrl: './release-vulnerabilities.scss'
+  styleUrl: './release-vulnerabilities.scss',
 })
 export class ReleaseVulnerabilities implements OnChanges {
   @Input() vulnerabilities: Vulnerability[] = [];
@@ -23,7 +27,7 @@ export class ReleaseVulnerabilities implements OnChanges {
     [VulnerabilitySeverities.MEDIUM]: 3,
     [VulnerabilitySeverities.LOW]: 4,
     [VulnerabilitySeverities.NONE]: 5,
-    [VulnerabilitySeverities.UNKNOWN]: 6
+    [VulnerabilitySeverities.UNKNOWN]: 6,
   };
 
   ngOnChanges(): void {
@@ -49,6 +53,19 @@ export class ReleaseVulnerabilities implements OnChanges {
     this.isDescriptionExpanded = !this.isDescriptionExpanded;
   }
 
+  public getSeverityClass(severity: VulnerabilitySeverity): string {
+    return `severity-${severity.toLowerCase()}`;
+  }
+
+  public getCweUrl(cwe: string): string {
+    const cweNumber = cwe.match(/\d+/)?.[0];
+    return cweNumber ? `https://cwe.mitre.org/data/definitions/${cweNumber}.html` : '#';
+  }
+
+  public formatCvssScore(score: number): string {
+    return score % 1 === 0 ? score.toString() : score.toFixed(1);
+  }
+
   private smoothScrollToTop(): void {
     const cweDetails = document.querySelector('.cwe-details') as HTMLElement;
     if (!cweDetails) {
@@ -62,11 +79,7 @@ export class ReleaseVulnerabilities implements OnChanges {
     const duration = 800;
     const startTime = performance.now();
 
-    const easeInOutCubic = (t: number): number => {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    };
-
-    const scroll = (currentTime: number) => {
+    const scroll = (currentTime: number): void => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const easeProgress = easeInOutCubic(progress);
@@ -83,24 +96,9 @@ export class ReleaseVulnerabilities implements OnChanges {
 
   private checkDescriptionOverflow(): void {
     const descriptionElement = document.querySelector('.cve-description') as HTMLElement;
-    if (descriptionElement) {
-      this.showSeeMoreButton = descriptionElement.scrollHeight > descriptionElement.clientHeight;
-    } else {
-      this.showSeeMoreButton = false;
-    }
-  }
-
-  public getSeverityClass(severity: VulnerabilitySeverity): string {
-    return `severity-${severity.toLowerCase()}`;
-  }
-
-  public getCweUrl(cwe: string): string {
-    const cweNumber = cwe.match(/\d+/)?.[0];
-    return cweNumber ? `https://cwe.mitre.org/data/definitions/${cweNumber}.html` : '#';
-  }
-
-  public formatCvssScore(score: number): string {
-    return score % 1 === 0 ? score.toString() : score.toFixed(1);
+    this.showSeeMoreButton = descriptionElement
+      ? descriptionElement.scrollHeight > descriptionElement.clientHeight
+      : false;
   }
 
   private sortVulnerabilities(): void {

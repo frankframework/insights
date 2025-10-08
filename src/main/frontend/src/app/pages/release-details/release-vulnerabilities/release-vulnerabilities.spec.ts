@@ -24,7 +24,7 @@ describe('ReleaseVulnerabilities', () => {
     {
       cveId: 'CVE-2024-0003',
       severity: VulnerabilitySeverities.MEDIUM,
-      cvssScore: 5.0,
+      cvssScore: 5,
       description: 'Medium severity vulnerability',
       cwes: []
     },
@@ -38,7 +38,7 @@ describe('ReleaseVulnerabilities', () => {
     {
       cveId: 'CVE-2024-0005',
       severity: VulnerabilitySeverities.CRITICAL,
-      cvssScore: 10.0,
+      cvssScore: 10,
       description: 'Another critical vulnerability',
       cwes: ['CWE-78']
     }
@@ -79,7 +79,7 @@ describe('ReleaseVulnerabilities', () => {
       component.ngOnChanges();
 
       expect(component.sortedVulnerabilities[0].severity).toBe(VulnerabilitySeverities.CRITICAL);
-      expect(component.sortedVulnerabilities[component.sortedVulnerabilities.length - 1].severity).toBe(VulnerabilitySeverities.LOW);
+      expect(component.sortedVulnerabilities.at(-1)!.severity).toBe(VulnerabilitySeverities.LOW);
     });
 
     it('should sort vulnerabilities within same severity by CVSS score (highest first)', () => {
@@ -89,7 +89,8 @@ describe('ReleaseVulnerabilities', () => {
       const criticalVulns = component.sortedVulnerabilities.filter(
         v => v.severity === VulnerabilitySeverities.CRITICAL
       );
-      expect(criticalVulns[0].cvssScore).toBe(10.0);
+
+      expect(criticalVulns[0].cvssScore).toBe(10);
       expect(criticalVulns[1].cvssScore).toBe(9.8);
     });
 
@@ -141,25 +142,25 @@ describe('ReleaseVulnerabilities', () => {
     it('should call window.scrollTo when selecting vulnerability', (done) => {
       const mockElement = document.createElement('div');
       mockElement.className = 'cwe-details';
-      document.body.appendChild(mockElement);
+      document.body.append(mockElement);
 
-      spyOn(window, 'scrollTo');
+      spyOn(globalThis.window, 'scrollTo');
 
       let rafCallback: FrameRequestCallback | null = null;
-      spyOn(window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback) => {
+      spyOn(globalThis.window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback) => {
         rafCallback = callback;
         return 0;
       });
 
       component.selectVulnerability(component.sortedVulnerabilities[1]);
 
-      setTimeout(() => {
+      globalThis.setTimeout(() => {
         if (rafCallback) {
-          rafCallback(performance.now() + 1000);
+          rafCallback(globalThis.performance.now() + 1000);
         }
 
-        expect(window.scrollTo).toHaveBeenCalled();
-        document.body.removeChild(mockElement);
+        expect(globalThis.window.scrollTo).toHaveBeenCalledWith(jasmine.any(Number), jasmine.any(Number));
+        mockElement.remove();
         done();
       }, 20);
     });
@@ -175,8 +176,10 @@ describe('ReleaseVulnerabilities', () => {
     it('should toggle description expansion', () => {
       expect(component.isDescriptionExpanded).toBe(false);
       component.toggleDescription();
+
       expect(component.isDescriptionExpanded).toBe(true);
       component.toggleDescription();
+
       expect(component.isDescriptionExpanded).toBe(false);
     });
   });
@@ -239,7 +242,7 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should format score ending in .0 without decimal', () => {
-      expect(component.formatCvssScore(10.0)).toBe('10');
+      expect(component.formatCvssScore(10)).toBe('10');
     });
 
     it('should round score to one decimal place', () => {
@@ -260,7 +263,7 @@ describe('ReleaseVulnerabilities', () => {
       const vulnNoCwe: Vulnerability = {
         cveId: 'CVE-2024-9999',
         severity: VulnerabilitySeverities.HIGH,
-        cvssScore: 8.0,
+        cvssScore: 8,
         description: 'No CWEs',
         cwes: []
       };
@@ -288,7 +291,7 @@ describe('ReleaseVulnerabilities', () => {
       const vulnLongId: Vulnerability = {
         cveId: 'CVE-2024-0001-VERY-LONG-IDENTIFIER-WITH-EXTRA-TEXT',
         severity: VulnerabilitySeverities.LOW,
-        cvssScore: 3.0,
+        cvssScore: 3,
         description: 'Test',
         cwes: []
       };

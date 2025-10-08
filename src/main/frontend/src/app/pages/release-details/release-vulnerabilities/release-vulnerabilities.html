@@ -8,8 +8,12 @@
         @for (vulnerability of sortedVulnerabilities; track vulnerability.cveId) {
           <div
             class="cve-item"
+            tabindex="0"
+            role="button"
             [class.selected]="selectedVulnerability?.cveId === vulnerability.cveId"
             (click)="selectVulnerability(vulnerability)"
+            (keydown.enter)="selectVulnerability(vulnerability)"
+            (keydown.space)="selectVulnerability(vulnerability)"
           >
             <div class="cve-header">
               <span class="cve-id">{{ vulnerability.cveId }}</span>

@@ -49,6 +49,11 @@
     border-color: #d1d5db;
   }
 
+  &:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
   &.selected {
     background: #eff6ff;
     border-color: #3b82f6;
