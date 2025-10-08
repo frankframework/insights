@@ -83,6 +83,29 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.updateStickyBranchLabels();
   }
 
+  public onTouchStart(event: TouchEvent): void {
+    event.preventDefault();
+    if (event.touches.length === 1) {
+      this.isDragging = true;
+      this.lastPositionX = event.touches[0].clientX;
+    }
+  }
+
+  public onTouchEnd(): void {
+    this.isDragging = false;
+  }
+
+  public onTouchMove(event: TouchEvent): void {
+    if (!this.isDragging || event.touches.length !== 1) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - this.lastPositionX;
+    this.lastPositionX = touch.clientX;
+    const newTranslateX = this.translateX + deltaX;
+    this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, newTranslateX));
+    this.updateStickyBranchLabels();
+  }
+
   public onWheel(event: WheelEvent): void {
     event.preventDefault();
     const delta = (event.deltaX === 0 ? event.deltaY : event.deltaX) / this.scale;

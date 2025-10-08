@@ -9,6 +9,10 @@
       (mouseup)="onMouseUp()"
       (mousemove)="onMouseMove($event)"
       (mouseleave)="onMouseUp()"
+      (touchstart)="onTouchStart($event)"
+      (touchmove)="onTouchMove($event)"
+      (touchend)="onTouchEnd()"
+      (touchcancel)="onTouchEnd()"
     >
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
         @for (link of allLinks; track link) {
