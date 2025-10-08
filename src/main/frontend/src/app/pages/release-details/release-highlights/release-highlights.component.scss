@@ -10,7 +10,7 @@
 }
 
 .highlight-info-container {
-  height: fit-content;
+  height: 470px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -21,12 +21,14 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
 
   .highlight-title {
     font-weight: 600;
     color: #111827;
     margin: 0 0 0.375rem 0;
     font-size: 1.125rem;
+    flex-shrink: 0;
   }
 
   .highlight-label {
@@ -34,6 +36,7 @@
     align-items: center;
     gap: 0.625rem;
     pointer-events: none;
+    flex-shrink: 0;
 
     .highlight-dot {
       width: 10px;
