@@ -39,9 +39,13 @@
         </div>
 
         <div class="right-panel">
-          <div class="placeholder">
-            <p>Additional vulnerability information will be displayed here soon.</p>
-          </div>
+          @if (vulnerabilities !== undefined) {
+            <app-release-vulnerabilities [vulnerabilities]="vulnerabilities" />
+          } @else {
+            <div class="placeholder">
+              <p>Loading vulnerability information...</p>
+            </div>
+          }
         </div>
       </div>
     </div>

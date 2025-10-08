@@ -1,0 +1,48 @@
+<div class="vulnerabilities-container">
+  <div class="vulnerabilities-split">
+    <div class="cve-list">
+      @if (sortedVulnerabilities.length === 0) {
+        <p class="no-vulnerabilities">No vulnerabilities found for this release.</p>
+      } @else {
+        <h3 class="vulnerabilities-title">Vulnerabilities ({{ sortedVulnerabilities.length }})</h3>
+        @for (vulnerability of sortedVulnerabilities; track vulnerability.cveId) {
+          <div
+            class="cve-item"
+            [class.selected]="selectedVulnerability?.cveId === vulnerability.cveId"
+            (click)="selectVulnerability(vulnerability)"
+          >
+            <div class="cve-header">
+              <span class="cve-id">{{ vulnerability.cveId }}</span>
+              <span class="severity-badge" [ngClass]="getSeverityClass(vulnerability.severity)">
+                {{ vulnerability.severity }}
+              </span>
+            </div>
+            <div class="cve-score">CVSS Score: {{ vulnerability.cvssScore }}</div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="cwe-details">
+      @if (selectedVulnerability) {
+        <div class="cwe-content">
+          <h4>{{ selectedVulnerability.cveId }}</h4>
+          <p class="cve-description">{{ selectedVulnerability.description }}</p>
+
+          @if (selectedVulnerability.cwes && selectedVulnerability.cwes.length > 0) {
+            <div class="cwes-section">
+              <h5>CWEs</h5>
+              <div class="cwe-list">
+                @for (cwe of selectedVulnerability.cwes; track cwe) {
+                  <span class="cwe-badge">{{ cwe }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="no-selection">Select a CVE to view details</p>
+      }
+    </div>
+  </div>
+</div>
