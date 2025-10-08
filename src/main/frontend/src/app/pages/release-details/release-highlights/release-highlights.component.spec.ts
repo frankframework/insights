@@ -70,10 +70,11 @@ describe('ReleaseHighlightsComponent', () => {
       const chartData = component.doughnutChartData;
       const dataset = chartData.datasets[0];
 
-      expect(chartData.labels).toEqual(['Bug', 'Feature']);
-      expect(dataset.data).toEqual([2, 1]);
+      // Sorted by color (blue < red alphabetically), then by name
+      expect(chartData.labels).toEqual(['Feature', 'Bug']);
+      expect(dataset.data).toEqual([1, 2]);
 
-      expect(dataset.backgroundColor).toEqual(['rgba(red,0.75)', 'rgba(blue,0.75)']);
+      expect(dataset.backgroundColor).toEqual(['rgba(blue,0.75)', 'rgba(red,0.75)']);
       expect(colorService.colorNameToRgba).toHaveBeenCalledWith('red');
       expect(colorService.colorNameToRgba).toHaveBeenCalledWith('blue');
     });
