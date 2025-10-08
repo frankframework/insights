@@ -40,10 +40,12 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
   public doughnutChartPlugins = [];
   public legendItems: { label: string; color: string; count: number }[] = [];
+  public sortedHighlightedLabels: Label[] = [];
 
   private colorService = inject(ColorService);
 
   ngOnChanges(): void {
+    this.sortHighlightedLabels();
     this.generatePieData();
   }
 
@@ -51,27 +53,50 @@ export class ReleaseHighlightsComponent implements OnChanges {
     return color?.startsWith('#') ? color : `#${color}`;
   }
 
+  private sortHighlightedLabels(): void {
+    if (!this.highlightedLabels) {
+      this.sortedHighlightedLabels = [];
+      return;
+    }
+
+    this.sortedHighlightedLabels = [...this.highlightedLabels].sort((a, b) => {
+      const normalizedColorA = this.normalizeColor(a.color || '');
+      const normalizedColorB = this.normalizeColor(b.color || '');
+      const colorComparison = normalizedColorA.localeCompare(normalizedColorB);
+      if (colorComparison !== 0) return colorComparison;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }
+
   private generatePieData(): void {
     if (!this.releaseIssues) return;
 
-    const pieDataMap = new Map<string, { count: number; color: string }>();
+    const pieDataMap = new Map<string, { count: number; color: string; originalColor: string }>();
 
     for (const issue of this.releaseIssues) {
       if (!issue.issueType) continue;
       const issueTypeName = issue.issueType.name;
-      let issueTypeColor = issue.issueType.color;
-      issueTypeColor = this.colorService.colorNameToRgba(issueTypeColor);
+      const originalColor = issue.issueType.color;
+      const displayColor = this.colorService.colorNameToRgba(originalColor);
 
       if (pieDataMap.has(issueTypeName)) {
         pieDataMap.get(issueTypeName)!.count += 1;
       } else {
-        pieDataMap.set(issueTypeName, { count: 1, color: issueTypeColor });
+        pieDataMap.set(issueTypeName, { count: 1, color: displayColor, originalColor });
       }
     }
 
-    const labels = [...pieDataMap.keys()];
-    const data = [...pieDataMap.values()].map((v) => v.count);
-    const backgroundColor = [...pieDataMap.values()].map((v) => v.color);
+    const sortedEntries = [...pieDataMap.entries()].sort(([nameA, dataA], [nameB, dataB]) => {
+      const normalizedColorA = this.normalizeColor(dataA.originalColor);
+      const normalizedColorB = this.normalizeColor(dataB.originalColor);
+      const colorComparison = normalizedColorA.localeCompare(normalizedColorB);
+      if (colorComparison !== 0) return colorComparison;
+      return nameA.localeCompare(nameB);
+    });
+
+    const labels = sortedEntries.map(([name]) => name);
+    const data = sortedEntries.map(([, { count }]) => count);
+    const backgroundColor = sortedEntries.map(([, { color }]) => color);
 
     this.doughnutChartData = {
       labels,
@@ -83,10 +108,14 @@ export class ReleaseHighlightsComponent implements OnChanges {
       ],
     };
 
-    this.legendItems = [...pieDataMap.entries()].map(([label, { count, color }]) => ({
+    this.legendItems = sortedEntries.map(([label, { count, color }]) => ({
       label,
       color,
       count,
     }));
+  }
+
+  private normalizeColor(color: string): string {
+    return color.replace('#', '').toLowerCase();
   }
 }
