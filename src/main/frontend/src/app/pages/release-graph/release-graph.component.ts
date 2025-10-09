@@ -154,6 +154,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.router.navigate(['/graph', releaseNodeId]);
   }
 
+  public openSkipNodeModal(skipNodeId: string): void {
+    const skipNode = this.skipNodes.find((s) => s.id === skipNodeId);
+    if (skipNode) {
+      this.dataForSkipModal = skipNode;
+    }
+  }
+
   public closeSkipNodeModal(): void {
     this.dataForSkipModal = null;
   }
@@ -369,7 +376,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.scale = targetHeight / Math.max(graphH, 1);
     const scaledGraphH = graphH * this.scale;
     const topPadding = (H - scaledGraphH) / 2;
-    this.translateY = -minY * this.scale + topPadding;
+    this.translateY = -minY * this.scale + topPadding + 40;
 
     this.maxTranslateX = -minX * this.scale + W * 0.2;
     this.minTranslateX = W - maxX * this.scale - W * 0.45;
