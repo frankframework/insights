@@ -154,6 +154,188 @@ describe('ReleaseGraphComponent', () => {
     });
   });
 
+  describe('Touch Events', () => {
+    let mockTouchEvent: jasmine.SpyObj<TouchEvent>;
+    let mockTouch: Touch;
+
+    beforeEach(() => {
+      mockTouch = { clientX: 100 } as Touch;
+      mockTouchEvent = jasmine.createSpyObj<TouchEvent>('TouchEvent', ['preventDefault']);
+      Object.defineProperty(mockTouchEvent, 'touches', {
+        get: () => [mockTouch],
+        configurable: true,
+      });
+
+      const mockSvgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      component.svgElement = new ElementRef(mockSvgElement);
+    });
+
+    describe('onTouchStart', () => {
+      it('should set isDragging to true and capture initial position on single touch', () => {
+        component.onTouchStart(mockTouchEvent);
+
+        expect(component.isDragging).toBe(true);
+        expect((component as any).lastPositionX).toBe(100);
+        expect(mockTouchEvent.preventDefault).toHaveBeenCalledWith();
+      });
+
+      it('should not set isDragging when multiple touches are detected', () => {
+        const multiTouch = { clientX: 150 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [mockTouch, multiTouch],
+          configurable: true,
+        });
+
+        component.onTouchStart(mockTouchEvent);
+
+        expect(component.isDragging).toBe(false);
+        expect(mockTouchEvent.preventDefault).toHaveBeenCalledWith();
+      });
+
+      it('should handle touch event with zero touches', () => {
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [],
+          configurable: true,
+        });
+
+        component.onTouchStart(mockTouchEvent);
+
+        expect(component.isDragging).toBe(false);
+      });
+    });
+
+    describe('onTouchMove', () => {
+      beforeEach(() => {
+        (component as any).minTranslateX = -1000;
+        (component as any).maxTranslateX = 500;
+        component.translateX = 0;
+        spyOn(component as any, 'updateStickyBranchLabels');
+      });
+
+      it('should update translateX when dragging with single touch', () => {
+        component.isDragging = true;
+        (component as any).lastPositionX = 100;
+
+        const newTouch = { clientX: 150 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect(component.translateX).toBe(50);
+        expect((component as any).lastPositionX).toBe(150);
+        expect(mockTouchEvent.preventDefault).toHaveBeenCalledWith();
+        expect((component as any).updateStickyBranchLabels).toHaveBeenCalledWith();
+      });
+
+      it('should respect minimum translateX boundary', () => {
+        component.isDragging = true;
+        (component as any).lastPositionX = 100;
+        component.translateX = -900;
+
+        const newTouch = { clientX: 0 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect(component.translateX).toBe(-1000);
+      });
+
+      it('should respect maximum translateX boundary', () => {
+        component.isDragging = true;
+        (component as any).lastPositionX = 100;
+        component.translateX = 400;
+
+        const newTouch = { clientX: 250 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect(component.translateX).toBe(500);
+      });
+
+      it('should not update translateX when not dragging', () => {
+        component.isDragging = false;
+        (component as any).lastPositionX = 100;
+        component.translateX = 0;
+
+        const newTouch = { clientX: 150 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect(component.translateX).toBe(0);
+        expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
+        expect((component as any).updateStickyBranchLabels).not.toHaveBeenCalled();
+      });
+
+      it('should not update translateX when multiple touches are detected', () => {
+        component.isDragging = true;
+        (component as any).lastPositionX = 100;
+        component.translateX = 0;
+
+        const touch1 = { clientX: 150 } as Touch;
+        const touch2 = { clientX: 200 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [touch1, touch2],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect(component.translateX).toBe(0);
+        expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
+        expect((component as any).updateStickyBranchLabels).not.toHaveBeenCalled();
+      });
+
+      it('should handle negative delta (dragging left)', () => {
+        component.isDragging = true;
+        (component as any).lastPositionX = 200;
+        component.translateX = 100;
+
+        const newTouch = { clientX: 150 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect(component.translateX).toBe(50);
+        expect((component as any).lastPositionX).toBe(150);
+      });
+    });
+
+    describe('onTouchEnd', () => {
+      it('should set isDragging to false', () => {
+        component.isDragging = true;
+
+        component.onTouchEnd();
+
+        expect(component.isDragging).toBe(false);
+      });
+
+      it('should set isDragging to false even when already false', () => {
+        component.isDragging = false;
+
+        component.onTouchEnd();
+
+        expect(component.isDragging).toBe(false);
+      });
+    });
+  });
+
   describe('ViewBox Calculation', () => {
     it('should set valid, finite numbers for scale and transform properties', () => {
       const svgWidth = 1200;
