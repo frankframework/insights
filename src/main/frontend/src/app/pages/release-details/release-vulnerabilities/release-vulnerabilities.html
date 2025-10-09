@@ -1,0 +1,68 @@
+<div class="vulnerabilities-container">
+  <div class="vulnerabilities-split">
+    <div class="cve-list">
+      @if (sortedVulnerabilities.length === 0) {
+        <p class="no-vulnerabilities">No vulnerabilities found for this release.</p>
+      } @else {
+        <h3 class="vulnerabilities-title">Vulnerabilities ({{ sortedVulnerabilities.length }})</h3>
+        @for (vulnerability of sortedVulnerabilities; track vulnerability.cveId) {
+          <div
+            class="cve-item"
+            tabindex="0"
+            role="button"
+            [class.selected]="selectedVulnerability?.cveId === vulnerability.cveId"
+            (click)="selectVulnerability(vulnerability)"
+            (keydown.enter)="selectVulnerability(vulnerability)"
+            (keydown.space)="selectVulnerability(vulnerability)"
+          >
+            <div class="cve-header">
+              <span class="cve-id">{{ vulnerability.cveId }}</span>
+              <span class="severity-badge" [ngClass]="getSeverityClass(vulnerability.severity)">
+                {{ vulnerability.severity }}
+              </span>
+            </div>
+            <div class="cve-score">CVSS Score: {{ formatCvssScore(vulnerability.cvssScore) }}</div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="cwe-details">
+      @if (selectedVulnerability) {
+        <div class="cwe-content">
+          <div class="cve-header-details">
+            <h4>{{ selectedVulnerability.cveId }}</h4>
+            <span class="severity-badge" [ngClass]="getSeverityClass(selectedVulnerability.severity)">
+              {{ selectedVulnerability.severity }}
+            </span>
+          </div>
+          <div class="description-container">
+            <p class="cve-description" [class.expanded]="isDescriptionExpanded">
+              {{ selectedVulnerability.description }}
+            </p>
+            @if (showSeeMoreButton) {
+              <button class="see-more-button" (click)="toggleDescription()">
+                {{ isDescriptionExpanded ? 'See less' : 'See more' }}
+              </button>
+            }
+          </div>
+
+          @if (selectedVulnerability.cwes && selectedVulnerability.cwes.length > 0) {
+            <div class="cwes-section">
+              <h5>CWEs</h5>
+              <div class="cwe-list">
+                @for (cwe of selectedVulnerability.cwes; track cwe) {
+                  <a target="_blank" rel="noopener noreferrer" class="cwe-badge" [href]="getCweUrl(cwe)">
+                    {{ cwe }}
+                  </a>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="no-selection">Select a CVE to view details</p>
+      }
+    </div>
+  </div>
+</div>
