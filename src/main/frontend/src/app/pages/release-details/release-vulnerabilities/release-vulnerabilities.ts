@@ -36,17 +36,15 @@ export class ReleaseVulnerabilities implements OnChanges {
       this.selectedVulnerability = this.sortedVulnerabilities[0];
     }
     this.isDescriptionExpanded = false;
-    setTimeout(() => this.checkDescriptionOverflow(), 0);
+    this.checkDescriptionOverflow();
   }
 
   public selectVulnerability(vulnerability: Vulnerability): void {
     this.selectedVulnerability = vulnerability;
     this.isDescriptionExpanded = false;
 
-    setTimeout(() => {
-      this.smoothScrollToTop();
-      this.checkDescriptionOverflow();
-    }, 10);
+    this.smoothScrollToTop();
+    this.checkDescriptionOverflow();
   }
 
   public toggleDescription(): void {
