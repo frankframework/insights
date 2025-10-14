@@ -41,6 +41,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private minTranslateX = 0;
   private maxTranslateX = 0;
   private routerSubscription!: Subscription;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private isTouchDragging = false;
 
   private releaseService = inject(ReleaseService);
   private nodeService = inject(ReleaseNodeService);
@@ -89,12 +92,16 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     event.preventDefault();
     if (event.touches.length === 1) {
       this.isDragging = true;
+      this.isTouchDragging = false;
       this.lastPositionX = event.touches[0].clientX;
+      this.touchStartX = event.touches[0].clientX;
+      this.touchStartY = event.touches[0].clientY;
     }
   }
 
   public onTouchEnd(): void {
     this.isDragging = false;
+    this.isTouchDragging = false;
   }
 
   public onTouchMove(event: TouchEvent): void {
@@ -102,10 +109,31 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     event.preventDefault();
     const touch = event.touches[0];
     const deltaX = touch.clientX - this.lastPositionX;
+
+    const totalDeltaX = Math.abs(touch.clientX - this.touchStartX);
+    const totalDeltaY = Math.abs(touch.clientY - this.touchStartY);
+    if (totalDeltaX > 10 || totalDeltaY > 10) {
+      this.isTouchDragging = true;
+    }
+
     this.lastPositionX = touch.clientX;
     const newTranslateX = this.translateX + deltaX;
     this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, newTranslateX));
     this.updateStickyBranchLabels();
+  }
+
+  public onNodeTouchEnd(event: TouchEvent, releaseNodeId: string): void {
+    event.stopPropagation();
+    if (!this.isTouchDragging) {
+      this.openReleaseNodeDetails(releaseNodeId);
+    }
+  }
+
+  public onSkipNodeTouchEnd(event: TouchEvent, skipNodeId: string): void {
+    event.stopPropagation();
+    if (!this.isTouchDragging) {
+      this.openSkipNodeModal(skipNodeId);
+    }
   }
 
   public onWheel(event: WheelEvent): void {

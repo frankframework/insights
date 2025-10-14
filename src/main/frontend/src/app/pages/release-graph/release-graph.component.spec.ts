@@ -159,8 +159,8 @@ describe('ReleaseGraphComponent', () => {
     let mockTouch: Touch;
 
     beforeEach(() => {
-      mockTouch = { clientX: 100 } as Touch;
-      mockTouchEvent = jasmine.createSpyObj<TouchEvent>('TouchEvent', ['preventDefault']);
+      mockTouch = { clientX: 100, clientY: 200 } as Touch;
+      mockTouchEvent = jasmine.createSpyObj<TouchEvent>('TouchEvent', ['preventDefault', 'stopPropagation']);
       Object.defineProperty(mockTouchEvent, 'touches', {
         get: () => [mockTouch],
         configurable: true,
@@ -176,6 +176,9 @@ describe('ReleaseGraphComponent', () => {
 
         expect(component.isDragging).toBe(true);
         expect((component as any).lastPositionX).toBe(100);
+        expect((component as any).touchStartX).toBe(100);
+        expect((component as any).touchStartY).toBe(200);
+        expect((component as any).isTouchDragging).toBe(false);
         expect(mockTouchEvent.preventDefault).toHaveBeenCalledWith();
       });
 
@@ -332,6 +335,132 @@ describe('ReleaseGraphComponent', () => {
         component.onTouchEnd();
 
         expect(component.isDragging).toBe(false);
+      });
+
+      it('should reset isTouchDragging flag', () => {
+        (component as any).isTouchDragging = true;
+
+        component.onTouchEnd();
+
+        expect((component as any).isTouchDragging).toBe(false);
+      });
+    });
+
+    describe('Drag Detection in onTouchMove', () => {
+      beforeEach(() => {
+        (component as any).minTranslateX = -1000;
+        (component as any).maxTranslateX = 500;
+        component.translateX = 0;
+        component.isDragging = true;
+        (component as any).touchStartX = 100;
+        (component as any).touchStartY = 200;
+        (component as any).lastPositionX = 100;
+        (component as any).isTouchDragging = false;
+        spyOn(component as any, 'updateStickyBranchLabels');
+      });
+
+      it('should detect drag when horizontal movement exceeds 10px', () => {
+        const newTouch = { clientX: 115, clientY: 200 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect((component as any).isTouchDragging).toBe(true);
+      });
+
+      it('should detect drag when vertical movement exceeds 10px', () => {
+        const newTouch = { clientX: 100, clientY: 215 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect((component as any).isTouchDragging).toBe(true);
+      });
+
+      it('should not detect drag when movement is less than 10px', () => {
+        const newTouch = { clientX: 105, clientY: 205 } as Touch;
+        Object.defineProperty(mockTouchEvent, 'touches', {
+          get: () => [newTouch],
+          configurable: true,
+        });
+
+        component.onTouchMove(mockTouchEvent);
+
+        expect((component as any).isTouchDragging).toBe(false);
+      });
+    });
+
+    describe('onNodeTouchEnd', () => {
+      let mockRouter: any;
+
+      beforeEach(() => {
+        mockRouter = TestBed.inject(Router) as any;
+      });
+
+      it('should open release node details when tap detected (no drag)', () => {
+        (component as any).isTouchDragging = false;
+
+        component.onNodeTouchEnd(mockTouchEvent, 'release-123');
+
+        expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
+        expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-123']);
+      });
+
+      it('should not open release node details when drag detected', () => {
+        (component as any).isTouchDragging = true;
+
+        component.onNodeTouchEnd(mockTouchEvent, 'release-123');
+
+        expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
+        expect(mockRouter.navigate).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('onSkipNodeTouchEnd', () => {
+      beforeEach(() => {
+        component.skipNodes = [
+          { id: 'skip-1', label: 'Skip 1', x: 100, y: 200, skippedCount: 5, skippedVersions: [] },
+        ];
+      });
+
+      it('should open skip node modal when tap detected (no drag)', () => {
+        (component as any).isTouchDragging = false;
+
+        component.onSkipNodeTouchEnd(mockTouchEvent, 'skip-1');
+
+        expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
+        expect(component.dataForSkipModal).toEqual({
+          id: 'skip-1',
+          label: 'Skip 1',
+          x: 100,
+          y: 200,
+          skippedCount: 5,
+          skippedVersions: [],
+        });
+      });
+
+      it('should not open skip node modal when drag detected', () => {
+        (component as any).isTouchDragging = true;
+
+        component.onSkipNodeTouchEnd(mockTouchEvent, 'skip-1');
+
+        expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
+        expect(component.dataForSkipModal).toBeNull();
+      });
+
+      it('should not open modal for non-existent skip node', () => {
+        (component as any).isTouchDragging = false;
+
+        component.onSkipNodeTouchEnd(mockTouchEvent, 'non-existent');
+
+        expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
+        expect(component.dataForSkipModal).toBeNull();
       });
     });
   });

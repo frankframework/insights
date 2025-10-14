@@ -148,4 +148,79 @@ describe('Graph Rendering and Interaction', () => {
       });
     });
   });
+
+  context('Touch Events on Mobile', () => {
+    it('should pan the graph on touch swipe gesture', () => {
+      let initialTransform: string | undefined;
+
+      cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').then((transform) => {
+        initialTransform = transform;
+      });
+
+      cy.get('@graphSvg').first()
+        .trigger('touchstart', { touches: [{ clientX: 300, clientY: 200 }] })
+        .trigger('touchmove', { touches: [{ clientX: 200, clientY: 200 }] })
+        .trigger('touchend');
+
+      cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
+        expect(newTransform).not.to.equal(initialTransform);
+      });
+    });
+
+    it('should open release node details on tap without drag', () => {
+      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().as('firstNode');
+
+      cy.get('@firstNode')
+        .trigger('touchstart', { touches: [{ clientX: 100, clientY: 100 }] })
+        .trigger('touchend', { changedTouches: [{ clientX: 100, clientY: 100 }] });
+
+      cy.url().should('include', '/graph/');
+      cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
+    });
+
+    it('should not open release node details when dragging over node', () => {
+      cy.visit('/');
+      cy.get('app-loader', { timeout: 5000 }).should('not.exist');
+      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().as('firstNode');
+
+      cy.get('@firstNode')
+        .trigger('touchstart', { touches: [{ clientX: 100, clientY: 100 }] })
+        .trigger('touchmove', { touches: [{ clientX: 150, clientY: 100 }] })
+        .trigger('touchend', { changedTouches: [{ clientX: 150, clientY: 100 }] });
+
+      cy.url().should('not.include', '/graph/');
+      cy.url().should('eq', Cypress.config().baseUrl + '/');
+    });
+
+    it('should open skip node modal on tap without drag', () => {
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().as('firstSkipNode');
+
+      cy.get('@firstSkipNode')
+        .trigger('touchstart', { touches: [{ clientX: 100, clientY: 100 }] })
+        .trigger('touchend', { changedTouches: [{ clientX: 100, clientY: 100 }] });
+
+      cy.get('app-skipped-versions-modal', { timeout: 2000 }).should('be.visible');
+    });
+
+    it('should not open skip node modal when dragging over skip node', () => {
+      cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().as('firstSkipNode');
+
+      cy.get('@firstSkipNode')
+        .trigger('touchstart', { touches: [{ clientX: 100, clientY: 100 }] })
+        .trigger('touchmove', { touches: [{ clientX: 150, clientY: 100 }] })
+        .trigger('touchend', { changedTouches: [{ clientX: 150, clientY: 100 }] });
+
+      cy.get('app-skipped-versions-modal').should('not.exist');
+    });
+
+    it('should handle touchcancel gracefully without triggering actions', () => {
+      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().as('firstNode');
+
+      cy.get('@firstNode')
+        .trigger('touchstart', { touches: [{ clientX: 100, clientY: 100 }] })
+        .trigger('touchcancel');
+
+      cy.url().should('eq', Cypress.config().baseUrl + '/');
+    });
+  });
 });

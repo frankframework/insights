@@ -30,6 +30,8 @@
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
             (click)="openReleaseNodeDetails(releaseNode.id)"
+            (touchend)="onNodeTouchEnd($event, releaseNode.id)"
+            (touchcancel)="onNodeTouchEnd($event, releaseNode.id)"
           >
             <circle r="20" [attr.fill]="releaseNode.color" />
             <text y="-30">
@@ -44,6 +46,8 @@
             [attr.data-cy]="'skip-node-' + skipNode.id"
             [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
             (click)="openSkipNodeModal(skipNode.id)"
+            (touchend)="onSkipNodeTouchEnd($event, skipNode.id)"
+            (touchcancel)="onSkipNodeTouchEnd($event, skipNode.id)"
           >
             <circle r="20" class="skip-circle" />
             <text y="2" class="skip-text">{{ skipNode.skippedCount }}</text>
