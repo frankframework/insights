@@ -95,11 +95,41 @@ export class ReleaseNodeService {
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): ReleaseNode[] {
     const allNodes: ReleaseNode[] = [];
     for (const nodes of releaseGroups.values()) {
-      for (const node of nodes) {
-        node.color = this.determineColor(node);
-        allNodes.push(node);
+      allNodes.push(...nodes);
+    }
+
+    const versionGroups = new Map<string, ReleaseNode[]>();
+    for (const node of allNodes) {
+      const versionInfo = this.getVersionInfo(node);
+      if (versionInfo && versionInfo.patch > 0) {
+        const key = `${versionInfo.major}.${versionInfo.minor}`;
+        if (!versionGroups.has(key)) {
+          versionGroups.set(key, []);
+        }
+        versionGroups.get(key)!.push(node);
       }
     }
+
+    const latestPatches = new Set<string>();
+    for (const nodesInGroup of versionGroups.values()) {
+      const sortedByPatch = [...nodesInGroup].sort((a, b) => {
+        const vA = this.getVersionInfo(a)!;
+        const vB = this.getVersionInfo(b)!;
+        return vB.patch - vA.patch;
+      });
+
+      if (sortedByPatch.length > 0) {
+        latestPatches.add(sortedByPatch[0].id);
+      }
+    }
+
+    for (const node of allNodes) {
+      const versionInfo = this.getVersionInfo(node);
+      const isPatchVersion = versionInfo !== null && versionInfo.patch > 0;
+      const isLatestPatch = latestPatches.has(node.id);
+      node.color = this.determineColor(node, isPatchVersion, isLatestPatch);
+    }
+
     return allNodes;
   }
 
@@ -404,8 +434,12 @@ export class ReleaseNodeService {
     }
   }
 
-  private determineColor(release: ReleaseNode): string {
+  private determineColor(release: ReleaseNode, isPatchVersion: boolean, isLatestPatch: boolean): string {
     if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) return 'darkblue';
+
+    if (isPatchVersion && !isLatestPatch) {
+      return SupportColors.NONE;
+    }
 
     const supportDates = this.getSupportEndDates(release);
     if (!supportDates) return SupportColors.NONE;
