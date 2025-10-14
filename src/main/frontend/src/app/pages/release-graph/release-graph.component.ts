@@ -18,6 +18,8 @@ import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipp
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
+  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 50;
+
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
   public releaseNodes: ReleaseNode[] = [];
@@ -152,6 +154,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
     this.router.navigate(['/graph', releaseNodeId]);
+  }
+
+  public openSkipNodeModal(skipNodeId: string): void {
+    const skipNode = this.skipNodes.find((s) => s.id === skipNodeId);
+    if (skipNode) {
+      this.dataForSkipModal = skipNode;
+    }
   }
 
   public closeSkipNodeModal(): void {
@@ -369,7 +378,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.scale = targetHeight / Math.max(graphH, 1);
     const scaledGraphH = graphH * this.scale;
     const topPadding = (H - scaledGraphH) / 2;
-    this.translateY = -minY * this.scale + topPadding;
+    this.translateY = -minY * this.scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING;
 
     this.maxTranslateX = -minX * this.scale + W * 0.2;
     this.minTranslateX = W - maxX * this.scale - W * 0.45;

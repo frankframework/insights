@@ -43,7 +43,7 @@
             class="skip-node"
             [attr.data-cy]="'skip-node-' + skipNode.id"
             [attr.transform]="'translate(' + skipNode.x + ',' + skipNode.y + ')'"
-            (click)="openReleaseNodeDetails(skipNode.id)"
+            (click)="openSkipNodeModal(skipNode.id)"
           >
             <circle r="20" class="skip-circle" />
             <text y="2" class="skip-text">{{ skipNode.skippedCount }}</text>
