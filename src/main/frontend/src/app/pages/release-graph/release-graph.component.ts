@@ -18,7 +18,7 @@ import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipp
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
-  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 40;
+  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 50;
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
