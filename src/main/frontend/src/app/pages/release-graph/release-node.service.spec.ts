@@ -166,9 +166,20 @@ describe('ReleaseNodeService', () => {
   });
 
   describe('assignReleaseColors and determineColor', () => {
+    const NOW = new Date('2025-06-15T12:00:00Z');
+    // For patch/minor: 3 months full support, 6 months security support
+    // For major: 6 months full support, 12 months security support
+    const TWO_WEEKS_AGO = new Date(NOW.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const ONE_MONTH_AGO = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const TWO_MONTHS_AGO = new Date(NOW.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const FOUR_MONTHS_AGO = new Date(NOW.getTime() - 120 * 24 * 60 * 60 * 1000); // Within minor security (6m), past full (3m)
+    const FIVE_MONTHS_AGO = new Date(NOW.getTime() - 150 * 24 * 60 * 60 * 1000); // Within major full (6m)
+    const EIGHT_MONTHS_AGO = new Date(NOW.getTime() - 240 * 24 * 60 * 60 * 1000); // Within major security (12m), past minor security (6m)
+    const THREE_YEARS_AGO = new Date(NOW.getTime() - 3 * 365 * 24 * 60 * 60 * 1000);
+
     beforeAll(() => {
       jasmine.clock().install();
-      jasmine.clock().mockDate(new Date('2025-06-15T12:00:00Z'));
+      jasmine.clock().mockDate(NOW);
     });
 
     afterAll(() => {
@@ -176,21 +187,21 @@ describe('ReleaseNodeService', () => {
     });
 
     it('should assign FULL support color for a recent major release (v9.0.0)', () => {
-      const node = { label: 'v9.0.0', publishedAt: new Date('2025-01-10T10:00:00Z') } as any;
+      const node = { label: 'v9.0.0', publishedAt: FIVE_MONTHS_AGO } as any;
       const color = (service as any).determineColor(node, false, false);
 
       expect(color).toBe(SupportColors.FULL);
     });
 
-    it('should assign SECURITY support color for an older major release (v8.4.0)', () => {
-      const node = { label: 'v8.4.0', publishedAt: new Date('2025-01-15T10:00:00Z') } as any;
+    it('should assign SECURITY support color for an older minor release (v8.4.0)', () => {
+      const node = { label: 'v8.4.0', publishedAt: FOUR_MONTHS_AGO } as any;
       const color = (service as any).determineColor(node, false, false);
 
       expect(color).toBe(SupportColors.SECURITY);
     });
 
     it('should assign NONE support color for an unsupported release (v7.2.0)', () => {
-      const node = { label: 'v7.2.0', publishedAt: new Date('2022-06-01T10:00:00Z') } as any;
+      const node = { label: 'v7.2.0', publishedAt: THREE_YEARS_AGO } as any;
       const color = (service as any).determineColor(node, false, false);
 
       expect(color).toBe(SupportColors.NONE);
@@ -205,7 +216,7 @@ describe('ReleaseNodeService', () => {
 
     describe('latest patch version logic', () => {
       it('should assign NONE color to older patch versions regardless of support dates', () => {
-        const node = { label: 'v8.4.1', publishedAt: new Date('2025-01-10T10:00:00Z') } as any;
+        const node = { label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO } as any;
         const isPatchVersion = true;
         const isLatestPatch = false;
         const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
@@ -214,7 +225,7 @@ describe('ReleaseNodeService', () => {
       });
 
       it('should assign normal support colors to the latest patch version', () => {
-        const node = { label: 'v8.4.2', publishedAt: new Date('2025-01-10T10:00:00Z') } as any;
+        const node = { label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO } as any;
         const isPatchVersion = true;
         const isLatestPatch = true;
         const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
@@ -223,7 +234,7 @@ describe('ReleaseNodeService', () => {
       });
 
       it('should not affect major versions (v9.0.0) - they get their own support colors', () => {
-        const node = { label: 'v9.0.0', publishedAt: new Date('2025-01-10T10:00:00Z') } as any;
+        const node = { label: 'v9.0.0', publishedAt: FIVE_MONTHS_AGO } as any;
         const isPatchVersion = false;
         const isLatestPatch = false;
         const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
@@ -232,7 +243,7 @@ describe('ReleaseNodeService', () => {
       });
 
       it('should not affect minor versions (v8.4.0) - they get their own support colors', () => {
-        const node = { label: 'v8.4.0', publishedAt: new Date('2025-01-15T10:00:00Z') } as any;
+        const node = { label: 'v8.4.0', publishedAt: FOUR_MONTHS_AGO } as any;
         const isPatchVersion = false;
         const isLatestPatch = false;
         const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
@@ -244,9 +255,9 @@ describe('ReleaseNodeService', () => {
     describe('assignReleaseColors - integration with latest patch logic', () => {
       it('should identify and color only the latest patch in a series correctly', () => {
         const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v8.4.1', publishedAt: new Date('2025-01-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v8.4.2', publishedAt: new Date('2025-02-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '3', label: 'v8.4.3', publishedAt: new Date('2025-03-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '1', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '2', label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '3', label: 'v8.4.3', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
         ];
 
         const releaseGroups = new Map([['master', nodes]]);
@@ -259,10 +270,10 @@ describe('ReleaseNodeService', () => {
 
       it('should handle multiple version series independently', () => {
         const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v7.8.1', publishedAt: new Date('2022-01-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v7.8.2', publishedAt: new Date('2022-02-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '3', label: 'v8.4.1', publishedAt: new Date('2025-01-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '4', label: 'v8.4.2', publishedAt: new Date('2025-02-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '1', label: 'v7.8.1', publishedAt: THREE_YEARS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '2', label: 'v7.8.2', publishedAt: THREE_YEARS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '3', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '4', label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
         ];
 
         const releaseGroups = new Map([['master', nodes]]);
@@ -276,16 +287,16 @@ describe('ReleaseNodeService', () => {
 
       it('should not affect major and minor version colors', () => {
         const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v8.0.0', publishedAt: new Date('2025-01-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v8.4.0', publishedAt: new Date('2025-01-15'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '3', label: 'v8.4.1', publishedAt: new Date('2025-02-10'), color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '1', label: 'v8.0.0', publishedAt: FIVE_MONTHS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '2', label: 'v8.4.0', publishedAt: TWO_MONTHS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '3', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
         ];
 
         const releaseGroups = new Map([['master', nodes]]);
         const coloredNodes = service.assignReleaseColors(releaseGroups);
 
         expect(coloredNodes[0].color).toBe(SupportColors.FULL); // v8.0.0 - major, gets own color
-        expect(coloredNodes[1].color).toBe(SupportColors.SECURITY); // v8.4.0 - minor, gets own color
+        expect(coloredNodes[1].color).toBe(SupportColors.FULL); // v8.4.0 - minor, gets own color (within 3 months)
         expect(coloredNodes[2].color).toBe(SupportColors.FULL); // v8.4.1 - latest patch
       });
     });
