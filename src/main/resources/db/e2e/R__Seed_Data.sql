@@ -187,3 +187,37 @@ MERGE INTO release_pull_request (release_id, pull_request_id) KEY(release_id, pu
 	('RE_kwDOAIg5ds4MnUo_', 'pr-502'),
 	('RE_kwDOAIg5ds4MnUo_', 'pr-503');
 
+MERGE INTO vulnerability (cve_id, severity, cvss_score, description) KEY(cve_id) VALUES
+	('CVE-2024-0001', 'CRITICAL', 10.0, 'Critical remote code execution vulnerability allowing unauthenticated attackers to execute arbitrary code on the server. This vulnerability affects all versions prior to 9.0.1 and should be patched immediately.'),
+	('CVE-2024-0002', 'CRITICAL', 9.8, 'Critical SQL injection vulnerability with a very long description that should trigger the see more button because it exceeds six lines of text when rendered in the UI component with normal font size and line height settings. This allows attackers to extract sensitive data from the database including user credentials and personal information.'),
+	('CVE-2024-0003', 'HIGH', 8.5, 'High severity cross-site scripting (XSS) vulnerability that could allow attackers to inject malicious scripts into web pages viewed by other users.'),
+	('CVE-2024-0004', 'HIGH', 7.5, 'High severity authentication bypass allowing unauthorized access to administrative functions.'),
+	('CVE-2024-0005', 'MEDIUM', 6.0, 'Medium severity path traversal vulnerability enabling access to files outside the intended directory.'),
+	('CVE-2024-0006', 'MEDIUM', 5.0, 'Medium severity information disclosure vulnerability exposing sensitive configuration data.'),
+	('CVE-2024-0007', 'LOW', 3.5, 'Low severity denial of service vulnerability through resource exhaustion.'),
+	('CVE-2024-0008', 'LOW', 2.1, 'Low severity insecure default configuration that could be exploited under specific conditions.');
+
+MERGE INTO vulnerability_cwes (vulnerability_cve_id, cwes) KEY(vulnerability_cve_id, cwes) VALUES
+	('CVE-2024-0001', 'CWE-78'),
+	('CVE-2024-0001', 'CWE-94'),
+	('CVE-2024-0002', 'CWE-89'),
+	('CVE-2024-0002', 'CWE-707'),
+	('CVE-2024-0003', 'CWE-79'),
+	('CVE-2024-0003', 'CWE-80'),
+	('CVE-2024-0004', 'CWE-287'),
+	('CVE-2024-0004', 'CWE-306'),
+	('CVE-2024-0005', 'CWE-22'),
+	('CVE-2024-0006', 'CWE-200'),
+	('CVE-2024-0007', 'CWE-400'),
+	('CVE-2024-0008', 'CWE-276');
+
+MERGE INTO release_vulnerability (release_id, vulnerability_cve_id) KEY(release_id, vulnerability_cve_id) VALUES
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0001'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0002'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0003'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0004'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0005'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0006'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0007'),
+	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0008');
+

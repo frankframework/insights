@@ -4,16 +4,24 @@ import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Release, ReleaseService } from '../../services/release.service';
 import { Label, LabelService } from '../../services/label.service';
 import { Issue, IssueService } from '../../services/issue.service';
+import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
+import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-release-details',
   standalone: true,
-  imports: [CommonModule, LoaderComponent, ReleaseHighlightsComponent, ReleaseImportantIssuesComponent],
+  imports: [
+    CommonModule,
+    LoaderComponent,
+    ReleaseHighlightsComponent,
+    ReleaseImportantIssuesComponent,
+    ReleaseVulnerabilities,
+  ],
   templateUrl: './release-details.component.html',
   styleUrl: './release-details.component.scss',
 })
@@ -21,12 +29,14 @@ export class ReleaseDetailsComponent implements OnInit {
   public release?: Release;
   public highlightedLabels?: Label[];
   public releaseIssues?: Issue[];
+  public vulnerabilities?: Vulnerability[];
   public isLoading = true;
 
   private location = inject(Location);
   private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
+  private vulnerabilityService = inject(VulnerabilityService);
   private toastService = inject(ToastrService);
   private route = inject(ActivatedRoute);
 
@@ -79,12 +89,21 @@ export class ReleaseDetailsComponent implements OnInit {
       }),
     );
 
+    const vulnerabilities$ = this.vulnerabilityService.getVulnerabilitiesByReleaseId(releaseId).pipe(
+      catchError((error) => {
+        console.error('Failed to load vulnerabilities:', error);
+        this.toastService.error('Failed to load vulnerabilities. Please try again later.');
+        return of([]);
+      }),
+    );
+
     forkJoin({
       labels: labels$,
       issues: issues$,
+      vulnerabilities: vulnerabilities$,
     })
       .pipe(finalize(() => (this.isLoading = false)))
-      .subscribe(({ labels, issues }) => {
+      .subscribe(({ labels, issues, vulnerabilities }) => {
         if (labels && labels.length > 0) {
           this.highlightedLabels = labels;
         } else {
@@ -102,6 +121,8 @@ export class ReleaseDetailsComponent implements OnInit {
             this.toastService.error('No release issues found.');
           }
         }
+
+        this.vulnerabilities = vulnerabilities && vulnerabilities.length > 0 ? vulnerabilities : [];
       });
   }
 }
