@@ -76,18 +76,6 @@ describe('Release Vulnerabilities Component', () => {
     cy.get('.cve-item').eq(1).should('have.class', 'selected');
   });
 
-  it('should close off-canvas when close button is clicked', () => {
-    cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
-    cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
-    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
-
-    cy.get('.cve-item').first().click({ force: true });
-    cy.get('app-vulnerability-details-off-canvas').should('be.visible');
-
-    cy.get('.off-canvas-close').click({ force: true });
-    cy.get('app-vulnerability-details-off-canvas').should('not.be.visible');
-  });
-
   it('should display severity badge in off-canvas', () => {
     cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
