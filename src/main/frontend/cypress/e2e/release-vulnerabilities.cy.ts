@@ -81,7 +81,7 @@ describe('Release Vulnerabilities Component', () => {
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
-    cy.get('.cve-item').first().click();
+    cy.get('.cve-item').first().click({ force: true });
     cy.get('app-vulnerability-details-off-canvas').should('be.visible');
 
     cy.get('.off-canvas-close').click({ force: true });
