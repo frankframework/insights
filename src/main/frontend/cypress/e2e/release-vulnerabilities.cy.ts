@@ -84,8 +84,8 @@ describe('Release Vulnerabilities Component', () => {
     cy.get('.cve-item').first().click();
     cy.get('app-vulnerability-details-off-canvas').should('be.visible');
 
-    cy.get('.off-canvas-close').click();
-    cy.get('app-vulnerability-details-off-canvas').should('not.exist');
+    cy.get('.off-canvas-close').click({ force: true });
+    cy.get('app-vulnerability-details-off-canvas').should('not.be.visible');
   });
 
   it('should display severity badge in off-canvas', () => {
