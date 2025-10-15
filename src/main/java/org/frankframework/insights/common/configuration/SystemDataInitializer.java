@@ -158,7 +158,7 @@ public class SystemDataInitializer implements CommandLineRunner {
                                 Files.delete(lockFile);
                                 log.warn("Removed stale OWASP dependency-check lock file: {}", lockFile);
                             } catch (IOException e) {
-                                throw new RuntimeException(e);
+                                log.error("Failed to delete OWASP lock file: {}", lockFile, e);
                             }
                         });
             }
