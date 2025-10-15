@@ -34,13 +34,16 @@ public class ReleaseArtifactServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        releaseArtifactService = new ReleaseArtifactService();
-        mockedUri = mockStatic(URI.class);
-
-        Field archiveDirField = ReleaseArtifactService.class.getDeclaredField("ARCHIVE_DIR");
-        archiveDirField.setAccessible(true);
         Path archiveDir = tempDir.resolve("release-archive");
         Files.createDirectories(archiveDir);
+
+        releaseArtifactService = new ReleaseArtifactService();
+
+        Field field = ReleaseArtifactService.class.getDeclaredField("archiveDirectory");
+        field.setAccessible(true);
+        field.set(releaseArtifactService, archiveDir.toString());
+
+        mockedUri = mockStatic(URI.class);
     }
 
     @AfterEach
