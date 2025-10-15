@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -36,11 +37,16 @@ public class ReleaseArtifactServiceTest {
 
     private MockedStatic<Files> mockedFiles;
     private MockedStatic<URI> mockedUri;
-    private static final Path ARCHIVE_DIR = Paths.get("release-archive");
+    private static final Path ARCHIVE_DIR = Paths.get("./release-archive");
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws Exception {
         releaseArtifactService = new ReleaseArtifactService();
+
+        Field field = ReleaseArtifactService.class.getDeclaredField("archiveDirectory");
+        field.setAccessible(true);
+        field.set(releaseArtifactService, ARCHIVE_DIR.toString());
+
         mockedFiles = Mockito.mockStatic(Files.class);
         mockedUri = Mockito.mockStatic(URI.class);
     }
@@ -56,21 +62,6 @@ public class ReleaseArtifactServiceTest {
         release.setName(name);
         release.setTagName(tagName);
         return release;
-    }
-
-    private void setupMocksForUnzipTest(Release release, String zipUrl, byte[] zipBytes) throws IOException {
-        Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
-        Path zipFile = releaseDir.resolve(release.getName() + ".zip");
-
-        mockDownload(zipUrl, zipBytes);
-        mockedFiles.when(() -> Files.isDirectory(releaseDir)).thenReturn(false);
-        mockedFiles.when(() -> Files.createDirectories(any(Path.class))).thenAnswer(i -> i.getArgument(0));
-        mockedFiles
-                .when(() -> Files.copy(any(InputStream.class), eq(zipFile), any(StandardCopyOption.class)))
-                .thenReturn((long) zipBytes.length);
-        mockedFiles.when(() -> Files.newInputStream(zipFile)).thenReturn(new ByteArrayInputStream(zipBytes));
-        mockedFiles.when(() -> Files.delete(zipFile)).thenAnswer(invocation -> null);
-        mockedFiles.when(() -> Files.newOutputStream(any(Path.class))).thenReturn(new ByteArrayOutputStream());
     }
 
     private void mockDownload(String expectedUrl, byte[] zipBytes) throws IOException {
@@ -125,7 +116,7 @@ public class ReleaseArtifactServiceTest {
     @Test
     public void prepareReleaseArtifacts_whenDirectoryExists_shouldSkipDownload() throws IOException {
         Release release = createRelease("7.8.0", "v7.8.0");
-        Path releaseDir = Paths.get("release-archive").resolve(release.getName());
+        Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
 
         mockedFiles.when(() -> Files.isDirectory(eq(releaseDir))).thenReturn(true);
         mockedFiles.when(() -> Files.list(eq(releaseDir))).thenReturn(Stream.of(releaseDir.resolve("somefile.txt")));

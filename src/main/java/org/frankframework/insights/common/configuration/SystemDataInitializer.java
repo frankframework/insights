@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
-
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.github.GitHubClientException;
@@ -20,6 +18,7 @@ import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
 import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.owasp.dependencycheck.utils.Settings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,8 +37,8 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final ReleaseService releaseService;
     private final VulnerabilityService vulnerabilityService;
 
-	@Value("${data.fetch-enabled}")
-	private boolean dataFetchEnabled;
+    @Value("${data.fetch-enabled}")
+    private boolean dataFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -145,7 +144,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private void cleanUpOwaspLockFile() {
         try {
             Settings settings = new Settings();
-			settings.setString(Settings.KEYS.DATA_DIRECTORY, "/owasp-data");
+            settings.setString(Settings.KEYS.DATA_DIRECTORY, "/owasp-data");
             Path dataDirectory = settings.getDataDirectory().toPath();
 
             if (!Files.isDirectory(dataDirectory)) {
@@ -155,12 +154,12 @@ public class SystemDataInitializer implements CommandLineRunner {
             try (Stream<Path> files = Files.list(dataDirectory)) {
                 files.filter(path -> path.getFileName().toString().endsWith(".lock"))
                         .forEach(lockFile -> {
-							try {
-								Files.delete(lockFile);
-								log.warn("Removed stale OWASP dependency-check lock file: {}", lockFile);
-							} catch (IOException e) {
-								throw new RuntimeException(e);
-							}
+                            try {
+                                Files.delete(lockFile);
+                                log.warn("Removed stale OWASP dependency-check lock file: {}", lockFile);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
                         });
             }
         } catch (Exception e) {

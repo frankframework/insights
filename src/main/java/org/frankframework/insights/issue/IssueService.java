@@ -243,8 +243,8 @@ public class IssueService {
     public Set<IssueResponse> getIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
         Release release = releaseService.checkIfReleaseExists(releaseId);
         Set<Issue> allIssues = issueRepository.findIssuesByReleaseId(release.getId());
-		Set<Issue> rootIssues = filterRootIssues(allIssues);
-		return buildIssueResponseTree(rootIssues);
+        Set<Issue> rootIssues = filterRootIssues(allIssues);
+        return buildIssueResponseTree(rootIssues);
     }
 
     /**
