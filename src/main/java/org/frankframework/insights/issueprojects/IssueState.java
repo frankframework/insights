@@ -1,4 +1,4 @@
-package org.frankframework.insights.issuePriority;
+package org.frankframework.insights.issueprojects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -15,7 +15,7 @@ import org.frankframework.insights.issue.Issue;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 @Setter
-public class IssuePriority {
+public class IssueState {
     @Id
     private String id;
 
@@ -27,7 +27,7 @@ public class IssuePriority {
 
     private String description;
 
-    @OneToMany(mappedBy = "issuePriority")
-    @JsonManagedReference("issuePriority-issue")
+    @OneToMany(mappedBy = "issueState")
+    @JsonManagedReference("issueState-issue")
     private Set<Issue> issues;
 }

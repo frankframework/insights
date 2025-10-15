@@ -9,9 +9,9 @@ import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.*;
-import org.frankframework.insights.issuePriority.IssuePriority;
-import org.frankframework.insights.issuePriority.IssuePriorityResponse;
-import org.frankframework.insights.issuePriority.IssuePriorityService;
+import org.frankframework.insights.issueprojects.IssuePriority;
+import org.frankframework.insights.issueprojects.IssuePriorityResponse;
+import org.frankframework.insights.issueprojects.IssueProjectItemsService;
 import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -47,7 +47,7 @@ public class IssueServiceTest {
     private IssueTypeService issueTypeService;
 
     @Mock
-    private IssuePriorityService issuePriorityService;
+    private IssueProjectItemsService issueProjectItemsService;
 
     @Mock
     private LabelService labelService;
@@ -118,7 +118,7 @@ public class IssueServiceTest {
         List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
-        GitHubEdgesDTO<GitHubProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>(Collections.emptyList());
+        GitHubEdgesDTO<GitHubIssueProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>(Collections.emptyList());
 
         dto1 = new IssueDTO(
                 "i1",
@@ -198,7 +198,7 @@ public class IssueServiceTest {
     @Test
     public void injectIssues_mapsPriorityAndPointsFromProjectItems()
             throws GitHubClientException, IssueInjectionException {
-        when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
+        when(issueProjectItemsService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -212,7 +212,7 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_handlesMissingPriorityMappingGracefully() throws GitHubClientException {
-        when(issuePriorityService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
+        when(issueProjectItemsService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(gitHubClient.getIssues()).thenReturn(Set.of(dtoSub));
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));

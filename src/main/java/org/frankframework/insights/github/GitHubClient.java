@@ -70,26 +70,26 @@ public class GitHubClient extends GraphQLClient {
     }
 
     /**
-     * Fetches issue priorities from GitHub.
-     * @param projectId the ID of the project for which to fetch issue priorities
-     * @return Set of GitHubSingleSelectDTO containing issue priorities
+     * Fetches issue project items from GitHub project.
+     * @param projectId the ID of the GitHub project
+     * @return Set of GitHubPrioritySingleSelectDTO.SingleSelectObject containing issue project items
      * @throws GitHubClientException if an error occurs during the request
      */
-    public Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> getIssuePriorities(String projectId)
+    public Set<GitHubSingleSelectDTO.SingleSelectObject> getIssueProjectItems(String projectId)
             throws GitHubClientException {
         HashMap<String, Object> variables = new HashMap<>();
         variables.put("projectId", projectId);
-        log.info("Started fetching issue priorities from GitHub for project with id: [{}]", projectId);
+        log.info("Started fetching issue project items from GitHub for project with id: [{}]", projectId);
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> issuePriorities =
-                getNodes(GitHubQueryConstants.ISSUE_PRIORITIES, variables, new ParameterizedTypeReference<>() {});
+        Set<GitHubSingleSelectDTO.SingleSelectObject> issueProjectItems =
+                getNodes(GitHubQueryConstants.ISSUE_PROJECT_ITEMS, variables, new ParameterizedTypeReference<>() {});
 
         log.info(
-                "Successfully fetched {} issue priorities from GitHub for project with id: [{}]",
-                issuePriorities.size(),
+                "Successfully fetched {} issue project items from GitHub for project with id: [{}]",
+                issueProjectItems.size(),
                 projectId);
 
-        return issuePriorities;
+        return issueProjectItems;
     }
 
     /**
@@ -178,18 +178,17 @@ public class GitHubClient extends GraphQLClient {
      * @param <RAW> the raw	 response type
      * @throws GitHubClientException if an error occurs during the request
      */
-    protected <RAW extends GitHubPrioritySingleSelectDTO>
-            Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> getNodes(
-                    GitHubQueryConstants query,
-                    Map<String, Object> queryVariables,
-                    ParameterizedTypeReference<RAW> responseType)
-                    throws GitHubClientException {
+    protected <RAW extends GitHubSingleSelectDTO> Set<GitHubSingleSelectDTO.SingleSelectObject> getNodes(
+            GitHubQueryConstants query,
+            Map<String, Object> queryVariables,
+            ParameterizedTypeReference<RAW> responseType)
+            throws GitHubClientException {
         return getPaginatedEntities(
                 query,
                 queryVariables,
                 responseType,
                 dto -> dto.nodes() == null ? Set.of() : new HashSet<>(dto.nodes()),
-                GitHubPrioritySingleSelectDTO::pageInfo);
+                GitHubSingleSelectDTO::pageInfo);
     }
 
     /**

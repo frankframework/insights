@@ -6,7 +6,8 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
-import org.frankframework.insights.issuePriority.IssuePriorityResponse;
+import org.frankframework.insights.issueprojects.IssuePriorityResponse;
+import org.frankframework.insights.issueprojects.IssueStateResponse;
 import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.label.LabelResponse;
 import org.frankframework.insights.milestone.MilestoneResponse;
@@ -25,6 +26,7 @@ public class IssueResponse {
     private MilestoneResponse milestone;
     private IssueTypeResponse issueType;
     private IssuePriorityResponse issuePriority;
+    private IssueStateResponse issueStateResponse;
     private double points;
     private Set<LabelResponse> labels;
     private Set<IssueResponse> subIssues;

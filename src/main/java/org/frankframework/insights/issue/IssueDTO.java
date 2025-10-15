@@ -5,8 +5,8 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import org.frankframework.insights.github.GitHubEdgesDTO;
+import org.frankframework.insights.github.GitHubIssueProjectItemDTO;
 import org.frankframework.insights.github.GitHubNodeDTO;
-import org.frankframework.insights.github.GitHubProjectItemDTO;
 import org.frankframework.insights.github.GitHubPropertyState;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
@@ -24,9 +24,10 @@ public record IssueDTO(
         MilestoneDTO milestone,
         IssueTypeDTO issueType,
         GitHubEdgesDTO<IssueDTO> subIssues,
-        GitHubEdgesDTO<GitHubProjectItemDTO> projectItems) {
+        GitHubEdgesDTO<GitHubIssueProjectItemDTO> projectItems) {
 
     private static final String PRIORITY_FIELD_NAME = "Priority";
+    private static final String STATE_FIELD_NAME = "State";
     private static final String POINTS_FIELD_NAME = "Points";
 
     public boolean hasLabels() {
@@ -48,22 +49,26 @@ public record IssueDTO(
     }
 
     public Optional<String> findPriorityOptionId() {
-        return findProjectField(IssueDTO.PRIORITY_FIELD_NAME, GitHubProjectItemDTO.FieldValue::optionId);
+        return findProjectField(IssueDTO.PRIORITY_FIELD_NAME, GitHubIssueProjectItemDTO.FieldValue::optionId);
+    }
+
+    public Optional<String> findStateOptionId() {
+        return findProjectField(IssueDTO.STATE_FIELD_NAME, GitHubIssueProjectItemDTO.FieldValue::optionId);
     }
 
     public Optional<Double> findPoints() {
-        return findProjectField(IssueDTO.POINTS_FIELD_NAME, GitHubProjectItemDTO.FieldValue::number);
+        return findProjectField(IssueDTO.POINTS_FIELD_NAME, GitHubIssueProjectItemDTO.FieldValue::number);
     }
 
     private <T> Optional<T> findProjectField(
-            String fieldName, java.util.function.Function<GitHubProjectItemDTO.FieldValue, T> extractor) {
+            String fieldName, java.util.function.Function<GitHubIssueProjectItemDTO.FieldValue, T> extractor) {
         if (projectItems.edges().isEmpty()) {
             return Optional.empty();
         }
 
         return projectItems.edges().stream()
                 .map(GitHubNodeDTO::node)
-                .map(GitHubProjectItemDTO::fieldValues)
+                .map(GitHubIssueProjectItemDTO::fieldValues)
                 .flatMap(fv -> {
                     if (fv.edges() == null || fv.edges().isEmpty()) return java.util.stream.Stream.empty();
                     return fv.edges().stream();
