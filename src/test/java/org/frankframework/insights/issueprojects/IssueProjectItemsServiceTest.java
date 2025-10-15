@@ -225,7 +225,6 @@ public class IssueProjectItemsServiceTest {
     @Test
     public void injectIssueProjectItems_shouldWrapGitHubClientException() throws GitHubClientException {
         when(issuePriorityRepository.count()).thenReturn(0L);
-        when(issueStateRepository.count()).thenReturn(0L);
         when(gitHubClient.getIssueProjectItems(anyString())).thenThrow(new RuntimeException("GitHub fail"));
 
         IssueProjectItemInjectionException ex = assertThrows(
@@ -237,7 +236,6 @@ public class IssueProjectItemsServiceTest {
     @Test
     public void injectIssueProjectItems_shouldWrapPriorityMapperException() throws GitHubClientException {
         when(issuePriorityRepository.count()).thenReturn(0L);
-        when(issueStateRepository.count()).thenReturn(0L);
 
         GitHubSingleSelectDTO.SingleSelectObject priorityField =
                 new GitHubSingleSelectDTO.SingleSelectObject("priority", List.of(priorityDto1));
