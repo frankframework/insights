@@ -3,7 +3,7 @@
     @if (title) {
       <h4 class="off-canvas-title">{{ title }}</h4>
     }
-    <button (click)="onClose()">✕</button>
+    <button class="off-canvas-close" (click)="onClose()">✕</button>
     <ng-content />
   </div>
 </div>

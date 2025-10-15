@@ -64,12 +64,8 @@ describe('ReleaseVulnerabilities', () => {
       expect(component.selectedVulnerability).toBeNull();
     });
 
-    it('should initialize with isDescriptionExpanded as false', () => {
-      expect(component.isDescriptionExpanded).toBe(false);
-    });
-
-    it('should initialize with showSeeMoreButton as false', () => {
-      expect(component.showSeeMoreButton).toBe(false);
+    it('should initialize with isOffCanvasOpen as false', () => {
+      expect(component.isOffCanvasOpen).toBe(false);
     });
   });
 
@@ -107,14 +103,6 @@ describe('ReleaseVulnerabilities', () => {
       component.ngOnChanges();
 
       expect(component.sortedVulnerabilities.length).toBe(1);
-      expect(component.selectedVulnerability).toBe(mockVulnerabilities[0]);
-    });
-
-    it('should auto-select first vulnerability after sorting', () => {
-      component.vulnerabilities = mockVulnerabilities;
-      component.ngOnChanges();
-
-      expect(component.selectedVulnerability).toBe(component.sortedVulnerabilities[0]);
     });
   });
 
@@ -125,62 +113,27 @@ describe('ReleaseVulnerabilities', () => {
       fixture.detectChanges();
     });
 
-    it('should select vulnerability on click', () => {
+    it('should select vulnerability and open off-canvas', () => {
       const targetVuln = component.sortedVulnerabilities[2];
       component.selectVulnerability(targetVuln);
 
       expect(component.selectedVulnerability).toBe(targetVuln);
+      expect(component.isOffCanvasOpen).toBe(true);
     });
 
-    it('should reset isDescriptionExpanded when selecting new vulnerability', () => {
-      component.isDescriptionExpanded = true;
-      component.selectVulnerability(component.sortedVulnerabilities[1]);
+    it('should close off-canvas', () => {
+      component.isOffCanvasOpen = true;
+      component.closeOffCanvas();
 
-      expect(component.isDescriptionExpanded).toBe(false);
+      expect(component.isOffCanvasOpen).toBe(false);
     });
 
-    it('should call window.scrollTo when selecting vulnerability', (done) => {
-      const mockElement = document.createElement('div');
-      mockElement.className = 'cwe-details';
-      document.body.append(mockElement);
-
-      spyOn(globalThis.window, 'scrollTo');
-
-      let rafCallback: FrameRequestCallback | null = null;
-      spyOn(globalThis.window, 'requestAnimationFrame').and.callFake((callback: FrameRequestCallback) => {
-        rafCallback = callback;
-        return 0;
-      });
-
-      component.selectVulnerability(component.sortedVulnerabilities[1]);
-
-      globalThis.setTimeout(() => {
-        if (rafCallback) {
-          rafCallback(globalThis.performance.now() + 1000);
-        }
-
-        expect(globalThis.window.scrollTo).toHaveBeenCalledWith(jasmine.any(Number), jasmine.any(Number));
-        mockElement.remove();
-        done();
-      }, 20);
-    });
-  });
-
-  describe('Description Expansion', () => {
-    beforeEach(() => {
-      component.vulnerabilities = mockVulnerabilities;
+    it('should reset selected vulnerability and close off-canvas on ngOnChanges', () => {
+      component.selectVulnerability(component.sortedVulnerabilities[0]);
       component.ngOnChanges();
-      fixture.detectChanges();
-    });
 
-    it('should toggle description expansion', () => {
-      expect(component.isDescriptionExpanded).toBe(false);
-      component.toggleDescription();
-
-      expect(component.isDescriptionExpanded).toBe(true);
-      component.toggleDescription();
-
-      expect(component.isDescriptionExpanded).toBe(false);
+      expect(component.selectedVulnerability).toBeNull();
+      expect(component.isOffCanvasOpen).toBe(false);
     });
   });
 
@@ -207,28 +160,6 @@ describe('ReleaseVulnerabilities', () => {
 
     it('should return correct CSS class for UNKNOWN severity', () => {
       expect(component.getSeverityClass(VulnerabilitySeverities.UNKNOWN)).toBe('severity-unknown');
-    });
-  });
-
-  describe('CWE URL Generation', () => {
-    it('should generate correct CWE URL from CWE-79', () => {
-      expect(component.getCweUrl('CWE-79')).toBe('https://cwe.mitre.org/data/definitions/79.html');
-    });
-
-    it('should generate correct CWE URL from CWE-89', () => {
-      expect(component.getCweUrl('CWE-89')).toBe('https://cwe.mitre.org/data/definitions/89.html');
-    });
-
-    it('should handle invalid CWE format gracefully', () => {
-      expect(component.getCweUrl('INVALID')).toBe('#');
-    });
-
-    it('should handle empty CWE string', () => {
-      expect(component.getCweUrl('')).toBe('#');
-    });
-
-    it('should extract number from CWE with extra text', () => {
-      expect(component.getCweUrl('CWE-200: Information Exposure')).toBe('https://cwe.mitre.org/data/definitions/200.html');
     });
   });
 
@@ -331,26 +262,6 @@ describe('ReleaseVulnerabilities', () => {
       expect(component.sortedVulnerabilities.length).toBe(2);
       expect(component.sortedVulnerabilities[0].cvssScore).toBe(7.5);
       expect(component.sortedVulnerabilities[1].cvssScore).toBe(7.5);
-    });
-  });
-
-  describe('Component State Management', () => {
-    it('should maintain selected vulnerability after re-sorting', () => {
-      component.vulnerabilities = mockVulnerabilities;
-      component.ngOnChanges();
-      const selected = component.sortedVulnerabilities[2];
-      component.selectVulnerability(selected);
-
-      component.ngOnChanges();
-
-      expect(component.selectedVulnerability).toBeDefined();
-    });
-
-    it('should reset expansion state on ngOnChanges', () => {
-      component.isDescriptionExpanded = true;
-      component.ngOnChanges();
-
-      expect(component.isDescriptionExpanded).toBe(false);
     });
   });
 });
