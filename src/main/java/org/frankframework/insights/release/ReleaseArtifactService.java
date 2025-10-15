@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ReleaseArtifactService {
 
-    private static final Path ARCHIVE_DIR = Paths.get("release-archive");
+    private static final Path ARCHIVE_DIR = Paths.get("/release-archive");
     private static final String GITHUB_ZIP_URL_FORMAT =
             "https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
 

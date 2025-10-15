@@ -145,6 +145,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private void cleanUpOwaspLockFile() {
         try {
             Settings settings = new Settings();
+			settings.setString(Settings.KEYS.DATA_DIRECTORY, "/owasp-data");
             Path dataDirectory = settings.getDataDirectory().toPath();
 
             if (!Files.isDirectory(dataDirectory)) {
