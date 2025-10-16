@@ -15,6 +15,7 @@ export interface Issue {
   milestone?: Milestone;
   issueType?: IssueType;
   issuePriority?: IssuePriority;
+  issueState?: IssueState;
   points?: number;
   labels?: Label[];
   subIssues?: Issue[];
@@ -28,6 +29,13 @@ export interface IssueType {
 }
 
 export interface IssuePriority {
+  id: string;
+  name: string;
+  color: string;
+  description: string;
+}
+
+export interface IssueState {
   id: string;
   name: string;
   color: string;
