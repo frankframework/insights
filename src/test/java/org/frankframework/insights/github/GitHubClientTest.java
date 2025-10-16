@@ -8,7 +8,6 @@ import java.util.*;
 import org.frankframework.insights.branch.BranchDTO;
 import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.issue.IssueDTO;
-import org.frankframework.insights.issuePriority.IssuePriorityDTO;
 import org.frankframework.insights.issuetype.IssueTypeDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;
@@ -150,40 +149,42 @@ public class GitHubClientTest {
     }
 
     @Test
-    public void getIssuePriorities_success() throws GitHubClientException {
+    public void getIssueProjectItems_success() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         String projectId = "pid";
-        GitHubPrioritySingleSelectDTO.SingleSelectObject obj =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", null);
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> set = Set.of(obj);
+        GitHubSingleSelectDTO.SingleSelectObject obj = new GitHubSingleSelectDTO.SingleSelectObject("priority", null);
+        Set<GitHubSingleSelectDTO.SingleSelectObject> set = Set.of(obj);
 
         doReturn(set)
                 .when(gitHubClient)
-                .getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(ParameterizedTypeReference.class));
+                .getNodes(
+                        eq(GitHubQueryConstants.ISSUE_PROJECT_ITEMS), anyMap(), any(ParameterizedTypeReference.class));
 
-        assertEquals(set, gitHubClient.getIssuePriorities(projectId));
+        assertEquals(set, gitHubClient.getIssueProjectItems(projectId));
     }
 
     @Test
-    public void getIssuePriorities_empty() throws GitHubClientException {
+    public void getIssueProjectItems_empty() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         String projectId = "pid";
         doReturn(Collections.emptySet())
                 .when(gitHubClient)
-                .getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(ParameterizedTypeReference.class));
+                .getNodes(
+                        eq(GitHubQueryConstants.ISSUE_PROJECT_ITEMS), anyMap(), any(ParameterizedTypeReference.class));
 
-        assertTrue(gitHubClient.getIssuePriorities(projectId).isEmpty());
+        assertTrue(gitHubClient.getIssueProjectItems(projectId).isEmpty());
     }
 
     @Test
-    public void getIssuePriorities_exception() throws GitHubClientException {
+    public void getIssueProjectItems_exception() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
         String projectId = "pid";
         doThrow(new GitHubClientException("fail", null))
                 .when(gitHubClient)
-                .getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any(ParameterizedTypeReference.class));
+                .getNodes(
+                        eq(GitHubQueryConstants.ISSUE_PROJECT_ITEMS), anyMap(), any(ParameterizedTypeReference.class));
 
-        assertThrows(GitHubClientException.class, () -> gitHubClient.getIssuePriorities(projectId));
+        assertThrows(GitHubClientException.class, () -> gitHubClient.getIssueProjectItems(projectId));
     }
 
     @Test
@@ -353,8 +354,8 @@ public class GitHubClientTest {
     @Test
     public void getNodes_handlesNullResult() throws GitHubClientException {
         gitHubClient = spy(new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient));
-        doReturn(null).when(gitHubClient).getNodes(eq(GitHubQueryConstants.ISSUE_PRIORITIES), anyMap(), any());
-        assertThrows(NullPointerException.class, () -> gitHubClient.getIssuePriorities("pid"));
+        doReturn(null).when(gitHubClient).getNodes(eq(GitHubQueryConstants.ISSUE_PROJECT_ITEMS), anyMap(), any());
+        assertThrows(NullPointerException.class, () -> gitHubClient.getIssueProjectItems("pid"));
     }
 
     @Test
@@ -453,11 +454,11 @@ public class GitHubClientTest {
     public void getNodes_success() throws GitHubClientException {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
-        IssuePriorityDTO dto = new IssuePriorityDTO("id", "name", "color", "desc");
-        GitHubPrioritySingleSelectDTO.SingleSelectObject obj =
-                new GitHubPrioritySingleSelectDTO.SingleSelectObject("priority", List.of(dto));
+        GitHubSingleSelectProjectItemDTO dto = new GitHubSingleSelectProjectItemDTO("id", "name", "color", "desc");
+        GitHubSingleSelectDTO.SingleSelectObject obj =
+                new GitHubSingleSelectDTO.SingleSelectObject("priority", List.of(dto));
         GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
-        GitHubPrioritySingleSelectDTO dtoObj = new GitHubPrioritySingleSelectDTO(List.of(obj), pageInfo);
+        GitHubSingleSelectDTO dtoObj = new GitHubSingleSelectDTO(List.of(obj), pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -467,8 +468,8 @@ public class GitHubClientTest {
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES, new HashMap<>(), new ParameterizedTypeReference<>() {});
+        Set<GitHubSingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
+                GitHubQueryConstants.ISSUE_PROJECT_ITEMS, new HashMap<>(), new ParameterizedTypeReference<>() {});
 
         assertEquals(1, result.size());
     }
@@ -478,7 +479,7 @@ public class GitHubClientTest {
         gitHubClient = new TestableGitHubClient(gitHubProperties, objectMapper, httpGraphQlClient);
 
         GitHubPageInfo pageInfo = new GitHubPageInfo(false, null);
-        GitHubPrioritySingleSelectDTO dtoObj = new GitHubPrioritySingleSelectDTO(Collections.emptyList(), pageInfo);
+        GitHubSingleSelectDTO dtoObj = new GitHubSingleSelectDTO(Collections.emptyList(), pageInfo);
 
         HttpGraphQlClient.RequestSpec reqSpec = mock(HttpGraphQlClient.RequestSpec.class);
         HttpGraphQlClient.RetrieveSpec retrieveSpec = mock(HttpGraphQlClient.RetrieveSpec.class);
@@ -488,8 +489,8 @@ public class GitHubClientTest {
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.just(dtoObj));
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES, new HashMap<>(), new ParameterizedTypeReference<>() {});
+        Set<GitHubSingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
+                GitHubQueryConstants.ISSUE_PROJECT_ITEMS, new HashMap<>(), new ParameterizedTypeReference<>() {});
 
         assertTrue(result.isEmpty());
     }
@@ -506,8 +507,8 @@ public class GitHubClientTest {
         when(reqSpec.retrieve(anyString())).thenReturn(retrieveSpec);
         when(retrieveSpec.toEntity(any(ParameterizedTypeReference.class))).thenReturn(Mono.empty());
 
-        Set<GitHubPrioritySingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
-                GitHubQueryConstants.ISSUE_PRIORITIES, new HashMap<>(), new ParameterizedTypeReference<>() {});
+        Set<GitHubSingleSelectDTO.SingleSelectObject> result = gitHubClient.getNodes(
+                GitHubQueryConstants.ISSUE_PROJECT_ITEMS, new HashMap<>(), new ParameterizedTypeReference<>() {});
 
         assertTrue(result.isEmpty());
     }
@@ -527,9 +528,9 @@ public class GitHubClientTest {
         assertThrows(
                 GitHubClientException.class,
                 () -> gitHubClient.getNodes(
-                        GitHubQueryConstants.ISSUE_PRIORITIES,
+                        GitHubQueryConstants.ISSUE_PROJECT_ITEMS,
                         new HashMap<>(),
-                        new ParameterizedTypeReference<GitHubPrioritySingleSelectDTO>() {}));
+                        new ParameterizedTypeReference<GitHubSingleSelectDTO>() {}));
     }
 
     @Test

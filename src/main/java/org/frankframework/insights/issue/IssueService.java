@@ -10,9 +10,10 @@ import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubNodeDTO;
-import org.frankframework.insights.issuePriority.IssuePriority;
-import org.frankframework.insights.issuePriority.IssuePriorityResponse;
-import org.frankframework.insights.issuePriority.IssuePriorityService;
+import org.frankframework.insights.issueprojects.IssuePriority;
+import org.frankframework.insights.issueprojects.IssuePriorityResponse;
+import org.frankframework.insights.issueprojects.IssueProjectItemsService;
+import org.frankframework.insights.issueprojects.IssueState;
 import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -45,7 +46,7 @@ public class IssueService {
     private final MilestoneService milestoneService;
     private final IssueTypeService issueTypeService;
     private final LabelService labelService;
-    private final IssuePriorityService issuePriorityService;
+    private final IssueProjectItemsService issueProjectItemsService;
     private final ReleaseService releaseService;
 
     public IssueService(
@@ -56,7 +57,7 @@ public class IssueService {
             MilestoneService milestoneService,
             IssueTypeService issueTypeService,
             LabelService labelService,
-            IssuePriorityService issuePriorityService,
+            IssueProjectItemsService issueProjectItemsService,
             ReleaseService releaseService) {
         this.gitHubClient = gitHubClient;
         this.mapper = mapper;
@@ -65,7 +66,7 @@ public class IssueService {
         this.milestoneService = milestoneService;
         this.issueTypeService = issueTypeService;
         this.labelService = labelService;
-        this.issuePriorityService = issuePriorityService;
+        this.issueProjectItemsService = issueProjectItemsService;
         this.releaseService = releaseService;
     }
 
@@ -101,10 +102,11 @@ public class IssueService {
      * @return a set of Issue entities containing the mapped issues with their priorities, points, and other properties
      */
     private Set<Issue> mapIssueDTOs(Set<IssueDTO> issueDTOs) {
-        Map<String, IssuePriority> issuePriorityMap = issuePriorityService.getAllIssuePrioritiesMap();
+        Map<String, IssuePriority> issuePriorityMap = issueProjectItemsService.getAllIssuePrioritiesMap();
+        Map<String, IssueState> issueStateMap = issueProjectItemsService.getAllIssueStatesMap();
 
         return issueDTOs.stream()
-                .map(dto -> mapDtoToIssue(dto, issuePriorityMap))
+                .map(dto -> mapDtoToIssue(dto, issuePriorityMap, issueStateMap))
                 .collect(Collectors.toSet());
     }
 
@@ -114,10 +116,12 @@ public class IssueService {
      * @param issuePriorityMap a map of issue priority IDs to IssuePriority entities
      * @return an Issue entity containing the mapped issue with its priority and points
      */
-    private Issue mapDtoToIssue(IssueDTO dto, Map<String, IssuePriority> issuePriorityMap) {
+    private Issue mapDtoToIssue(
+            IssueDTO dto, Map<String, IssuePriority> issuePriorityMap, Map<String, IssueState> issueStateMap) {
         Issue issue = mapper.toEntity(dto, Issue.class);
 
         dto.findPriorityOptionId().map(issuePriorityMap::get).ifPresent(issue::setIssuePriority);
+        dto.findStateOptionId().map(issueStateMap::get).ifPresent(issue::setIssueState);
         dto.findPoints().ifPresent(issue::setPoints);
 
         return issue;

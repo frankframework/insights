@@ -1,4 +1,4 @@
-query issuePriorities($projectId: ID!, $after: String) {
+query issueProjects($projectId: ID!, $after: String) {
 	node(id: $projectId) {
 		... on ProjectV2 {
 			fields(first: 20, after: $after) {

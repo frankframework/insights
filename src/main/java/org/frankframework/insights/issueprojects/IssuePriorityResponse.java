@@ -1,4 +1,4 @@
-package org.frankframework.insights.issuePriority;
+package org.frankframework.insights.issueprojects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

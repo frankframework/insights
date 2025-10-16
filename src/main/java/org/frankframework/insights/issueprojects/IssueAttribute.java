@@ -1,21 +1,17 @@
-package org.frankframework.insights.issuePriority;
+package org.frankframework.insights.issueprojects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import java.util.Set;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.issue.Issue;
 
-@Entity
+@MappedSuperclass
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 @Setter
-public class IssuePriority {
+public abstract class IssueAttribute {
     @Id
     private String id;
 
@@ -26,8 +22,4 @@ public class IssuePriority {
     private String color;
 
     private String description;
-
-    @OneToMany(mappedBy = "issuePriority")
-    @JsonManagedReference("issuePriority-issue")
-    private Set<Issue> issues;
 }
