@@ -19,9 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Setter
 @Service
 @Slf4j
-@Setter
 public class ReleaseArtifactService {
 
 	private Path releaseArchiveDirectory = Paths.get("/release-archive");
@@ -130,12 +130,14 @@ public class ReleaseArtifactService {
 	 * Validates and prepares the destination path, preventing path traversal (Zip Slip).
 	 */
 	private Path validateAndStripPath(Path pathInZip, Path destDir) throws IOException {
+		if (pathInZip.getNameCount() <= 1) {
+			return null; // Ignore the root (/) and GitHub's top-level directory.
+		}
+
 		if (pathInZip.isAbsolute()) {
 			throw new IOException("Bad zip entry: " + pathInZip + " (Absolute path attempt)");
 		}
-		if (pathInZip.getNameCount() <= 1) {
-			return null; // Ignore the root and GitHub's top-level directory
-		}
+
 		Path strippedPath = pathInZip.subpath(1, pathInZip.getNameCount());
 		Path resolvedPath = destDir.resolve(strippedPath.toString()).normalize();
 		if (!resolvedPath.startsWith(destDir)) {
