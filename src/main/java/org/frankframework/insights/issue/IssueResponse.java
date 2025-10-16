@@ -26,7 +26,7 @@ public class IssueResponse {
     private MilestoneResponse milestone;
     private IssueTypeResponse issueType;
     private IssuePriorityResponse issuePriority;
-    private IssueStateResponse issueStateResponse;
+    private IssueStateResponse issueState;
     private double points;
     private Set<LabelResponse> labels;
     private Set<IssueResponse> subIssues;
