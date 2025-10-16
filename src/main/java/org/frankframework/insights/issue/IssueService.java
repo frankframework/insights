@@ -122,7 +122,7 @@ public class IssueService {
         Issue issue = mapper.toEntity(dto, Issue.class);
 
         dto.findPriorityOptionId().map(issuePriorityMap::get).ifPresent(issue::setIssuePriority);
-        dto.findStateOptionId().map(issueStateMap::get).ifPresent(issue::setIssueState);
+        dto.findStatusOptionId().map(issueStateMap::get).ifPresent(issue::setIssueState);
         dto.findPoints().ifPresent(issue::setPoints);
 
         return issue;
