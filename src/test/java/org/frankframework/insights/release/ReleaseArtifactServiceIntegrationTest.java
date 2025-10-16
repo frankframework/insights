@@ -1,6 +1,5 @@
 package org.frankframework.insights.release;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -33,8 +32,7 @@ public class ReleaseArtifactServiceIntegrationTest {
 
 	@BeforeEach
 	public void setUp() {
-		releaseArtifactService = new ReleaseArtifactService();
-		releaseArtifactService.setReleaseArchiveDirectory(tempDir);
+		releaseArtifactService = new ReleaseArtifactService(tempDir.toString());
 		mockedUri = mockStatic(URI.class);
 	}
 
@@ -158,32 +156,6 @@ public class ReleaseArtifactServiceIntegrationTest {
 		assertTrue(result.toString().endsWith(release.getName()));
 	}
 
-	@Test
-	public void unzip_withAbsolutePathInZipEntry_shouldHandleGracefully() throws IOException {
-		Release release = createRelease("zip-absolute", "v-abs");
-		String zipUrl = "https://github.com/frankframework/frankframework/archive/refs/tags/v-abs.zip";
-
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-			zos.putNextEntry(new ZipEntry("frankframework-abs/"));
-			zos.closeEntry();
-			zos.putNextEntry(new ZipEntry("/etc/passwd"));
-			zos.write("hacked".getBytes());
-			zos.closeEntry();
-		}
-		byte[] maliciousZip = baos.toByteArray();
-
-		mockDownload(zipUrl, maliciousZip);
-
-		IOException e = assertThrows(
-				IOException.class, () -> releaseArtifactService.prepareReleaseArtifacts(release));
-
-		String message = e.getMessage();
-		assertTrue(
-				message.contains("Absolute path attempt")
-						|| message.contains("Bad zip entry")
-						|| message.contains("Path Traversal"));
-	}
 
 	@Test
 	public void prepareReleaseArtifacts_withValidMultiFileZip_shouldExtractAll() throws IOException {

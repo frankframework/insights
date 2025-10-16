@@ -30,8 +30,11 @@ public class ReleaseArtifactService {
 	private static final double COMPRESSION_RATIO_LIMIT = 1000.0;
 	private static final int BUFFER_SIZE = 4096;
 
-	@Value("${release.archive.directory}")
-	private String releaseArchiveDirectory;
+	private final String releaseArchiveDirectory;
+
+	public ReleaseArtifactService(@Value("${release.archive.directory:/release-archive}") String releaseArchiveDirectory) {
+		this.releaseArchiveDirectory = releaseArchiveDirectory;
+	}
 
 	@Transactional
 	public Path prepareReleaseArtifacts(Release release) throws IOException {

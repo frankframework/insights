@@ -38,7 +38,7 @@ public class ReleaseArtifactServiceTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        releaseArtifactService = new ReleaseArtifactService();
+        releaseArtifactService = new ReleaseArtifactService("/release-archive");
 
         mockedFiles = Mockito.mockStatic(Files.class);
         mockedUri = Mockito.mockStatic(URI.class);
