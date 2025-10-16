@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -34,15 +33,7 @@ public class ReleaseArtifactServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() throws Exception {
-        Path archiveDir = tempDir.resolve("release-archive");
-        Files.createDirectories(archiveDir);
-
         releaseArtifactService = new ReleaseArtifactService();
-
-        Field field = ReleaseArtifactService.class.getDeclaredField("archiveDirectory");
-        field.setAccessible(true);
-        field.set(releaseArtifactService, archiveDir.toString());
-
         mockedUri = mockStatic(URI.class);
     }
 
