@@ -1,9 +1,5 @@
 package org.frankframework.insights.common.configuration;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
@@ -17,7 +13,6 @@ import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseService;
 import org.frankframework.insights.vulnerability.VulnerabilityService;
-import org.owasp.dependencycheck.utils.Settings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
@@ -128,42 +123,11 @@ public class SystemDataInitializer implements CommandLineRunner {
 
             log.info("Start fetching vulnerability data");
 
-            cleanUpOwaspLockFile();
             vulnerabilityService.executeVulnerabilityScanForAllReleases();
 
             log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
-        }
-    }
-
-    /**
-     * Cleans up any stale OWASP Dependency-Check lock files on startup to prevent the scanner
-     * from getting stuck.
-     */
-    private void cleanUpOwaspLockFile() {
-        try {
-            Settings settings = new Settings();
-            settings.setString(Settings.KEYS.DATA_DIRECTORY, "/owasp-data");
-            Path dataDirectory = settings.getDataDirectory().toPath();
-
-            if (!Files.isDirectory(dataDirectory)) {
-                return;
-            }
-
-            try (Stream<Path> files = Files.list(dataDirectory)) {
-                files.filter(path -> path.getFileName().toString().endsWith(".lock"))
-                        .forEach(lockFile -> {
-                            try {
-                                Files.delete(lockFile);
-                                log.warn("Removed stale OWASP dependency-check lock file: {}", lockFile);
-                            } catch (IOException e) {
-                                log.error("Failed to delete OWASP lock file: {}", lockFile, e);
-                            }
-                        });
-            }
-        } catch (Exception e) {
-            log.error("Failed to clean up stale OWASP lock files", e);
         }
     }
 }
