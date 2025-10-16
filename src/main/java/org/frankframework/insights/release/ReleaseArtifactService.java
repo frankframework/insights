@@ -14,17 +14,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import lombok.Setter;
+
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Setter
 @Service
 @Slf4j
 public class ReleaseArtifactService {
-
-	private Path releaseArchiveDirectory = Paths.get("/release-archive");
 	private static final String GITHUB_ZIP_URL_FORMAT =
 			"https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
 	private static final int MAX_ENTRIES = 50000;
@@ -32,9 +30,12 @@ public class ReleaseArtifactService {
 	private static final double COMPRESSION_RATIO_LIMIT = 1000.0;
 	private static final int BUFFER_SIZE = 4096;
 
+	@Value("${release.archive.directory}")
+	private String releaseArchiveDirectory;
+
 	@Transactional
 	public Path prepareReleaseArtifacts(Release release) throws IOException {
-		Path releaseDir = releaseArchiveDirectory.resolve(release.getName());
+		Path releaseDir = Paths.get(releaseArchiveDirectory).resolve(release.getName());
 
 		if (releaseDirectoryExists(releaseDir, release)) {
 			return releaseDir;
@@ -131,13 +132,8 @@ public class ReleaseArtifactService {
 	 */
 	private Path validateAndStripPath(Path pathInZip, Path destDir) throws IOException {
 		if (pathInZip.getNameCount() <= 1) {
-			return null; // Ignore the root (/) and GitHub's top-level directory.
+			return null; // Ignore the root and GitHub's top-level directory
 		}
-
-		if (pathInZip.isAbsolute()) {
-			throw new IOException("Bad zip entry: " + pathInZip + " (Absolute path attempt)");
-		}
-
 		Path strippedPath = pathInZip.subpath(1, pathInZip.getNameCount());
 		Path resolvedPath = destDir.resolve(strippedPath.toString()).normalize();
 		if (!resolvedPath.startsWith(destDir)) {
