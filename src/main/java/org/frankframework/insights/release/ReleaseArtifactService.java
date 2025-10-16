@@ -22,9 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class ReleaseArtifactService {
 
+	private static final String RELEASE_ARCHIVE_DIRECTORY = "/release-archive";
     private static final String GITHUB_ZIP_URL_FORMAT =
             "https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
-    private static final String RELEASE_ARCHIVE_DIRECTORY = "/release-archive";
     private static final int MAX_ENTRIES = 50000;
     private static final long MAX_UNCOMPRESSED_SIZE = 1024L * 1024 * 1024 * 4;
     private static final double COMPRESSION_RATIO_LIMIT = 1000.0;

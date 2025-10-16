@@ -10,14 +10,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 
 /**
@@ -28,11 +26,9 @@ public class ReleaseArtifactServiceIntegrationTest {
     private ReleaseArtifactService releaseArtifactService;
     private MockedStatic<URI> mockedUri;
 
-    @TempDir
-    Path tempDir;
-
     @BeforeEach
     public void setUp() throws Exception {
+
         releaseArtifactService = new ReleaseArtifactService();
         mockedUri = mockStatic(URI.class);
     }
