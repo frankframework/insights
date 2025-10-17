@@ -9,10 +9,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -36,15 +34,11 @@ public class ReleaseArtifactServiceTest {
 
     private MockedStatic<Files> mockedFiles;
     private MockedStatic<URI> mockedUri;
-    private static final Path ARCHIVE_DIR = Paths.get("./release-archive");
+    private static final Path ARCHIVE_DIR = Paths.get("/release-archive");
 
     @BeforeEach
     public void setUp() throws Exception {
-        releaseArtifactService = new ReleaseArtifactService();
-
-        Field field = ReleaseArtifactService.class.getDeclaredField("archiveDirectory");
-        field.setAccessible(true);
-        field.set(releaseArtifactService, ARCHIVE_DIR.toString());
+        releaseArtifactService = new ReleaseArtifactService("/release-archive");
 
         mockedFiles = Mockito.mockStatic(Files.class);
         mockedUri = Mockito.mockStatic(URI.class);
@@ -61,14 +55,6 @@ public class ReleaseArtifactServiceTest {
         release.setName(name);
         release.setTagName(tagName);
         return release;
-    }
-
-    private void mockDownload(String expectedUrl, byte[] zipBytes) throws IOException {
-        URL urlMock = mock(URL.class);
-        URI uriMock = mock(URI.class);
-        when(uriMock.toURL()).thenReturn(urlMock);
-        mockedUri.when(() -> URI.create(expectedUrl)).thenReturn(uriMock);
-        when(urlMock.openStream()).thenReturn(new ByteArrayInputStream(zipBytes));
     }
 
     @Test

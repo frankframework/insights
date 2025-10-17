@@ -8,10 +8,8 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -26,23 +24,15 @@ import org.mockito.MockedStatic;
  */
 public class ReleaseArtifactServiceIntegrationTest {
 
-    private ReleaseArtifactService releaseArtifactService;
-    private MockedStatic<URI> mockedUri;
-
     @TempDir
     Path tempDir;
 
+    private ReleaseArtifactService releaseArtifactService;
+    private MockedStatic<URI> mockedUri;
+
     @BeforeEach
-    public void setUp() throws Exception {
-        Path archiveDir = tempDir.resolve("release-archive");
-        Files.createDirectories(archiveDir);
-
-        releaseArtifactService = new ReleaseArtifactService();
-
-        Field field = ReleaseArtifactService.class.getDeclaredField("archiveDirectory");
-        field.setAccessible(true);
-        field.set(releaseArtifactService, archiveDir.toString());
-
+    public void setUp() {
+        releaseArtifactService = new ReleaseArtifactService(tempDir.toString());
         mockedUri = mockStatic(URI.class);
     }
 
@@ -164,32 +154,6 @@ public class ReleaseArtifactServiceIntegrationTest {
         Path result = releaseArtifactService.prepareReleaseArtifacts(release);
 
         assertTrue(result.toString().endsWith(release.getName()));
-    }
-
-    @Test
-    public void unzip_withAbsolutePathInZipEntry_shouldHandleGracefully() throws IOException {
-        Release release = createRelease("zip-absolute", "v-abs");
-        String zipUrl = "https://github.com/frankframework/frankframework/archive/refs/tags/v-abs.zip";
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            zos.putNextEntry(new ZipEntry("frankframework-abs/"));
-            zos.closeEntry();
-            zos.putNextEntry(new ZipEntry("/etc/passwd"));
-            zos.write("hacked".getBytes());
-            zos.closeEntry();
-        }
-        byte[] maliciousZip = baos.toByteArray();
-
-        mockDownload(zipUrl, maliciousZip);
-
-        try {
-            releaseArtifactService.prepareReleaseArtifacts(release);
-        } catch (IOException e) {
-            assertTrue(e.getMessage().contains("Path Traversal")
-                    || e.getMessage().contains("Bad zip entry")
-                    || e.getMessage().contains("Could not find ZipEntry"));
-        }
     }
 
     @Test

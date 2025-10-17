@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class ReleaseArtifactService {
-
     private static final String GITHUB_ZIP_URL_FORMAT =
             "https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
     private static final int MAX_ENTRIES = 50000;
@@ -30,12 +29,16 @@ public class ReleaseArtifactService {
     private static final double COMPRESSION_RATIO_LIMIT = 1000.0;
     private static final int BUFFER_SIZE = 4096;
 
-    @Value("${release.archive.directory}")
-    private String archiveDirectory;
+    private final String releaseArchiveDirectory;
+
+    public ReleaseArtifactService(
+            @Value("${release.archive.directory:/release-archive}") String releaseArchiveDirectory) {
+        this.releaseArchiveDirectory = releaseArchiveDirectory;
+    }
 
     @Transactional
     public Path prepareReleaseArtifacts(Release release) throws IOException {
-        Path releaseDir = Paths.get(archiveDirectory).resolve(release.getName());
+        Path releaseDir = Paths.get(releaseArchiveDirectory).resolve(release.getName());
 
         if (releaseDirectoryExists(releaseDir, release)) {
             return releaseDir;
