@@ -27,7 +27,7 @@ public record IssueDTO(
         GitHubEdgesDTO<GitHubIssueProjectItemDTO> projectItems) {
 
     private static final String PRIORITY_FIELD_NAME = "Priority";
-    private static final String STATE_FIELD_NAME = "State";
+    private static final String STATE_FIELD_NAME = "Status";
     private static final String POINTS_FIELD_NAME = "Points";
 
     public boolean hasLabels() {
@@ -52,7 +52,7 @@ public record IssueDTO(
         return findProjectField(IssueDTO.PRIORITY_FIELD_NAME, GitHubIssueProjectItemDTO.FieldValue::optionId);
     }
 
-    public Optional<String> findStateOptionId() {
+    public Optional<String> findStatusOptionId() {
         return findProjectField(IssueDTO.STATE_FIELD_NAME, GitHubIssueProjectItemDTO.FieldValue::optionId);
     }
 

@@ -14,6 +14,7 @@ import org.frankframework.insights.issueprojects.IssuePriority;
 import org.frankframework.insights.issueprojects.IssuePriorityResponse;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
 import org.frankframework.insights.issueprojects.IssueState;
+import org.frankframework.insights.issueprojects.IssueStateResponse;
 import org.frankframework.insights.issuetype.IssueType;
 import org.frankframework.insights.issuetype.IssueTypeResponse;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -121,7 +122,7 @@ public class IssueService {
         Issue issue = mapper.toEntity(dto, Issue.class);
 
         dto.findPriorityOptionId().map(issuePriorityMap::get).ifPresent(issue::setIssuePriority);
-        dto.findStateOptionId().map(issueStateMap::get).ifPresent(issue::setIssueState);
+        dto.findStatusOptionId().map(issueStateMap::get).ifPresent(issue::setIssueState);
         dto.findPoints().ifPresent(issue::setPoints);
 
         return issue;
@@ -364,6 +365,7 @@ public class IssueService {
         mapMilestoneToResponse(issue, response);
         mapIssueTypeToResponse(issue, response);
         mapIssuePriorityToResponse(issue, response);
+        mapIssueStateToResponse(issue, response);
 
         response.setLabels(labelsMap.getOrDefault(issue.getId(), Set.of()));
         response.setSubIssues(mapSubIssuesToResponses(issue, labelsMap));
@@ -404,6 +406,17 @@ public class IssueService {
     private void mapIssuePriorityToResponse(Issue issue, IssueResponse response) {
         if (issue.getIssuePriority() != null) {
             response.setIssuePriority(mapper.toDTO(issue.getIssuePriority(), IssuePriorityResponse.class));
+        }
+    }
+
+    /**
+     * Maps the issue state of an issue to the response.
+     * @param issue the issue to map
+     * @param response the response to set the issue state on
+     */
+    private void mapIssueStateToResponse(Issue issue, IssueResponse response) {
+        if (issue.getIssueState() != null) {
+            response.setIssueState(mapper.toDTO(issue.getIssueState(), IssueStateResponse.class));
         }
     }
 
