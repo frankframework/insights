@@ -1,5 +1,6 @@
 package org.frankframework.insights.milestone;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,10 +54,10 @@ public class MilestoneService {
      * @return a set of all open milestones
      * @throws MappingException if an error occurs during the mapping process
      */
-    public Set<MilestoneResponse> getAllOpenMilestones() throws MappingException {
-        Set<Milestone> openMilestones = milestoneRepository.findAllByState(GitHubPropertyState.OPEN);
-        log.info("Successfully fetched {} open milestones from database", openMilestones.size());
-        return mapper.toDTO(openMilestones, MilestoneResponse.class);
+    public Set<MilestoneResponse> getAllMilestones() throws MappingException {
+        List<Milestone> milestones = milestoneRepository.findAll();
+        log.info("Successfully fetched {} milestones from database", milestones.size());
+        return mapper.toDTO(new HashSet<>(milestones), MilestoneResponse.class);
     }
 
     /**
