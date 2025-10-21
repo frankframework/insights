@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubPropertyState;
 import org.springframework.stereotype.Service;
 
 /**

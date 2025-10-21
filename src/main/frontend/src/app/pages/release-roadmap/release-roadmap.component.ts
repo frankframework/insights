@@ -19,11 +19,6 @@ interface Version {
   source: string;
 }
 
-interface MilestoneWithVersion {
-  milestone: Milestone;
-  version: Version | null;
-}
-
 export interface IssueStateStyle {
   [key: string]: string;
   'background-color': string;
@@ -33,9 +28,9 @@ export interface IssueStateStyle {
 
 export const ISSUE_STATE_STYLES: Record<string, IssueStateStyle> = {
   Todo: {
-    'background-color': '#fefce8',
-    color: '#a16207',
-    'border-color': '#fde047',
+    'background-color': '#f0fdf4',
+    color: '#166534',
+    'border-color': '#86efac',
   },
   'On hold': {
     'background-color': '#fee2e2',
@@ -48,14 +43,14 @@ export const ISSUE_STATE_STYLES: Record<string, IssueStateStyle> = {
     'border-color': '#93c5fd',
   },
   Review: {
-    'background-color': '#dcfce7',
-    color: '#166534',
-    'border-color': '#86efac',
+    'background-color': '#fefce8',
+    color: '#a16207',
+    'border-color': '#fde047',
   },
   Done: {
-    'background-color': '#e5e7eb',
-    color: '#4b5563',
-    'border-color': '#d1d5db',
+    'background-color': '#f3e8ff',
+    color: '#581c87',
+    'border-color': '#d8b4fe',
   },
 };
 
@@ -90,7 +85,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
   public isLoading = true;
-  public openMilestones: Milestone[] = [];
+  public milestones: Milestone[] = [];
   public milestoneIssues = new Map<string, Issue[]>();
   public timelineStartDate!: Date;
   public timelineEndDate!: Date;
@@ -205,14 +200,14 @@ export class ReleaseRoadmapComponent implements OnInit {
   private loadRoadmapData(): void {
     this.isLoading = true;
     this.milestoneService
-      .getOpenMilestones()
+      .getMilestones()
       .pipe(
         map((apiMilestones) => this.parseMilestones(apiMilestones)),
+        map((parsedMilestones) => parsedMilestones.filter((m) => m.dueOn !== null)),
         switchMap((parsedMilestones) => this.fetchIssuesForMilestones(parsedMilestones)),
-        map(({ milestones }) => this.scheduleMilestones(milestones)),
-        map((finalMilestones) => this.sortMilestones(finalMilestones)),
+        map(({ milestones }) => this.sortMilestones(milestones)),
         map((sortedMilestones) => sortedMilestones.filter((m) => this.hasIssuesInView(m))),
-        tap((finalMilestones) => (this.openMilestones = finalMilestones)),
+        tap((finalMilestones) => (this.milestones = finalMilestones)),
         catchError((error) => {
           this.toastrService.error('Could not load roadmap data.', 'Error');
           console.error(error);
@@ -228,7 +223,7 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   private fetchIssuesForMilestones(milestones: Milestone[]): Observable<{ milestones: Milestone[] }> {
     if (milestones.length === 0) {
-      this.openMilestones = [];
+      this.milestones = [];
       return of({ milestones: [] });
     }
 
@@ -246,110 +241,6 @@ export class ReleaseRoadmapComponent implements OnInit {
         return { milestones };
       }),
     );
-  }
-
-  private scheduleMilestones(milestones: Milestone[]): Milestone[] {
-    const milestonesWithVersions = this.getMilestonesWithParsedVersions(milestones);
-
-    const majors = this.getMajorReleases(milestonesWithVersions);
-    const minors = this.getMinorReleases(milestonesWithVersions);
-
-    const majorQuarterMap = this.planMajorReleaseQuarters(majors);
-    this.assignDueDatesToMajors(majors, majorQuarterMap);
-
-    this.planAndAssignDueDatesToMinors(minors, majorQuarterMap);
-
-    const uniqueMilestones = new Map<string, Milestone>();
-    for (const { milestone, version } of [...majors, ...minors]) {
-      if (version) {
-        uniqueMilestones.set(`${version.major}.${version.minor}.${version.patch}`, milestone);
-      }
-    }
-
-    return [...uniqueMilestones.values()];
-  }
-
-  private getMilestonesWithParsedVersions(milestones: Milestone[]): MilestoneWithVersion[] {
-    return milestones
-      .map((milestone) => ({ milestone, version: this.parseVersion(milestone.title) }))
-      .filter((mv) => mv.version !== null);
-  }
-
-  private getMajorReleases(milestones: MilestoneWithVersion[]): MilestoneWithVersion[] {
-    return milestones
-      .filter((mv) => mv.version!.patch === 0)
-      .sort((a, b) => {
-        if (a.version!.major !== b.version!.major) return a.version!.major - b.version!.major;
-        return a.version!.minor - b.version!.minor;
-      });
-  }
-
-  private getMinorReleases(milestones: MilestoneWithVersion[]): MilestoneWithVersion[] {
-    return milestones.filter((mv) => mv.version!.patch > 0);
-  }
-
-  private planMajorReleaseQuarters(majors: MilestoneWithVersion[]): Map<string, Date> {
-    const majorQuarterMap = new Map<string, Date>();
-    const today = new Date();
-    const currentQuarter = this.getQuarterFromDate(today);
-
-    for (const { milestone, version } of majors) {
-      if (milestone.dueOn) {
-        const quarter = this.getQuarterFromDate(new Date(milestone.dueOn));
-        majorQuarterMap.set(`${version!.major}.${version!.minor}`, quarter);
-      }
-    }
-
-    for (let index = 0; index < majors.length; index++) {
-      const { version } = majors[index];
-      const key = `${version!.major}.${version!.minor}`;
-
-      if (!majorQuarterMap.has(key)) {
-        let referenceQuarter: Date;
-        const previousMajor = majors[index - 1];
-        if (previousMajor) {
-          const previousKey = `${previousMajor.version!.major}.${previousMajor.version!.minor}`;
-          const previousQuarter = majorQuarterMap.get(previousKey)!;
-          referenceQuarter = this.addQuarters(previousQuarter, 1);
-        } else {
-          referenceQuarter = currentQuarter;
-        }
-        majorQuarterMap.set(key, referenceQuarter);
-      }
-    }
-    return majorQuarterMap;
-  }
-
-  private assignDueDatesToMajors(majors: MilestoneWithVersion[], majorQuarterMap: Map<string, Date>): void {
-    for (const { milestone, version } of majors) {
-      const key = `${version!.major}.${version!.minor}`;
-      const quarter = majorQuarterMap.get(key)!;
-      const hadOriginalDueDate = !!milestone.dueOn;
-      milestone.dueOn = this.getQuarterEndDate(quarter);
-      milestone.isEstimated = !hadOriginalDueDate;
-    }
-  }
-
-  private planAndAssignDueDatesToMinors(minors: MilestoneWithVersion[], majorQuarterMap: Map<string, Date>): void {
-    const minorsByMajor = new Map<string, MilestoneWithVersion[]>();
-    for (const mv of minors) {
-      const key = `${mv.version!.major}.${mv.version!.minor}`;
-      if (!minorsByMajor.has(key)) minorsByMajor.set(key, []);
-      minorsByMajor.get(key)!.push(mv);
-    }
-
-    for (const [, minorList] of minorsByMajor) {
-      minorList.sort((a, b) => a.version!.patch - b.version!.patch);
-
-      const majorVersionKey = `${minorList[0].version!.major}.${minorList[0].version!.minor}`;
-      let quarter = majorQuarterMap.get(majorVersionKey) || this.getQuarterFromDate(new Date());
-
-      for (const minor of minorList) {
-        minor.milestone.dueOn = this.getQuarterEndDate(quarter);
-        minor.milestone.isEstimated = true;
-        quarter = this.addQuarters(quarter, 1);
-      }
-    }
   }
 
   private parseVersion(title: string): Version | null {
@@ -407,11 +298,6 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
     return milestones.sort((a, b) => {
-      const dateComparison = this.compareMilestonesByDueDate(a, b);
-      if (dateComparison !== 0) {
-        return dateComparison;
-      }
-
       const versionComparison = this.compareMilestonesByVersion(a, b);
       if (versionComparison !== 0) {
         return versionComparison;
@@ -419,20 +305,6 @@ export class ReleaseRoadmapComponent implements OnInit {
 
       return a.title.localeCompare(b.title);
     });
-  }
-
-  private compareMilestonesByDueDate(a: Milestone, b: Milestone): number {
-    const aDue = a.dueOn ? new Date(a.dueOn).getTime() : -1;
-    const bDue = b.dueOn ? new Date(b.dueOn).getTime() : -1;
-
-    if (aDue === -1 && bDue !== -1) {
-      return 1;
-    }
-    if (bDue === -1 && aDue !== -1) {
-      return -1;
-    }
-
-    return aDue - bDue;
   }
 
   private compareMilestonesByVersion(a: Milestone, b: Milestone): number {
@@ -447,15 +319,10 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private compareMilestoneVersions(aVersion: Version, bVersion: Version): number {
-    const aIsMajor = aVersion.patch === 0;
-    const bIsMajor = bVersion.patch === 0;
-    if (aIsMajor && !bIsMajor) return -1;
-    if (!aIsMajor && bIsMajor) return 1;
-
-    if (aVersion.major !== bVersion.major) return aVersion.major - bVersion.major;
-    if (aVersion.minor !== bVersion.minor) return aVersion.minor - bVersion.minor;
-
-    return aVersion.patch - bVersion.patch;
+    // Sort descending by major, then minor, then patch
+    if (aVersion.major !== bVersion.major) return bVersion.major - aVersion.major;
+    if (aVersion.minor !== bVersion.minor) return bVersion.minor - aVersion.minor;
+    return bVersion.patch - aVersion.patch;
   }
 
   private getQuarterFromDate(date: Date): Date {
@@ -470,11 +337,5 @@ export class ReleaseRoadmapComponent implements OnInit {
     quarterEnd.setDate(0);
     quarterEnd.setHours(23, 59, 59, 999);
     return quarterEnd;
-  }
-
-  private addQuarters(date: Date, quarters: number): Date {
-    const newDate = new Date(date);
-    newDate.setMonth(newDate.getMonth() + 3 * quarters);
-    return newDate;
   }
 }

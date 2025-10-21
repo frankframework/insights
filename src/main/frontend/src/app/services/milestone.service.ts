@@ -20,7 +20,7 @@ export interface Milestone {
 export class MilestoneService {
   private appService = inject(AppService);
 
-  public getOpenMilestones(): Observable<Milestone[]> {
-    return this.appService.get<Milestone[]>(this.appService.createAPIUrl('milestones/open'));
+  public getMilestones(): Observable<Milestone[]> {
+    return this.appService.get<Milestone[]>(this.appService.createAPIUrl('milestones'));
   }
 }

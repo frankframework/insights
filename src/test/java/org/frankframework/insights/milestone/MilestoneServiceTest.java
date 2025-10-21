@@ -9,7 +9,6 @@ import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubPropertyState;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,9 +29,6 @@ public class MilestoneServiceTest {
 
     @InjectMocks
     MilestoneService milestoneService;
-
-    @Mock
-    GitHubRepositoryStatisticsDTO statisticsDTO;
 
     private Milestone milestone1, milestone2;
     private MilestoneDTO milestoneDTO1, milestoneDTO2;
@@ -95,7 +91,7 @@ public class MilestoneServiceTest {
 
     @Test
     public void getAllMilestones_shouldReturnEmptyIfNoneOpen() throws MappingException {
-		when(milestoneRepository.findAll()).thenReturn(Collections.emptyList());
+        when(milestoneRepository.findAll()).thenReturn(Collections.emptyList());
         when(mapper.toDTO(Collections.emptySet(), MilestoneResponse.class)).thenReturn(Collections.emptySet());
 
         Set<MilestoneResponse> result = milestoneService.getAllMilestones();
@@ -105,7 +101,7 @@ public class MilestoneServiceTest {
     @Test
     public void getAllMilestones_shouldThrowMappingException() throws MappingException {
         Set<Milestone> milestones = Set.of(milestone1);
-		when(milestoneRepository.findAll()).thenReturn(milestones.stream().toList());
+        when(milestoneRepository.findAll()).thenReturn(milestones.stream().toList());
         when(mapper.toDTO(anySet(), eq(MilestoneResponse.class)))
                 .thenThrow(new MappingException("failed mapping", null));
 
