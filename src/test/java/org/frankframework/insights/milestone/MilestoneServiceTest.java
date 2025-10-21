@@ -9,7 +9,6 @@ import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.GitHubClient;
 import org.frankframework.insights.github.GitHubClientException;
 import org.frankframework.insights.github.GitHubPropertyState;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,9 +29,6 @@ public class MilestoneServiceTest {
 
     @InjectMocks
     MilestoneService milestoneService;
-
-    @Mock
-    GitHubRepositoryStatisticsDTO statisticsDTO;
 
     private Milestone milestone1, milestone2;
     private MilestoneDTO milestoneDTO1, milestoneDTO2;
@@ -80,36 +76,36 @@ public class MilestoneServiceTest {
     }
 
     @Test
-    public void getAllOpenMilestones_shouldReturnMappedSet() throws MappingException {
-        Set<Milestone> openMilestones = Set.of(milestone1);
+    public void getAllMilestones_shouldReturnMappedSet() throws MappingException {
+        Set<Milestone> milestones = Set.of(milestone1);
         Set<MilestoneResponse> responses = Set.of(
                 new MilestoneResponse("m1", 1, "First", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0));
-        when(milestoneRepository.findAllByState(GitHubPropertyState.OPEN)).thenReturn(openMilestones);
-        when(mapper.toDTO(openMilestones, MilestoneResponse.class)).thenReturn(responses);
+        when(milestoneRepository.findAll()).thenReturn(milestones.stream().toList());
+        when(mapper.toDTO(milestones, MilestoneResponse.class)).thenReturn(responses);
 
-        Set<MilestoneResponse> result = milestoneService.getAllOpenMilestones();
+        Set<MilestoneResponse> result = milestoneService.getAllMilestones();
 
         assertEquals(1, result.size());
         assertEquals("m1", result.iterator().next().id());
     }
 
     @Test
-    public void getAllOpenMilestones_shouldReturnEmptyIfNoneOpen() throws MappingException {
-        when(milestoneRepository.findAllByState(GitHubPropertyState.OPEN)).thenReturn(Collections.emptySet());
+    public void getAllMilestones_shouldReturnEmptyIfNoneOpen() throws MappingException {
+        when(milestoneRepository.findAll()).thenReturn(Collections.emptyList());
         when(mapper.toDTO(Collections.emptySet(), MilestoneResponse.class)).thenReturn(Collections.emptySet());
 
-        Set<MilestoneResponse> result = milestoneService.getAllOpenMilestones();
+        Set<MilestoneResponse> result = milestoneService.getAllMilestones();
         assertTrue(result.isEmpty());
     }
 
     @Test
-    public void getAllOpenMilestones_shouldThrowMappingException() throws MappingException {
-        Set<Milestone> openMilestones = Set.of(milestone1);
-        when(milestoneRepository.findAllByState(GitHubPropertyState.OPEN)).thenReturn(openMilestones);
+    public void getAllMilestones_shouldThrowMappingException() throws MappingException {
+        Set<Milestone> milestones = Set.of(milestone1);
+        when(milestoneRepository.findAll()).thenReturn(milestones.stream().toList());
         when(mapper.toDTO(anySet(), eq(MilestoneResponse.class)))
                 .thenThrow(new MappingException("failed mapping", null));
 
-        assertThrows(MappingException.class, () -> milestoneService.getAllOpenMilestones());
+        assertThrows(MappingException.class, () -> milestoneService.getAllMilestones());
     }
 
     @Test

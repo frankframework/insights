@@ -42,7 +42,9 @@ export class IssueBarComponent implements OnInit {
   }
 
   private getStyleForState(): Record<string, string> {
-    if (this.issue.subIssues && this.issue.subIssues.length > 0) {
+    const isEpic = this.issue.issueType?.name === 'Epic';
+
+    if (isEpic && this.issue.subIssues && this.issue.subIssues.length > 0) {
       return this.getEpicGradientStyle();
     }
 

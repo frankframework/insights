@@ -68,7 +68,7 @@ describe('ReleaseRoadmapComponent', () => {
   let toastrService: jasmine.SpyObj<ToastrService>;
 
   beforeEach(async () => {
-    const milestoneSpy = jasmine.createSpyObj('MilestoneService', ['getOpenMilestones']);
+    const milestoneSpy = jasmine.createSpyObj('MilestoneService', ['getMilestones']);
     const issueSpy = jasmine.createSpyObj('IssueService', ['getIssuesByMilestoneId']);
     const toastrSpy = jasmine.createSpyObj('ToastrService', ['error']);
 
@@ -87,7 +87,7 @@ describe('ReleaseRoadmapComponent', () => {
     issueService = TestBed.inject(IssueService) as jasmine.SpyObj<IssueService>;
     toastrService = TestBed.inject(ToastrService) as jasmine.SpyObj<ToastrService>;
 
-    milestoneService.getOpenMilestones.and.returnValue(of(MOCK_MILESTONES));
+    milestoneService.getMilestones.and.returnValue(of(MOCK_MILESTONES));
     issueService.getIssuesByMilestoneId.and.callFake((id: string) => {
       if (id === 'm1') return of(MOCK_ISSUES_M1);
       if (id === 'm2') return of(MOCK_ISSUES_M2);
@@ -97,7 +97,7 @@ describe('ReleaseRoadmapComponent', () => {
   });
 
   it('should create', () => {
-    milestoneService.getOpenMilestones.and.returnValue(of([]));
+    milestoneService.getMilestones.and.returnValue(of([]));
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
@@ -131,8 +131,8 @@ describe('ReleaseRoadmapComponent', () => {
       tick();
 
       // Milestone m1 is filtered out because its only issue is closed.
-      expect(component.openMilestones.length).toBe(2);
-      const visibleIds = component.openMilestones.map((m) => m.id);
+      expect(component.milestones.length).toBe(2);
+      const visibleIds = component.milestones.map((m) => m.id);
 
       expect(visibleIds).not.toContain('m1');
       expect(visibleIds).toContain('m2'); // Overdue open issue, visible
@@ -144,7 +144,7 @@ describe('ReleaseRoadmapComponent', () => {
       tick();
 
       // The initial state correctly filters out m1 (closed issue), leaving 2 milestones.
-      expect(component.openMilestones.length).toBe(2);
+      expect(component.milestones.length).toBe(2);
 
       component.changePeriod(-3);
       tick();
@@ -152,8 +152,8 @@ describe('ReleaseRoadmapComponent', () => {
       // The error logs show that after changing the period, the component's filtering
       // breaks and it incorrectly displays all 3 milestones. The test is updated
       // to reflect this actual behavior.
-      expect(component.openMilestones.length).toBe(3);
-      const visibleIds = component.openMilestones.map((m) => m.id);
+      expect(component.milestones.length).toBe(3);
+      const visibleIds = component.milestones.map((m) => m.id);
 
       // Assert against the actual, unfiltered result to make the test pass.
       expect(visibleIds).toContain('m1');
@@ -162,13 +162,13 @@ describe('ReleaseRoadmapComponent', () => {
     }));
 
     it('should handle errors during data loading and show a toastr message', fakeAsync(() => {
-      milestoneService.getOpenMilestones.and.returnValue(throwError(() => new Error('API Error')));
+      milestoneService.getMilestones.and.returnValue(throwError(() => new Error('API Error')));
 
       fixture.detectChanges();
       tick();
 
       expect(component.isLoading).toBeFalse();
-      expect(component.openMilestones.length).toBe(0);
+      expect(component.milestones.length).toBe(0);
       expect(toastrService.error).toHaveBeenCalledWith('Could not load roadmap data.', 'Error');
     }));
   });

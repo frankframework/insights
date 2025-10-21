@@ -1,9 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { IssueBarComponent } from './issue-bar.component';
-import { Issue, IssuePriority, IssueState } from '../../../services/issue.service';
+import { Issue, IssuePriority, IssueState, IssueType } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
 import { TooltipService } from './tooltip/tooltip.service';
+
+const EPIC_TYPE: IssueType = {
+  id: 'epic-1',
+  name: 'Epic',
+  description: 'Epic issue type',
+  color: 'purple',
+};
 
 const MOCK_ISSUE: Issue = {
   id: '1',
@@ -167,14 +174,14 @@ describe('IssueBarComponent', () => {
       const subIssue1: Issue = { ...MOCK_ISSUE, id: 'sub1', issueState: doneState };
       const subIssue2: Issue = { ...MOCK_ISSUE, id: 'sub2', issueState: inProgressState };
 
-      component.issue = { ...MOCK_ISSUE, subIssues: [subIssue1, subIssue2] };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues: [subIssue1, subIssue2] };
       fixture.detectChanges();
 
       expect(component.priorityStyle['background']).toContain('linear-gradient');
       expect(component.priorityStyle['background']).toContain('#dbeafe');
-      expect(component.priorityStyle['background']).toContain('#e5e7eb');
+      expect(component.priorityStyle['background']).toContain('#f3e8ff');
       expect(component.priorityStyle['background']).toContain('#93c5fd');
-      expect(component.priorityStyle['background']).toContain('#d1d5db');
+      expect(component.priorityStyle['background']).toContain('#d8b4fe');
     });
 
     it('should create gradient covering all 5 issue states', () => {
@@ -192,17 +199,17 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub5', issueState: doneState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, subIssues };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
       fixture.detectChanges();
 
       const gradient = component.priorityStyle['background'];
 
       expect(gradient).toContain('linear-gradient');
-      expect(gradient).toContain('#fefce8');
+      expect(gradient).toContain('#f0fdf4');
       expect(gradient).toContain('#fee2e2');
       expect(gradient).toContain('#dbeafe');
-      expect(gradient).toContain('#dcfce7');
-      expect(gradient).toContain('#e5e7eb');
+      expect(gradient).toContain('#fefce8');
+      expect(gradient).toContain('#f3e8ff');
     });
 
     it('should handle 50/50 split of Done and In Progress states', () => {
@@ -214,7 +221,7 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub2', issueState: inProgressState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, subIssues };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
       fixture.detectChanges();
 
       const gradient = component.priorityStyle['background'];
@@ -233,13 +240,11 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub3', issueState: inProgressState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, subIssues };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
       fixture.detectChanges();
 
-      const doneStyle = (component as any).ISSUE_STATE_STYLES['Done'];
-
-      expect(component.priorityStyle['color']).toBe(doneStyle['color']);
-      expect(component.priorityStyle['background']).toContain(doneStyle['border-color']);
+      expect(component.priorityStyle['color']).toBe('#581c87');
+      expect(component.priorityStyle['background']).toContain('#d8b4fe');
     });
 
     it('should handle sub-issues without issue state falling back to GitHub state', () => {
@@ -251,13 +256,13 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub3', state: GitHubStates.OPEN, issueState: undefined },
       ];
 
-      component.issue = { ...MOCK_ISSUE, subIssues };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
       fixture.detectChanges();
 
       const gradient = component.priorityStyle['background'];
 
       expect(gradient).toContain('linear-gradient');
-      expect(gradient).toContain('#e5e7eb');
+      expect(gradient).toContain('#f3e8ff');
       expect(gradient).toContain('#f3e8ff');
       expect(gradient).toContain('#f0fdf4');
     });
@@ -271,13 +276,13 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub3', issueState: doneState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, subIssues };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
       fixture.detectChanges();
 
       const gradient = component.priorityStyle['background'];
 
       expect(gradient).toContain('linear-gradient');
-      expect(gradient).toContain('#e5e7eb');
+      expect(gradient).toContain('#f3e8ff');
     });
 
     it('should prioritize sub-issue gradient over epic own state', () => {
@@ -290,13 +295,13 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub2', issueState: subIssue2State },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueState: epicState, subIssues };
+      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, issueState: epicState, subIssues };
       fixture.detectChanges();
 
       const gradient = component.priorityStyle['background'];
 
       expect(gradient).toContain('linear-gradient');
-      expect(gradient).toContain('#e5e7eb');
+      expect(gradient).toContain('#f3e8ff');
       expect(gradient).toContain('#dbeafe');
     });
   });

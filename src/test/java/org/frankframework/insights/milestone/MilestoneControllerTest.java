@@ -44,45 +44,45 @@ public class MilestoneControllerTest {
     }
 
     @Test
-    public void getAllOpenMilestones_returnsMilestones() throws Exception {
+    public void getAllMilestones_returnsMilestones() throws Exception {
         MilestoneResponse m1 =
                 new MilestoneResponse("id1", 1, "v1.0", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
         MilestoneResponse m2 =
                 new MilestoneResponse("id2", 2, "v2.0", "https//example.com", GitHubPropertyState.OPEN, null, 0, 0);
         Set<MilestoneResponse> milestones = Set.of(m1, m2);
 
-        when(milestoneService.getAllOpenMilestones()).thenReturn(milestones);
+        when(milestoneService.getAllMilestones()).thenReturn(milestones);
 
-        mockMvc.perform(get("/api/milestones/open"))
+        mockMvc.perform(get("/api/milestones"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(2)));
     }
 
     @Test
-    public void getAllOpenMilestones_returnsEmptySet() throws Exception {
-        when(milestoneService.getAllOpenMilestones()).thenReturn(Collections.emptySet());
+    public void getAllMilestones_returnsEmptySet() throws Exception {
+        when(milestoneService.getAllMilestones()).thenReturn(Collections.emptySet());
 
-        mockMvc.perform(get("/api/milestones/open"))
+        mockMvc.perform(get("/api/milestones"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
-    public void getAllOpenMilestones_serviceReturnsNull_treatedAsEmptySet() throws Exception {
-        when(milestoneService.getAllOpenMilestones()).thenReturn(null);
+    public void getAllMilestones_serviceReturnsNull_treatedAsEmptySet() throws Exception {
+        when(milestoneService.getAllMilestones()).thenReturn(null);
 
-        mockMvc.perform(get("/api/milestones/open"))
+        mockMvc.perform(get("/api/milestones"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
     @Test
-    public void getAllOpenMilestones_serviceThrowsMappingException_returns400() throws Exception {
-        when(milestoneService.getAllOpenMilestones()).thenThrow(new MappingException("fail", null));
+    public void getAllMilestones_serviceThrowsMappingException_returns400() throws Exception {
+        when(milestoneService.getAllMilestones()).thenThrow(new MappingException("fail", null));
 
-        mockMvc.perform(get("/api/milestones/open")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/milestones")).andExpect(status().isBadRequest());
     }
 }
