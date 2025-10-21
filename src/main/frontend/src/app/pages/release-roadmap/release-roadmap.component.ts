@@ -10,6 +10,7 @@ import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
 import { GitHubStates } from '../../app.service';
 import { RoadmapFutureOffCanvasComponent } from './roadmap-future-off-canvas/roadmap-future-off-canvas';
+import { RoadmapLegend } from './roadmap-legend/roadmap-legend.component';
 
 interface Version {
   major: number;
@@ -23,6 +24,53 @@ interface MilestoneWithVersion {
   version: Version | null;
 }
 
+export interface IssueStateStyle {
+  [key: string]: string;
+  'background-color': string;
+  color: string;
+  'border-color': string;
+}
+
+export const ISSUE_STATE_STYLES: Record<string, IssueStateStyle> = {
+  Todo: {
+    'background-color': '#fefce8',
+    color: '#a16207',
+    'border-color': '#fde047',
+  },
+  'On hold': {
+    'background-color': '#fee2e2',
+    color: '#991b1b',
+    'border-color': '#fca5a5',
+  },
+  'In Progress': {
+    'background-color': '#dbeafe',
+    color: '#1e3a8a',
+    'border-color': '#93c5fd',
+  },
+  Review: {
+    'background-color': '#dcfce7',
+    color: '#166534',
+    'border-color': '#86efac',
+  },
+  Done: {
+    'background-color': '#e5e7eb',
+    color: '#4b5563',
+    'border-color': '#d1d5db',
+  },
+};
+
+export const CLOSED_STYLE: IssueStateStyle = {
+  'background-color': '#f3e8ff',
+  color: '#581c87',
+  'border-color': '#d8b4fe',
+};
+
+export const OPEN_STYLE: IssueStateStyle = {
+  'background-color': '#f0fdf4',
+  color: '#166534',
+  'border-color': '#86efac',
+};
+
 @Component({
   selector: 'app-release-roadmap',
   standalone: true,
@@ -33,6 +81,7 @@ interface MilestoneWithVersion {
     MilestoneRowComponent,
     LoaderComponent,
     RoadmapFutureOffCanvasComponent,
+    RoadmapLegend,
   ],
   templateUrl: './release-roadmap.component.html',
   styleUrls: ['./release-roadmap.component.scss'],

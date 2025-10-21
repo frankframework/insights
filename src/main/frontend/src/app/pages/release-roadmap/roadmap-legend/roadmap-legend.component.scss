@@ -1,0 +1,77 @@
+.roadmap-legend {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    justify-content: stretch;
+  }
+
+  .legend-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    width: auto;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+  }
+
+  .legend-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+    white-space: nowrap;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      margin-inline: 2.5rem;
+    }
+  }
+
+  .legend-columns {
+    display: flex;
+    gap: 2rem;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .legend-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-color-box {
+    width: 2rem;
+    height: 1.5rem;
+    border: 1px solid;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .legend-label {
+    font-size: 0.875rem;
+    color: #4b5563;
+    white-space: nowrap;
+  }
+}

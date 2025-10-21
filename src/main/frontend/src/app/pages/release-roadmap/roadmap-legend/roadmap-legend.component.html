@@ -1,0 +1,33 @@
+<div class="roadmap-legend">
+  <div class="legend-content">
+    <h3 class="legend-title">Legend</h3>
+    <div class="legend-columns">
+      <div class="legend-column">
+        @for (item of issueStateItems; track item.label) {
+          <div class="legend-item">
+            <div
+              class="legend-color-box"
+              [style.background-color]="item.style['background-color']"
+              [style.color]="item.style.color"
+              [style.border-color]="item.style['border-color']"
+            ></div>
+            <span class="legend-label">{{ item.label }}</span>
+          </div>
+        }
+      </div>
+      <div class="legend-column">
+        @for (item of githubStateItems; track item.label) {
+          <div class="legend-item">
+            <div
+              class="legend-color-box"
+              [style.background-color]="item.style['background-color']"
+              [style.color]="item.style.color"
+              [style.border-color]="item.style['border-color']"
+            ></div>
+            <span class="legend-label">{{ item.label }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

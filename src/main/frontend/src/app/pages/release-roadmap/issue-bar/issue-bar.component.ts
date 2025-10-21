@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
 import { TooltipService } from './tooltip/tooltip.service';
+import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE } from '../release-roadmap.component';
 
 @Component({
   selector: 'app-issue-bar',
@@ -21,46 +22,9 @@ export class IssueBarComponent implements OnInit {
   public isClosed = false;
 
   private tooltipService = inject(TooltipService);
-
-  private readonly CLOSED_STYLE: Record<string, string> = {
-    'background-color': '#f3e8ff',
-    color: '#581c87',
-    'border-color': '#d8b4fe',
-  };
-
-  private readonly OPEN_STYLE: Record<string, string> = {
-    'background-color': '#f0fdf4',
-    color: '#166534',
-    'border-color': '#86efac',
-  };
-
-  private readonly ISSUE_STATE_STYLES: Record<string, Record<string, string>> = {
-    Todo: {
-      'background-color': '#fefce8',
-      color: '#a16207',
-      'border-color': '#fde047',
-    },
-    'On hold': {
-      'background-color': '#fee2e2',
-      color: '#991b1b',
-      'border-color': '#fca5a5',
-    },
-    'In Progress': {
-      'background-color': '#dbeafe',
-      color: '#1e3a8a',
-      'border-color': '#93c5fd',
-    },
-    Review: {
-      'background-color': '#dcfce7',
-      color: '#166534',
-      'border-color': '#86efac',
-    },
-    Done: {
-      'background-color': '#e5e7eb',
-      color: '#4b5563',
-      'border-color': '#d1d5db',
-    },
-  };
+  private readonly CLOSED_STYLE = CLOSED_STYLE;
+  private readonly OPEN_STYLE = OPEN_STYLE;
+  private readonly ISSUE_STATE_STYLES = ISSUE_STATE_STYLES;
 
   ngOnInit(): void {
     this.isClosed = this.issue.state === GitHubStates.CLOSED;
