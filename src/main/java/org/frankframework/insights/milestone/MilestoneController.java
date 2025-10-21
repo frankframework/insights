@@ -25,9 +25,9 @@ public class MilestoneController {
      * @return ResponseEntity containing a set of MilestoneResponse objects
      * @throws MappingException if an error occurs during the mapping process
      */
-    @GetMapping("/open")
-    public ResponseEntity<Set<MilestoneResponse>> getAllOpenMilestones() throws MappingException {
-        Set<MilestoneResponse> openMilestones = milestoneService.getAllOpenMilestones();
+    @GetMapping()
+    public ResponseEntity<Set<MilestoneResponse>> getAllMilestones() throws MappingException {
+        Set<MilestoneResponse> openMilestones = milestoneService.getAllMilestones();
         if (openMilestones == null) openMilestones = Collections.emptySet();
         return ResponseEntity.status(HttpStatus.OK).body(openMilestones);
     }

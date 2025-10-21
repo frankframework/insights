@@ -4,7 +4,7 @@
   justify-content: flex-end;
   width: 100%;
 
-  @media (max-width: 768px) {
+  @media (max-width: 442px) {
     justify-content: stretch;
   }
 
@@ -19,7 +19,7 @@
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     width: auto;
 
-    @media (max-width: 768px) {
+    @media (max-width: 442px) {
       width: 100%;
       align-items: flex-start;
       flex-wrap: wrap;
@@ -30,22 +30,12 @@
     font-size: 1rem;
     font-weight: 600;
     color: #374151;
-    margin: 0;
     white-space: nowrap;
+    margin-block: 0 1rem;
+    margin-inline: 0 0;
 
-    @media (max-width: 768px) {
+    @media (max-width: 442px) {
       width: 100%;
-      margin-inline: 2.5rem;
-    }
-  }
-
-  .legend-columns {
-    display: flex;
-    gap: 2rem;
-
-    @media (max-width: 768px) {
-      width: 100%;
-      justify-content: center;
     }
   }
 
@@ -58,7 +48,7 @@
   .legend-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 
   .legend-color-box {

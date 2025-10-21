@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, IssueStateStyle } from '../release-roadmap.component';
+import { ISSUE_STATE_STYLES, IssueStateStyle } from '../release-roadmap.component';
 
 interface LegendItem {
   label: string;
@@ -15,7 +15,6 @@ interface LegendItem {
 })
 export class RoadmapLegend {
   public issueStateItems: LegendItem[] = [];
-  public githubStateItems: LegendItem[] = [];
 
   constructor() {
     this.initializeLegendItems();
@@ -28,16 +27,5 @@ export class RoadmapLegend {
         style: style,
       });
     }
-
-    this.githubStateItems.push(
-      {
-        label: 'Merged',
-        style: CLOSED_STYLE,
-      },
-      {
-        label: 'Open',
-        style: OPEN_STYLE,
-      },
-    );
   }
 }
