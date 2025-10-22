@@ -12,5 +12,4 @@ export class RoadmapToolbarComponent {
   @Input() public periodLabel = '';
   @Output() public readonly changePeriod = new EventEmitter<number>();
   @Output() public readonly resetPeriod = new EventEmitter<void>();
-  @Output() public readonly openFutureDetails = new EventEmitter<void>();
 }

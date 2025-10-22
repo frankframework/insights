@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -9,7 +9,6 @@ import { LoaderComponent } from '../../components/loader/loader.component';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Milestone, MilestoneService } from '../../services/milestone.service';
 import { GitHubStates } from '../../app.service';
-import { RoadmapFutureOffCanvasComponent } from './roadmap-future-off-canvas/roadmap-future-off-canvas';
 import { RoadmapLegend } from './roadmap-legend/roadmap-legend.component';
 
 interface Version {
@@ -75,7 +74,6 @@ export const OPEN_STYLE: IssueStateStyle = {
     TimelineHeaderComponent,
     MilestoneRowComponent,
     LoaderComponent,
-    RoadmapFutureOffCanvasComponent,
     RoadmapLegend,
   ],
   templateUrl: './release-roadmap.component.html',
@@ -87,6 +85,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   public isLoading = true;
   public milestones: Milestone[] = [];
   public milestoneIssues = new Map<string, Issue[]>();
+  public unplannedEpics: Issue[] = [];
   public timelineStartDate!: Date;
   public timelineEndDate!: Date;
   public months: Date[] = [];
@@ -94,7 +93,6 @@ export class ReleaseRoadmapComponent implements OnInit {
   public totalDays = 0;
   public displayDate!: Date;
   public currentPeriodLabel = '';
-  public isOffCanvasVisible = false;
 
   protected todayOffsetPercentage = 0;
 
@@ -122,16 +120,6 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   public getIssuesForMilestone(milestoneId: string): Issue[] {
     return this.milestoneIssues.get(milestoneId) || [];
-  }
-
-  public openOffCanvas(): void {
-    this.isOffCanvasVisible = true;
-    this.cdr.markForCheck();
-  }
-
-  public closeOffCanvas(): void {
-    this.isOffCanvasVisible = false;
-    this.cdr.markForCheck();
   }
 
   private generateTimelineFromPeriod(): void {
@@ -199,15 +187,27 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   private loadRoadmapData(): void {
     this.isLoading = true;
-    this.milestoneService
-      .getMilestones()
+    forkJoin({
+      milestones: this.milestoneService.getMilestones(),
+      unplannedEpics: this.issueService.getFutureEpicIssues(),
+    })
       .pipe(
-        map((apiMilestones) => this.parseMilestones(apiMilestones)),
-        map((parsedMilestones) => parsedMilestones.filter((m) => m.dueOn !== null)),
-        switchMap((parsedMilestones) => this.fetchIssuesForMilestones(parsedMilestones)),
-        map(({ milestones }) => this.sortMilestones(milestones)),
-        map((sortedMilestones) => sortedMilestones.filter((m) => this.hasIssuesInView(m))),
-        tap((finalMilestones) => (this.milestones = finalMilestones)),
+        map(({ milestones, unplannedEpics }) => ({
+          milestones: this.parseMilestones(milestones).filter((m) => m.dueOn !== null),
+          unplannedEpics: unplannedEpics.sort((a, b) => a.number - b.number),
+        })),
+        switchMap(({ milestones, unplannedEpics }) =>
+          this.fetchIssuesForMilestones(milestones).pipe(map((result) => ({ ...result, unplannedEpics }))),
+        ),
+        map(({ milestones, unplannedEpics }) => ({
+          milestones: this.sortMilestones(milestones).filter((m) => this.hasIssuesInView(m)),
+          unplannedEpics,
+        })),
+        tap(({ milestones, unplannedEpics }) => {
+          this.milestones = milestones;
+          this.unplannedEpics = unplannedEpics;
+          this.addUnplannedEpicsMilestone();
+        }),
         catchError((error) => {
           this.toastrService.error('Could not load roadmap data.', 'Error');
           console.error(error);
@@ -241,6 +241,32 @@ export class ReleaseRoadmapComponent implements OnInit {
         return { milestones };
       }),
     );
+  }
+
+  private addUnplannedEpicsMilestone(): void {
+    if (this.unplannedEpics.length === 0) return;
+
+    const nextQuarterStart = this.getNextQuarterStart();
+    const unplannedMilestone: Milestone = {
+      id: 'unplanned-epics',
+      number: 0,
+      title: 'Unplanned Epics',
+      url: '',
+      state: GitHubStates.OPEN,
+      dueOn: nextQuarterStart,
+      openIssueCount: this.unplannedEpics.length,
+      closedIssueCount: 0,
+      isEstimated: false,
+    };
+
+    this.milestoneIssues.set('unplanned-epics', this.unplannedEpics);
+    this.milestones.push(unplannedMilestone);
+  }
+
+  private getNextQuarterStart(): Date {
+    const today = new Date();
+    const currentQuarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
+    return new Date(today.getFullYear(), currentQuarterStartMonth + 3, 1);
   }
 
   private parseVersion(title: string): Version | null {

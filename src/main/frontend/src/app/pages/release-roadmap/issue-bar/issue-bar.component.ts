@@ -15,6 +15,7 @@ import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE } from '../release-roadmap
 export class IssueBarComponent implements OnInit {
   @Input({ required: true }) issue!: Issue;
   @Input() issueStyle: Record<string, string> = {};
+  @Input() isUnplannedEpic = false;
 
   @ViewChild('issueLink') issueLinkRef!: ElementRef<HTMLAnchorElement>;
 

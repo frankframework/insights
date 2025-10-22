@@ -8,6 +8,10 @@
   (mouseleave)="onMouseLeave()"
 >
   <div class="inner" [ngStyle]="priorityStyle">
-    <span class="number">{{ issue.number }}</span>
+    @if (isUnplannedEpic) {
+      <span class="title">{{ issue.title }}</span>
+    } @else {
+      <span class="number">{{ issue.number }}</span>
+    }
   </div>
 </a>

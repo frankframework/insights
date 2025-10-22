@@ -69,6 +69,11 @@ export class MilestoneRowComponent implements OnChanges {
       return;
     }
 
+    if (this.milestone.id === 'unplanned-epics') {
+      this.layoutUnplannedEpics();
+      return;
+    }
+
     this.positionedIssues = [];
     let overallMaxTrackCount = 0;
 
@@ -282,5 +287,29 @@ export class MilestoneRowComponent implements OnChanges {
     }
     const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
     this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
+  }
+
+  private layoutUnplannedEpics(): void {
+    this.positionedIssues = [];
+    this.trackCount = 1;
+
+    if (!this.milestone.dueOn) return;
+
+    const startOffset = 6 * 60 * 60 * 1000;
+    let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
+    const trackIndex = 0;
+    const EPIC_POINTS = 30;
+    const timelineEndTime = this.timelineEndDate.getTime();
+
+    for (const issue of this.issues) {
+      const durationMs = EPIC_POINTS * 24 * 60 * 60 * 1000;
+
+      if (currentTime >= timelineEndTime) {
+        break;
+      }
+
+      this.positionedIssues.push(this.createPositionedIssue(issue, currentTime, durationMs, trackIndex));
+      currentTime += durationMs + this.GAP_MS;
+    }
   }
 }

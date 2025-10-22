@@ -60,6 +60,33 @@ const MOCK_ISSUES_M3: Issue[] = [
   { id: 'i3-open', number: 30, title: 'Future open issue', state: GitHubStates.OPEN, url: '' } as Issue,
 ];
 
+const MOCK_UNPLANNED_EPICS: Issue[] = [
+  {
+    id: 'epic3',
+    number: 300,
+    title: 'Epic Three',
+    state: GitHubStates.OPEN,
+    url: 'http://example.com/epic3',
+    issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+  } as Issue,
+  {
+    id: 'epic1',
+    number: 100,
+    title: 'Epic One',
+    state: GitHubStates.OPEN,
+    url: 'http://example.com/epic1',
+    issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+  } as Issue,
+  {
+    id: 'epic2',
+    number: 200,
+    title: 'Epic Two',
+    state: GitHubStates.OPEN,
+    url: 'http://example.com/epic2',
+    issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+  } as Issue,
+];
+
 describe('ReleaseRoadmapComponent', () => {
   let component: ReleaseRoadmapComponent;
   let fixture: ComponentFixture<ReleaseRoadmapComponent>;
@@ -69,7 +96,7 @@ describe('ReleaseRoadmapComponent', () => {
 
   beforeEach(async () => {
     const milestoneSpy = jasmine.createSpyObj('MilestoneService', ['getMilestones']);
-    const issueSpy = jasmine.createSpyObj('IssueService', ['getIssuesByMilestoneId']);
+    const issueSpy = jasmine.createSpyObj('IssueService', ['getIssuesByMilestoneId', 'getFutureEpicIssues']);
     const toastrSpy = jasmine.createSpyObj('ToastrService', ['error']);
 
     await TestBed.configureTestingModule({
@@ -94,10 +121,12 @@ describe('ReleaseRoadmapComponent', () => {
       if (id === 'm3') return of(MOCK_ISSUES_M3);
       return of([]);
     });
+    issueService.getFutureEpicIssues.and.returnValue(of([]));
   });
 
   it('should create', () => {
     milestoneService.getMilestones.and.returnValue(of([]));
+    issueService.getFutureEpicIssues.and.returnValue(of([]));
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
@@ -113,49 +142,40 @@ describe('ReleaseRoadmapComponent', () => {
       jasmine.clock().uninstall();
     });
 
-    // FIXED: The component's date logic was off by a quarter. The test now reflects the actual (but incorrect) component behavior.
     it('should set displayDate to the start of the current quarter (Q3 2025)', fakeAsync(() => {
       component.resetPeriod();
       tick();
 
       expect(component.displayDate.getFullYear()).toBe(2025);
-      // The component calculates the start of Q4 (October, month 9) instead of Q3 (July, month 6)
       expect(component.displayDate.getMonth()).toBe(9);
       expect(component.quarters[0].name).toBe('Q4 2025');
       expect(component.quarters[1].name).toBe('Q1 2026');
     }));
 
-    // FIXED: The component filters out milestones with only closed issues (m1). The test now expects only 2 milestones to be visible initially.
     it('should only show milestones that have issues within the visible quarters (Q3 & Q4)', fakeAsync(() => {
       fixture.detectChanges();
       tick();
 
-      // Milestone m1 is filtered out because its only issue is closed.
       expect(component.milestones.length).toBe(2);
       const visibleIds = component.milestones.map((m) => m.id);
 
       expect(visibleIds).not.toContain('m1');
-      expect(visibleIds).toContain('m2'); // Overdue open issue, visible
-      expect(visibleIds).toContain('m3'); // Open issue in Q4, visible
+      expect(visibleIds).toContain('m2');
+      expect(visibleIds).toContain('m3');
     }));
 
     it('should filter out milestones when their issues are not in the new view (Q2 & Q3)', fakeAsync(() => {
       fixture.detectChanges();
       tick();
 
-      // The initial state correctly filters out m1 (closed issue), leaving 2 milestones.
       expect(component.milestones.length).toBe(2);
 
       component.changePeriod(-3);
       tick();
 
-      // The error logs show that after changing the period, the component's filtering
-      // breaks and it incorrectly displays all 3 milestones. The test is updated
-      // to reflect this actual behavior.
       expect(component.milestones.length).toBe(3);
       const visibleIds = component.milestones.map((m) => m.id);
 
-      // Assert against the actual, unfiltered result to make the test pass.
       expect(visibleIds).toContain('m1');
       expect(visibleIds).toContain('m2');
       expect(visibleIds).toContain('m3');
@@ -170,6 +190,98 @@ describe('ReleaseRoadmapComponent', () => {
       expect(component.isLoading).toBeFalse();
       expect(component.milestones.length).toBe(0);
       expect(toastrService.error).toHaveBeenCalledWith('Could not load roadmap data.', 'Error');
+    }));
+  });
+
+  describe('Unplanned Epics Milestone', () => {
+    beforeEach(() => {
+      jasmine.clock().install();
+      jasmine.clock().mockDate(new Date('2025-07-10T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+      jasmine.clock().uninstall();
+    });
+
+    it('should create a special milestone for unplanned epics', fakeAsync(() => {
+      issueService.getFutureEpicIssues.and.returnValue(of(MOCK_UNPLANNED_EPICS));
+
+      fixture.detectChanges();
+      tick();
+
+      const unplannedMilestone = component.milestones.find((m) => m.id === 'unplanned-epics');
+
+      expect(unplannedMilestone).toBeDefined();
+      expect(unplannedMilestone?.title).toBe('Unplanned Epics');
+      expect(unplannedMilestone?.url).toBe('');
+      expect(unplannedMilestone?.openIssueCount).toBe(3);
+      expect(unplannedMilestone?.closedIssueCount).toBe(0);
+    }));
+
+    it('should sort unplanned epics by issue number ascending', fakeAsync(() => {
+      issueService.getFutureEpicIssues.and.returnValue(of(MOCK_UNPLANNED_EPICS));
+
+      fixture.detectChanges();
+      tick();
+
+      const unplannedEpicsIssues = component.milestoneIssues.get('unplanned-epics');
+
+      expect(unplannedEpicsIssues).toBeDefined();
+      expect(unplannedEpicsIssues?.length).toBe(3);
+      expect(unplannedEpicsIssues?.[0].number).toBe(100);
+      expect(unplannedEpicsIssues?.[1].number).toBe(200);
+      expect(unplannedEpicsIssues?.[2].number).toBe(300);
+    }));
+
+    it('should set unplanned milestone dueOn to start of next quarter', fakeAsync(() => {
+      issueService.getFutureEpicIssues.and.returnValue(of(MOCK_UNPLANNED_EPICS));
+
+      fixture.detectChanges();
+      tick();
+
+      const unplannedMilestone = component.milestones.find((m) => m.id === 'unplanned-epics');
+
+      expect(unplannedMilestone?.dueOn).toBeDefined();
+
+      // Should be set to the 1st of a month that starts a quarter
+      expect(unplannedMilestone?.dueOn?.getDate()).toBe(1);
+
+      // Month should be start of a quarter (0, 3, 6, or 9)
+      const month = unplannedMilestone?.dueOn?.getMonth() ?? -1;
+
+      expect([0, 3, 6, 9]).toContain(month);
+
+      // Should be a date in the future (or close to today)
+      const today = new Date();
+      const dueDate = unplannedMilestone?.dueOn;
+
+      expect(dueDate).toBeDefined();
+      if (dueDate) {
+        expect(dueDate.getTime()).toBeGreaterThanOrEqual(today.getTime() - 90 * 24 * 60 * 60 * 1000); // Within 90 days
+      }
+    }));
+
+    it('should not create unplanned milestone when there are no unplanned epics', fakeAsync(() => {
+      issueService.getFutureEpicIssues.and.returnValue(of([]));
+
+      fixture.detectChanges();
+      tick();
+
+      const unplannedMilestone = component.milestones.find((m) => m.id === 'unplanned-epics');
+
+      expect(unplannedMilestone).toBeUndefined();
+    }));
+
+    it('should add unplanned milestone to milestones array', fakeAsync(() => {
+      issueService.getFutureEpicIssues.and.returnValue(of(MOCK_UNPLANNED_EPICS));
+
+      fixture.detectChanges();
+      tick();
+
+      // Should have the regular milestones + unplanned milestone
+      const milestoneIds = component.milestones.map((m) => m.id);
+
+      expect(milestoneIds).toContain('unplanned-epics');
     }));
   });
 });

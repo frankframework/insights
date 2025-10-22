@@ -178,4 +178,108 @@ describe('MilestoneRowComponent', () => {
       expect(component.trackCount).toBeGreaterThan(1);
     });
   });
+
+  describe('Unplanned Epics Layout', () => {
+    const UNPLANNED_MILESTONE: Milestone = {
+      id: 'unplanned-epics',
+      number: 0,
+      title: 'Unplanned Epics',
+      url: '',
+      state: GitHubStates.OPEN,
+      dueOn: new Date('2025-10-01T00:00:00.000Z'),
+      openIssueCount: 3,
+      closedIssueCount: 0,
+      isEstimated: false,
+    };
+
+    const MOCK_EPIC_ISSUES: Issue[] = [
+      {
+        id: 'epic1',
+        number: 100,
+        title: 'Epic One',
+        state: GitHubStates.OPEN,
+        url: 'http://example.com/epic1',
+        issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+      } as Issue,
+      {
+        id: 'epic2',
+        number: 200,
+        title: 'Epic Two',
+        state: GitHubStates.OPEN,
+        url: 'http://example.com/epic2',
+        issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+      } as Issue,
+      {
+        id: 'epic3',
+        number: 300,
+        title: 'Epic Three',
+        state: GitHubStates.OPEN,
+        url: 'http://example.com/epic3',
+        issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+      } as Issue,
+    ];
+
+    it('should use single lane layout for unplanned epics', () => {
+      initializeComponent(UNPLANNED_MILESTONE, MOCK_EPIC_ISSUES);
+
+      expect(component.trackCount).toBe(1);
+    });
+
+    it('should layout all epics in a row with 30 day width', () => {
+      initializeComponent(UNPLANNED_MILESTONE, MOCK_EPIC_ISSUES);
+
+      expect(component.positionedIssues.length).toBe(3);
+      expect(component.positionedIssues[0].track).toBe(0);
+      expect(component.positionedIssues[1].track).toBe(0);
+      expect(component.positionedIssues[2].track).toBe(0);
+    });
+
+    it('should position epics sequentially with gaps', () => {
+      initializeComponent(UNPLANNED_MILESTONE, MOCK_EPIC_ISSUES);
+
+      const epic1 = component.positionedIssues[0];
+      const epic2 = component.positionedIssues[1];
+      const epic3 = component.positionedIssues[2];
+
+      expect(epic1.issue.id).toBe('epic1');
+      expect(epic2.issue.id).toBe('epic2');
+      expect(epic3.issue.id).toBe('epic3');
+
+      expect(epic1.style['left']).toBeDefined();
+      expect(epic1.style['width']).toBeDefined();
+      expect(epic2.style['left']).toBeDefined();
+      expect(epic2.style['width']).toBeDefined();
+    });
+
+    it('should stop adding epics when timeline end is reached', () => {
+      const manyEpics = Array.from({ length: 20 }, (_, index) => ({
+        id: `epic-${index}`,
+        number: (index + 1) * 100,
+        title: `Epic ${index + 1}`,
+        state: GitHubStates.OPEN,
+        url: `http://example.com/epic${index}`,
+        issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+      })) as Issue[];
+
+      initializeComponent(UNPLANNED_MILESTONE, manyEpics);
+
+      expect(component.positionedIssues.length).toBeLessThan(20);
+      expect(component.positionedIssues.length).toBeGreaterThan(0);
+    });
+
+    it('should maintain track count of 1 even with many epics', () => {
+      const manyEpics = Array.from({ length: 10 }, (_, index) => ({
+        id: `epic-${index}`,
+        number: (index + 1) * 100,
+        title: `Epic ${index + 1}`,
+        state: GitHubStates.OPEN,
+        url: `http://example.com/epic${index}`,
+        issueType: { id: 'epic-type', name: 'Epic', description: 'Epic type', color: 'purple' },
+      })) as Issue[];
+
+      initializeComponent(UNPLANNED_MILESTONE, manyEpics);
+
+      expect(component.trackCount).toBe(1);
+    });
+  });
 });

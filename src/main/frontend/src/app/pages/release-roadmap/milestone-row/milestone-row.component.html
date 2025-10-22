@@ -1,6 +1,10 @@
 <div class="milestone-row" [class.milestone-row--last]="isLast">
   <div class="title-cell">
-    <a target="_blank" class="title-link" [href]="milestone.url">{{ milestone.title }}</a>
+    @if (milestone.url) {
+      <a target="_blank" class="title-link" [href]="milestone.url">{{ milestone.title }}</a>
+    } @else {
+      <span class="title-link">{{ milestone.title }}</span>
+    }
     @if (milestone.dueOn) {
       <p class="detail">
         Due: {{ milestone.dueOn | date: 'dd-MM-yyyy' }}
@@ -40,7 +44,11 @@
       @for (trackNumber of getTracks(); track trackNumber) {
         <div class="issue-track">
           @for (positionedIssue of getIssuesForTrack(trackNumber); track positionedIssue.issue.id) {
-            <app-issue-bar [issue]="positionedIssue.issue" [issueStyle]="positionedIssue.style" />
+            <app-issue-bar
+              [issue]="positionedIssue.issue"
+              [issueStyle]="positionedIssue.style"
+              [isUnplannedEpic]="milestone.id === 'unplanned-epics'"
+            />
           }
         </div>
       }

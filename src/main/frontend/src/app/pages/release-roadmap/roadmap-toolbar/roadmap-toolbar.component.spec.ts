@@ -72,13 +72,5 @@ describe('RoadmapToolbarComponent', () => {
       expect(component.resetPeriod.emit).toHaveBeenCalledWith();
       expect(component.resetPeriod.emit).toHaveBeenCalledTimes(1);
     });
-
-    it('should emit openFutureDetails when the future plans button is clicked', () => {
-      spyOn(component.openFutureDetails, 'emit');
-      const futureButton = fixture.debugElement.query(By.css('.future-plans-button'));
-      futureButton.triggerEventHandler('click', null);
-
-      expect(component.openFutureDetails.emit).toHaveBeenCalledWith();
-    });
   });
 });
