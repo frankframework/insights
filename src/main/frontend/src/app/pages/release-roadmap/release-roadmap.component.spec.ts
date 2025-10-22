@@ -243,15 +243,12 @@ describe('ReleaseRoadmapComponent', () => {
 
       expect(unplannedMilestone?.dueOn).toBeDefined();
 
-      // Should be set to the 1st of a month that starts a quarter
       expect(unplannedMilestone?.dueOn?.getDate()).toBe(1);
 
-      // Month should be start of a quarter (0, 3, 6, or 9)
       const month = unplannedMilestone?.dueOn?.getMonth() ?? -1;
 
       expect([0, 3, 6, 9]).toContain(month);
 
-      // Should be a date in the future (or close to today)
       const today = new Date();
       const dueDate = unplannedMilestone?.dueOn;
 
@@ -278,7 +275,6 @@ describe('ReleaseRoadmapComponent', () => {
       fixture.detectChanges();
       tick();
 
-      // Should have the regular milestones + unplanned milestone
       const milestoneIds = component.milestones.map((m) => m.id);
 
       expect(milestoneIds).toContain('unplanned-epics');
