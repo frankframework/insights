@@ -123,7 +123,7 @@ public class SystemDataInitializer implements CommandLineRunner {
 
             log.info("Start fetching vulnerability data");
 
-            vulnerabilityService.executeVulnerabilityScanForAllReleases();
+            vulnerabilityService.scanAndSaveVulnerabilitiesForAllReleases();
 
             log.info("Done fetching all vulnerability data");
         } catch (Exception e) {

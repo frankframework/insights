@@ -46,4 +46,14 @@ public class Mapper {
             throw new MappingException("Failed to convert Entities to DTOs: " + e.getMessage(), e);
         }
     }
+
+    public <D> D fromJson(String json, Class<D> dtoClass) throws MappingException {
+        try {
+            log.debug("Parsing JSON to class [{}]", dtoClass.getSimpleName());
+            return objectMapper.readValue(json, dtoClass);
+        } catch (Exception e) {
+            throw new MappingException(
+                    "Failed to parse JSON to " + dtoClass.getSimpleName() + ": " + e.getMessage(), e);
+        }
+    }
 }
