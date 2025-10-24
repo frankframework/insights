@@ -2,14 +2,23 @@
   #issueLink
   target="_blank"
   class="issue-bar"
+  [class.monthly-view]="viewMode === ViewMode.MONTHLY"
   [href]="issue.url"
   [ngStyle]="issueStyle"
   (mouseenter)="onMouseEnter()"
   (mouseleave)="onMouseLeave()"
 >
   <div class="inner" [ngStyle]="priorityStyle">
-    @if (isUnplannedEpic) {
+    @if (viewMode === ViewMode.MONTHLY) {
       <span class="title">{{ issue.title }}</span>
+      <div class="monthly-info">
+        @if (issue.issuePriority) {
+          <span class="priority">{{ issue.issuePriority.name }}</span>
+        }
+        @if (issue.points) {
+          <span class="points">{{ issue.points }} pts</span>
+        }
+      </div>
     } @else {
       <span class="number">{{ issue.number }}</span>
     }

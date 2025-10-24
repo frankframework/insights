@@ -4,6 +4,7 @@ import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
 import { TooltipService } from './tooltip/tooltip.service';
 import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE } from '../release-roadmap.component';
+import { ViewMode } from '../view-mode.enum';
 
 @Component({
   selector: 'app-issue-bar',
@@ -16,8 +17,11 @@ export class IssueBarComponent implements OnInit {
   @Input({ required: true }) issue!: Issue;
   @Input() issueStyle: Record<string, string> = {};
   @Input() isUnplannedEpic = false;
+  @Input() viewMode: ViewMode = ViewMode.QUARTERLY;
 
   @ViewChild('issueLink') issueLinkRef!: ElementRef<HTMLAnchorElement>;
+
+  public ViewMode = ViewMode;
 
   public priorityStyle: Record<string, string> = {};
   public isClosed = false;
@@ -33,12 +37,20 @@ export class IssueBarComponent implements OnInit {
   }
 
   public onMouseEnter(): void {
+    if (this.viewMode === ViewMode.MONTHLY) {
+      return;
+    }
+
     if (this.issueLinkRef) {
       this.tooltipService.show(this.issueLinkRef.nativeElement, this.issue);
     }
   }
 
   public onMouseLeave(): void {
+    if (this.viewMode === ViewMode.MONTHLY) {
+      return;
+    }
+
     this.tooltipService.hide();
   }
 

@@ -33,4 +33,62 @@
     text-overflow: ellipsis;
     padding: 0 0.5rem;
   }
+
+  .points {
+    font-weight: 600;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    padding: 0 0.5rem;
+    opacity: 0.8;
+  }
+
+  &.monthly-view {
+    height: 2rem;
+
+    .inner {
+      justify-content: space-between;
+      padding: 0 1rem;
+      border-radius: 0.5rem;
+      border-width: 1.5px;
+    }
+
+    .title {
+      flex: 1;
+      text-align: left;
+      padding: 0 0.75rem 0 0;
+      min-width: 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .monthly-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      min-width: 200px;
+      justify-content: flex-end;
+    }
+
+    .priority {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      opacity: 0.85;
+      white-space: nowrap;
+      color: inherit;
+      min-width: 70px;
+      text-align: left;
+    }
+
+    .points {
+      flex-shrink: 0;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      opacity: 0.9;
+      white-space: nowrap;
+      min-width: 60px;
+      text-align: left;
+    }
+  }
 }

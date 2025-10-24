@@ -39,16 +39,21 @@
       <span>{{ milestone.closedIssueCount }} closed</span>
     </div>
   </div>
-  <div class="issue-track-area" [style.height.rem]="trackCount * 2.25">
+  <div class="issue-track-area" [style.height.rem]="getTrackAreaHeight()">
     @if (milestone.dueOn) {
       @for (trackNumber of getTracks(); track trackNumber) {
         <div class="issue-track">
           @for (positionedIssue of getIssuesForTrack(trackNumber); track positionedIssue.issue.id) {
-            <app-issue-bar
-              [issue]="positionedIssue.issue"
-              [issueStyle]="positionedIssue.style"
-              [isUnplannedEpic]="milestone.id === 'unplanned-epics'"
-            />
+            @if (positionedIssue.isLabel) {
+              <div class="issue-group-label">{{ positionedIssue.labelText }}</div>
+            } @else {
+              <app-issue-bar
+                [issue]="positionedIssue.issue"
+                [issueStyle]="positionedIssue.style"
+                [isUnplannedEpic]="milestone.id === 'unplanned-epics'"
+                [viewMode]="viewMode"
+              />
+            }
           }
         </div>
       }

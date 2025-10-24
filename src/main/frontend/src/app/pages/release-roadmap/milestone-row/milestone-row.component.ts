@@ -4,11 +4,14 @@ import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
+import { ViewMode } from '../release-roadmap.component';
 
 interface PositionedIssue {
   issue: Issue;
   style: Record<string, string>;
   track: number;
+  isLabel?: boolean;
+  labelText?: string;
 }
 
 interface PlanningWindow {
@@ -38,6 +41,7 @@ export class MilestoneRowComponent implements OnChanges {
   @Input({ required: true }) totalTimelineDays!: number;
   @Input({ required: true }) quarters!: { name: string; monthCount: number }[];
   @Input() isLast = false;
+  @Input() viewMode: ViewMode = ViewMode.QUARTERLY;
 
   public positionedIssues: PositionedIssue[] = [];
   public trackCount = 1;
@@ -48,7 +52,7 @@ export class MilestoneRowComponent implements OnChanges {
   private readonly GAP_MS = 12 * 3600 * 1000;
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['milestone'] || changes['issues'] || changes['quarters']) {
+    if (changes['milestone'] || changes['issues'] || changes['quarters'] || changes['viewMode']) {
       this.calculateProgress();
       this.runLayoutAlgorithm();
     }
@@ -62,6 +66,14 @@ export class MilestoneRowComponent implements OnChanges {
     return Array.from({ length: this.trackCount }, (_, index) => index);
   }
 
+  public getTrackAreaHeight(): number {
+    if (this.viewMode === ViewMode.MONTHLY) {
+      return this.trackCount * 2.5;
+    }
+
+    return this.trackCount * 2.25;
+  }
+
   private runLayoutAlgorithm(): void {
     if (this.issues.length === 0) {
       this.positionedIssues = [];
@@ -71,6 +83,11 @@ export class MilestoneRowComponent implements OnChanges {
 
     if (this.milestone.id === 'unplanned-epics') {
       this.layoutUnplannedEpics();
+      return;
+    }
+
+    if (this.viewMode === ViewMode.MONTHLY) {
+      this.layoutMonthlyView();
       return;
     }
 
@@ -88,8 +105,11 @@ export class MilestoneRowComponent implements OnChanges {
 
       const { closedWindow, openWindow } = this.getPlanningWindowsForQuarter(quarterWindow);
 
-      const closedLayout = this.layoutIssuesWithEvenSpacing(quarterIssues.closed, closedWindow);
-      const openLayout = this.layoutIssuesWithEvenSpacing(quarterIssues.open, openWindow);
+      const sortedClosedIssues = this.sortIssuesByPriority(quarterIssues.closed);
+      const sortedOpenIssues = this.sortIssuesByPriority(quarterIssues.open);
+
+      const closedLayout = this.layoutIssuesWithEvenSpacing(sortedClosedIssues, closedWindow);
+      const openLayout = this.layoutIssuesWithEvenSpacing(sortedOpenIssues, openWindow);
 
       this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
       overallMaxTrackCount = Math.max(overallMaxTrackCount, closedLayout.trackCount, openLayout.trackCount);
@@ -130,6 +150,18 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private getIssueLayoutQuarterKey(issue: Issue, currentQuarterStart: Date): string {
+    if (this.viewMode === ViewMode.MONTHLY) {
+      if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+        return this.getMonthKey(new Date(issue.closedAt));
+      }
+
+      const milestoneDueDate = this.milestone.dueOn ? new Date(this.milestone.dueOn) : new Date();
+      const effectiveDate =
+        milestoneDueDate.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueDate;
+
+      return this.getMonthKey(effectiveDate);
+    }
+
     if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
       return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
     }
@@ -145,16 +177,28 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private getWindowForQuarter(quarterKey: string): PlanningWindow | null {
-    const match = quarterKey.match(/Q(\d) (\d{4})/);
-    if (!match) return null;
+    const quarterMatch = quarterKey.match(/Q(\d) (\d{4})/);
+    if (quarterMatch) {
+      const quarterNumber = Number.parseInt(quarterMatch[1], 10);
+      const year = Number.parseInt(quarterMatch[2], 10);
+      const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
+      const endDate = new Date(year, quarterNumber * 3, 0);
+      endDate.setHours(23, 59, 59, 999);
+      return { start: startDate.getTime(), end: endDate.getTime() };
+    }
 
-    const quarterNumber = Number.parseInt(match[1], 10);
-    const year = Number.parseInt(match[2], 10);
-    const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
-    const endDate = new Date(year, quarterNumber * 3, 0);
-    endDate.setHours(23, 59, 59, 999);
+    const monthMatch = quarterKey.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})/);
+    if (monthMatch) {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthIndex = monthNames.indexOf(monthMatch[1]);
+      const year = Number.parseInt(monthMatch[2], 10);
+      const startDate = new Date(year, monthIndex, 1);
+      const endDate = new Date(year, monthIndex + 1, 0);
+      endDate.setHours(23, 59, 59, 999);
+      return { start: startDate.getTime(), end: endDate.getTime() };
+    }
 
-    return { start: startDate.getTime(), end: endDate.getTime() };
+    return null;
   }
 
   private getPlanningWindowsForQuarter(quarterWindow: PlanningWindow): {
@@ -280,6 +324,13 @@ export class MilestoneRowComponent implements OnChanges {
     return `Q${quarterNumber} ${year}`;
   }
 
+  private getMonthKey(date: Date): string {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    return `${monthNames[month]} ${year}`;
+  }
+
   private calculateProgress(): void {
     if (!this.milestone) {
       this.progressPercentage = 0;
@@ -291,17 +342,24 @@ export class MilestoneRowComponent implements OnChanges {
 
   private layoutUnplannedEpics(): void {
     this.positionedIssues = [];
-    this.trackCount = 1;
 
     if (!this.milestone.dueOn) return;
 
+    if (this.viewMode === ViewMode.MONTHLY) {
+      this.layoutMonthlyViewForUnplannedEpics();
+      return;
+    }
+
+    this.trackCount = 1;
     const startOffset = 6 * 60 * 60 * 1000;
     let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
     const trackIndex = 0;
     const EPIC_POINTS = 30;
     const timelineEndTime = this.timelineEndDate.getTime();
 
-    for (const issue of this.issues) {
+    const sortedIssues = this.sortIssuesByPriority(this.issues);
+
+    for (const issue of sortedIssues) {
       const durationMs = EPIC_POINTS * 24 * 60 * 60 * 1000;
 
       if (currentTime >= timelineEndTime) {
@@ -311,5 +369,325 @@ export class MilestoneRowComponent implements OnChanges {
       this.positionedIssues.push(this.createPositionedIssue(issue, currentTime, durationMs, trackIndex));
       currentTime += durationMs + this.GAP_MS;
     }
+  }
+
+  private layoutMonthlyViewForUnplannedEpics(): void {
+    this.positionedIssues = [];
+
+    if (!this.milestone.dueOn) return;
+
+    const positions = new Map<Issue, { startTime: number; endTime: number }>();
+    const startOffset = 6 * 60 * 60 * 1000;
+    let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
+    const EPIC_POINTS = 30;
+
+    const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
+    const quarterEnd = new Date(quarterStart);
+    quarterEnd.setMonth(quarterEnd.getMonth() + 6);
+    quarterEnd.setDate(0);
+    quarterEnd.setHours(23, 59, 59, 999);
+    const timelineEndTime = quarterEnd.getTime();
+
+    const sortedIssues = this.sortIssuesByPriority(this.issues);
+
+    for (const issue of sortedIssues) {
+      const durationMs = EPIC_POINTS * 24 * 60 * 60 * 1000;
+
+      if (currentTime >= timelineEndTime) {
+        break;
+      }
+
+      positions.set(issue, {
+        startTime: currentTime,
+        endTime: currentTime + durationMs,
+      });
+
+      currentTime += durationMs + this.GAP_MS;
+    }
+
+    const filteredIssues = this.filterIssuesByMonthOverlap(positions);
+
+    const sortedFilteredIssues = this.sortIssuesForMonthlyView(filteredIssues);
+
+    this.trackCount = this.layoutIssuesWithLabels(sortedFilteredIssues, { left: '1%', width: '97%' });
+  }
+
+  private layoutMonthlyView(): void {
+    this.positionedIssues = [];
+    const quarterlyPositions = this.calculateQuarterlyPositions();
+    const filteredIssues = this.filterIssuesByMonthOverlap(quarterlyPositions);
+    const sortedIssues = this.sortIssuesForMonthlyView(filteredIssues);
+    this.trackCount = this.layoutIssuesWithLabels(sortedIssues, { left: '1.75%', width: '96%' });
+  }
+
+  private layoutIssuesWithLabels(sortedIssues: Issue[], barStyle: Record<string, string>): number {
+    let trackIndex = 0;
+    let hasClosedIssues = false;
+    let hasAddedSeparator = false;
+    let hasAddedClosedLabel = false;
+    let hasAddedOpenLabel = false;
+
+    for (const issue of sortedIssues) {
+      if (issue.state === GitHubStates.CLOSED && !hasAddedClosedLabel) {
+        this.positionedIssues.push({
+          issue: issue,
+          track: trackIndex,
+          style: {},
+          isLabel: true,
+          labelText: 'Closed Issues',
+        });
+        trackIndex++;
+        hasAddedClosedLabel = true;
+      }
+
+      if (issue.state === GitHubStates.OPEN && hasClosedIssues && !hasAddedSeparator) {
+        trackIndex++;
+        hasAddedSeparator = true;
+
+        if (!hasAddedOpenLabel) {
+          this.positionedIssues.push({
+            issue: issue,
+            track: trackIndex,
+            style: {},
+            isLabel: true,
+            labelText: 'Open Issues',
+          });
+          trackIndex++;
+          hasAddedOpenLabel = true;
+        }
+      }
+
+      if (issue.state === GitHubStates.OPEN && !hasClosedIssues && !hasAddedOpenLabel) {
+        this.positionedIssues.push({
+          issue: issue,
+          track: trackIndex,
+          style: {},
+          isLabel: true,
+          labelText: 'Open Issues',
+        });
+        trackIndex++;
+        hasAddedOpenLabel = true;
+      }
+
+      if (issue.state === GitHubStates.CLOSED) {
+        hasClosedIssues = true;
+      }
+
+      this.positionedIssues.push({
+        issue,
+        track: trackIndex,
+        style: barStyle,
+      });
+
+      trackIndex++;
+    }
+
+    return Math.max(1, trackIndex);
+  }
+
+  private calculateQuarterlyPositions(): Map<Issue, { startTime: number; endTime: number }> {
+    const positions = new Map<Issue, { startTime: number; endTime: number }>();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentQuarterStart = this.getQuarterFromDate(today);
+
+    const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
+
+    const temporaryQuarters: { name: string; monthCount: number }[] = [];
+    const startYear = quarterStart.getFullYear();
+    const startQuarterNumber = Math.floor(quarterStart.getMonth() / 3) + 1;
+    const firstQuarterName = `Q${startQuarterNumber} ${startYear}`;
+    temporaryQuarters.push({ name: firstQuarterName, monthCount: 3 });
+
+    const nextQuarterStart = new Date(quarterStart);
+    nextQuarterStart.setMonth(nextQuarterStart.getMonth() + 3);
+    const endYear = nextQuarterStart.getFullYear();
+    const endQuarterNumber = Math.floor(nextQuarterStart.getMonth() / 3) + 1;
+    const secondQuarterName = `Q${endQuarterNumber} ${endYear}`;
+    temporaryQuarters.push({ name: secondQuarterName, monthCount: 3 });
+
+    const issuesByQuarter = this.distributeIssuesIntoQuartersForCalculation(currentQuarterStart);
+    const visibleQuarters = new Set(temporaryQuarters.map((q) => q.name));
+
+    for (const [quarterKey, quarterIssues] of issuesByQuarter.entries()) {
+      if (!visibleQuarters.has(quarterKey)) continue;
+
+      const quarterWindow = this.getWindowForQuarter(quarterKey);
+      if (!quarterWindow) continue;
+
+      const { closedWindow, openWindow } = this.getPlanningWindowsForQuarter(quarterWindow);
+
+      const sortedClosedIssues = this.sortIssuesByPriority(quarterIssues.closed);
+      const sortedOpenIssues = this.sortIssuesByPriority(quarterIssues.open);
+
+      this.calculateIssuePositionsInWindow(sortedClosedIssues, closedWindow, positions);
+
+      this.calculateIssuePositionsInWindow(sortedOpenIssues, openWindow, positions);
+    }
+
+    return positions;
+  }
+
+  private distributeIssuesIntoQuartersForCalculation(currentQuarterStart: Date): QuarterIssueMap {
+    const quarterMap: QuarterIssueMap = new Map();
+
+    const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
+    const quarters: { name: string; monthCount: number }[] = [];
+
+    const startYear = quarterStart.getFullYear();
+    const startQuarterNumber = Math.floor(quarterStart.getMonth() / 3) + 1;
+    const firstQuarterName = `Q${startQuarterNumber} ${startYear}`;
+    quarters.push({ name: firstQuarterName, monthCount: 3 });
+
+    const nextQuarterStart = new Date(quarterStart);
+    nextQuarterStart.setMonth(nextQuarterStart.getMonth() + 3);
+    const endYear = nextQuarterStart.getFullYear();
+    const endQuarterNumber = Math.floor(nextQuarterStart.getMonth() / 3) + 1;
+    const secondQuarterName = `Q${endQuarterNumber} ${endYear}`;
+    quarters.push({ name: secondQuarterName, monthCount: 3 });
+
+    for (const q of quarters) {
+      quarterMap.set(q.name, { open: [], closed: [] });
+    }
+
+    for (const issue of this.issues) {
+      const quarterKey = this.getIssueLayoutQuarterKeyForCalculation(issue, currentQuarterStart);
+      if (!quarterMap.has(quarterKey)) {
+        quarterMap.set(quarterKey, { open: [], closed: [] });
+      }
+
+      const quarterBin = quarterMap.get(quarterKey)!;
+      if (issue.state === GitHubStates.CLOSED) {
+        quarterBin.closed.push(issue);
+      } else {
+        quarterBin.open.push(issue);
+      }
+    }
+
+    return quarterMap;
+  }
+
+  private getIssueLayoutQuarterKeyForCalculation(issue: Issue, currentQuarterStart: Date): string {
+    if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+      return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
+    }
+
+    const milestoneDueQuarter = this.milestone.dueOn
+      ? this.getQuarterFromDate(new Date(this.milestone.dueOn))
+      : currentQuarterStart;
+
+    const effectiveQuarter =
+      milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
+
+    return this.getQuarterKey(effectiveQuarter);
+  }
+
+  private calculateIssuePositionsInWindow(
+    issues: Issue[],
+    window: PlanningWindow,
+    positions: Map<Issue, { startTime: number; endTime: number }>,
+  ): void {
+    if (issues.length === 0 || window.start >= window.end) return;
+
+    const issuesByTrack = this.distributeIssuesWithBinPacking(issues, window);
+
+    for (const [trackIndex, trackIssues] of issuesByTrack.entries()) {
+      if (trackIssues.length === 0) continue;
+
+      const totalIssueDuration = trackIssues.reduce(
+        (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
+        0,
+      );
+
+      const totalWhitespace = window.end - window.start - totalIssueDuration;
+      const gapSize = totalWhitespace > 0 ? totalWhitespace / (trackIssues.length + 1) : 0;
+      let cursor = window.start + gapSize;
+
+      for (const issue of trackIssues) {
+        const durationMs = this.getIssueDurationMsWithMinWidth(issue);
+        positions.set(issue, {
+          startTime: cursor,
+          endTime: cursor + durationMs,
+        });
+        cursor += durationMs + gapSize;
+      }
+    }
+  }
+
+  private filterIssuesByMonthOverlap(positions: Map<Issue, { startTime: number; endTime: number }>): Issue[] {
+    const monthStart = this.timelineStartDate.getTime();
+    const monthEnd = this.timelineEndDate.getTime();
+
+    return this.issues.filter((issue) => {
+      const position = positions.get(issue);
+      if (!position) return false;
+
+      return position.startTime <= monthEnd && position.endTime >= monthStart;
+    });
+  }
+
+  private sortIssuesByPriority(issues: Issue[]): Issue[] {
+    return [...issues].sort((a, b) => {
+      if (a.state !== b.state) {
+        if (a.state === GitHubStates.CLOSED) return 1;
+        if (b.state === GitHubStates.CLOSED) return -1;
+      }
+
+      const aPriorityOrder = this.getPriorityOrder(a.issuePriority?.name);
+      const bPriorityOrder = this.getPriorityOrder(b.issuePriority?.name);
+
+      if (aPriorityOrder !== bPriorityOrder) {
+        return aPriorityOrder - bPriorityOrder;
+      }
+
+      const aPoints = a.points ?? 0;
+      const bPoints = b.points ?? 0;
+
+      if (aPoints !== bPoints) {
+        return aPoints - bPoints;
+      }
+
+      return a.number - b.number;
+    });
+  }
+
+  private sortIssuesForMonthlyView(issues: Issue[]): Issue[] {
+    return [...issues].sort((a, b) => {
+      if (a.state !== b.state) {
+        if (a.state === GitHubStates.CLOSED) return -1;
+        if (b.state === GitHubStates.CLOSED) return 1;
+      }
+
+      const aPriorityOrder = this.getPriorityOrder(a.issuePriority?.name);
+      const bPriorityOrder = this.getPriorityOrder(b.issuePriority?.name);
+
+      if (aPriorityOrder !== bPriorityOrder) {
+        return aPriorityOrder - bPriorityOrder;
+      }
+
+      const aPoints = a.points ?? 0;
+      const bPoints = b.points ?? 0;
+
+      if (aPoints !== bPoints) {
+        return bPoints - aPoints;
+      }
+
+      return a.number - b.number;
+    });
+  }
+
+  private getPriorityOrder(priorityName: string | undefined): number {
+    if (!priorityName) return 999;
+
+    const nameLower = priorityName.toLowerCase();
+
+    if (nameLower.includes('critical')) return 0;
+    if (nameLower.includes('high')) return 1;
+    if (nameLower.includes('medium')) return 2;
+    if (nameLower.includes('low')) return 3;
+    if (nameLower.includes('no')) return 4;
+
+    return 999;
   }
 }

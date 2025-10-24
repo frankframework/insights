@@ -11,6 +11,11 @@ import { Milestone, MilestoneService } from '../../services/milestone.service';
 import { GitHubStates } from '../../app.service';
 import { RoadmapLegend } from './roadmap-legend/roadmap-legend.component';
 
+export enum ViewMode {
+  QUARTERLY = 'quarterly',
+  MONTHLY = 'monthly',
+}
+
 interface Version {
   major: number;
   minor: number;
@@ -93,7 +98,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   public totalDays = 0;
   public displayDate!: Date;
   public currentPeriodLabel = '';
-
+  public viewMode: ViewMode = ViewMode.QUARTERLY;
   protected todayOffsetPercentage = 0;
 
   private milestoneService = inject(MilestoneService);
@@ -113,40 +118,221 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   public resetPeriod(): void {
     const today = new Date();
-    const currentQuarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
-    this.displayDate = new Date(today.getFullYear(), currentQuarterStartMonth, 1);
+    if (this.viewMode === ViewMode.QUARTERLY) {
+      const currentQuarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
+      this.displayDate = new Date(today.getFullYear(), currentQuarterStartMonth, 1);
+    } else {
+      this.displayDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
     this.generateTimelineFromPeriod();
+  }
+
+  public toggleViewMode(): void {
+    this.viewMode = this.viewMode === ViewMode.QUARTERLY ? ViewMode.MONTHLY : ViewMode.QUARTERLY;
+    this.resetPeriod();
   }
 
   public getIssuesForMilestone(milestoneId: string): Issue[] {
     return this.milestoneIssues.get(milestoneId) || [];
   }
 
+  public getVisibleMilestones(): Milestone[] {
+    if (this.viewMode === ViewMode.QUARTERLY) {
+      return this.milestones;
+    }
+
+    return this.milestones.filter((milestone) => {
+      const issues = this.getIssuesForMilestone(milestone.id);
+      if (issues.length === 0) return false;
+
+      return this.milestoneHasIssuesInMonth(milestone, issues);
+    });
+  }
+
+  private milestoneHasIssuesInMonth(milestone: Milestone, issues: Issue[]): boolean {
+    if (milestone.id === 'unplanned-epics') {
+      return this.hasUnplannedEpicsInMonth(milestone, issues);
+    }
+
+    const issuePositions = this.calculateIssuePositionsForMilestone(milestone, issues);
+
+    const monthStart = this.timelineStartDate.getTime();
+    const monthEnd = this.timelineEndDate.getTime();
+
+    for (const position of issuePositions.values()) {
+      if (position.startTime <= monthEnd && position.endTime >= monthStart) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private calculateIssuePositionsForMilestone(
+    milestone: Milestone,
+    issues: Issue[],
+  ): Map<Issue, { startTime: number; endTime: number }> {
+    const positions = new Map<Issue, { startTime: number; endTime: number }>();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentQuarterStart = this.getQuarterFromDate(today);
+
+    const issuesByQuarter = this.groupIssuesByQuarter(issues, milestone, currentQuarterStart);
+
+    for (const [quarterKey, quarterIssues] of issuesByQuarter.entries()) {
+      const quarterWindow = this.getQuarterWindow(quarterKey);
+      if (!quarterWindow) continue;
+
+      const { closedWindow, openWindow } = this.splitQuarterWindow(quarterWindow);
+
+      this.positionIssuesInWindow(quarterIssues.closed, closedWindow, positions);
+      this.positionIssuesInWindow(quarterIssues.open, openWindow, positions);
+    }
+
+    return positions;
+  }
+
+  private groupIssuesByQuarter(
+    issues: Issue[],
+    milestone: Milestone,
+    currentQuarterStart: Date,
+  ): Map<string, { open: Issue[]; closed: Issue[] }> {
+    const quarterMap = new Map<string, { open: Issue[]; closed: Issue[] }>();
+
+    for (const issue of issues) {
+      let quarterKey: string;
+
+      if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+        const closedQuarter = this.getQuarterFromDate(new Date(issue.closedAt));
+        quarterKey = this.getQuarterKey(closedQuarter);
+      } else {
+        const milestoneDueQuarter = milestone.dueOn
+          ? this.getQuarterFromDate(new Date(milestone.dueOn))
+          : currentQuarterStart;
+
+        const effectiveQuarter =
+          milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
+
+        quarterKey = this.getQuarterKey(effectiveQuarter);
+      }
+
+      if (!quarterMap.has(quarterKey)) {
+        quarterMap.set(quarterKey, { open: [], closed: [] });
+      }
+
+      const quarterBin = quarterMap.get(quarterKey)!;
+      if (issue.state === GitHubStates.CLOSED) {
+        quarterBin.closed.push(issue);
+      } else {
+        quarterBin.open.push(issue);
+      }
+    }
+
+    return quarterMap;
+  }
+
+  private getQuarterWindow(quarterKey: string): { start: number; end: number } | null {
+    const quarterMatch = quarterKey.match(/Q(\d) (\d{4})/);
+    if (!quarterMatch) return null;
+
+    const quarterNumber = Number.parseInt(quarterMatch[1], 10);
+    const year = Number.parseInt(quarterMatch[2], 10);
+    const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
+    const endDate = new Date(year, quarterNumber * 3, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { start: startDate.getTime(), end: endDate.getTime() };
+  }
+
+  private splitQuarterWindow(quarterWindow: { start: number; end: number }): {
+    closedWindow: { start: number; end: number };
+    openWindow: { start: number; end: number };
+  } {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const todayMs = today.getTime();
+    const { start, end } = quarterWindow;
+
+    if (todayMs < start) return { closedWindow: { start, end: start }, openWindow: { start, end } };
+    if (todayMs > end) return { closedWindow: { start, end }, openWindow: { start: end, end } };
+
+    return { closedWindow: { start, end: todayMs }, openWindow: { start: todayMs, end } };
+  }
+
+  private positionIssuesInWindow(
+    issues: Issue[],
+    window: { start: number; end: number },
+    positions: Map<Issue, { startTime: number; endTime: number }>,
+  ): void {
+    if (issues.length === 0 || window.start >= window.end) return;
+
+    const DEFAULT_POINTS = 3;
+
+    let totalDuration = 0;
+    for (const issue of issues) {
+      const points = issue.points ?? DEFAULT_POINTS;
+      const durationMs = points * 24 * 60 * 60 * 1000;
+      totalDuration += durationMs;
+    }
+
+    const windowDuration = window.end - window.start;
+    const totalWhitespace = windowDuration - totalDuration;
+    const gapSize = totalWhitespace > 0 ? totalWhitespace / (issues.length + 1) : 0;
+
+    let cursor = window.start + gapSize;
+
+    for (const issue of issues) {
+      const points = issue.points ?? DEFAULT_POINTS;
+      const durationMs = points * 24 * 60 * 60 * 1000;
+
+      positions.set(issue, {
+        startTime: cursor,
+        endTime: cursor + durationMs,
+      });
+
+      cursor += durationMs + gapSize;
+    }
+  }
+
+  private getQuarterKey(quarter: Date): string {
+    const year = quarter.getFullYear();
+    const quarterNumber = Math.floor(quarter.getMonth() / 3) + 1;
+    return `Q${quarterNumber} ${year}`;
+  }
+
+  private hasUnplannedEpicsInMonth(milestone: Milestone, issues: Issue[]): boolean {
+    if (!milestone.dueOn) return false;
+
+    const monthStart = this.timelineStartDate.getTime();
+    const monthEnd = this.timelineEndDate.getTime();
+
+    const startOffset = 6 * 60 * 60 * 1000;
+    const epicStartTime = new Date(milestone.dueOn).getTime() + startOffset;
+    const EPIC_POINTS = 30;
+    const GAP_MS = 12 * 3600 * 1000;
+    const epicDuration = EPIC_POINTS * 24 * 60 * 60 * 1000;
+
+    let currentTime = epicStartTime;
+    for (const issue of issues) {
+      const epicEndTime = currentTime + epicDuration;
+
+      if (currentTime <= monthEnd && epicEndTime >= monthStart) {
+        return true;
+      }
+
+      currentTime += epicDuration + GAP_MS;
+    }
+
+    return false;
+  }
+
   private generateTimelineFromPeriod(): void {
     if (!this.displayDate) return;
 
-    this.calculateTimelineBoundaries();
-    this.generateMonths();
     this.generateQuarters();
     this.calculateTodayMarkerPosition();
     this.loadRoadmapData();
-  }
-
-  private calculateTimelineBoundaries(): void {
-    this.timelineStartDate = new Date(this.displayDate);
-    const endDate = new Date(this.timelineStartDate);
-    endDate.setMonth(endDate.getMonth() + 6);
-    endDate.setDate(0);
-    this.timelineEndDate = endDate;
-  }
-
-  private generateMonths(): void {
-    this.months = [];
-    let currentDate = new Date(this.timelineStartDate);
-    while (currentDate <= this.timelineEndDate) {
-      this.months.push(new Date(currentDate));
-      currentDate.setMonth(currentDate.getMonth() + 1);
-    }
   }
 
   private calculateTodayMarkerPosition(): void {
@@ -170,19 +356,29 @@ export class ReleaseRoadmapComponent implements OnInit {
     this.quarters = [];
     if (this.months.length === 0) return;
 
-    const startYear = this.timelineStartDate.getFullYear();
-    const startQuarterNumber = Math.floor(this.timelineStartDate.getMonth() / 3) + 1;
-    const firstQuarterName = `Q${startQuarterNumber} ${startYear}`;
-    this.quarters.push({ name: firstQuarterName, monthCount: 3 });
+    if (this.viewMode === ViewMode.QUARTERLY) {
+      const startYear = this.timelineStartDate.getFullYear();
+      const startQuarterNumber = Math.floor(this.timelineStartDate.getMonth() / 3) + 1;
+      const firstQuarterName = `Q${startQuarterNumber} ${startYear}`;
+      this.quarters.push({ name: firstQuarterName, monthCount: 3 });
 
-    const nextQuarterStartDate = new Date(this.timelineStartDate);
-    nextQuarterStartDate.setMonth(nextQuarterStartDate.getMonth() + 3);
-    const endYear = nextQuarterStartDate.getFullYear();
-    const endQuarterNumber = Math.floor(nextQuarterStartDate.getMonth() / 3) + 1;
-    const secondQuarterName = `Q${endQuarterNumber} ${endYear}`;
-    this.quarters.push({ name: secondQuarterName, monthCount: 3 });
+      const nextQuarterStartDate = new Date(this.timelineStartDate);
+      nextQuarterStartDate.setMonth(nextQuarterStartDate.getMonth() + 3);
+      const endYear = nextQuarterStartDate.getFullYear();
+      const endQuarterNumber = Math.floor(nextQuarterStartDate.getMonth() / 3) + 1;
+      const secondQuarterName = `Q${endQuarterNumber} ${endYear}`;
+      this.quarters.push({ name: secondQuarterName, monthCount: 3 });
 
-    this.currentPeriodLabel = `${firstQuarterName} - ${secondQuarterName}`;
+      this.currentPeriodLabel = `${firstQuarterName} - ${secondQuarterName}`;
+    } else {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const startYear = this.timelineStartDate.getFullYear();
+      const startMonth = this.timelineStartDate.getMonth();
+      const monthName = `${monthNames[startMonth]} ${startYear}`;
+      this.quarters.push({ name: monthName, monthCount: 1 });
+
+      this.currentPeriodLabel = monthName;
+    }
   }
 
   private loadRoadmapData(): void {
