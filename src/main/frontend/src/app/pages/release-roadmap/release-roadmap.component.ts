@@ -16,7 +16,7 @@ export enum ViewMode {
   MONTHLY = 'monthly',
 }
 
-interface Version {
+export interface Version {
   major: number;
   minor: number;
   patch: number;
@@ -101,6 +101,10 @@ export class ReleaseRoadmapComponent implements OnInit {
   public viewMode: ViewMode = ViewMode.QUARTERLY;
   protected todayOffsetPercentage = 0;
 
+  private allMilestones: Milestone[] = [];
+  private allUnplannedEpics: Issue[] = [];
+  private isDataLoaded = false;
+
   private readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
   private readonly EPIC_POINTS = 30;
   private readonly GAP_MS = 12 * 3600 * 1000;
@@ -111,7 +115,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
-    this.resetPeriod();
+    this.loadInitialData();
   }
 
   public changePeriod(months: number): void {
@@ -334,8 +338,7 @@ export class ReleaseRoadmapComponent implements OnInit {
     const monthStart = this.timelineStartDate.getTime();
     const monthEnd = this.timelineEndDate.getTime();
 
-    const startOffset = 6 * 60 * 60 * 1000;
-    const epicStartTime = new Date(milestone.dueOn).getTime() + startOffset;
+    const epicStartTime = new Date(milestone.dueOn).getTime();
     const epicDuration = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
     let currentTime = epicStartTime;
@@ -343,7 +346,7 @@ export class ReleaseRoadmapComponent implements OnInit {
     return issues.some(() => {
       const epicEndTime = currentTime + epicDuration;
       const isInMonth = currentTime <= monthEnd && epicEndTime >= monthStart;
-      currentTime += epicDuration + this.GAP_MS;
+      currentTime += epicDuration + this.GAP_MS / 2;
       return isInMonth;
     });
   }
@@ -355,7 +358,10 @@ export class ReleaseRoadmapComponent implements OnInit {
     this.generateMonths();
     this.generateQuarters();
     this.calculateTodayMarkerPosition();
-    this.loadRoadmapData();
+
+    if (this.isDataLoaded) {
+      this.updateVisibleData();
+    }
   }
 
   private calculateTimelineBoundaries(): void {
@@ -368,7 +374,6 @@ export class ReleaseRoadmapComponent implements OnInit {
     } else {
       endDate.setMonth(endDate.getMonth() + 1);
       endDate.setDate(0);
-      // FIX: Set to end of day for monthly view
       endDate.setHours(23, 59, 59, 999);
     }
 
@@ -430,7 +435,7 @@ export class ReleaseRoadmapComponent implements OnInit {
     }
   }
 
-  private loadRoadmapData(): void {
+  private loadInitialData(): void {
     this.isLoading = true;
     forkJoin({
       milestones: this.milestoneService.getMilestones(),
@@ -438,20 +443,16 @@ export class ReleaseRoadmapComponent implements OnInit {
     })
       .pipe(
         map(({ milestones, unplannedEpics }) => ({
-          milestones: this.parseMilestones(milestones).filter((m) => m.dueOn !== null),
+          milestones: this.sortMilestones(this.parseMilestones(milestones).filter((m) => m.dueOn !== null)),
           unplannedEpics: unplannedEpics.sort((a, b) => a.number - b.number),
         })),
         switchMap(({ milestones, unplannedEpics }) =>
-          this.fetchIssuesForMilestones(milestones).pipe(map((result) => ({ ...result, unplannedEpics }))),
+          this.fetchIssuesForMilestones(milestones).pipe(map(() => ({ milestones, unplannedEpics }))),
         ),
-        map(({ milestones, unplannedEpics }) => ({
-          milestones: this.sortMilestones(milestones).filter((m) => this.hasIssuesInView(m)),
-          unplannedEpics,
-        })),
         tap(({ milestones, unplannedEpics }) => {
-          this.milestones = milestones;
-          this.unplannedEpics = unplannedEpics;
-          this.addUnplannedEpicsMilestone();
+          this.allMilestones = milestones;
+          this.allUnplannedEpics = unplannedEpics;
+          this.isDataLoaded = true;
         }),
         catchError((error) => {
           this.toastrService.error('Could not load roadmap data.', 'Error');
@@ -460,16 +461,26 @@ export class ReleaseRoadmapComponent implements OnInit {
         }),
         finalize(() => {
           this.isLoading = false;
+          this.resetPeriod();
           this.cdr.detectChanges();
         }),
       )
       .subscribe();
   }
 
-  private fetchIssuesForMilestones(milestones: Milestone[]): Observable<{ milestones: Milestone[] }> {
+  private updateVisibleData(): void {
+    if (!this.isDataLoaded) return;
+
+    this.milestones = this.allMilestones.filter((m) => this.hasIssuesInView(m));
+    this.unplannedEpics = this.allUnplannedEpics;
+    this.addUnplannedEpicsMilestone();
+    this.cdr.detectChanges();
+  }
+
+  private fetchIssuesForMilestones(milestones: Milestone[]): Observable<void> {
     if (milestones.length === 0) {
-      this.milestones = [];
-      return of({ milestones: [] });
+      this.milestoneIssues.clear();
+      return of();
     }
 
     const issueRequests = milestones.map((m) =>
@@ -482,8 +493,9 @@ export class ReleaseRoadmapComponent implements OnInit {
     return forkJoin(issueRequests).pipe(
       map((issueResults) => {
         this.milestoneIssues.clear();
-        for (const result of issueResults) this.milestoneIssues.set(result.milestoneId, result.issues);
-        return { milestones };
+        for (const result of issueResults) {
+          this.milestoneIssues.set(result.milestoneId, result.issues);
+        }
       }),
     );
   }
@@ -504,8 +516,10 @@ export class ReleaseRoadmapComponent implements OnInit {
       isEstimated: false,
     };
 
-    this.milestoneIssues.set(this.UNPLANNED_EPICS_ID, this.unplannedEpics);
-    this.milestones.push(unplannedMilestone);
+    if (!this.milestones.some((m) => m.id === this.UNPLANNED_EPICS_ID)) {
+      this.milestoneIssues.set(this.UNPLANNED_EPICS_ID, this.unplannedEpics);
+      this.milestones.push(unplannedMilestone);
+    }
   }
 
   private getNextQuarterStart(): Date {
