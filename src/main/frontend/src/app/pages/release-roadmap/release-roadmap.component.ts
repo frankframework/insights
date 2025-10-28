@@ -368,6 +368,8 @@ export class ReleaseRoadmapComponent implements OnInit {
     } else {
       endDate.setMonth(endDate.getMonth() + 1);
       endDate.setDate(0);
+      // FIX: Set to end of day for monthly view
+      endDate.setHours(23, 59, 59, 999);
     }
 
     this.timelineEndDate = endDate;

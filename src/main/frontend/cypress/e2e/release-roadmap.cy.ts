@@ -15,6 +15,13 @@ describe('Release Roadmap End-to-End Tests', () => {
     return `Q${startQuarter} ${startYear} - Q${endQuarter} ${endYear}`;
   };
 
+  const getMonthlyPeriodLabel = (date: Date) => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    return `${month} ${year}`;
+  };
+
   beforeEach(() => {
     cy.clock(TODAY.getTime(), ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']);
 
@@ -200,6 +207,90 @@ describe('Release Roadmap End-to-End Tests', () => {
 
       cy.get('app-milestone-row').should('not.exist');
       cy.get('.empty-state').should('be.visible').and('contain.text', 'No open milestones');
+    });
+  });
+
+  context('Monthly View', () => {
+    beforeEach(() => {
+      cy.get('app-roadmap-toolbar button[title="Toggle view mode"]').click();
+      cy.tick(5000);
+      cy.get('app-loader').should('not.be.visible');
+    });
+
+    it('should switch to Monthly View and display the correct label', () => {
+      const expectedLabel = getMonthlyPeriodLabel(TODAY);
+      cy.get('.period-label').should('contain.text', expectedLabel);
+
+      cy.get('app-timeline-header .quarter-label').should('have.length', 1);
+      cy.get('app-timeline-header .quarter-label').first().should('contain.text', expectedLabel);
+      cy.get('app-timeline-header .month-label').should('not.exist');
+    });
+
+    it('should navigate 3 months back when clicking "Previous quarter"', () => {
+      const initialLabel = getMonthlyPeriodLabel(TODAY);
+
+      const prevDate = new Date(TODAY);
+      prevDate.setMonth(prevDate.getMonth() - 3);
+      const expectedLabel = getMonthlyPeriodLabel(prevDate);
+
+      cy.get('.period-label').should('contain.text', initialLabel);
+      cy.get('button[title="Previous quarter"]').click();
+      cy.tick(5000);
+      cy.get('.period-label').should('contain.text', expectedLabel);
+    });
+
+    it('should return to the current month when "Go to today" is clicked', () => {
+      const initialLabel = getMonthlyPeriodLabel(TODAY);
+
+      const nextDate = new Date(TODAY);
+      nextDate.setMonth(nextDate.getMonth() + 3);
+      const nextLabel = getMonthlyPeriodLabel(nextDate);
+
+      cy.get('button[title="Next quarter"]').click();
+      cy.tick(5000);
+      cy.get('.period-label').should('contain.text', nextLabel);
+
+      cy.get('button[title="Go to today"]').click();
+      cy.tick(5000);
+      cy.get('app-loader').should('not.exist');
+      cy.get('.period-label').should('contain.text', initialLabel);
+    });
+
+    it('should display issues as a list with labels', () => {
+      cy.get('app-milestone-row').should('have.length.greaterThan', 0);
+
+      cy.get('app-milestone-row').first().then($row => {
+        if ($row.find('.issue-list-label').length > 0) {
+          cy.wrap($row).find('.issue-list-label').should('be.visible');
+          cy.wrap($row).find('.issue-list-label').first().invoke('text').should('not.be.empty');
+        }
+
+        if ($row.find('a.issue-bar').length > 0) {
+          cy.wrap($row).find('a.issue-bar').first().invoke('css', 'width').then(width => {
+            const parentWidth = $row.find('.issue-track-area').width() || 1;
+            const issueWidthPx = parseFloat(width as unknown as string);
+            const percentage = (issueWidthPx / parentWidth) * 100;
+            expect(percentage).to.be.greaterThan(90);
+          });
+        }
+      });
+    });
+
+    it('should filter out milestones not relevant to the current month', () => {
+      cy.get('button[title="Go to today"]').click();
+      cy.tick(5000);
+
+      cy.get('body').then($body => {
+        const initialCount = $body.find('app-milestone-row').length;
+
+        for (let i = 0; i < initialCount; i++) {
+          cy.get('button[title="Next quarter"]').click();
+          cy.tick(5000);
+        }
+
+        cy.get('app-milestone-row').should('not.exist');
+        cy.get('.empty-state').should('be.visible');
+      });
     });
   });
 });
