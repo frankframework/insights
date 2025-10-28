@@ -1,13 +1,13 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, inject, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
-import { ViewMode } from '../release-roadmap.component';
+import { ReleaseRoadmapComponent, ViewMode } from '../release-roadmap.component';
 
 interface PositionedIssue {
-  issue: Issue;
+  issue?: Issue;
   style: Record<string, string>;
   track: number;
   isLabel?: boolean;
@@ -47,9 +47,14 @@ export class MilestoneRowComponent implements OnChanges {
   public trackCount = 1;
   public progressPercentage = 0;
 
+  private readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
   private readonly DEFAULT_POINTS = 3;
   private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 3;
   private readonly GAP_MS = 12 * 3600 * 1000;
+  private readonly EPIC_POINTS = 30;
+  private readonly MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  private releaseRoadmapComponent = inject(ReleaseRoadmapComponent);
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['milestone'] || changes['issues'] || changes['quarters'] || changes['viewMode']) {
@@ -74,6 +79,10 @@ export class MilestoneRowComponent implements OnChanges {
     return this.trackCount * 2.25;
   }
 
+  public isUnplannedEpicMilestone(): boolean {
+    return this.isUnplannedEpic();
+  }
+
   private runLayoutAlgorithm(): void {
     if (this.issues.length === 0) {
       this.positionedIssues = [];
@@ -81,7 +90,7 @@ export class MilestoneRowComponent implements OnChanges {
       return;
     }
 
-    if (this.milestone.id === 'unplanned-epics') {
+    if (this.isUnplannedEpic()) {
       this.layoutUnplannedEpics();
       return;
     }
@@ -120,9 +129,7 @@ export class MilestoneRowComponent implements OnChanges {
 
   private distributeIssuesIntoQuarters(): QuarterIssueMap {
     const quarterMap = this.initializeQuarterMap();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const currentQuarterStart = this.getQuarterFromDate(today);
+    const currentQuarterStart = this.getCurrentQuarterStart();
 
     for (const issue of this.issues) {
       const quarterKey = this.getIssueLayoutQuarterKey(issue, currentQuarterStart);
@@ -151,17 +158,24 @@ export class MilestoneRowComponent implements OnChanges {
 
   private getIssueLayoutQuarterKey(issue: Issue, currentQuarterStart: Date): string {
     if (this.viewMode === ViewMode.MONTHLY) {
-      if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
-        return this.getMonthKey(new Date(issue.closedAt));
-      }
+      return this.getMonthlyIssueKey(issue, currentQuarterStart);
+    }
+    return this.getQuarterlyIssueKey(issue, currentQuarterStart);
+  }
 
-      const milestoneDueDate = this.milestone.dueOn ? new Date(this.milestone.dueOn) : new Date();
-      const effectiveDate =
-        milestoneDueDate.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueDate;
-
-      return this.getMonthKey(effectiveDate);
+  private getMonthlyIssueKey(issue: Issue, currentQuarterStart: Date): string {
+    if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+      return this.getMonthKey(new Date(issue.closedAt));
     }
 
+    const milestoneDueDate = this.milestone.dueOn ? new Date(this.milestone.dueOn) : new Date();
+    const effectiveDate =
+      milestoneDueDate.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueDate;
+
+    return this.getMonthKey(effectiveDate);
+  }
+
+  private getQuarterlyIssueKey(issue: Issue, currentQuarterStart: Date): string {
     if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
       return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
     }
@@ -179,35 +193,31 @@ export class MilestoneRowComponent implements OnChanges {
   private getWindowForQuarter(quarterKey: string): PlanningWindow | null {
     const quarterMatch = quarterKey.match(/Q(\d) (\d{4})/);
     if (quarterMatch) {
-      const quarterNumber = Number.parseInt(quarterMatch[1], 10);
-      const year = Number.parseInt(quarterMatch[2], 10);
-      const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
-      const endDate = new Date(year, quarterNumber * 3, 0);
-      endDate.setHours(23, 59, 59, 999);
-      return { start: startDate.getTime(), end: endDate.getTime() };
+      return this.releaseRoadmapComponent.createQuarterWindow(quarterMatch);
     }
 
     const monthMatch = quarterKey.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})/);
     if (monthMatch) {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthIndex = monthNames.indexOf(monthMatch[1]);
-      const year = Number.parseInt(monthMatch[2], 10);
-      const startDate = new Date(year, monthIndex, 1);
-      const endDate = new Date(year, monthIndex + 1, 0);
-      endDate.setHours(23, 59, 59, 999);
-      return { start: startDate.getTime(), end: endDate.getTime() };
+      return this.createMonthWindow(monthMatch);
     }
 
     return null;
+  }
+
+  private createMonthWindow(monthMatch: RegExpMatchArray): PlanningWindow {
+    const monthIndex = this.MONTH_NAMES.indexOf(monthMatch[1]);
+    const year = Number.parseInt(monthMatch[2], 10);
+    const startDate = new Date(year, monthIndex, 1);
+    const endDate = new Date(year, monthIndex + 1, 0);
+    endDate.setHours(23, 59, 59, 999);
+    return { start: startDate.getTime(), end: endDate.getTime() };
   }
 
   private getPlanningWindowsForQuarter(quarterWindow: PlanningWindow): {
     closedWindow: PlanningWindow;
     openWindow: PlanningWindow;
   } {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    const todayMs = today.getTime();
+    const todayMs = this.getTodayEndOfDay();
     const { start, end } = quarterWindow;
 
     if (todayMs < start) return { closedWindow: { start, end: start }, openWindow: { start, end } };
@@ -227,22 +237,30 @@ export class MilestoneRowComponent implements OnChanges {
     for (const [trackIndex, trackIssues] of issuesByTrack.entries()) {
       if (trackIssues.length === 0) continue;
 
-      const totalIssueDuration = trackIssues.reduce(
-        (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
-        0,
-      );
-
-      const totalWhitespace = window.end - window.start - totalIssueDuration;
-      const gapSize = totalWhitespace > 0 ? totalWhitespace / (trackIssues.length + 1) : 0;
-      let cursor = window.start + gapSize;
-
-      for (const issue of trackIssues) {
-        const durationMs = this.getIssueDurationMsWithMinWidth(issue);
-        positionedIssues.push(this.createPositionedIssue(issue, cursor, durationMs, trackIndex));
-        cursor += durationMs + gapSize;
+      const issuesWithPositions = this.distributeIssuesInWindow(trackIssues, window);
+      for (const { issue, startTime, durationMs } of issuesWithPositions) {
+        positionedIssues.push(this.createPositionedIssue(issue, startTime, durationMs, trackIndex));
       }
     }
     return { positionedIssues, trackCount: issuesByTrack.size };
+  }
+
+  private distributeIssuesInWindow(
+    trackIssues: Issue[],
+    window: PlanningWindow,
+  ): { issue: Issue; startTime: number; durationMs: number }[] {
+    const totalIssueDuration = trackIssues.reduce((sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue), 0);
+
+    const totalWhitespace = window.end - window.start - totalIssueDuration;
+    const gapSize = totalWhitespace > 0 ? totalWhitespace / (trackIssues.length + 1) : 0;
+    let cursor = window.start + gapSize;
+
+    return trackIssues.map((issue) => {
+      const durationMs = this.getIssueDurationMsWithMinWidth(issue);
+      const startTime = cursor;
+      cursor += durationMs + gapSize;
+      return { issue, startTime, durationMs };
+    });
   }
 
   private createPositionedIssue(
@@ -265,33 +283,61 @@ export class MilestoneRowComponent implements OnChanges {
     let currentTrack = 0;
 
     for (const issue of issues) {
-      const issueDuration = this.getIssueDurationMsWithMinWidth(issue);
-      const spaceNeeded = issueDuration + this.GAP_MS;
+      const spaceNeeded = this.getIssueDurationMsWithMinWidth(issue) + this.GAP_MS;
+      const trackIndex = this.findAvailableTrack(trackCapacities, windowDurationMs, spaceNeeded, currentTrack);
 
-      let placed = false;
-      for (let trackIndex = 0; trackIndex <= currentTrack; trackIndex++) {
-        const trackUsed = trackCapacities.get(trackIndex) ?? 0;
-        const trackRemaining = windowDurationMs - trackUsed;
-
-        if (trackRemaining >= spaceNeeded) {
-          if (!issuesByTrack.has(trackIndex)) {
-            issuesByTrack.set(trackIndex, []);
-          }
-          issuesByTrack.get(trackIndex)!.push(issue);
-          trackCapacities.set(trackIndex, trackUsed + spaceNeeded);
-          placed = true;
-          break;
-        }
-      }
-
-      if (!placed) {
+      if (trackIndex === null) {
         currentTrack++;
-        issuesByTrack.set(currentTrack, [issue]);
-        trackCapacities.set(currentTrack, spaceNeeded);
+        this.addIssueToNewTrack(issuesByTrack, trackCapacities, currentTrack, issue, spaceNeeded);
+      } else {
+        this.addIssueToExistingTrack(issuesByTrack, trackCapacities, trackIndex, issue, spaceNeeded);
       }
     }
 
     return issuesByTrack;
+  }
+
+  private findAvailableTrack(
+    trackCapacities: Map<number, number>,
+    windowDurationMs: number,
+    spaceNeeded: number,
+    currentTrack: number,
+  ): number | null {
+    for (let trackIndex = 0; trackIndex <= currentTrack; trackIndex++) {
+      const trackUsed = trackCapacities.get(trackIndex) ?? 0;
+      const trackRemaining = windowDurationMs - trackUsed;
+
+      if (trackRemaining >= spaceNeeded) {
+        return trackIndex;
+      }
+    }
+    return null;
+  }
+
+  private addIssueToExistingTrack(
+    issuesByTrack: Map<number, Issue[]>,
+    trackCapacities: Map<number, number>,
+    trackIndex: number,
+    issue: Issue,
+    spaceNeeded: number,
+  ): void {
+    if (!issuesByTrack.has(trackIndex)) {
+      issuesByTrack.set(trackIndex, []);
+    }
+    issuesByTrack.get(trackIndex)!.push(issue);
+    const trackUsed = trackCapacities.get(trackIndex) ?? 0;
+    trackCapacities.set(trackIndex, trackUsed + spaceNeeded);
+  }
+
+  private addIssueToNewTrack(
+    issuesByTrack: Map<number, Issue[]>,
+    trackCapacities: Map<number, number>,
+    trackIndex: number,
+    issue: Issue,
+    spaceNeeded: number,
+  ): void {
+    issuesByTrack.set(trackIndex, [issue]);
+    trackCapacities.set(trackIndex, spaceNeeded);
   }
 
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
@@ -313,22 +359,17 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private getQuarterFromDate(date: Date): Date {
-    const year = date.getFullYear();
-    const quarterIndex = Math.floor(date.getMonth() / 3);
-    return new Date(year, quarterIndex * 3, 1);
+    return this.releaseRoadmapComponent.getQuarterFromDate(date);
   }
 
   private getQuarterKey(quarter: Date): string {
-    const year = quarter.getFullYear();
-    const quarterNumber = Math.floor(quarter.getMonth() / 3) + 1;
-    return `Q${quarterNumber} ${year}`;
+    return this.releaseRoadmapComponent.getQuarterKey(quarter);
   }
 
   private getMonthKey(date: Date): string {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const year = date.getFullYear();
     const month = date.getMonth();
-    return `${monthNames[month]} ${year}`;
+    return `${this.MONTH_NAMES[month]} ${year}`;
   }
 
   private calculateProgress(): void {
@@ -338,6 +379,10 @@ export class MilestoneRowComponent implements OnChanges {
     }
     const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
     this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
+  }
+
+  private isUnplannedEpic(): boolean {
+    return this.milestone.id === this.UNPLANNED_EPICS_ID;
   }
 
   private layoutUnplannedEpics(): void {
@@ -353,20 +398,18 @@ export class MilestoneRowComponent implements OnChanges {
     this.trackCount = 1;
     const startOffset = 6 * 60 * 60 * 1000;
     let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
-    const trackIndex = 0;
-    const EPIC_POINTS = 30;
     const timelineEndTime = this.timelineEndDate.getTime();
 
     const sortedIssues = this.sortIssuesByPriority(this.issues);
 
     for (const issue of sortedIssues) {
-      const durationMs = EPIC_POINTS * 24 * 60 * 60 * 1000;
+      const durationMs = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
       if (currentTime >= timelineEndTime) {
         break;
       }
 
-      this.positionedIssues.push(this.createPositionedIssue(issue, currentTime, durationMs, trackIndex));
+      this.positionedIssues.push(this.createPositionedIssue(issue, currentTime, durationMs, 0));
       currentTime += durationMs + this.GAP_MS;
     }
   }
@@ -379,7 +422,6 @@ export class MilestoneRowComponent implements OnChanges {
     const positions = new Map<Issue, { startTime: number; endTime: number }>();
     const startOffset = 6 * 60 * 60 * 1000;
     let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
-    const EPIC_POINTS = 30;
 
     const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
     const quarterEnd = new Date(quarterStart);
@@ -391,7 +433,7 @@ export class MilestoneRowComponent implements OnChanges {
     const sortedIssues = this.sortIssuesByPriority(this.issues);
 
     for (const issue of sortedIssues) {
-      const durationMs = EPIC_POINTS * 24 * 60 * 60 * 1000;
+      const durationMs = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
       if (currentTime >= timelineEndTime) {
         break;
@@ -421,76 +463,109 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private layoutIssuesWithLabels(sortedIssues: Issue[], barStyle: Record<string, string>): number {
-    let trackIndex = 0;
-    let hasClosedIssues = false;
-    let hasAddedSeparator = false;
-    let hasAddedClosedLabel = false;
-    let hasAddedOpenLabel = false;
+    const state = {
+      trackIndex: 0,
+      hasClosedIssues: false,
+      hasAddedSeparator: false,
+      hasAddedClosedLabel: false,
+      hasAddedOpenLabel: false,
+    };
 
     for (const issue of sortedIssues) {
-      if (issue.state === GitHubStates.CLOSED && !hasAddedClosedLabel) {
-        this.positionedIssues.push({
-          issue: issue,
-          track: trackIndex,
-          style: {},
-          isLabel: true,
-          labelText: 'Closed Issues',
-        });
-        trackIndex++;
-        hasAddedClosedLabel = true;
-      }
-
-      if (issue.state === GitHubStates.OPEN && hasClosedIssues && !hasAddedSeparator) {
-        trackIndex++;
-        hasAddedSeparator = true;
-
-        if (!hasAddedOpenLabel) {
-          this.positionedIssues.push({
-            issue: issue,
-            track: trackIndex,
-            style: {},
-            isLabel: true,
-            labelText: 'Open Issues',
-          });
-          trackIndex++;
-          hasAddedOpenLabel = true;
-        }
-      }
-
-      if (issue.state === GitHubStates.OPEN && !hasClosedIssues && !hasAddedOpenLabel) {
-        this.positionedIssues.push({
-          issue: issue,
-          track: trackIndex,
-          style: {},
-          isLabel: true,
-          labelText: 'Open Issues',
-        });
-        trackIndex++;
-        hasAddedOpenLabel = true;
-      }
-
-      if (issue.state === GitHubStates.CLOSED) {
-        hasClosedIssues = true;
-      }
-
-      this.positionedIssues.push({
-        issue,
-        track: trackIndex,
-        style: barStyle,
-      });
-
-      trackIndex++;
+      this.addLabelIfNeeded(issue, state);
+      this.addIssueToTrack(issue, state.trackIndex, barStyle);
+      state.trackIndex++;
     }
 
-    return Math.max(1, trackIndex);
+    return Math.max(1, state.trackIndex);
+  }
+
+  private addLabelIfNeeded(
+    issue: Issue,
+    state: {
+      trackIndex: number;
+      hasClosedIssues: boolean;
+      hasAddedSeparator: boolean;
+      hasAddedClosedLabel: boolean;
+      hasAddedOpenLabel: boolean;
+    },
+  ): void {
+    const isClosed = issue.state === GitHubStates.CLOSED;
+    const isOpen = issue.state === GitHubStates.OPEN;
+
+    if (isClosed) {
+      this.addClosedLabelIfNeeded(state);
+      state.hasClosedIssues = true;
+    }
+
+    if (isOpen) {
+      this.addOpenLabelIfNeeded(state);
+    }
+  }
+
+  private addClosedLabelIfNeeded(state: { trackIndex: number; hasAddedClosedLabel: boolean }): void {
+    if (!state.hasAddedClosedLabel) {
+      this.addLabel('Closed Issues', state.trackIndex);
+      state.trackIndex++;
+      state.hasAddedClosedLabel = true;
+    }
+  }
+
+  private addOpenLabelIfNeeded(state: {
+    trackIndex: number;
+    hasClosedIssues: boolean;
+    hasAddedSeparator: boolean;
+    hasAddedOpenLabel: boolean;
+  }): void {
+    if (state.hasAddedOpenLabel) {
+      return;
+    }
+
+    if (state.hasClosedIssues && !state.hasAddedSeparator) {
+      this.addOpenLabelAfterSeparator(state);
+    } else if (!state.hasClosedIssues) {
+      this.addOpenLabel(state);
+    }
+  }
+
+  private addOpenLabelAfterSeparator(state: {
+    trackIndex: number;
+    hasAddedSeparator: boolean;
+    hasAddedOpenLabel: boolean;
+  }): void {
+    state.trackIndex++;
+    state.hasAddedSeparator = true;
+    this.addLabel('Open Issues', state.trackIndex);
+    state.trackIndex++;
+    state.hasAddedOpenLabel = true;
+  }
+
+  private addOpenLabel(state: { trackIndex: number; hasAddedOpenLabel: boolean }): void {
+    this.addLabel('Open Issues', state.trackIndex);
+    state.trackIndex++;
+    state.hasAddedOpenLabel = true;
+  }
+
+  private addLabel(labelText: string, trackIndex: number): void {
+    this.positionedIssues.push({
+      track: trackIndex,
+      style: {},
+      isLabel: true,
+      labelText,
+    });
+  }
+
+  private addIssueToTrack(issue: Issue, trackIndex: number, barStyle: Record<string, string>): void {
+    this.positionedIssues.push({
+      issue,
+      track: trackIndex,
+      style: barStyle,
+    });
   }
 
   private calculateQuarterlyPositions(): Map<Issue, { startTime: number; endTime: number }> {
     const positions = new Map<Issue, { startTime: number; endTime: number }>();
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const currentQuarterStart = this.getQuarterFromDate(today);
+    const currentQuarterStart = this.getCurrentQuarterStart();
 
     const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
 
@@ -552,7 +627,7 @@ export class MilestoneRowComponent implements OnChanges {
     }
 
     for (const issue of this.issues) {
-      const quarterKey = this.getIssueLayoutQuarterKeyForCalculation(issue, currentQuarterStart);
+      const quarterKey = this.getQuarterlyIssueKey(issue, currentQuarterStart);
       if (!quarterMap.has(quarterKey)) {
         quarterMap.set(quarterKey, { open: [], closed: [] });
       }
@@ -568,21 +643,6 @@ export class MilestoneRowComponent implements OnChanges {
     return quarterMap;
   }
 
-  private getIssueLayoutQuarterKeyForCalculation(issue: Issue, currentQuarterStart: Date): string {
-    if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
-      return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
-    }
-
-    const milestoneDueQuarter = this.milestone.dueOn
-      ? this.getQuarterFromDate(new Date(this.milestone.dueOn))
-      : currentQuarterStart;
-
-    const effectiveQuarter =
-      milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
-
-    return this.getQuarterKey(effectiveQuarter);
-  }
-
   private calculateIssuePositionsInWindow(
     issues: Issue[],
     window: PlanningWindow,
@@ -592,25 +652,15 @@ export class MilestoneRowComponent implements OnChanges {
 
     const issuesByTrack = this.distributeIssuesWithBinPacking(issues, window);
 
-    for (const [trackIndex, trackIssues] of issuesByTrack.entries()) {
+    for (const trackIssues of issuesByTrack.values()) {
       if (trackIssues.length === 0) continue;
 
-      const totalIssueDuration = trackIssues.reduce(
-        (sum, issue) => sum + this.getIssueDurationMsWithMinWidth(issue),
-        0,
-      );
-
-      const totalWhitespace = window.end - window.start - totalIssueDuration;
-      const gapSize = totalWhitespace > 0 ? totalWhitespace / (trackIssues.length + 1) : 0;
-      let cursor = window.start + gapSize;
-
-      for (const issue of trackIssues) {
-        const durationMs = this.getIssueDurationMsWithMinWidth(issue);
+      const issuesWithPositions = this.distributeIssuesInWindow(trackIssues, window);
+      for (const { issue, startTime, durationMs } of issuesWithPositions) {
         positions.set(issue, {
-          startTime: cursor,
-          endTime: cursor + durationMs,
+          startTime,
+          endTime: startTime + durationMs,
         });
-        cursor += durationMs + gapSize;
       }
     }
   }
@@ -629,52 +679,56 @@ export class MilestoneRowComponent implements OnChanges {
 
   private sortIssuesByPriority(issues: Issue[]): Issue[] {
     return [...issues].sort((a, b) => {
-      if (a.state !== b.state) {
-        if (a.state === GitHubStates.CLOSED) return 1;
-        if (b.state === GitHubStates.CLOSED) return -1;
-      }
-
-      const aPriorityOrder = this.getPriorityOrder(a.issuePriority?.name);
-      const bPriorityOrder = this.getPriorityOrder(b.issuePriority?.name);
-
-      if (aPriorityOrder !== bPriorityOrder) {
-        return aPriorityOrder - bPriorityOrder;
-      }
-
-      const aPoints = a.points ?? 0;
-      const bPoints = b.points ?? 0;
-
-      if (aPoints !== bPoints) {
-        return aPoints - bPoints;
-      }
-
-      return a.number - b.number;
+      return this.compareIssues(a, b, false);
     });
   }
 
   private sortIssuesForMonthlyView(issues: Issue[]): Issue[] {
     return [...issues].sort((a, b) => {
-      if (a.state !== b.state) {
-        if (a.state === GitHubStates.CLOSED) return -1;
-        if (b.state === GitHubStates.CLOSED) return 1;
-      }
-
-      const aPriorityOrder = this.getPriorityOrder(a.issuePriority?.name);
-      const bPriorityOrder = this.getPriorityOrder(b.issuePriority?.name);
-
-      if (aPriorityOrder !== bPriorityOrder) {
-        return aPriorityOrder - bPriorityOrder;
-      }
-
-      const aPoints = a.points ?? 0;
-      const bPoints = b.points ?? 0;
-
-      if (aPoints !== bPoints) {
-        return bPoints - aPoints;
-      }
-
-      return a.number - b.number;
+      return this.compareIssues(a, b, true);
     });
+  }
+
+  private compareIssues(a: Issue, b: Issue, isMonthlyView: boolean): number {
+    // Sort by state
+    const stateComparison = this.compareIssueStates(a, b, isMonthlyView);
+    if (stateComparison !== 0) return stateComparison;
+
+    // Sort by priority
+    const priorityComparison = this.compareIssuePriorities(a, b);
+    if (priorityComparison !== 0) return priorityComparison;
+
+    // Sort by points
+    const pointsComparison = this.compareIssuePoints(a, b, isMonthlyView);
+    if (pointsComparison !== 0) return pointsComparison;
+
+    // Sort by issue number
+    return a.number - b.number;
+  }
+
+  private compareIssueStates(a: Issue, b: Issue, closedFirst: boolean): number {
+    if (a.state !== b.state) {
+      const closedValue = closedFirst ? -1 : 1;
+      if (a.state === GitHubStates.CLOSED) return closedValue;
+      if (b.state === GitHubStates.CLOSED) return -closedValue;
+    }
+    return 0;
+  }
+
+  private compareIssuePriorities(a: Issue, b: Issue): number {
+    const aPriorityOrder = this.getPriorityOrder(a.issuePriority?.name);
+    const bPriorityOrder = this.getPriorityOrder(b.issuePriority?.name);
+    return aPriorityOrder - bPriorityOrder;
+  }
+
+  private compareIssuePoints(a: Issue, b: Issue, descendingOrder: boolean): number {
+    const aPoints = a.points ?? 0;
+    const bPoints = b.points ?? 0;
+
+    if (aPoints !== bPoints) {
+      return descendingOrder ? bPoints - aPoints : aPoints - bPoints;
+    }
+    return 0;
   }
 
   private getPriorityOrder(priorityName: string | undefined): number {
@@ -689,5 +743,17 @@ export class MilestoneRowComponent implements OnChanges {
     if (nameLower.includes('no')) return 4;
 
     return 999;
+  }
+
+  private getCurrentQuarterStart(): Date {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return this.getQuarterFromDate(today);
+  }
+
+  private getTodayEndOfDay(): number {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    return today.getTime();
   }
 }

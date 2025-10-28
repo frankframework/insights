@@ -5,7 +5,9 @@
     } @else {
       <span class="title-link">{{ milestone.title }}</span>
     }
-    @if (milestone.dueOn) {
+    @if (isUnplannedEpicMilestone()) {
+      <p class="detail unplanned">Unplanned</p>
+    } @else if (milestone.dueOn) {
       <p class="detail">
         Due: {{ milestone.dueOn | date: 'dd-MM-yyyy' }}
         @if (milestone.isEstimated) {
@@ -30,14 +32,20 @@
     } @else {
       <p class="detail unplanned">Unplanned</p>
     }
-    <div class="progress-bar-container">
-      <div class="progress-bar" [style.width.%]="progressPercentage" [title]="progressPercentage + '% completed'"></div>
-    </div>
-    <div class="counts">
-      <span>{{ milestone.openIssueCount }} open</span>
-      <span>/</span>
-      <span>{{ milestone.closedIssueCount }} closed</span>
-    </div>
+    @if (!isUnplannedEpicMilestone()) {
+      <div class="progress-bar-container">
+        <div
+          class="progress-bar"
+          [style.width.%]="progressPercentage"
+          [title]="progressPercentage + '% completed'"
+        ></div>
+      </div>
+      <div class="counts">
+        <span>{{ milestone.openIssueCount }} open</span>
+        <span>/</span>
+        <span>{{ milestone.closedIssueCount }} closed</span>
+      </div>
+    }
   </div>
   <div class="issue-track-area" [style.height.rem]="getTrackAreaHeight()">
     @if (milestone.dueOn) {

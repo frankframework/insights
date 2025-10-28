@@ -3,8 +3,7 @@ import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
 import { TooltipService } from './tooltip/tooltip.service';
-import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE } from '../release-roadmap.component';
-import { ViewMode } from '../view-mode.enum';
+import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../release-roadmap.component';
 
 @Component({
   selector: 'app-issue-bar',

@@ -101,6 +101,10 @@ export class ReleaseRoadmapComponent implements OnInit {
   public viewMode: ViewMode = ViewMode.QUARTERLY;
   protected todayOffsetPercentage = 0;
 
+  private readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
+  private readonly EPIC_POINTS = 30;
+  private readonly GAP_MS = 12 * 3600 * 1000;
+
   private milestoneService = inject(MilestoneService);
   private issueService = inject(IssueService);
   private toastrService = inject(ToastrService);
@@ -149,8 +153,30 @@ export class ReleaseRoadmapComponent implements OnInit {
     });
   }
 
+  public createQuarterWindow(quarterMatch: RegExpMatchArray): { start: number; end: number } {
+    const quarterNumber = Number.parseInt(quarterMatch[1], 10);
+    const year = Number.parseInt(quarterMatch[2], 10);
+    const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
+    const endDate = new Date(year, quarterNumber * 3, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { start: startDate.getTime(), end: endDate.getTime() };
+  }
+
+  public getQuarterKey(quarter: Date): string {
+    const year = quarter.getFullYear();
+    const quarterNumber = Math.floor(quarter.getMonth() / 3) + 1;
+    return `Q${quarterNumber} ${year}`;
+  }
+
+  public getQuarterFromDate(date: Date): Date {
+    const year = date.getFullYear();
+    const quarterIndex = Math.floor(date.getMonth() / 3);
+    return new Date(year, quarterIndex * 3, 1);
+  }
+
   private milestoneHasIssuesInMonth(milestone: Milestone, issues: Issue[]): boolean {
-    if (milestone.id === 'unplanned-epics') {
+    if (this.isUnplannedEpic(milestone)) {
       return this.hasUnplannedEpicsInMonth(milestone, issues);
     }
 
@@ -201,48 +227,51 @@ export class ReleaseRoadmapComponent implements OnInit {
     const quarterMap = new Map<string, { open: Issue[]; closed: Issue[] }>();
 
     for (const issue of issues) {
-      let quarterKey: string;
-
-      if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
-        const closedQuarter = this.getQuarterFromDate(new Date(issue.closedAt));
-        quarterKey = this.getQuarterKey(closedQuarter);
-      } else {
-        const milestoneDueQuarter = milestone.dueOn
-          ? this.getQuarterFromDate(new Date(milestone.dueOn))
-          : currentQuarterStart;
-
-        const effectiveQuarter =
-          milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
-
-        quarterKey = this.getQuarterKey(effectiveQuarter);
-      }
-
-      if (!quarterMap.has(quarterKey)) {
-        quarterMap.set(quarterKey, { open: [], closed: [] });
-      }
-
-      const quarterBin = quarterMap.get(quarterKey)!;
-      if (issue.state === GitHubStates.CLOSED) {
-        quarterBin.closed.push(issue);
-      } else {
-        quarterBin.open.push(issue);
-      }
+      const quarterKey = this.getIssueQuarterKey(issue, milestone, currentQuarterStart);
+      this.addIssueToQuarterMap(quarterMap, quarterKey, issue);
     }
 
     return quarterMap;
+  }
+
+  private getIssueQuarterKey(issue: Issue, milestone: Milestone, currentQuarterStart: Date): string {
+    if (issue.state === GitHubStates.CLOSED && issue.closedAt) {
+      const closedQuarter = this.getQuarterFromDate(new Date(issue.closedAt));
+      return this.getQuarterKey(closedQuarter);
+    }
+
+    const milestoneDueQuarter = milestone.dueOn
+      ? this.getQuarterFromDate(new Date(milestone.dueOn))
+      : currentQuarterStart;
+
+    const effectiveQuarter =
+      milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
+
+    return this.getQuarterKey(effectiveQuarter);
+  }
+
+  private addIssueToQuarterMap(
+    quarterMap: Map<string, { open: Issue[]; closed: Issue[] }>,
+    quarterKey: string,
+    issue: Issue,
+  ): void {
+    if (!quarterMap.has(quarterKey)) {
+      quarterMap.set(quarterKey, { open: [], closed: [] });
+    }
+
+    const quarterBin = quarterMap.get(quarterKey)!;
+    if (issue.state === GitHubStates.CLOSED) {
+      quarterBin.closed.push(issue);
+    } else {
+      quarterBin.open.push(issue);
+    }
   }
 
   private getQuarterWindow(quarterKey: string): { start: number; end: number } | null {
     const quarterMatch = quarterKey.match(/Q(\d) (\d{4})/);
     if (!quarterMatch) return null;
 
-    const quarterNumber = Number.parseInt(quarterMatch[1], 10);
-    const year = Number.parseInt(quarterMatch[2], 10);
-    const startDate = new Date(year, (quarterNumber - 1) * 3, 1);
-    const endDate = new Date(year, quarterNumber * 3, 0);
-    endDate.setHours(23, 59, 59, 999);
-
-    return { start: startDate.getTime(), end: endDate.getTime() };
+    return this.createQuarterWindow(quarterMatch);
   }
 
   private splitQuarterWindow(quarterWindow: { start: number; end: number }): {
@@ -295,10 +324,8 @@ export class ReleaseRoadmapComponent implements OnInit {
     }
   }
 
-  private getQuarterKey(quarter: Date): string {
-    const year = quarter.getFullYear();
-    const quarterNumber = Math.floor(quarter.getMonth() / 3) + 1;
-    return `Q${quarterNumber} ${year}`;
+  private isUnplannedEpic(milestone: Milestone): boolean {
+    return milestone.id === this.UNPLANNED_EPICS_ID;
   }
 
   private hasUnplannedEpicsInMonth(milestone: Milestone, issues: Issue[]): boolean {
@@ -309,30 +336,50 @@ export class ReleaseRoadmapComponent implements OnInit {
 
     const startOffset = 6 * 60 * 60 * 1000;
     const epicStartTime = new Date(milestone.dueOn).getTime() + startOffset;
-    const EPIC_POINTS = 30;
-    const GAP_MS = 12 * 3600 * 1000;
-    const epicDuration = EPIC_POINTS * 24 * 60 * 60 * 1000;
+    const epicDuration = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
     let currentTime = epicStartTime;
-    for (const issue of issues) {
+
+    return issues.some(() => {
       const epicEndTime = currentTime + epicDuration;
-
-      if (currentTime <= monthEnd && epicEndTime >= monthStart) {
-        return true;
-      }
-
-      currentTime += epicDuration + GAP_MS;
-    }
-
-    return false;
+      const isInMonth = currentTime <= monthEnd && epicEndTime >= monthStart;
+      currentTime += epicDuration + this.GAP_MS;
+      return isInMonth;
+    });
   }
 
   private generateTimelineFromPeriod(): void {
     if (!this.displayDate) return;
 
+    this.calculateTimelineBoundaries();
+    this.generateMonths();
     this.generateQuarters();
     this.calculateTodayMarkerPosition();
     this.loadRoadmapData();
+  }
+
+  private calculateTimelineBoundaries(): void {
+    this.timelineStartDate = new Date(this.displayDate);
+    const endDate = new Date(this.timelineStartDate);
+
+    if (this.viewMode === ViewMode.QUARTERLY) {
+      endDate.setMonth(endDate.getMonth() + 6);
+      endDate.setDate(0);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+      endDate.setDate(0);
+    }
+
+    this.timelineEndDate = endDate;
+  }
+
+  private generateMonths(): void {
+    this.months = [];
+    let currentDate = new Date(this.timelineStartDate);
+    while (currentDate <= this.timelineEndDate) {
+      this.months.push(new Date(currentDate));
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
   }
 
   private calculateTodayMarkerPosition(): void {
@@ -444,7 +491,7 @@ export class ReleaseRoadmapComponent implements OnInit {
 
     const nextQuarterStart = this.getNextQuarterStart();
     const unplannedMilestone: Milestone = {
-      id: 'unplanned-epics',
+      id: this.UNPLANNED_EPICS_ID,
       number: 0,
       title: 'Unplanned Epics',
       url: '',
@@ -455,7 +502,7 @@ export class ReleaseRoadmapComponent implements OnInit {
       isEstimated: false,
     };
 
-    this.milestoneIssues.set('unplanned-epics', this.unplannedEpics);
+    this.milestoneIssues.set(this.UNPLANNED_EPICS_ID, this.unplannedEpics);
     this.milestones.push(unplannedMilestone);
   }
 
@@ -541,16 +588,9 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private compareMilestoneVersions(aVersion: Version, bVersion: Version): number {
-    // Sort descending by major, then minor, then patch
     if (aVersion.major !== bVersion.major) return bVersion.major - aVersion.major;
     if (aVersion.minor !== bVersion.minor) return bVersion.minor - aVersion.minor;
     return bVersion.patch - aVersion.patch;
-  }
-
-  private getQuarterFromDate(date: Date): Date {
-    const year = date.getFullYear();
-    const quarterIndex = Math.floor(date.getMonth() / 3);
-    return new Date(year, quarterIndex * 3, 1);
   }
 
   private getQuarterEndDate(quarterStart: Date): Date {
