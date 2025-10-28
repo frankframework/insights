@@ -2,15 +2,7 @@
   @if (!isLoading && release) {
     <div class="release-details-header">
       <button class="back-button" (click)="goBack()">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M12.5 15L7.5 10L12.5 5"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
+        <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
         Back
       </button>
       <h2>{{ release.name }}</h2>
