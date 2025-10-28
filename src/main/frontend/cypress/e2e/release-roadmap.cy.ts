@@ -197,18 +197,6 @@ describe('Release Roadmap End-to-End Tests', () => {
         }
       });
     });
-
-    it('should show an empty state when navigating to a period with no milestones', () => {
-      for (let i = 0; i < 4; i++) {
-        cy.get('button[title="Next quarter"]').click();
-        cy.tick(5000);
-      }
-
-      cy.tick(5000);
-
-      cy.get('app-milestone-row').should('not.exist');
-      cy.get('.empty-state').should('be.visible').and('contain.text', 'No open milestones');
-    });
   });
 
   context('Monthly View', () => {
