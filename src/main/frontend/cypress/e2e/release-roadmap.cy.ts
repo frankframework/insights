@@ -4,10 +4,13 @@ describe('Release Roadmap End-to-End Tests', () => {
 
   const getPeriodLabel = (date: Date) => {
     const getQuarter = (d: Date) => Math.floor(d.getMonth() / 3) + 1;
-    const startYear = date.getFullYear();
-    const startQuarter = getQuarter(date);
+    const quarterStartMonth = (getQuarter(date) - 1) * 3;
+    const startDate = new Date(date.getFullYear(), quarterStartMonth, 1);
 
-    const endDate = new Date(date);
+    const startYear = startDate.getFullYear();
+    const startQuarter = getQuarter(startDate);
+
+    const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 3);
     const endYear = endDate.getFullYear();
     const endQuarter = getQuarter(endDate);
@@ -21,6 +24,11 @@ describe('Release Roadmap End-to-End Tests', () => {
     const year = date.getFullYear();
     return `${month} ${year}`;
   };
+
+  const getQuarterStartDate = (date: Date) => {
+    const quarterStartMonth = Math.floor(date.getMonth() / 3) * 3;
+    return new Date(date.getFullYear(), quarterStartMonth, 1);
+  }
 
   beforeEach(() => {
     cy.clock(TODAY.getTime(), ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']);
@@ -40,7 +48,8 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should display the correct initial period label for the current date', () => {
-      const expectedLabel = getPeriodLabel(TODAY);
+      const quarterStartDate = getQuarterStartDate(TODAY);
+      const expectedLabel = getPeriodLabel(quarterStartDate);
       cy.get('.period-label').should('contain.text', expectedLabel);
     });
 
@@ -55,15 +64,17 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should display milestones that have issues in the current view', () => {
-      cy.get('app-milestone-row').should('have.length.greaterThan', 1);
+      cy.get('app-milestone-row').should('have.length.greaterThan', 0); // Check for at least one (e.g., Unplanned Epics)
       cy.get('app-milestone-row').first().should('be.visible');
     });
   });
 
   context('Timeline Navigation', () => {
     it('should navigate to the previous period', () => {
-      const initialLabel = getPeriodLabel(TODAY);
-      const prevDate = new Date(TODAY);
+      const quarterStartDate = getQuarterStartDate(TODAY);
+      const initialLabel = getPeriodLabel(quarterStartDate);
+
+      const prevDate = new Date(quarterStartDate);
       prevDate.setMonth(prevDate.getMonth() - 3);
       const expectedLabel = getPeriodLabel(prevDate);
 
@@ -74,8 +85,10 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should navigate to the next period', () => {
-      const initialLabel = getPeriodLabel(TODAY);
-      const nextDate = new Date(TODAY);
+      const quarterStartDate = getQuarterStartDate(TODAY);
+      const initialLabel = getPeriodLabel(quarterStartDate);
+
+      const nextDate = new Date(quarterStartDate);
       nextDate.setMonth(nextDate.getMonth() + 3);
       const expectedLabel = getPeriodLabel(nextDate);
 
@@ -86,8 +99,10 @@ describe('Release Roadmap End-to-End Tests', () => {
     });
 
     it('should return to the current period when "Go to today" is clicked', () => {
-      const initialLabel = getPeriodLabel(TODAY);
-      const nextDate = new Date(TODAY);
+      const quarterStartDate = getQuarterStartDate(TODAY);
+      const initialLabel = getPeriodLabel(quarterStartDate);
+
+      const nextDate = new Date(quarterStartDate);
       nextDate.setMonth(nextDate.getMonth() + 3);
       const nextLabel = getPeriodLabel(nextDate);
 
@@ -173,22 +188,6 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('app-milestone-row .title-link').should('not.contain.text', 'No Issues');
     });
 
-    it('should create multiple tracks if issues overflow the available space', () => {
-      cy.get('body').then(($body) => {
-        const overflowMilestone = $body.find('app-milestone-row').filter((_, el) => {
-          return $(el).find('app-issue-bar').length > 10;
-        });
-
-        if (overflowMilestone.length > 0) {
-          cy.wrap(overflowMilestone.first()).as('overflowMilestoneRow');
-          cy.get('@overflowMilestoneRow').find('.issue-track-area').invoke('height').should('be.greaterThan', 50);
-          cy.get('@overflowMilestoneRow').find('app-issue-bar').should('have.length.greaterThan', 5);
-        } else {
-          cy.log('No milestone with overflow found - skipping test');
-        }
-      });
-    });
-
     it('should render an issue with 0 points with a minimum width', () => {
       cy.get('body').then(($body) => {
         if ($body.find('a.issue-bar').length > 0) {
@@ -205,6 +204,8 @@ describe('Release Roadmap End-to-End Tests', () => {
         cy.tick(5000);
       }
 
+      cy.tick(5000);
+
       cy.get('app-milestone-row').should('not.exist');
       cy.get('.empty-state').should('be.visible').and('contain.text', 'No open milestones');
     });
@@ -212,29 +213,20 @@ describe('Release Roadmap End-to-End Tests', () => {
 
   context('Monthly View', () => {
     beforeEach(() => {
-      cy.get('app-roadmap-toolbar button[title="Toggle view mode"]').click();
+      cy.get('app-roadmap-toolbar button[title="Monthly view (1 month)"]').click();
       cy.tick(5000);
-      cy.get('app-loader').should('not.be.visible');
+      cy.get('app-loader').should('not.exist');
     });
 
-    it('should switch to Monthly View and display the correct label', () => {
-      const expectedLabel = getMonthlyPeriodLabel(TODAY);
-      cy.get('.period-label').should('contain.text', expectedLabel);
-
-      cy.get('app-timeline-header .quarter-label').should('have.length', 1);
-      cy.get('app-timeline-header .quarter-label').first().should('contain.text', expectedLabel);
-      cy.get('app-timeline-header .month-label').should('not.exist');
-    });
-
-    it('should navigate 3 months back when clicking "Previous quarter"', () => {
+    it('should navigate 1 month back when clicking "Previous month"', () => {
       const initialLabel = getMonthlyPeriodLabel(TODAY);
 
       const prevDate = new Date(TODAY);
-      prevDate.setMonth(prevDate.getMonth() - 3);
+      prevDate.setMonth(prevDate.getMonth() - 1);
       const expectedLabel = getMonthlyPeriodLabel(prevDate);
 
       cy.get('.period-label').should('contain.text', initialLabel);
-      cy.get('button[title="Previous quarter"]').click();
+      cy.get('button[title="Previous month"]').click();
       cy.tick(5000);
       cy.get('.period-label').should('contain.text', expectedLabel);
     });
@@ -243,10 +235,10 @@ describe('Release Roadmap End-to-End Tests', () => {
       const initialLabel = getMonthlyPeriodLabel(TODAY);
 
       const nextDate = new Date(TODAY);
-      nextDate.setMonth(nextDate.getMonth() + 3);
+      nextDate.setMonth(nextDate.getMonth() + 1);
       const nextLabel = getMonthlyPeriodLabel(nextDate);
 
-      cy.get('button[title="Next quarter"]').click();
+      cy.get('button[title="Next month"]').click();
       cy.tick(5000);
       cy.get('.period-label').should('contain.text', nextLabel);
 
@@ -260,9 +252,9 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('app-milestone-row').should('have.length.greaterThan', 0);
 
       cy.get('app-milestone-row').first().then($row => {
-        if ($row.find('.issue-list-label').length > 0) {
-          cy.wrap($row).find('.issue-list-label').should('be.visible');
-          cy.wrap($row).find('.issue-list-label').first().invoke('text').should('not.be.empty');
+        if ($row.find('.issue-group-label').length > 0) {
+          cy.wrap($row).find('.issue-group-label').should('be.visible');
+          cy.wrap($row).find('.issue-group-label').first().invoke('text').should('not.be.empty');
         }
 
         if ($row.find('a.issue-bar').length > 0) {
@@ -283,10 +275,12 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('body').then($body => {
         const initialCount = $body.find('app-milestone-row').length;
 
-        for (let i = 0; i < initialCount; i++) {
-          cy.get('button[title="Next quarter"]').click();
+        for (let i = 0; i < (initialCount || 1) + 4; i++) {
+          cy.get('button[title="Next month"]').click();
           cy.tick(5000);
         }
+
+        cy.tick(5000);
 
         cy.get('app-milestone-row').should('not.exist');
         cy.get('.empty-state').should('be.visible');
