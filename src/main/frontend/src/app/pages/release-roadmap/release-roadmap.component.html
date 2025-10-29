@@ -5,13 +5,15 @@
     <div class="header">
       <app-roadmap-toolbar
         [periodLabel]="currentPeriodLabel"
+        [viewMode]="viewMode"
         (changePeriod)="changePeriod($event)"
         (resetPeriod)="resetPeriod()"
+        (toggleViewMode)="toggleViewMode()"
       />
     </div>
 
     <div class="content">
-      @if (milestones.length > 0) {
+      @if (getVisibleMilestones().length > 0) {
         <div #scrollContainer class="scroll-container">
           <app-timeline-header [months]="months" [quarters]="quarters" />
 
@@ -28,7 +30,7 @@
             </div>
 
             <div class="milestone-lanes">
-              @for (milestone of milestones; track milestone.id; let isLast = $last) {
+              @for (milestone of getVisibleMilestones(); track milestone.id; let isLast = $last) {
                 <app-milestone-row
                   [milestone]="milestone"
                   [issues]="getIssuesForMilestone(milestone.id)"
@@ -37,6 +39,7 @@
                   [totalTimelineDays]="totalDays"
                   [quarters]="quarters"
                   [isLast]="isLast"
+                  [viewMode]="viewMode"
                 />
               }
             </div>

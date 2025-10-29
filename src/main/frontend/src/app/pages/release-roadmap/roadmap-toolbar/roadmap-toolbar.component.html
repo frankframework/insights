@@ -1,53 +1,42 @@
 <div class="full-toolbar">
+  <div class="view-mode-toggle">
+    <button
+      class="toggle-button"
+      title="Quarterly view (6 months)"
+      [class.active]="viewMode === ViewMode.QUARTERLY"
+      (click)="viewMode === ViewMode.MONTHLY && toggleViewMode.emit()"
+    >
+      <img src="assets/icons/quarterly-view.svg" alt="" width="18" height="18" />
+      <span>6M</span>
+    </button>
+    <button
+      class="toggle-button"
+      title="Monthly view (1 month)"
+      [class.active]="viewMode === ViewMode.MONTHLY"
+      (click)="viewMode === ViewMode.QUARTERLY && toggleViewMode.emit()"
+    >
+      <img src="assets/icons/monthly-view.svg" alt="" width="18" height="18" />
+      <span>1M</span>
+    </button>
+  </div>
+
   <div class="pagination-controls">
-    <button class="control-button" title="Previous quarter" (click)="changePeriod.emit(-3)">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="m15 18-6-6 6-6" />
-      </svg>
+    <button
+      class="control-button"
+      [title]="viewMode === ViewMode.QUARTERLY ? 'Previous quarter' : 'Previous month'"
+      (click)="changePeriod.emit(viewMode === ViewMode.QUARTERLY ? -3 : -1)"
+    >
+      <img src="assets/icons/chevron-left.svg" alt="" width="18" height="18" />
     </button>
     <button class="control-button" title="Go to today" (click)="resetPeriod.emit()">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M8 2v4" />
-        <path d="M16 2v4" />
-        <rect width="18" height="18" x="3" y="4" rx="2" />
-        <path d="M3 10h18" />
-        <path d="m9 16 2 2 4-4" />
-      </svg>
+      <img src="assets/icons/calendar-check.svg" alt="" width="18" height="18" />
     </button>
-    <button class="control-button" title="Next quarter" (click)="changePeriod.emit(3)">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="m9 18 6-6-6-6" />
-      </svg>
+    <button
+      class="control-button"
+      [title]="viewMode === ViewMode.QUARTERLY ? 'Next quarter' : 'Next month'"
+      (click)="changePeriod.emit(viewMode === ViewMode.QUARTERLY ? 3 : 1)"
+    >
+      <img src="assets/icons/chevron-right.svg" alt="" width="18" height="18" />
     </button>
     <span class="period-label">{{ periodLabel }}</span>
   </div>
