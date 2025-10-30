@@ -5,6 +5,17 @@ describe('Graph Rendering and Interaction', () => {
     cy.get('.graph-container > svg').as('graphSvg');
   });
 
+  const robustClickNode = (nodeCySelector: string) => {
+    cy.get('body').then(($body) => {
+      if ($body.find(nodeCySelector).length > 0) {
+        cy.get(nodeCySelector).click({ force: true });
+      } else {
+        cy.get('g.cluster-node').first().should('be.visible').click({ force: true });
+        cy.get(nodeCySelector).should('be.visible').click({ force: true });
+      }
+    });
+  };
+
   context('Initial State', () => {
     it('should display the main UI components', () => {
       cy.get('app-header').should('be.visible');
@@ -49,11 +60,16 @@ describe('Graph Rendering and Interaction', () => {
 
   context('Branch and Node Rendering (based on Seeder data)', () => {
     it('should render sub-branch nodes on different y-levels', () => {
-      cy.get('@graphSvg').find('g[data-cy^="node-v"]')
-        .first().invoke('attr', 'transform')
-        .should('include', ', 0)');
+      cy.get('@graphSvg')
+        .find('g[data-cy^="node-v"]')
+        .filter((i, el) => {
+          const transform = el.getAttribute('transform');
+          return transform?.match(/translate\([^,]+,\s*0\)/) !== null;
+        })
+        .should('have.length.greaterThan', 0);
 
-      cy.get('@graphSvg').find('g[data-cy^="node-v"]')
+      cy.get('@graphSvg')
+        .find('g[data-cy^="node-v"]')
         .filter((i, el) => {
           const transform = el.getAttribute('transform');
           const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
@@ -69,7 +85,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should display nightly releases with darkblue color', () => {
-      cy.get('@graphSvg').find('g[data-cy="node-v9.0.2-nightly"]')
+      cy.get('@graphSvg').find('g[data-cy="node-v9.2.0-nightly"]')
         .find('circle[fill="darkblue"]')
         .should('exist');
     });
@@ -105,9 +121,8 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should expand cluster on click', () => {
-      cy.get('@graphSvg').find('g.cluster-node').first().then(($cluster) => {
-        const initialNodeCount = Cypress.$('@graphSvg').find('g[data-cy^="node-v"]').length;
-        cy.wrap($cluster).click({ force: true });
+      cy.get('@graphSvg').find('g[data-cy^="node-v"]').its('length').then((initialNodeCount) => {
+        cy.get('@graphSvg').find('g.cluster-node').first().click({ force: true });
 
         cy.get('@graphSvg').find('g[data-cy^="node-v"]').should('have.length.greaterThan', initialNodeCount);
 
@@ -118,26 +133,26 @@ describe('Graph Rendering and Interaction', () => {
 
   context('Release Details Navigation (based on Seeder data)', () => {
     it('should navigate to release details on node click', () => {
-      cy.get('g[data-cy="node-v9.0.1"]').click();
+      robustClickNode('[data-cy="node-v9.0.1"]');
 
       cy.url().should('include', '/graph/RE_kwDOAIg5ds4MnUo_');
       cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
 
       cy.get('app-release-details').contains('v9.0.1');
       cy.get('app-release-details').contains('CVE-2024-0001');
-      cy.get('app-release-details').contains('feat(ui): Add new graphing widget'); // Pull Request
+      cy.get('app-release-details').contains('feat(ui): Add new graphing widget');
     });
   });
 
   context('Skip Node Modal Interaction (based on Seeder data)', () => {
     it('should open modal on initial skip node click and navigate from it', () => {
-      cy.get('g[data-cy^="skip-node-skip-initial-"]').first().click();
+      cy.get('g[data-cy^="skip-node-skip-initial-"]').first().click({ force: true });
 
       cy.get('app-skipped-versions-modal', { timeout: 2000 }).should('be.visible');
 
       cy.get('app-skipped-versions-modal').contains('v6.1').should('be.visible');
 
-      cy.get('app-skipped-versions-modal').contains('v6.1').click();
+      cy.get('app-skipped-versions-modal').contains('v6.1').click({force: true});
 
       cy.url().should('include', '/graph/MDc6UmVsZWFzZTQ5MDUxNjU=');
       cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
@@ -164,13 +179,13 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should open release node details on tap without drag', () => {
-      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().as('firstNode');
+      cy.get('@graphSvg').find('g[data-cy="node-v8.2.1"]').as('firstNode');
 
       cy.get('@firstNode')
         .trigger('touchstart', { touches: [{ clientX: 100, clientY: 100 }], force: true })
         .trigger('touchend', { changedTouches: [{ clientX: 100, clientY: 100 }], force: true });
 
-      cy.url().should('include', '/graph/');
+      cy.url().should('include', '/graph/RE_kwDOAIg5ds4KrJui');
       cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
     });
 

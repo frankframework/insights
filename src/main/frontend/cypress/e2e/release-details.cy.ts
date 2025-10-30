@@ -90,8 +90,8 @@ describe('Release Details Page Journey', () => {
     cy.get('.back-button').click();
     cy.get('app-release-graph').should('be.visible');
 
-    cy.get('[data-cy="node-v9.0.0"]').should('exist').click({ force: true });
+    cy.get('[data-cy="node-v8.2.1"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
-    cy.get('.release-details-header h2').should('contain.text', 'v9.0.0');
+    cy.get('.release-details-header h2').should('contain.text', 'v8.2.1');
   });
 });
