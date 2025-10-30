@@ -28,7 +28,7 @@ MERGE INTO release (id, tag_name, name, published_at, branch_id) KEY(id) VALUES
 	('RE_kwDOAIg5ds4JaYPG','master-nightly','v9.2.0-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg=='),
 	('RE_kwDOAIg5ds4Lhg3o','v9.0.0','v9.0.0', DATEADD('MONTH', -4, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
 	('RE_kwDOAIg5ds4MnUo_','v9.0.1','v9.0.1', DATEADD('MONTH', -3, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
-	('RE_kwDOAIg5ds4LkXe7','release/9.0-nightly','v9.0.2-nightly', DATEADD('MONTH', -1, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
+	('RE_kwDOAIg5ds4LkXe7','release/9.0-nightly','v9.0.2-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL2hlYWRzL3JlbGVhc2UvOS4w'),
 	('RE_kwDOAIg5ds4IC5Zw','v8.0.0','v8.0.0', DATEADD('MONTH', -14, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
 	('RE_kwDOAIg5ds4JdZVZ','8.0-nightly','v8.0.6-nightly', DATEADD('MONTH', -13, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
 	('RE_kwDOAIg5ds4JUJAU','v8.0.2','v8.0.2', DATEADD('MONTH', -12, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzguMC1yZWxlYXNl'),
