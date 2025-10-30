@@ -15,6 +15,13 @@
       (touchcancel)="onTouchEnd()"
     >
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
+        @for (quarter of quarterMarkers; track quarter.label) {
+          <g class="quarter-marker">
+            <line class="quarter-line" [attr.x1]="quarter.x" [attr.y1]="-90" [attr.x2]="quarter.x" [attr.y2]="1000" />
+            <text y="-100" class="quarter-label" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
+          </g>
+        }
+
         @for (link of allLinks; track link) {
           <path
             [attr.data-cy]="'link-' + link.id"
@@ -24,19 +31,44 @@
           />
         }
 
-        @for (releaseNode of releaseNodes; track releaseNode) {
+        @for (entry of expandedClusters | keyvalue; track entry.key) {
+          @if (entry.value.clusteredNodes && entry.value.clusteredNodes.length > 0) {
+            @let lastNodePos = getLastExpandedNodePosition(entry.value);
+            @if (lastNodePos) {
+              <g
+                class="collapse-button visible"
+                [attr.transform]="'translate(' + (lastNodePos.x + 45) + ',' + lastNodePos.y + ')'"
+                (click)="collapseCluster(entry.key)"
+              >
+                <rect class="collapse-bg" x="0" y="-10" width="50" height="20" rx="4" />
+                <text class="collapse-icon" x="25" y="0">Collapse</text>
+              </g>
+            }
+          }
+        }
+
+        @for (releaseNode of releaseNodes; track releaseNode.id) {
           <g
             class="release-node"
+            [class.cluster-node]="releaseNode.isCluster"
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
-            (click)="openReleaseNodeDetails(releaseNode.id)"
-            (touchend)="onNodeTouchEnd($event, releaseNode.id)"
-            (touchcancel)="onNodeTouchEnd($event, releaseNode.id)"
+            (click)="releaseNode.isCluster ? toggleCluster(releaseNode) : openReleaseNodeDetails(releaseNode.id)"
+            (touchend)="releaseNode.isCluster ? $event.stopPropagation() : onNodeTouchEnd($event, releaseNode.id)"
+            (touchcancel)="releaseNode.isCluster ? $event.stopPropagation() : onNodeTouchEnd($event, releaseNode.id)"
           >
-            <circle r="20" [attr.fill]="releaseNode.color" />
-            <text y="-30">
-              {{ releaseNode.label }}
-            </text>
+            @if (releaseNode.isCluster) {
+              <circle r="20" fill="#e9ecef" class="cluster-circle-back" cx="2" cy="2" opacity="0.3" />
+              <circle r="20" fill="#f1f3f5" class="cluster-circle-mid" cx="1" cy="1" opacity="0.5" />
+              <circle r="20" fill="#ffffff" stroke="#ced4da" stroke-width="5" />
+              <path d="M -6 -6 L -1 0 L -6 6 M 1 -6 L 6 0 L 1 6" class="cluster-icon" />
+              <text y="-30" class="cluster-label">{{ releaseNode.clusteredNodes!.length }} releases</text>
+            } @else {
+              <circle r="20" [attr.fill]="releaseNode.color" />
+              <text y="-30">
+                {{ releaseNode.label }}
+              </text>
+            }
           </g>
         }
 

@@ -151,8 +151,10 @@ export class ReleaseLinkService {
     const minorReleases = this.filterMinorReleases(skippedReleases);
 
     if (minorReleases.length > 0) {
-      const extendedSpacing = 450;
-      const skipNodeX = firstNode.position.x - extendedSpacing / 2;
+      const timelineScale = this.nodeService.timelineScale;
+      if (!timelineScale) return;
+
+      const skipNodeX = firstNode.position.x / 2;
 
       skipNodes.push({
         id: `skip-initial-${firstNode.id}`,
