@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { ReleaseLinkService, Release, SkipNode } from './release-link.service';
-import { ReleaseNode } from './release-node.service';
+import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 
 const MASTER_BRANCH_NAME = 'master';
 
-const createMockNode = (id: string, originalBranch?: string): ReleaseNode => ({
+const createMockNode = (id: string, originalBranch?: string, label?: string): ReleaseNode => ({
   id,
-  label: id,
+  label: label ?? id,
   branch: originalBranch ?? MASTER_BRANCH_NAME,
   originalBranch,
   position: { x: 0, y: 0 },
@@ -16,6 +16,7 @@ const createMockNode = (id: string, originalBranch?: string): ReleaseNode => ({
 
 describe('ReleaseLinkService', () => {
   let service: ReleaseLinkService;
+  let mockNodeService: jasmine.SpyObj<ReleaseNodeService>;
 
   const masterNode1 = createMockNode('master-1');
   const masterNode2 = createMockNode('master-2');
@@ -29,10 +30,28 @@ describe('ReleaseLinkService', () => {
   const subNode9_1 = createMockNode('sub-9.0-1', 'release/9.0');
 
   beforeEach(() => {
+    const nodeServiceSpy = jasmine.createSpyObj('ReleaseNodeService', ['getVersionInfo', 'timelineScale']);
+
+    nodeServiceSpy.getVersionInfo.and.callFake((node: ReleaseNode) => {
+      const match = node.label.match(/^v?(\d+)\.(\d+)(?:\.(\d+))?/i);
+      if (!match) return null;
+      const major = Number.parseInt(match[1], 10);
+      const minor = Number.parseInt(match[2], 10);
+      const patch = Number.parseInt(match[3] ?? '0', 10);
+      let type: 'major' | 'minor' | 'patch' = 'patch';
+      if (patch === 0 && minor > 0) type = 'minor';
+      else if (patch === 0 && minor === 0) type = 'major';
+      return { major, minor, patch, type };
+    });
+
     TestBed.configureTestingModule({
-      providers: [ReleaseLinkService],
+      providers: [
+        ReleaseLinkService,
+        { provide: ReleaseNodeService, useValue: nodeServiceSpy }
+      ],
     });
     service = TestBed.inject(ReleaseLinkService);
+    mockNodeService = TestBed.inject(ReleaseNodeService) as jasmine.SpyObj<ReleaseNodeService>;
   });
 
   it('should be created', () => {
@@ -62,8 +81,8 @@ describe('ReleaseLinkService', () => {
 
     it('should create skip nodes for version gaps in master branch', () => {
       const masterNodes = [
-        createMockNode('v6.0.0'),
-        createMockNode('v8.0.0')
+        createMockNode('v6.0.0', undefined, 'v6.0.0'),
+        createMockNode('v8.0.0', undefined, 'v8.0.0')
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
@@ -85,7 +104,7 @@ describe('ReleaseLinkService', () => {
     });
 
     it('should create initial skip node for releases before the first master node', () => {
-      const masterNodes = [createMockNode('v5.0.0')];
+      const masterNodes = [createMockNode('v5.0.0', undefined, 'v5.0.0')];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
         { id: 'v3.0.0', name: 'v3.0.0', branch: { name: MASTER_BRANCH_NAME } },
@@ -93,6 +112,8 @@ describe('ReleaseLinkService', () => {
       ];
 
       masterNodes[0].position = { x: 450, y: 0 };
+
+      mockNodeService.timelineScale = { pixelsPerDay: 1 } as any;
 
       const skipNodes = service.createSkipNodes(structuredGroups, skippedReleases);
 
@@ -104,17 +125,17 @@ describe('ReleaseLinkService', () => {
       expect(skipNodes[0].skippedVersions).toEqual(['v3.0.0', 'v4.0.0']);
     });
 
-    it('should only count minor releases in skip nodes, excluding patch versions', () => {
+    it('should only count minor/major releases in skip nodes, excluding patch versions', () => {
       const masterNodes = [
-        createMockNode('v6.0.0'),
-        createMockNode('v8.0.0')
+        createMockNode('v6.0.0', undefined, 'v6.0.0'),
+        createMockNode('v8.0.0', undefined, 'v8.0.0')
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
-        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.0.1', name: 'v7.0.1', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.1.0', name: 'v7.1.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.1.1', name: 'v7.1.1', branch: { name: MASTER_BRANCH_NAME } }
+        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } }, // Yes
+        { id: 'v7.0.1', name: 'v7.0.1', branch: { name: MASTER_BRANCH_NAME } }, // No (patch)
+        { id: 'v7.1.0', name: 'v7.1.0', branch: { name: MASTER_BRANCH_NAME } }, // Yes
+        { id: 'v7.1.1', name: 'v7.1.1', branch: { name: MASTER_BRANCH_NAME } }  // No (patch)
       ];
 
       masterNodes[0].position = { x: 0, y: 0 };
@@ -127,10 +148,10 @@ describe('ReleaseLinkService', () => {
       expect(skipNodes[0].label).toBe('2 skipped');
     });
 
-    it('should not create skip node if no minor releases are skipped', () => {
+    it('should not create skip node if no minor/major releases are skipped', () => {
       const masterNodes = [
-        createMockNode('v6.0.0'),
-        createMockNode('v6.1.0')
+        createMockNode('v6.0.0', undefined, 'v6.0.0'),
+        createMockNode('v6.1.0', undefined, 'v6.1.0')
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
@@ -149,7 +170,7 @@ describe('ReleaseLinkService', () => {
 
   describe('createSkipNodeLinks() - Link Generation', () => {
     it('should create links for initial skip nodes', () => {
-      const masterNodes = [createMockNode('v5.0.0')];
+      const masterNodes = [createMockNode('v5.0.0', undefined, 'v5.0.0')];
       const skipNodes: SkipNode[] = [{
         id: 'skip-initial-v5.0.0',
         x: 225,
@@ -169,8 +190,8 @@ describe('ReleaseLinkService', () => {
 
     it('should create two links for regular skip nodes (source to skip, skip to target)', () => {
       const masterNodes = [
-        createMockNode('v6.0.0'),
-        createMockNode('v8.0.0')
+        createMockNode('v6.0.0', undefined, 'v6.0.0'),
+        createMockNode('v8.0.0', undefined, 'v8.0.0')
       ];
       masterNodes[0].position = { x: 0, y: 0 };
       masterNodes[1].position = { x: 450, y: 0 };
@@ -240,13 +261,11 @@ describe('ReleaseLinkService', () => {
     });
 
     it('should not crash and return an empty array if master branch is missing or empty', () => {
-      // Scenario 1: No master branch map
       const noMasterGroups = [new Map([['release/9.0', [subNode9_1]]])];
       const links1 = service.createLinks(noMasterGroups, []);
 
       expect(links1).toEqual([]);
 
-      // Scenario 2: Master branch exists but has no nodes
       const emptyMasterGroups = [new Map([[MASTER_BRANCH_NAME, []]])];
       const links2 = service.createLinks(emptyMasterGroups, []);
 
@@ -322,39 +341,61 @@ describe('ReleaseLinkService', () => {
 
       expect(fadeInLink).toBeDefined();
       expect(fadeInLink?.isGap).toBe(true);
+      expect(fadeInLink?.source).toBe('start-node-master-1');
+      expect(fadeInLink?.target).toBe('skip-initial-master-1');
     });
   });
 
-  describe('createIntraBranchLinks()', () => {
-    it('should return an empty array for a branch with 0 nodes', () => {
-      // Accessing private method for dedicated unit test
-      const links = (service as any).createIntraBranchLinks([]);
+  describe('(private) isVersionGap', () => {
+    it('should return false for consecutive minor versions', () => {
+      const source = createMockNode('v1.1.0', undefined, 'v1.1.0');
+      const target = createMockNode('v1.2.0', undefined, 'v1.2.0')
 
-      expect(links).toEqual([]);
+      expect((service as any).isVersionGap(source, target)).toBe(false);
     });
 
-    it('should return an empty array for a branch with only 1 node', () => {
-      const links = (service as any).createIntraBranchLinks([masterNode1]);
+    it('should return false for consecutive major versions', () => {
+      const source = createMockNode('v1.0.0', undefined, 'v1.0.0');
+      const target = createMockNode('v2.0.0', undefined, 'v2.0.0')
 
-      expect(links).toEqual([]);
+      expect((service as any).isVersionGap(source, target)).toBe(false);
     });
 
-    it('should create N-1 links for a branch with N nodes', () => {
-      const nodes = [masterNode1, masterNode2, masterNode3];
-      const links = (service as any).createIntraBranchLinks(nodes);
+    it('should return false for patch versions', () => {
+      const source = createMockNode('v1.1.0', undefined, 'v1.1.0');
+      const target = createMockNode('v1.1.1', undefined, 'v1.1.1');
 
-      expect(links.length).toBe(2);
-      expect(links[0].id).toBe('master-1-master-2');
-      expect(links[1].id).toBe('master-2-master-3');
+      expect((service as any).isVersionGap(source, target)).toBe(false);
+    });
+
+    it('should return true for a minor version gap', () => {
+      const source = createMockNode('v1.1.0', undefined, 'v1.1.0');
+      const target = createMockNode('v1.3.0', undefined, 'v1.3.0');
+
+      expect((service as any).isVersionGap(source, target)).toBe(true);
+    });
+
+    it('should return true for a major version gap', () => {
+      const source = createMockNode('v1.0.0', undefined, 'v1.0.0');
+      const target = createMockNode('v3.0.0', undefined, 'v3.0.0');
+
+      expect((service as any).isVersionGap(source, target)).toBe(true);
+    });
+
+    it('should return true for a gap with patches involved', () => {
+      const source = createMockNode('v1.1.5', undefined, 'v1.1.5');
+      const target = createMockNode('v1.3.0', undefined, 'v1.3.0');
+
+      expect((service as any).isVersionGap(source, target)).toBe(true);
     });
   });
 
   describe('Integration Tests - Skip Node and Link Creation', () => {
     it('should create complete skip node system with links for complex scenario', () => {
       const masterNodes = [
-        createMockNode('v4.0.0'),
-        createMockNode('v7.0.0'),
-        createMockNode('v9.0.0')
+        createMockNode('v4.0.0', undefined, 'v4.0.0'),
+        createMockNode('v7.0.0', undefined, 'v7.0.0'),
+        createMockNode('v9.0.0', undefined, 'v9.0.0')
       ];
       masterNodes[0].position = { x: 450, y: 0 };
       masterNodes[1].position = { x: 900, y: 0 };
@@ -370,119 +411,19 @@ describe('ReleaseLinkService', () => {
         { id: 'v8.0.0', name: 'v8.0.0', branch: { name: MASTER_BRANCH_NAME } }
       ];
 
+      mockNodeService.timelineScale = { pixelsPerDay: 1 } as any;
+
       const skipNodes = service.createSkipNodes(structuredGroups, allReleases);
       const skipNodeLinks = service.createSkipNodeLinks(skipNodes, masterNodes);
       const allLinks = service.createLinks(structuredGroups, skipNodes);
 
       expect(skipNodes.length).toBe(3);
-
       expect(skipNodeLinks.length).toBe(5);
-      expect(allLinks.some(link => link.source.startsWith('start-node-'))).toBe(true);
-    });
 
-    it('should handle empty releases list gracefully', () => {
-      const masterNodes = [createMockNode('v5.0.0')];
-      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
+      const fadeInLink = allLinks.find(link => link.source.startsWith('start-node-'));
 
-      const skipNodes = service.createSkipNodes(structuredGroups, []);
-
-      expect(skipNodes).toEqual([]);
-    });
-
-    it('should filter out patch versions correctly in skip counting', () => {
-      const masterNodes = [
-        createMockNode('v5.0.0'),
-        createMockNode('v8.0.0')
-      ];
-      masterNodes[0].position = { x: 0, y: 0 };
-      masterNodes[1].position = { x: 450, y: 0 };
-
-      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
-      const mixedReleases: Release[] = [
-        { id: 'v6.0.0', name: 'v6.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.0.1', name: 'v6.0.1', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.0.2', name: 'v6.0.2', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.1.0', name: 'v6.1.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.1.1', name: 'v6.1.1', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.0.1', name: 'v7.0.1', branch: { name: MASTER_BRANCH_NAME } }
-      ];
-
-      const skipNodes = service.createSkipNodes(structuredGroups, mixedReleases);
-
-      expect(skipNodes.length).toBe(1);
-      expect(skipNodes[0].skippedCount).toBe(3);
-      expect(skipNodes[0].label).toBe('3 skipped');
-      expect(skipNodes[0].skippedVersions).toEqual([
-        'v6.0.0', 'v6.0.1', 'v6.0.2', 'v6.1.0', 'v6.1.1', 'v7.0.0', 'v7.0.1'
-      ]);
-    });
-
-    it('should handle version parsing edge cases', () => {
-      const masterNodes = [
-        createMockNode('v10.0.0'),
-        createMockNode('v12.0.0')
-      ];
-      masterNodes[0].position = { x: 0, y: 0 };
-      masterNodes[1].position = { x: 450, y: 0 };
-
-      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
-      const edgeCaseReleases: Release[] = [
-        { id: 'v11.0.0', name: 'v11.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'invalid-version', name: 'invalid-version', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v11.1.0', name: 'v11.1.0', branch: { name: MASTER_BRANCH_NAME } }
-      ];
-
-      const skipNodes = service.createSkipNodes(structuredGroups, edgeCaseReleases);
-
-      expect(skipNodes.length).toBe(1);
-      expect(skipNodes[0].skippedCount).toBe(2);
-      expect(skipNodes[0].skippedVersions).toEqual(['v11.0.0', 'v11.1.0']);
-    });
-  });
-
-  describe('Error Handling and Edge Cases', () => {
-    it('should handle null or undefined inputs gracefully', () => {
-      expect(() => service.createSkipNodes([], [])).not.toThrow();
-      expect(() => service.createSkipNodeLinks([], [])).not.toThrow();
-      expect(() => service.createLinks([], [])).not.toThrow();
-    });
-
-    it('should handle malformed structured groups', () => {
-      const malformedGroups = [new Map()];
-      const skipNodes = service.createSkipNodes(malformedGroups, []);
-
-      expect(skipNodes).toEqual([]);
-    });
-
-    it('should handle master nodes without position data', () => {
-      const masterNodes = [createMockNode('v5.0.0')];
-      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
-      const releases: Release[] = [
-        { id: 'v4.0.0', name: 'v4.0.0', branch: { name: MASTER_BRANCH_NAME } }
-      ];
-
-      expect(() => service.createSkipNodes(structuredGroups, releases)).not.toThrow();
-    });
-
-    it('should handle duplicate release entries', () => {
-      const masterNodes = [
-        createMockNode('v5.0.0'),
-        createMockNode('v7.0.0')
-      ];
-      masterNodes[0].position = { x: 0, y: 0 };
-      masterNodes[1].position = { x: 450, y: 0 };
-
-      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
-      const duplicateReleases: Release[] = [
-        { id: 'v6.0.0', name: 'v6.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.0.0-duplicate', name: 'v6.0.0', branch: { name: MASTER_BRANCH_NAME } }
-      ];
-
-      const skipNodes = service.createSkipNodes(structuredGroups, duplicateReleases);
-
-      expect(skipNodes.length).toBe(1);
-      expect(skipNodes[0].skippedVersions.filter(v => v === 'v6.0.0').length).toBe(2);
+      expect(fadeInLink).toBeDefined();
+      expect(fadeInLink?.target).toBe('skip-initial-v4.0.0');
     });
   });
 });

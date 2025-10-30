@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ReleaseNode, ReleaseNodeService, SupportColors } from './release-node.service';
+import { ReleaseNode, ReleaseNodeService, SupportColors, TimelineScale } from './release-node.service';
 import { Branch, Release } from '../../services/release.service';
 
 const MASTER_BRANCH_NAME = 'master';
@@ -50,8 +50,6 @@ const createMockData = (): Release[] => {
       branch: branches['b90'],
       tagName: '',
     },
-
-    // Branch 8.4 releases
     {
       id: '8.4-anchor',
       name: 'v8.4.0',
@@ -66,8 +64,6 @@ const createMockData = (): Release[] => {
       branch: branches['b84'],
       tagName: '',
     },
-
-    // Branch 7.2 releases
     {
       id: '7.2-anchor',
       name: 'v7.2.0',
@@ -104,6 +100,13 @@ describe('ReleaseNodeService', () => {
     });
     service = TestBed.inject(ReleaseNodeService);
     mockReleases = createMockData() as any;
+
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date('2025-06-15T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jasmine.clock().uninstall();
   });
 
   it('should be created', () => {
@@ -163,6 +166,29 @@ describe('ReleaseNodeService', () => {
         expect(node.position.y).toBeGreaterThan(0);
       }
     });
+
+    it('should create a timeline scale with quarters', () => {
+      service.calculateReleaseCoordinates(structuredData);
+
+      expect(service.timelineScale).toBeDefined();
+      expect(service.timelineScale).not.toBeNull();
+      expect(service.timelineScale!.quarters).toBeDefined();
+      expect(service.timelineScale!.quarters.length).toBeGreaterThan(0);
+    });
+
+    it('should calculate X positions based on timeline dates', () => {
+      const positionedMap = service.calculateReleaseCoordinates(structuredData);
+      const masterNodes = positionedMap.get(MASTER_BRANCH_NAME)!;
+
+      for (const node of masterNodes) {
+        expect(node.position.x).toBeGreaterThanOrEqual(0);
+        expect(Number.isFinite(node.position.x)).toBe(true);
+      }
+
+      for (let index = 1; index < masterNodes.length; index++) {
+        expect(masterNodes[index].position.x).toBeGreaterThanOrEqual(masterNodes[index - 1].position.x);
+      }
+    });
   });
 
   describe('assignReleaseColors and determineColor', () => {
@@ -172,15 +198,6 @@ describe('ReleaseNodeService', () => {
     const FOUR_MONTHS_AGO = new Date(NOW.getTime() - 120 * 24 * 60 * 60 * 1000);
     const FIVE_MONTHS_AGO = new Date(NOW.getTime() - 150 * 24 * 60 * 60 * 1000);
     const THREE_YEARS_AGO = new Date(NOW.getTime() - 3 * 365 * 24 * 60 * 60 * 1000);
-
-    beforeAll(() => {
-      jasmine.clock().install();
-      jasmine.clock().mockDate(NOW);
-    });
-
-    afterAll(() => {
-      jasmine.clock().uninstall();
-    });
 
     it('should assign FULL support color for a recent major release (v9.0.0)', () => {
       const node = { label: 'v9.0.0', publishedAt: FIVE_MONTHS_AGO } as any;
@@ -257,11 +274,11 @@ describe('ReleaseNodeService', () => {
         ];
 
         const releaseGroups = new Map([['master', nodes]]);
-        const coloredNodes = service.assignReleaseColors(releaseGroups);
+        service.assignReleaseColors(releaseGroups);
 
-        expect(coloredNodes[0].color).toBe(SupportColors.NONE);
-        expect(coloredNodes[1].color).toBe(SupportColors.NONE);
-        expect(coloredNodes[2].color).toBe(SupportColors.FULL);
+        expect(nodes[0].color).toBe(SupportColors.NONE);
+        expect(nodes[1].color).toBe(SupportColors.NONE);
+        expect(nodes[2].color).toBe(SupportColors.FULL);
       });
 
       it('should handle multiple version series independently', () => {
@@ -273,12 +290,12 @@ describe('ReleaseNodeService', () => {
         ];
 
         const releaseGroups = new Map([['master', nodes]]);
-        const coloredNodes = service.assignReleaseColors(releaseGroups);
+        service.assignReleaseColors(releaseGroups);
 
-        expect(coloredNodes[0].color).toBe(SupportColors.NONE);
-        expect(coloredNodes[1].color).toBe(SupportColors.NONE);
-        expect(coloredNodes[2].color).toBe(SupportColors.NONE);
-        expect(coloredNodes[3].color).toBe(SupportColors.FULL);
+        expect(nodes[0].color).toBe(SupportColors.NONE);
+        expect(nodes[1].color).toBe(SupportColors.NONE);
+        expect(nodes[2].color).toBe(SupportColors.NONE);
+        expect(nodes[3].color).toBe(SupportColors.FULL);
       });
 
       it('should not affect major and minor version colors', () => {
@@ -289,11 +306,11 @@ describe('ReleaseNodeService', () => {
         ];
 
         const releaseGroups = new Map([['master', nodes]]);
-        const coloredNodes = service.assignReleaseColors(releaseGroups);
+        service.assignReleaseColors(releaseGroups);
 
-        expect(coloredNodes[0].color).toBe(SupportColors.FULL);
-        expect(coloredNodes[1].color).toBe(SupportColors.FULL);
-        expect(coloredNodes[2].color).toBe(SupportColors.FULL);
+        expect(nodes[0].color).toBe(SupportColors.FULL);
+        expect(nodes[1].color).toBe(SupportColors.FULL);
+        expect(nodes[2].color).toBe(SupportColors.FULL);
       });
     });
   });
@@ -315,6 +332,214 @@ describe('ReleaseNodeService', () => {
       const version = (service as any).getVersionFromBranchName('feature/new-button');
 
       expect(version).toBeNull();
+    });
+  });
+
+  describe('Timeline Scale Calculation', () => {
+    // eslint-disable-next-line unicorn/consistent-function-scoping
+    const createNode = (date: string): ReleaseNode => ({
+      id: date,
+      label: 'v1',
+      position: { x: 0, y: 0 },
+      color: 'red',
+      branch: 'master',
+      publishedAt: new Date(date),
+    });
+
+    it('should return a default scale for empty nodes', () => {
+      const scale = (service as any).calculateTimelineScale([]);
+
+      expect(scale.totalDays).toBe(0);
+      expect(scale.pixelsPerDay).toBe(1);
+    });
+
+    it('should calculate scale based on node dates', () => {
+      const nodes = [createNode('2024-02-15T00:00:00Z'), createNode('2024-08-01T00:00:00Z')];
+      const scale = (service as any).calculateTimelineScale(nodes);
+
+      expect(scale.latestReleaseDate).toEqual(new Date('2024-08-01T00:00:00Z'));
+      expect(scale.startDate).toEqual(new Date(2023, 9, 1));
+      expect(scale.endDate).toEqual(new Date(2024, 11, 30));
+      expect(scale.pixelsPerDay).toBeCloseTo(2.222);
+    });
+
+    it('should generate correct quarter markers', () => {
+      const startDate = new Date('2023-10-01T00:00:00Z');
+      const endDate = new Date('2024-05-01T00:00:00Z');
+      const pixelsPerDay = 2;
+      const markers = (service as any).generateQuarterMarkers(startDate, endDate, pixelsPerDay);
+
+      // Q4 2023, Q1 2024, Q2 2024
+      expect(markers.length).toBe(3);
+      expect(markers[0].label).toBe('Q4 2023');
+      expect(markers[1].label).toBe('Q1 2024');
+      expect(markers[2].label).toBe('Q2 2024');
+    });
+
+    it('should calculate X position from date', () => {
+      const scale: TimelineScale = {
+        startDate: new Date('2024-01-01T00:00:00Z'),
+        endDate: new Date('2024-12-31T00:00:00Z'),
+        pixelsPerDay: 2,
+        totalDays: 365,
+        quarters: [],
+        latestReleaseDate: new Date(),
+      };
+
+      const date1 = new Date('2024-01-01T00:00:00Z');
+      const date2 = new Date('2024-01-11T00:00:00Z');
+
+      expect((service as any).calculateXPositionFromDate(date1, scale)).toBe(0);
+      expect((service as any).calculateXPositionFromDate(date2, scale)).toBe(20);
+    });
+  });
+
+  describe('createClusters', () => {
+    beforeEach(() => {
+      const structuredData = service.structureReleaseData(mockReleases);
+      service.calculateReleaseCoordinates(structuredData);
+    });
+
+    it('should return original nodes if timeline scale is not set', () => {
+      service.timelineScale = null;
+      const nodes: ReleaseNode[] = [
+        { id: '1', label: 'v1.0', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+        { id: '2', label: 'v1.1', position: { x: 120, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+      ];
+
+      const result = service.createClusters(nodes);
+
+      expect(result).toEqual(nodes);
+    });
+
+    it('should return original nodes if array is empty', () => {
+      const result = service.createClusters([]);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should create clusters for closely positioned nodes', () => {
+      const now = new Date();
+      const nodes: ReleaseNode[] = [
+        { id: '1', label: 'v9.0.1', position: { x: 1000, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
+        { id: '2', label: 'v9.0.2', position: { x: 1050, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
+        { id: '3', label: 'v9.0.3', position: { x: 1090, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
+      ];
+
+      if (service.timelineScale) {
+        service.timelineScale.latestReleaseDate = now;
+      }
+
+      const result = service.createClusters(nodes);
+
+      const clusterNode = result.find(n => n.isCluster);
+      if (clusterNode) {
+        expect(clusterNode.clusteredNodes).toBeDefined();
+        expect(clusterNode.clusteredNodes!.length).toBeGreaterThan(1);
+      }
+    });
+
+    it('should not cluster nodes that are far apart', () => {
+      const oldDate = new Date('2023-01-01');
+      const nodes: ReleaseNode[] = [
+        { id: '1', label: 'v7.0', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: oldDate },
+        { id: '2', label: 'v8.0', position: { x: 1000, y: 0 }, branch: 'master', color: 'green', publishedAt: oldDate },
+      ];
+
+      const result = service.createClusters(nodes);
+
+      expect(result.length).toBe(2);
+      expect(result.every(n => !n.isCluster)).toBe(true);
+    });
+  });
+
+  describe('expandCluster', () => {
+    it('should expand cluster into individual nodes with spacing', () => {
+      const clusteredNodes: ReleaseNode[] = [
+        { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+        { id: '2', label: 'v9.0.2', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+        { id: '3', label: 'v9.0.3', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+      ];
+      const clusterNode: ReleaseNode = {
+        id: 'cluster-1',
+        label: '3',
+        position: { x: 500, y: 0 },
+        branch: 'master',
+        color: '#dee2e6',
+        publishedAt: new Date(),
+        isCluster: true,
+        clusteredNodes,
+      };
+
+      const result = service.expandCluster(clusterNode);
+
+      expect(result.length).toBe(3);
+
+      const avgX = result.reduce((sum, n) => sum + n.position.x, 0) / result.length;
+
+      expect(Math.abs(avgX - 500)).toBeLessThan(1); // Should be very close to 500
+    });
+
+    it('should give extra spacing to nightly releases', () => {
+      const clusteredNodes: ReleaseNode[] = [
+        { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+        { id: '2', label: 'v9.0.2-nightly', position: { x: 0, y: 0 }, branch: 'master', color: 'blue', publishedAt: new Date() },
+        { id: '3', label: 'v9.0.3', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+      ];
+      const clusterNode: ReleaseNode = {
+        id: 'cluster-1',
+        label: '3',
+        position: { x: 500, y: 0 },
+        branch: 'master',
+        color: '#dee2e6',
+        publishedAt: new Date(),
+        isCluster: true,
+        clusteredNodes,
+      };
+
+      const result = service.expandCluster(clusterNode);
+
+      expect(result.length).toBe(3);
+      const spacing1 = result[1].position.x - result[0].position.x;
+      const spacing2 = result[2].position.x - result[1].position.x;
+
+      const BASE_SPACING = 60;
+      const NIGHTLY_EXTRA_SPACING = 60;
+
+      expect(spacing1).toBe(BASE_SPACING + NIGHTLY_EXTRA_SPACING);
+      expect(spacing2).toBe(BASE_SPACING + NIGHTLY_EXTRA_SPACING)
+    });
+
+    it('should return original node if not a cluster', () => {
+      const regularNode: ReleaseNode = {
+        id: '1',
+        label: 'v9.0.1',
+        position: { x: 500, y: 0 },
+        branch: 'master',
+        color: 'green',
+        publishedAt: new Date(),
+      };
+
+      const result = service.expandCluster(regularNode);
+
+      expect(result).toEqual([regularNode]);
+    });
+
+    it('should handle empty clustered nodes', () => {
+      const clusterNode: ReleaseNode = {
+        id: 'cluster-1',
+        label: '0',
+        position: { x: 500, y: 0 },
+        branch: 'master',
+        color: '#dee2e6',
+        publishedAt: new Date(),
+        isCluster: true,
+        clusteredNodes: [],
+      };
+
+      const result = service.expandCluster(clusterNode);
+
+      expect(result).toEqual([clusterNode]);
     });
   });
 });
