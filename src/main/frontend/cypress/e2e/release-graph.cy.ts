@@ -69,7 +69,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should display nightly releases with darkblue color', () => {
-      cy.get('@graphSvg').find('g[data-cy="node-v9.2.0-nightly"]')
+      cy.get('@graphSvg').find('g[data-cy="node-v9.0.2-nightly"]')
         .find('circle[fill="darkblue"]')
         .should('exist');
     });
