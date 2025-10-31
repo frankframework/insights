@@ -5,7 +5,6 @@ import { ReleaseRoadmapComponent } from './release-roadmap.component';
 import { MilestoneService, Milestone } from '../../services/milestone.service'; // Import Milestone
 import { IssueService, Issue } from '../../services/issue.service';
 import { GitHubStates } from '../../app.service';
-import { ToastrService } from 'ngx-toastr';
 
 const BASE_MOCK_UNPLANNED_EPICS: Issue[] = [
   {
@@ -35,14 +34,12 @@ describe('ReleaseRoadmapComponent', () => {
   beforeEach(async () => {
     const milestoneSpy = jasmine.createSpyObj('MilestoneService', ['getMilestones']);
     const issueSpy = jasmine.createSpyObj('IssueService', ['getIssuesByMilestoneId', 'getFutureEpicIssues']);
-    const toastrSpy = jasmine.createSpyObj('ToastrService', ['error']);
 
     await TestBed.configureTestingModule({
       imports: [ReleaseRoadmapComponent, NoopAnimationsModule],
       providers: [
         { provide: MilestoneService, useValue: milestoneSpy },
         { provide: IssueService, useValue: issueSpy },
-        { provide: ToastrService, useValue: toastrSpy },
       ],
     }).compileComponents();
 
@@ -51,14 +48,9 @@ describe('ReleaseRoadmapComponent', () => {
     milestoneService = TestBed.inject(MilestoneService) as jasmine.SpyObj<MilestoneService>;
     issueService = TestBed.inject(IssueService) as jasmine.SpyObj<IssueService>;
 
-    // Default mocks
     milestoneService.getMilestones.and.returnValue(of([]));
     issueService.getIssuesByMilestoneId.and.returnValue(of([]));
     issueService.getFutureEpicIssues.and.callFake(() => of(getEpicsCopy()));
-  });
-
-  afterEach(() => {
-    // No jasmine.clock().uninstall()
   });
 
   it('should create', () => {

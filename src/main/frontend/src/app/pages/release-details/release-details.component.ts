@@ -9,7 +9,6 @@ import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -37,7 +36,6 @@ export class ReleaseDetailsComponent implements OnInit {
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
-  private toastService = inject(ToastrService);
   private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
@@ -46,14 +44,12 @@ export class ReleaseDetailsComponent implements OnInit {
         switchMap((parameters) => {
           const releaseId = parameters.get('id');
           if (!releaseId) {
-            this.toastService.error('No release ID provided');
             return of(null);
           }
           this.isLoading = true;
           return this.releaseService.getReleaseById(releaseId).pipe(
             catchError((error) => {
               console.error('Failed to load release:', error);
-              this.toastService.error('Failed to load release. Please try again later.');
               this.isLoading = false;
               return of(null);
             }),
@@ -76,23 +72,20 @@ export class ReleaseDetailsComponent implements OnInit {
     const labels$ = this.labelService.getHighLightsByReleaseId(releaseId).pipe(
       catchError((error) => {
         console.error('Failed to load highlights:', error);
-        this.toastService.error('Failed to load release highlights. Please try again later.');
-        return of();
+        return of([]);
       }),
     );
 
     const issues$ = this.issueService.getIssuesByReleaseId(releaseId).pipe(
       catchError((error) => {
         console.error('Failed to load issues:', error);
-        this.toastService.error('Failed to load release issues. Please try again later.');
-        return of();
+        return of([]);
       }),
     );
 
     const vulnerabilities$ = this.vulnerabilityService.getVulnerabilitiesByReleaseId(releaseId).pipe(
       catchError((error) => {
         console.error('Failed to load vulnerabilities:', error);
-        this.toastService.error('Failed to load vulnerabilities. Please try again later.');
         return of([]);
       }),
     );
@@ -104,23 +97,8 @@ export class ReleaseDetailsComponent implements OnInit {
     })
       .pipe(finalize(() => (this.isLoading = false)))
       .subscribe(({ labels, issues, vulnerabilities }) => {
-        if (labels && labels.length > 0) {
-          this.highlightedLabels = labels;
-        } else {
-          this.highlightedLabels = undefined;
-          if (Array.isArray(labels)) {
-            this.toastService.error('No release highlights found.');
-          }
-        }
-
-        if (issues && issues.length > 0) {
-          this.releaseIssues = issues;
-        } else {
-          this.releaseIssues = undefined;
-          if (Array.isArray(issues)) {
-            this.toastService.error('No release issues found.');
-          }
-        }
+        this.highlightedLabels = labels && labels.length > 0 ? labels : undefined;
+        this.releaseIssues = issues && issues.length > 0 ? issues : undefined;
 
         this.vulnerabilities = vulnerabilities && vulnerabilities.length > 0 ? vulnerabilities : [];
       });

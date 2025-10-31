@@ -27,6 +27,9 @@
   </div>
 
   @if (isOffCanvasOpen) {
-    <app-vulnerability-details-off-canvas [vulnerability]="selectedVulnerability" (close)="closeOffCanvas()" />
+    <app-vulnerability-details-off-canvas
+      [vulnerability]="selectedVulnerability"
+      (closeVulnerabilityCanvas)="closeOffCanvas()"
+    />
   }
 </div>
