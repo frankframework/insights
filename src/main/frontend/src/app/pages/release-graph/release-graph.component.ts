@@ -6,7 +6,6 @@ import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.servic
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { ToastrService } from 'ngx-toastr';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 
@@ -49,7 +48,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private nodeService = inject(ReleaseNodeService);
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
-  private toastService = inject(ToastrService);
 
   ngOnInit(): void {
     this.isLoading = true;
@@ -241,7 +239,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
         tap((releases) => (this.releases = releases)),
         tap((releases) => {
           if (releases.length === 0) {
-            this.toastService.error('No releases found.');
+            console.error('No releases found.');
           }
           this.checkReleaseGraphLoading();
         }),
@@ -251,7 +249,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
           console.error('Failed to load releases:', error);
           this.releaseNodes = [];
           this.allLinks = [];
-          this.toastService.error('Failed to load releases. Please try again later.');
           this.checkReleaseGraphLoading();
           return of([]);
         }),

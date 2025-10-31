@@ -8,7 +8,6 @@ import { ReleaseService, Release } from '../../services/release.service';
 import { LabelService, Label } from '../../services/label.service';
 import { IssueService, Issue } from '../../services/issue.service';
 import { VulnerabilityService, Vulnerability, VulnerabilitySeverities } from '../../services/vulnerability.service';
-import { ToastrService } from 'ngx-toastr';
 import { GitHubStates } from '../../app.service';
 
 const mockRelease: Release = {
@@ -38,7 +37,6 @@ describe('ReleaseDetailsComponent', () => {
   let mockLabelService: jasmine.SpyObj<LabelService>;
   let mockIssueService: jasmine.SpyObj<IssueService>;
   let mockVulnerabilityService: jasmine.SpyObj<VulnerabilityService>;
-  let mockToastrService: jasmine.SpyObj<ToastrService>;
   let mockLocation: jasmine.SpyObj<Location>;
   let parameterMapSubject: Subject<any>;
 
@@ -47,7 +45,6 @@ describe('ReleaseDetailsComponent', () => {
     mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
-    mockToastrService = jasmine.createSpyObj('ToastrService', ['error']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
 
     parameterMapSubject = new Subject();
@@ -63,7 +60,6 @@ describe('ReleaseDetailsComponent', () => {
         { provide: LabelService, useValue: mockLabelService },
         { provide: IssueService, useValue: mockIssueService },
         { provide: VulnerabilityService, useValue: mockVulnerabilityService },
-        { provide: ToastrService, useValue: mockToastrService },
         { provide: Location, useValue: mockLocation },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
       ],
@@ -114,15 +110,6 @@ describe('ReleaseDetailsComponent', () => {
       expect(component.vulnerabilities).toEqual(mockVulnerabilities);
     }));
 
-    it('should show error toast if no release ID is provided', fakeAsync(() => {
-      fixture.detectChanges();
-      parameterMapSubject.next({ get: () => null });
-      tick();
-
-      expect(mockToastrService.error).toHaveBeenCalledWith('No release ID provided');
-      expect(mockReleaseService.getReleaseById).not.toHaveBeenCalled();
-    }));
-
     it('should handle release fetch error gracefully', fakeAsync(() => {
       mockReleaseService.getReleaseById.and.returnValue(
         throwError(() => new Error('Release API Error')).pipe(delay(0)),
@@ -133,7 +120,6 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.isLoading).toBe(false);
-      expect(mockToastrService.error).toHaveBeenCalledWith('Failed to load release. Please try again later.');
       expect(component.release).toBeUndefined();
     }));
 
@@ -150,12 +136,10 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.isLoading).toBe(false);
-      expect(mockToastrService.error).toHaveBeenCalledWith(
-        'Failed to load release highlights. Please try again later.',
-      );
 
       expect(component.highlightedLabels).toBeUndefined();
-      expect(component.releaseIssues).toBeUndefined();
+      expect(component.releaseIssues).toEqual(mockIssues);
+      expect(component.vulnerabilities).toEqual(mockVulnerabilities);
     }));
 
     it('should handle issue fetch error gracefully', fakeAsync(() => {
@@ -171,12 +155,12 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.isLoading).toBe(false);
-      expect(mockToastrService.error).toHaveBeenCalledWith('Failed to load release issues. Please try again later.');
       expect(component.releaseIssues).toBeUndefined();
-      expect(component.highlightedLabels).toBeUndefined();
+      expect(component.highlightedLabels).toEqual(mockLabels);
+      expect(component.vulnerabilities).toEqual(mockVulnerabilities);
     }));
 
-    it('should show a toast and set data to undefined if API returns an empty array for labels', fakeAsync(() => {
+    it('should set data to undefined if API returns an empty array for labels', fakeAsync(() => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
@@ -187,10 +171,9 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.highlightedLabels).toBeUndefined();
-      expect(mockToastrService.error).toHaveBeenCalledWith('No release highlights found.');
     }));
 
-    it('should show a toast and set data to undefined if API returns an empty array for issues', fakeAsync(() => {
+    it('should set data to undefined if API returns an empty array for issues', fakeAsync(() => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
@@ -201,23 +184,6 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.releaseIssues).toBeUndefined();
-      expect(mockToastrService.error).toHaveBeenCalledWith('No release issues found.');
-    }));
-
-    it('should show toasts for both empty labels and issues', fakeAsync(() => {
-      mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
-      mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
-      mockIssueService.getIssuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
-      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
-
-      fixture.detectChanges();
-      parameterMapSubject.next({ get: () => 'release-1' });
-      tick();
-
-      expect(component.highlightedLabels).toBeUndefined();
-      expect(component.releaseIssues).toBeUndefined();
-      expect(mockToastrService.error).toHaveBeenCalledWith('No release highlights found.');
-      expect(mockToastrService.error).toHaveBeenCalledWith('No release issues found.');
     }));
 
     it('should handle vulnerability fetch error gracefully', fakeAsync(() => {
@@ -233,7 +199,6 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.isLoading).toBe(false);
-      expect(mockToastrService.error).toHaveBeenCalledWith('Failed to load vulnerabilities. Please try again later.');
       expect(component.vulnerabilities).toEqual([]);
     }));
 

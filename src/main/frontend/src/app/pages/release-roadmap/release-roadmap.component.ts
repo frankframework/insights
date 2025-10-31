@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
-import { ToastrService } from 'ngx-toastr';
 import { RoadmapToolbarComponent } from './roadmap-toolbar/roadmap-toolbar.component';
 import { TimelineHeaderComponent } from './timeline-header/timeline-header.component';
 import { MilestoneRowComponent } from './milestone-row/milestone-row.component';
@@ -111,7 +110,6 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   private milestoneService = inject(MilestoneService);
   private issueService = inject(IssueService);
-  private toastrService = inject(ToastrService);
   private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
@@ -455,8 +453,7 @@ export class ReleaseRoadmapComponent implements OnInit {
           this.isDataLoaded = true;
         }),
         catchError((error) => {
-          this.toastrService.error('Could not load roadmap data.', 'Error');
-          console.error(error);
+          console.error(`Could not load roadmap data: ${error}`);
           return of(null);
         }),
         finalize(() => {
