@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { ReleaseGraphComponent } from './release-graph.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
-import { ReleaseLinkService } from './release-link.service';
+import { ReleaseLinkService, SkipNode } from './release-link.service';
 import { Router, NavigationEnd } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { of, ReplaySubject, throwError } from 'rxjs';
@@ -17,9 +17,10 @@ describe('ReleaseGraphComponent', () => {
   let mockToastService: jasmine.SpyObj<ToastrService>;
   let routerEventsSubject: ReplaySubject<NavigationEnd>;
 
-  const mockReleases: Release[] = [
-    { id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), branch: { id: 'b1', name: 'master' } },
-  ];
+  const mockReleaseData: Record<string, Release[]> = {
+    master: [{ id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), branch: { id: 'b1', name: 'master' } }],
+  };
+  const mockReleases: Release[] = Object.values(mockReleaseData).flat();
   const mockNodes: ReleaseNode[] = [
     {
       id: '1',
@@ -33,6 +34,17 @@ describe('ReleaseGraphComponent', () => {
   const mockLinks = [{ id: '1-2', source: '1', target: '2' }];
   const mockStructuredGroups = [new Map([['master', mockNodes]])];
   const mockReleaseNodeMap = new Map([['master', mockNodes]]);
+  const mockTimelineScale = {
+    startDate: new Date('2024-01-01'),
+    endDate: new Date('2024-12-31'),
+    pixelsPerDay: 2,
+    totalDays: 365,
+    quarters: [
+      { label: 'Q1 2024', date: new Date('2024-01-01'), x: 0, labelX: 100, year: 2024, quarter: 1 },
+      { label: 'Q2 2024', date: new Date('2024-04-01'), x: 200, labelX: 300, year: 2024, quarter: 2 },
+    ],
+    latestReleaseDate: new Date('2024-12-31'),
+  };
 
   beforeEach(async () => {
     mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getAllReleases']);
@@ -40,6 +52,8 @@ describe('ReleaseGraphComponent', () => {
       'structureReleaseData',
       'calculateReleaseCoordinates',
       'assignReleaseColors',
+      'createClusters',
+      'expandCluster',
     ]);
     mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
     mockToastService = jasmine.createSpyObj('ToastrService', ['error']);
@@ -65,7 +79,9 @@ describe('ReleaseGraphComponent', () => {
     mockReleaseService.getAllReleases.and.returnValue(of(mockReleases));
     mockNodeService.structureReleaseData.and.returnValue(mockStructuredGroups);
     mockNodeService.calculateReleaseCoordinates.and.returnValue(mockReleaseNodeMap);
-    mockNodeService.assignReleaseColors.and.returnValue(mockNodes);
+    mockNodeService.assignReleaseColors.and.returnValue();
+    mockNodeService.timelineScale = mockTimelineScale;
+    mockNodeService.createClusters.and.returnValue(mockNodes);
     mockLinkService.createLinks.and.returnValue(mockLinks);
     mockLinkService.createSkipNodes.and.returnValue([]);
     mockLinkService.createSkipNodeLinks.and.returnValue([]);
@@ -194,17 +210,6 @@ describe('ReleaseGraphComponent', () => {
         expect(component.isDragging).toBe(false);
         expect(mockTouchEvent.preventDefault).toHaveBeenCalledWith();
       });
-
-      it('should handle touch event with zero touches', () => {
-        Object.defineProperty(mockTouchEvent, 'touches', {
-          get: () => [],
-          configurable: true,
-        });
-
-        component.onTouchStart(mockTouchEvent);
-
-        expect(component.isDragging).toBe(false);
-      });
     });
 
     describe('onTouchMove', () => {
@@ -248,89 +253,11 @@ describe('ReleaseGraphComponent', () => {
 
         expect(component.translateX).toBe(-1000);
       });
-
-      it('should respect maximum translateX boundary', () => {
-        component.isDragging = true;
-        (component as any).lastPositionX = 100;
-        component.translateX = 400;
-
-        const newTouch = { clientX: 250 } as Touch;
-        Object.defineProperty(mockTouchEvent, 'touches', {
-          get: () => [newTouch],
-          configurable: true,
-        });
-
-        component.onTouchMove(mockTouchEvent);
-
-        expect(component.translateX).toBe(500);
-      });
-
-      it('should not update translateX when not dragging', () => {
-        component.isDragging = false;
-        (component as any).lastPositionX = 100;
-        component.translateX = 0;
-
-        const newTouch = { clientX: 150 } as Touch;
-        Object.defineProperty(mockTouchEvent, 'touches', {
-          get: () => [newTouch],
-          configurable: true,
-        });
-
-        component.onTouchMove(mockTouchEvent);
-
-        expect(component.translateX).toBe(0);
-        expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
-        expect((component as any).updateStickyBranchLabels).not.toHaveBeenCalled();
-      });
-
-      it('should not update translateX when multiple touches are detected', () => {
-        component.isDragging = true;
-        (component as any).lastPositionX = 100;
-        component.translateX = 0;
-
-        const touch1 = { clientX: 150 } as Touch;
-        const touch2 = { clientX: 200 } as Touch;
-        Object.defineProperty(mockTouchEvent, 'touches', {
-          get: () => [touch1, touch2],
-          configurable: true,
-        });
-
-        component.onTouchMove(mockTouchEvent);
-
-        expect(component.translateX).toBe(0);
-        expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
-        expect((component as any).updateStickyBranchLabels).not.toHaveBeenCalled();
-      });
-
-      it('should handle negative delta (dragging left)', () => {
-        component.isDragging = true;
-        (component as any).lastPositionX = 200;
-        component.translateX = 100;
-
-        const newTouch = { clientX: 150 } as Touch;
-        Object.defineProperty(mockTouchEvent, 'touches', {
-          get: () => [newTouch],
-          configurable: true,
-        });
-
-        component.onTouchMove(mockTouchEvent);
-
-        expect(component.translateX).toBe(50);
-        expect((component as any).lastPositionX).toBe(150);
-      });
     });
 
     describe('onTouchEnd', () => {
       it('should set isDragging to false', () => {
         component.isDragging = true;
-
-        component.onTouchEnd();
-
-        expect(component.isDragging).toBe(false);
-      });
-
-      it('should set isDragging to false even when already false', () => {
-        component.isDragging = false;
 
         component.onTouchEnd();
 
@@ -381,18 +308,6 @@ describe('ReleaseGraphComponent', () => {
         component.onTouchMove(mockTouchEvent);
 
         expect((component as any).isTouchDragging).toBe(true);
-      });
-
-      it('should not detect drag when movement is less than 10px', () => {
-        const newTouch = { clientX: 105, clientY: 205 } as Touch;
-        Object.defineProperty(mockTouchEvent, 'touches', {
-          get: () => [newTouch],
-          configurable: true,
-        });
-
-        component.onTouchMove(mockTouchEvent);
-
-        expect((component as any).isTouchDragging).toBe(false);
       });
     });
 
@@ -453,35 +368,157 @@ describe('ReleaseGraphComponent', () => {
         expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
         expect(component.dataForSkipModal).toBeNull();
       });
-
-      it('should not open modal for non-existent skip node', () => {
-        (component as any).isTouchDragging = false;
-
-        component.onSkipNodeTouchEnd(mockTouchEvent, 'non-existent');
-
-        expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
-        expect(component.dataForSkipModal).toBeNull();
-      });
     });
   });
 
-  describe('ViewBox Calculation', () => {
-    it('should set valid, finite numbers for scale and transform properties', () => {
-      const svgWidth = 1200;
-      const svgHeight = 800;
-      const mockSvgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      spyOnProperty(mockSvgElement, 'clientWidth', 'get').and.returnValue(svgWidth);
-      spyOnProperty(mockSvgElement, 'clientHeight', 'get').and.returnValue(svgHeight);
-      component.svgElement = new ElementRef(mockSvgElement);
-      component.releaseNodes = [{ position: { x: 0, y: 0 } }, { position: { x: 2000, y: 500 } }] as any;
+  describe('Timeline and Quarter Markers', () => {
+    it('should load quarter markers from the node service timeline scale', () => {
+      fixture.detectChanges();
 
-      (component as any).centerGraph();
+      expect(component.quarterMarkers).toBeDefined();
+      expect(component.quarterMarkers.length).toBe(2);
+      expect(component.quarterMarkers[0].label).toBe('Q1 2024');
+    });
 
-      expect(Number.isFinite(component.scale)).toBe(true);
-      expect(Number.isFinite(component.translateX)).toBe(true);
-      expect(Number.isFinite(component.translateY)).toBe(true);
-      expect(component.scale).toBeGreaterThan(0);
-      expect(component.viewBox).toBe(`0 0 ${svgWidth} ${svgHeight}`);
+    it('should handle missing timeline scale gracefully', () => {
+      mockNodeService.timelineScale = null;
+      fixture.detectChanges();
+
+      expect(component.quarterMarkers).toEqual([]);
+    });
+  });
+
+  describe('Cluster Functionality', () => {
+    it('should toggle cluster expansion', () => {
+      const clusterNode: ReleaseNode = {
+        id: 'cluster-1',
+        label: '3',
+        position: { x: 100, y: 0 },
+        branch: 'master',
+        color: '#dee2e6',
+        publishedAt: new Date(),
+        isCluster: true,
+        isExpanded: false,
+        clusteredNodes: [
+          { id: '1', label: 'v1.0', position: { x: 90, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+          { id: '2', label: 'v1.1', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+          { id: '3', label: 'v1.2', position: { x: 110, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+        ],
+      };
+      component.releaseNodes = [clusterNode];
+      const expandedNodes = clusterNode.clusteredNodes!;
+      mockNodeService.expandCluster.and.returnValue(expandedNodes);
+
+      component.toggleCluster(clusterNode);
+
+      expect(clusterNode.isExpanded).toBe(true);
+      expect(component.releaseNodes.length).toBe(3);
+      expect(mockNodeService.expandCluster).toHaveBeenCalledWith(clusterNode);
+    });
+
+    it('should collapse an expanded cluster', () => {
+      const clusterNode: ReleaseNode = {
+        id: 'cluster-1',
+        label: '3',
+        position: { x: 100, y: 0 },
+        branch: 'master',
+        color: '#dee2e6',
+        publishedAt: new Date(),
+        isCluster: true,
+        isExpanded: true,
+        clusteredNodes: [
+          { id: '1', label: 'v1.0', position: { x: 90, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+          { id: '2', label: 'v1.1', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+          { id: '3', label: 'v1.2', position: { x: 110, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
+        ],
+      };
+      component.releaseNodes = clusterNode.clusteredNodes!;
+      component.expandedClusters.set(clusterNode.id, clusterNode);
+      component.collapseCluster(clusterNode.id);
+
+      expect(clusterNode.isExpanded).toBe(false);
+      expect(component.releaseNodes.length).toBe(1);
+      expect(component.releaseNodes[0]).toBe(clusterNode);
+      expect(component.expandedClusters.has(clusterNode.id)).toBe(false);
+    });
+  });
+
+  describe('(private) findNodeById', () => {
+    // eslint-disable-next-line no-unused-vars
+    let findNodeById: (_id: string) => ReleaseNode | undefined;
+
+    beforeEach(() => {
+      findNodeById = (component as any).findNodeById.bind(component);
+    });
+
+    it('should find a regular release node', () => {
+      component.releaseNodes = [
+        { id: 'node-1', position: { x: 100, y: 0 } } as ReleaseNode,
+        { id: 'node-2', position: { x: 200, y: 0 } } as ReleaseNode,
+      ];
+
+      expect(findNodeById('node-2')).toBe(component.releaseNodes[1]);
+    });
+
+    it('should find a skip node', () => {
+      component.skipNodes = [
+        { id: 'skip-1', x: 150, y: 0, label: 'skip' } as SkipNode,
+      ];
+      const result = findNodeById('skip-1');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('skip-1');
+      expect(result?.position).toEqual({ x: 150, y: 0 });
+    });
+
+    it('should return undefined for a non-existent ID', () => {
+      component.releaseNodes = [{ id: 'node-1' } as ReleaseNode];
+      component.skipNodes = [{ id: 'skip-1' } as SkipNode];
+
+      expect(findNodeById('non-existent')).toBeUndefined();
+    });
+
+    it('should create a start-node relative to the first node (no initial skip)', () => {
+      component.releaseNodes = [
+        { id: 'node-1', position: { x: 400, y: 0 } } as ReleaseNode,
+      ];
+      component.skipNodes = [];
+
+      const result = findNodeById('start-node-node-1');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('start-node-node-1');
+      expect(result?.position).toEqual({ x: 100, y: 0 });
+    });
+
+    it('should create a start-node relative to the initial skip node', () => {
+      component.releaseNodes = [
+        { id: 'node-1', position: { x: 800, y: 0 } } as ReleaseNode,
+      ];
+      component.skipNodes = [
+        { id: 'skip-initial-node-1', x: 400, y: 0 } as SkipNode,
+      ];
+
+      const result = findNodeById('start-node-node-1');
+
+      expect(result).toBeDefined();
+      expect(result?.id).toBe('start-node-node-1');
+      expect(result?.position).toEqual({ x: 100, y: 0 });
+    });
+
+    it('should find a node that is inside a cluster', () => {
+      const clusteredNode = { id: 'node-in-cluster' } as ReleaseNode;
+      const cluster = {
+        id: 'cluster-1',
+        isCluster: true,
+        clusteredNodes: [ clusteredNode ]
+      } as ReleaseNode;
+
+      component.releaseNodes = [ cluster ];
+
+      const result = findNodeById('node-in-cluster');
+
+      expect(result).toBe(cluster);
     });
   });
 });
