@@ -375,7 +375,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     this.quarterMarkers = this.nodeService.timelineScale?.quarters ?? [];
 
-    // Calculate current time X position
     if (this.nodeService.timelineScale) {
       this.currentTimeX = this.calculateXPositionFromDate(new Date(), this.nodeService.timelineScale);
     }
@@ -423,7 +422,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     for (const yPosition of sortedYPositions) {
       const branchLabel = this.determineBranchLabel(yPosition, nodesByY.get(yPosition)!, releases);
-      // Master branch (y === 0) is always supported
       const supportStatus = yPosition === 0 ? 'supported' : this.getBranchSupportStatus(nodesByY.get(yPosition)!);
       this.addUniqueBranchLabel(labels, branchLabel, yPosition, labelX, supportStatus);
     }
@@ -494,17 +492,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private getBranchSupportStatus(nodesAtY: ReleaseNode[]): 'supported' | 'none' {
-    // Get all nodes including those in clusters
     const allNodes = this.getAllNodesInBranch(nodesAtY);
     if (allNodes.length === 0) return 'none';
 
-    // Get the first node to determine branch version (e.g., v9.2.1 -> 9.2)
     const sortedNodes = [...allNodes].sort((a, b) => a.position.x - b.position.x);
     const firstNode = sortedNodes[0];
     const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
     if (!firstVersionInfo) return 'none';
 
-    // Find the corresponding major/minor release from all releases
     const branchMajorMinor = `${firstVersionInfo.major}.${firstVersionInfo.minor}`;
     const majorMinorRelease = this.releases.find((release) => {
       const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
@@ -519,13 +514,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const versionInfo = this.nodeService.getVersionInfo(majorMinorNode);
     if (!versionInfo) return 'none';
 
-    // Minor: 2 quarters (6 months)
-    // Major: 4 quarters (12 months)
     const totalSupportQuarters = versionInfo.type === 'major' ? 4 : 2;
 
     const branchStartDate = new Date(majorMinorRelease.publishedAt);
     const supportEnd = new Date(branchStartDate);
-    // Add quarters (each quarter is 3 months)
     supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
 
     const now = new Date();
@@ -607,16 +599,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const sortedYPositions = [...nodesByY.keys()].sort((a, b) => a - b);
 
     for (const yPosition of sortedYPositions) {
-      // Skip master branch (y === 0)
       if (yPosition === 0) continue;
 
       const nodesAtY = nodesByY.get(yPosition)!;
       const branchLabel = this.determineBranchLabel(yPosition, nodesAtY, this.releases);
 
-      // Get all nodes for this branch (including those in clusters)
       const allNodesInBranch = this.getAllNodesInBranch(nodesAtY);
 
-      // Sort nodes by x position
       const sortedNodes = [...allNodesInBranch].sort((a, b) => a.position.x - b.position.x);
 
       if (sortedNodes.length === 0) continue;
@@ -655,13 +644,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const phases: LifecyclePhase[] = [];
     const scale = this.nodeService.timelineScale;
 
-    // Get the first node to determine branch version (e.g., v9.2.1 -> 9.2)
     const firstNode = sortedNodes[0];
     const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
     if (!firstVersionInfo) return [];
 
-    // Find the corresponding major/minor release from all releases
-    // For example, if branch has v9.2.1, find v9.2.0 from the releases
     const branchMajorMinor = `${firstVersionInfo.major}.${firstVersionInfo.minor}`;
     const majorMinorRelease = this.releases.find((release) => {
       const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
@@ -670,7 +656,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     if (!majorMinorRelease) return [];
 
-    // Find the corresponding node in releaseNodes to get the X position
     const majorMinorNode = this.releaseNodes.find((node) => node.id === majorMinorRelease.id);
     if (!majorMinorNode) return [];
 
@@ -678,24 +663,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const versionInfo = this.nodeService.getVersionInfo(majorMinorNode);
     if (!versionInfo) return [];
 
-    // Minor: 2 quarters (6 months)
-    // Major: 4 quarters (12 months)
     const totalSupportQuarters = versionInfo.type === 'major' ? 4 : 2;
 
     const branchStartDate = new Date(majorMinorRelease.publishedAt);
     const supportEnd = new Date(branchStartDate);
-    // Add quarters (each quarter is 3 months)
     supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
 
-    // Calculate X positions for lifecycle boundaries
     const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
 
-    // Create single support phase with light green color
     phases.push({
       type: 'supported',
       startX: firstX,
       endX: supportEndX,
-      color: 'rgba(144, 238, 144, 0.2)', // Light green with transparency
+      color: 'rgba(144, 238, 144, 0.2)',
     });
 
     return phases;
