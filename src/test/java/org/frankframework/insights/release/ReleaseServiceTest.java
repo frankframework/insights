@@ -12,6 +12,7 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
+import org.frankframework.insights.common.properties.ReleaseFixProperties;
 import org.frankframework.insights.github.*;
 import org.frankframework.insights.pullrequest.PullRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,9 @@ public class ReleaseServiceTest {
     @Mock
     private ReleasePullRequestRepository releasePullRequestRepository;
 
-    @InjectMocks
+	@Mock
+	private ReleaseFixProperties releaseFixProperties;
+
     private ReleaseService releaseService;
 
     private ReleaseDTO dto1;
@@ -49,6 +52,12 @@ public class ReleaseServiceTest {
     private Branch masterBranch, featureBranch, noNameBranch;
     private PullRequest pr1;
     private BranchPullRequest branchPR1;
+
+	private HashMap<String, OffsetDateTime> overrideMap;
+	private OffsetDateTime originalDate2;
+	private OffsetDateTime overrideDate;
+	private ReleaseDTO releaseToFix;
+	private ReleaseDTO releaseToKeep;
 
     @BeforeEach
     public void setUp() {
@@ -85,9 +94,29 @@ public class ReleaseServiceTest {
         pr1.setMergedAt(rel1.getPublishedAt().plusDays(2));
 
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
+
+		overrideMap = new HashMap<>();
+
+		OffsetDateTime originalDate1 = OffsetDateTime.parse("2024-01-15T10:00:00Z");
+		originalDate2 = OffsetDateTime.parse("2024-03-20T14:00:00Z");
+		overrideDate = OffsetDateTime.parse("2025-02-02T12:00:00Z");
+
+		releaseToFix = new ReleaseDTO("id-1", "v8.0.5", "Release 8.0.5", originalDate1);
+		releaseToKeep = new ReleaseDTO("id-2", "v8.0.4", "Release 8.0.4", originalDate2);
+
+		when(releaseFixProperties.getDateOverrides()).thenReturn(overrideMap);
+
+		releaseService = new ReleaseService(
+				gitHubClient,
+				mapper,
+				releaseRepository,
+				branchService,
+				releasePullRequestRepository,
+				releaseFixProperties
+		);
     }
 
-    @Test
+	@Test
     public void injects_whenDatabaseEmpty() throws Exception {
         when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
@@ -557,4 +586,71 @@ public class ReleaseServiceTest {
         verify(mapper, never()).toEntity(eq(rcLowercase), eq(Release.class));
         verify(mapper, never()).toEntity(eq(betaUppercase), eq(Release.class));
     }
+
+	@Test
+	public void testShouldOverrideDateWhenTagNameMatches() {
+		overrideMap.put("v8.0.5", overrideDate);
+		Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
+
+		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+
+		assertNotNull(resultSet);
+		assertEquals(2, resultSet.size());
+
+		ReleaseDTO fixedDto = resultSet.stream()
+				.filter(dto -> "v8.0.5".equals(dto.tagName()))
+				.findFirst()
+				.orElseThrow();
+
+		ReleaseDTO keptDto = resultSet.stream()
+				.filter(dto -> "v8.0.4".equals(dto.tagName()))
+				.findFirst()
+				.orElseThrow();
+
+		assertEquals(overrideDate, fixedDto.publishedAt());
+		assertNotSame(releaseToFix, fixedDto);
+		assertEquals("id-1", fixedDto.id());
+
+		assertEquals(originalDate2, keptDto.publishedAt());
+		assertSame(releaseToKeep, keptDto);
+	}
+
+	@Test
+	public void testShouldReturnOriginalSetWhenNoMatches() {
+		overrideMap.put("v9.9.9", overrideDate);
+		Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
+
+		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+
+		assertNotNull(resultSet);
+		assertEquals(2, resultSet.size());
+
+		assertTrue(resultSet.contains(releaseToFix));
+		assertTrue(resultSet.contains(releaseToKeep));
+
+		assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToFix));
+		assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToKeep));
+	}
+
+	@Test
+	public void testShouldReturnSameSetWhenOverridesAreEmpty() {
+		Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
+
+		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+
+		assertNotNull(resultSet);
+		assertEquals(2, resultSet.size());
+		assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original set instance");
+	}
+
+	@Test
+	public void testShouldReturnEmptySetWhenInputIsEmpty() {
+		Set<ReleaseDTO> inputSet = Set.of();
+
+		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+
+		assertNotNull(resultSet);
+		assertTrue(resultSet.isEmpty());
+		assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original empty set");
+	}
 }
