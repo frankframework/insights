@@ -36,7 +36,7 @@
       display: flex;
       justify-content: center;
       padding-inline: 1rem;
-      width: 100px;
+      width: 120px;
       height: 100%;
       background-color: white;
       position: fixed;
@@ -44,17 +44,32 @@
       top: 75px;
       pointer-events: none;
 
-      .sticky-branch-label {
+      .sticky-branch-label-container {
         position: absolute;
-        font-size: 14px;
-        color: #818080;
-        background: white;
-        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
         transform: translateY(-50%);
-        font-weight: bold;
-        text-anchor: start;
-        dominant-baseline: central;
-        opacity: 0.9;
+
+        .sticky-branch-label {
+          font-size: 14px;
+          color: #818080;
+          background: white;
+          white-space: nowrap;
+          font-weight: bold;
+          text-anchor: start;
+          dominant-baseline: central;
+          opacity: 0.9;
+        }
+
+        .support-status-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          background-color: #90ee90;
+          box-shadow: 0 0 4px rgba(144, 238, 144, 0.6);
+        }
       }
     }
   }
@@ -131,6 +146,31 @@
       fill: #666;
       text-anchor: middle;
       opacity: 0.8;
+    }
+  }
+
+  .current-time-marker {
+    pointer-events: none;
+
+    .current-time-line {
+      stroke: #999;
+      stroke-width: 1;
+      opacity: 0.4;
+    }
+
+    .current-time-chevron {
+      fill: #999;
+      opacity: 0.5;
+    }
+  }
+
+  .branch-lifecycle {
+    pointer-events: none;
+
+    .lifecycle-phase {
+      transition: opacity 0.2s;
+      stroke: rgba(144, 238, 144, 0.4);
+      stroke-width: 1.5;
     }
   }
 
