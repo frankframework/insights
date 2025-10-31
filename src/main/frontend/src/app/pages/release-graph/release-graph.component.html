@@ -22,6 +22,37 @@
           </g>
         }
 
+        <g class="current-time-marker">
+          <line
+            class="current-time-line"
+            [attr.x1]="currentTimeX"
+            [attr.y1]="-80"
+            [attr.x2]="currentTimeX"
+            [attr.y2]="1000"
+          />
+          <path
+            class="current-time-chevron"
+            d="M -8 0 L 0 8 L 8 0 Z"
+            [attr.transform]="'translate(' + currentTimeX + ', -90)'"
+          />
+        </g>
+
+        @for (lifecycle of branchLifecycles; track lifecycle.branchLabel + '-' + lifecycle.y) {
+          <g class="branch-lifecycle">
+            @for (phase of lifecycle.phases; track phase.type) {
+              <rect
+                class="lifecycle-phase"
+                [attr.data-phase]="phase.type"
+                [attr.x]="phase.startX"
+                [attr.y]="lifecycle.y - 45"
+                [attr.width]="phase.endX - phase.startX"
+                [attr.height]="70"
+                [attr.fill]="phase.color"
+              />
+            }
+          </g>
+        }
+
         @for (link of allLinks; track link) {
           <path
             [attr.data-cy]="'link-' + link.id"
@@ -90,7 +121,12 @@
 
     <div class="branch-labels-sticky">
       @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
-        <span class="sticky-branch-label" [style.top.px]="stickyLabel.screenY - 75">{{ stickyLabel.label }}</span>
+        <div class="sticky-branch-label-container" [style.top.px]="stickyLabel.screenY - 75">
+          <span class="sticky-branch-label">{{ stickyLabel.label }}</span>
+          @if (stickyLabel.supportStatus === 'supported') {
+            <span class="support-status-dot"></span>
+          }
+        </div>
       }
     </div>
 

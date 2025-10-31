@@ -48,6 +48,26 @@
       stroke: #EFEFEF;
       stroke-width: 5;
     }
+
+    &.support-timeline-icon {
+      .support-rectangle {
+        width: 36px;
+        height: 20px;
+        background-color: rgba(144, 238, 144, 0.35);
+        border: 1.5px solid rgba(144, 238, 144, 0.6);
+        border-radius: 3px;
+      }
+    }
+
+    &.support-dot-icon {
+      .support-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #90ee90;
+        box-shadow: 0 0 4px rgba(144, 238, 144, 0.6);
+      }
+    }
   }
 
   p {

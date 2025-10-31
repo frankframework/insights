@@ -54,6 +54,7 @@ describe('ReleaseGraphComponent', () => {
       'assignReleaseColors',
       'createClusters',
       'expandCluster',
+      'getVersionInfo',
     ]);
     mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
     mockToastService = jasmine.createSpyObj('ToastrService', ['error']);
@@ -78,10 +79,14 @@ describe('ReleaseGraphComponent', () => {
 
     mockReleaseService.getAllReleases.and.returnValue(of(mockReleases));
     mockNodeService.structureReleaseData.and.returnValue(mockStructuredGroups);
-    mockNodeService.calculateReleaseCoordinates.and.returnValue(mockReleaseNodeMap);
+    mockNodeService.calculateReleaseCoordinates.and.callFake(() => {
+      mockNodeService.timelineScale = mockTimelineScale;
+      return mockReleaseNodeMap;
+    });
     mockNodeService.assignReleaseColors.and.returnValue();
     mockNodeService.timelineScale = mockTimelineScale;
     mockNodeService.createClusters.and.returnValue(mockNodes);
+    mockNodeService.getVersionInfo.and.returnValue({ major: 1, minor: 0, patch: 0, type: 'major' });
     mockLinkService.createLinks.and.returnValue(mockLinks);
     mockLinkService.createSkipNodes.and.returnValue([]);
     mockLinkService.createSkipNodeLinks.and.returnValue([]);
@@ -382,6 +387,11 @@ describe('ReleaseGraphComponent', () => {
 
     it('should handle missing timeline scale gracefully', () => {
       mockNodeService.timelineScale = null;
+
+      mockNodeService.calculateReleaseCoordinates.and.callFake(() => {
+        return mockReleaseNodeMap;
+      });
+
       fixture.detectChanges();
 
       expect(component.quarterMarkers).toEqual([]);
