@@ -131,6 +131,7 @@ export class ReleaseNodeService {
       allNodes.push(...nodes);
     }
 
+    const parentVersionMap = this.buildParentVersionMap(allNodes);
     const versionGroups = new Map<string, ReleaseNode[]>();
     for (const node of allNodes) {
       const versionInfo = this.getVersionInfo(node);
@@ -160,7 +161,10 @@ export class ReleaseNodeService {
       const versionInfo = this.getVersionInfo(node);
       const isPatchVersion = versionInfo !== null && versionInfo.patch > 0;
       const isLatestPatch = latestPatches.has(node.id);
-      node.color = this.determineColor(node, isPatchVersion, isLatestPatch);
+      const parentNode = isPatchVersion
+        ? (parentVersionMap.get(`${versionInfo!.major}.${versionInfo!.minor}`) ?? null)
+        : null;
+      node.color = this.determineColor(node, isPatchVersion, isLatestPatch, parentNode);
     }
   }
 
@@ -494,11 +498,37 @@ export class ReleaseNodeService {
     }
   }
 
-  private determineColor(release: ReleaseNode, isPatchVersion: boolean, isLatestPatch: boolean): string {
+  /**
+   * Builds a map from version key (e.g., "8.0" or "8.1") to the parent major/minor release node.
+   */
+  private buildParentVersionMap(allNodes: ReleaseNode[]): Map<string, ReleaseNode> {
+    const parentMap = new Map<string, ReleaseNode>();
+
+    for (const node of allNodes) {
+      const versionInfo = this.getVersionInfo(node);
+      if (versionInfo && versionInfo.patch === 0) {
+        const key = `${versionInfo.major}.${versionInfo.minor}`;
+        parentMap.set(key, node);
+      }
+    }
+
+    return parentMap;
+  }
+
+  private determineColor(
+    release: ReleaseNode,
+    isPatchVersion: boolean,
+    isLatestPatch: boolean,
+    parentNode: ReleaseNode | null,
+  ): string {
     if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) return 'darkblue';
 
     if (isPatchVersion && !isLatestPatch) {
       return SupportColors.NONE;
+    }
+
+    if (isPatchVersion && parentNode) {
+      return this.getPatchColorBasedOnParent(release, parentNode);
     }
 
     const supportDates = this.getSupportEndDates(release);
@@ -510,6 +540,41 @@ export class ReleaseNodeService {
     if (now <= fullSupportEnd) return SupportColors.FULL;
     if (now <= securitySupportEnd) return SupportColors.SECURITY;
     return SupportColors.NONE;
+  }
+
+  /**
+   * Determines patch color based on when it was published relative to parent's support period
+   */
+  private getPatchColorBasedOnParent(patch: ReleaseNode, parent: ReleaseNode): string {
+    const versionInfo = this.getVersionInfo(patch);
+    if (!versionInfo) return SupportColors.NONE;
+
+    const parentPublishedDate = new Date(parent.publishedAt);
+    const patchPublishedDate = new Date(patch.publishedAt);
+
+    let fullSupportMonths: number;
+    let securitySupportMonths: number;
+
+    if (versionInfo.minor === 0) {
+      fullSupportMonths = 6;
+      securitySupportMonths = 12;
+    } else {
+      fullSupportMonths = 3;
+      securitySupportMonths = 6;
+    }
+
+    const fullSupportEnd = new Date(parentPublishedDate);
+    fullSupportEnd.setMonth(parentPublishedDate.getMonth() + fullSupportMonths);
+    const securitySupportEnd = new Date(parentPublishedDate);
+    securitySupportEnd.setMonth(parentPublishedDate.getMonth() + securitySupportMonths);
+
+    if (patchPublishedDate <= fullSupportEnd) {
+      return SupportColors.FULL;
+    } else if (patchPublishedDate <= securitySupportEnd) {
+      return SupportColors.SECURITY;
+    } else {
+      return SupportColors.NONE;
+    }
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
@@ -525,14 +590,23 @@ export class ReleaseNodeService {
     const versionInfo = this.getVersionInfo(release);
     if (!versionInfo) return null;
 
-    const fullSupportMonths = versionInfo.type === 'major' ? 6 : 3;
-    const securitySupportMonths = versionInfo.type === 'major' ? 12 : 6;
+    let fullSupportMonths: number;
+    let securitySupportMonths: number;
 
-    const published = new Date(release.publishedAt);
-    const fullSupportEnd = new Date(published);
-    fullSupportEnd.setMonth(published.getMonth() + fullSupportMonths);
-    const securitySupportEnd = new Date(published);
-    securitySupportEnd.setMonth(published.getMonth() + securitySupportMonths);
+    const basePublishedDate = new Date(release.publishedAt);
+
+    if (versionInfo.type === 'major') {
+      fullSupportMonths = 6;
+      securitySupportMonths = 12;
+    } else {
+      fullSupportMonths = 3;
+      securitySupportMonths = 6;
+    }
+
+    const fullSupportEnd = new Date(basePublishedDate);
+    fullSupportEnd.setMonth(basePublishedDate.getMonth() + fullSupportMonths);
+    const securitySupportEnd = new Date(basePublishedDate);
+    securitySupportEnd.setMonth(basePublishedDate.getMonth() + securitySupportMonths);
 
     return { fullSupportEnd, securitySupportEnd };
   }
