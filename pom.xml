@@ -57,7 +57,6 @@
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<puppycrawl.tools.version>11.0.1</puppycrawl.tools.version>
 		<jacoco.version>0.8.13</jacoco.version>
-		<owasp.version>12.1.6</owasp.version>
 		<maven.model.version>4.0.0-rc-4</maven.model.version>
 		<maven.resolver.supplier.version>1.9.24</maven.resolver.supplier.version>
 
@@ -152,11 +151,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.owasp</groupId>
-			<artifactId>dependency-check-core</artifactId>
-			<version>${owasp.version}</version>
 		</dependency>
 
 		<dependency>
