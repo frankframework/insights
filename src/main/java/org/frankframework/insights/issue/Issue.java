@@ -10,6 +10,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.businessvalue.BusinessValue;
 import org.frankframework.insights.issueprojects.IssuePriority;
 import org.frankframework.insights.issueprojects.IssueState;
 import org.frankframework.insights.issuetype.IssueType;
@@ -37,8 +38,9 @@ public class Issue {
     @Column(nullable = false)
     private String url;
 
-    @Column(columnDefinition = "TEXT")
-    private String businessValue;
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("businessValue-issue")
+    private BusinessValue businessValue;
 
     @ManyToOne(cascade = CascadeType.MERGE)
     @JsonBackReference("milestone-issue")
