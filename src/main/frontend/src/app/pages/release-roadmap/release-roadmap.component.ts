@@ -149,17 +149,14 @@ export class ReleaseRoadmapComponent implements OnInit {
       const issues = this.getIssuesForMilestone(milestone.id);
       if (issues.length === 0) return false;
 
-      // For unplanned epics, check if any would be positioned in the visible timeline
       if (this.isUnplannedEpic(milestone)) {
         return this.hasVisibleUnplannedEpics(milestone, issues);
       }
 
-      // For monthly view, check if milestone has issues in the visible month
       if (this.viewMode === ViewMode.MONTHLY) {
         return this.milestoneHasIssuesInMonth(milestone, issues);
       }
 
-      // For quarterly view, show all milestones with issues
       return true;
     });
   }
