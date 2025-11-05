@@ -18,10 +18,11 @@ MERGE INTO branch (id, name) KEY(id) VALUES
 
 MERGE INTO milestone (id, number, title, state, url, due_on, open_issue_count, closed_issue_count) KEY(id) VALUES
 	('milestone-past', 10, 'Release 9.3.0', 0, 'http://example.com/milestone/10', DATEADD('MONTH', -1, CURRENT_TIMESTAMP()), 1, 1),
-	('milestone-current', 11, 'Release 9.4.0', 0, 'http://example.com/milestone/11', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 2, 2),
-	('milestone-future', 12, 'Release 9.5.0', 0, 'http://example.com/milestone/12', DATEADD('MONTH', 5, CURRENT_TIMESTAMP()), 2, 0),
-	('milestone-overflow', 13, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/13', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 20, 0),
-	('milestone-no-issues', 14, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/14', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 0, 0);
+	('milestone-current-month', 11, 'Release 9.3.5', 0, 'http://example.com/milestone/11', DATEADD('DAY', 5, CURRENT_TIMESTAMP()), 2, 1),
+	('milestone-current', 12, 'Release 9.4.0', 0, 'http://example.com/milestone/12', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 2, 2),
+	('milestone-future', 13, 'Release 9.5.0', 0, 'http://example.com/milestone/13', DATEADD('MONTH', 5, CURRENT_TIMESTAMP()), 2, 0),
+	('milestone-overflow', 14, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/14', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 20, 0),
+	('milestone-no-issues', 15, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/15', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 0, 0);
 
 MERGE INTO release (id, tag_name, name, published_at, branch_id) KEY(id) VALUES
 	('RE_kwDOAIg5ds4MwqlG','release/9.1-nightly','v9.1.1-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvOS4x'),
@@ -95,11 +96,14 @@ MERGE INTO issue (id, number, title, state, url, issue_type_id) KEY(id) VALUES
 MERGE INTO issue (id, number, title, state, url, points, closed_at, milestone_id, issue_type_id, issue_priority_id) KEY(id) VALUES
 	('issue-past-closed', 201, 'Old feature that was completed', 1, 'http://example.com/issue/201', 5, DATEADD('MONTH', -2, CURRENT_TIMESTAMP()), 'milestone-past', 'type-feature', NULL),
 	('issue-past-open', 202, 'Overdue bug from past release', 0, 'http://example.com/issue/202', 3, NULL, 'milestone-past', 'type-bug', 'prio-high'),
-	('issue-current-closed-1', 203, 'Task finished early this quarter', 1, 'http://example.com/issue/203', 2, DATEADD('DAY', -10, CURRENT_TIMESTAMP()), 'milestone-current', 'type-task', NULL),
-	('issue-current-closed-2', 204, 'Bug fixed just before today', 1, 'http://example.com/issue/204', 3, DATEADD('DAY', -1, CURRENT_TIMESTAMP()), 'milestone-current', 'type-bug', NULL),
-	('issue-current-open-1', 205, 'High priority feature to be done', 0, 'http://example.com/issue/205', 8, NULL, 'milestone-current', 'type-feature', 'prio-high'),
-	('issue-current-open-2', 206, 'Another open task', 0, 'http://example.com/issue/206', 5, NULL, 'milestone-current', 'type-task', 'prio-medium'),
-	('issue-zero-points', 207, 'Issue with zero points', 0, 'http://example.com/issue/207', 0, NULL, 'milestone-current', 'type-task', NULL),
+	('issue-current-month-closed', 203, 'Bug fixed this month', 1, 'http://example.com/issue/203', 3, DATEADD('DAY', -2, CURRENT_TIMESTAMP()), 'milestone-current-month', 'type-bug', NULL),
+	('issue-current-month-open-1', 204, 'Feature in progress this month', 0, 'http://example.com/issue/204', 8, NULL, 'milestone-current-month', 'type-feature', 'prio-high'),
+	('issue-current-month-open-2', 205, 'Task for this month', 0, 'http://example.com/issue/205', 5, NULL, 'milestone-current-month', 'type-task', 'prio-medium'),
+	('issue-current-closed-1', 206, 'Task finished early this quarter', 1, 'http://example.com/issue/206', 2, DATEADD('DAY', -10, CURRENT_TIMESTAMP()), 'milestone-current', 'type-task', NULL),
+	('issue-current-closed-2', 207, 'Bug fixed just before today', 1, 'http://example.com/issue/207', 3, DATEADD('DAY', -1, CURRENT_TIMESTAMP()), 'milestone-current', 'type-bug', NULL),
+	('issue-current-open-1', 208, 'High priority feature to be done', 0, 'http://example.com/issue/208', 8, NULL, 'milestone-current', 'type-feature', 'prio-high'),
+	('issue-current-open-2', 209, 'Another open task', 0, 'http://example.com/issue/209', 5, NULL, 'milestone-current', 'type-task', 'prio-medium'),
+	('issue-zero-points', 210, 'Issue with zero points', 0, 'http://example.com/issue/210', 0, NULL, 'milestone-current', 'type-task', NULL),
 	('issue-future-open-1', 301, 'Planning for Q4 feature', 0, 'http://example.com/issue/301', 13, NULL, 'milestone-future', 'type-feature', NULL),
 	('issue-future-open-2', 302, 'Technical spike for Q4', 0, 'http://example.com/issue/302', 8, NULL, 'milestone-future', 'type-task', NULL);
 
@@ -139,6 +143,9 @@ MERGE INTO issue_label (issue_id, label_id) KEY(issue_id, label_id) VALUES
 	('issue-feat-105', 'label-sec'),
 	('issue-past-closed', 'label-perf'),
 	('issue-past-open', 'label-sec'),
+	('issue-current-month-closed', 'label-ui'),
+	('issue-current-month-open-1', 'label-perf'),
+	('issue-current-month-open-2', 'label-ui'),
 	('issue-current-closed-1', 'label-ui'),
 	('issue-current-closed-2', 'label-ui'),
 	('issue-current-open-1', 'label-perf'),

@@ -116,8 +116,7 @@ export class ReleaseNodeService {
     const masterNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     this.positionMasterNodes(masterNodes);
 
-    const positionedNodes = new Map<string, ReleaseNode[]>();
-    positionedNodes.set(ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes);
+    const positionedNodes = new Map<string, ReleaseNode[]>([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
 
     const subBranches = this.getSortedSubBranches(nodeMap);
     this.positionSubBranches(subBranches, masterNodes, positionedNodes);
@@ -146,7 +145,7 @@ export class ReleaseNodeService {
 
     const latestPatches = new Set<string>();
     for (const nodesInGroup of versionGroups.values()) {
-      const sortedByPatch = [...nodesInGroup].sort((a, b) => {
+      const sortedByPatch = [...nodesInGroup].toSorted((a, b) => {
         const vA = this.getVersionInfo(a)!;
         const vB = this.getVersionInfo(b)!;
         return vB.patch - vA.patch;
@@ -452,7 +451,7 @@ export class ReleaseNodeService {
   private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
     return [...nodeMap.entries()]
       .filter(([branch]) => branch !== ReleaseNodeService.GITHUB_MASTER_BRANCH)
-      .sort(([branchA], [branchB]) => {
+      .toSorted(([branchA], [branchB]) => {
         const versionA = this.getVersionFromBranchName(branchA);
         const versionB = this.getVersionFromBranchName(branchB);
         if (!versionA || !versionB) return 0;
