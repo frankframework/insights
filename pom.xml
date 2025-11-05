@@ -47,17 +47,16 @@
 	<properties>
 		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>21</java.version>
-		<jackson.version>2.20.0</jackson.version>
-		<junit.bom.version>5.13.4</junit.bom.version>
-		<lombok.version>1.18.40</lombok.version>
-		<postgresql.version>42.7.7</postgresql.version>
-		<h2.version>2.3.232</h2.version>
+		<jackson.version>2.20.1</jackson.version>
+		<junit.bom.version>6.0.1</junit.bom.version>
+		<lombok.version>1.18.42</lombok.version>
+		<postgresql.version>42.7.8</postgresql.version>
+		<h2.version>2.4.240</h2.version>
 		<spring.shedlock>6.10.0</spring.shedlock>
-		<spotless.version>2.45.0</spotless.version>
+		<spotless.version>3.0.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
-		<puppycrawl.tools.version>11.0.1</puppycrawl.tools.version>
-		<jacoco.version>0.8.13</jacoco.version>
-		<owasp.version>12.1.6</owasp.version>
+		<puppycrawl.tools.version>12.1.1</puppycrawl.tools.version>
+		<jacoco.version>0.8.14</jacoco.version>
 		<maven.model.version>4.0.0-rc-4</maven.model.version>
 		<maven.resolver.supplier.version>1.9.24</maven.resolver.supplier.version>
 
@@ -153,11 +152,6 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.owasp</groupId>
-			<artifactId>dependency-check-core</artifactId>
-			<version>${owasp.version}</version>
-		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -209,7 +203,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.6.2</version>
 				<executions>
 					<execution>
 						<id>pnpm install</id>
@@ -394,7 +388,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-antrun-plugin</artifactId>
-						<version>3.1.0</version>
+						<version>3.2.0</version>
 						<executions>
 							<execution>
 								<id>prepare-package</id>

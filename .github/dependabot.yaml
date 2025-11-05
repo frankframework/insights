@@ -2,15 +2,15 @@ version: 2
 
 updates:
   - package-ecosystem: "maven"
-    directory: "/InsightsBackend"
+    directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     labels:
       - "Dependencies"
       - "Java"
-      
+
   - package-ecosystem: "npm"
-    directory: "/InsightsFrontend"
+    directory: "/src/main/frontend"
     schedule:
       interval: "monthly"
     labels:

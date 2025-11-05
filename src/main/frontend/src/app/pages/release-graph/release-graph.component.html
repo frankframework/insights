@@ -62,7 +62,7 @@
           />
         }
 
-        @for (entry of expandedClusters | keyvalue; track entry.key) {
+        @for (entry of expandedClustersArray; track entry.key) {
           @if (entry.value.clusteredNodes && entry.value.clusteredNodes.length > 0) {
             @let lastNodePos = getLastExpandedNodePosition(entry.value);
             @if (lastNodePos) {
