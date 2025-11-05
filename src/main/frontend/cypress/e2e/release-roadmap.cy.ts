@@ -263,7 +263,7 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('body').then($body => {
         const initialCount = $body.find('app-milestone-row').length;
 
-        for (let i = 0; i < (initialCount || 1) + 4; i++) {
+        for (let i = 0; i < (initialCount || 1) + 5; i++) {
           cy.get('button[title="Next month"]').click();
           cy.tick(5000);
         }
