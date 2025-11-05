@@ -50,7 +50,7 @@
 		<jackson.version>2.20.1</jackson.version>
 		<junit.bom.version>5.13.4</junit.bom.version>
 		<lombok.version>1.18.42</lombok.version>
-		<postgresql.version>42.7.7</postgresql.version>
+		<postgresql.version>42.7.8</postgresql.version>
 		<h2.version>2.4.240</h2.version>
 		<spring.shedlock>6.10.0</spring.shedlock>
 		<spotless.version>2.45.0</spotless.version>
