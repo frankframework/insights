@@ -50,7 +50,7 @@ export class ReleaseVulnerabilities implements OnChanges {
   }
 
   private sortVulnerabilities(): void {
-    this.sortedVulnerabilities = [...this.vulnerabilities].sort((a, b) => {
+    this.sortedVulnerabilities = [...this.vulnerabilities].toSorted((a, b) => {
       const orderA = this.severityOrder[a.severity] || 999;
       const orderB = this.severityOrder[b.severity] || 999;
       if (orderA !== orderB) {

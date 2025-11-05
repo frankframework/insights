@@ -13,7 +13,7 @@ The key goal is to offer detailed insights into releases at every stage.
 
 **Past Releases**
 <br>
-Analyze the composition of previous releases. Understand what types of issues were resolved and view final metrics.
+Analyze the composition of previous releases. Understand which issues were fixed, view the final statistics, and identify vulnerabilities.
 
 **Current Release**
 <br>
@@ -21,13 +21,17 @@ Track the real-time progress of the release currently in development. The dashbo
 
 **Future Releases (Roadmap)**
 <br>
-Look ahead at the project's direction. The tool visualizes the roadmap based on GitHub Projects, showing planned features and epics for upcoming releases.
+Look ahead at the project's direction. The tool visualizes the roadmap based on GitHub Projects, showing planned features and epics for (upcoming) releases.
 
 ### In-depth Release Analysis
 
 For any given release, the tool provides deep-dive analytics by processing a wide range of data points and visualizing the relationships between them. This includes analyzing issue attributes (e.g., bug, feature, priority, and labels), development data such as associated branches and pull requests, and planning elements like milestones and their completion status.
 
 By analyzing the ratios and connections between these elements, users can gain a much deeper understanding of the work involved in a release, identify potential risks, and track the overall health of the development process.
+
+### Security Vulnerability Scanning
+
+The application integrates **Trivy** to automatically scan Frank!Framework release artifacts for known vulnerabilities (CVEs). It provides detailed security information including severity levels, CVSS scores, and vulnerability trends across releases, helping maintainers and users make informed decisions about release security.
 
 <br>
 
@@ -38,9 +42,39 @@ The backend fetches data from external APIs, processes it, and stores it in a da
 Currently, the application primarily uses the **GitHub API** to retrieve data about the Frank!Framework's development. However, the architecture is designed to be extensible, meaning other external data sources can be integrated in a similar way in the future. This allows the application to be scaled with new integrations as needed.
 
 ![Insights-components-without-text](https://github.com/user-attachments/assets/278d03eb-d230-4246-93fe-705b0343dce6)
-<p align="start">
-  <em>A high-level overview of the data flow from external APIs to the user.</em>
-</p>
+<em>A high-level overview of the data flow from external APIs to the user.</em>
+
+
+## Project Structure
+
+The application is structured as a single Maven project with an integrated Angular frontend:
+
+```
+insights/
+├── docker/
+│   ├── Dockerfile                  # Container definition
+│   └── scripts/                    # Container startup scripts
+├── src/
+│   ├── main/
+│   │   ├── java/                   # Backend Java source code
+│   │   ├── resources/              # Backend configuration and static resources
+│   │   └── frontend/               # Angular frontend application
+│   │       ├── src/                # Frontend source code
+│   │       ├── cypress/            # E2E tests
+│   │       ├── package.json        # Frontend dependencies (pnpm)
+│   │       └── angular.json        # Angular configuration
+│   └── test/
+│       └── java/                   # Backend tests
+├── pom.xml                         # Maven build configuration
+├── docker-compose.yaml             # Local Docker setup
+└── pnpm-lock.yaml                  # pnpm lock file
+```
+
+**Build Process:**
+1. Maven triggers pnpm to install frontend dependencies
+2. Maven triggers pnpm to build the Angular application
+3. The built frontend is packaged as static resources in the JAR
+4. Spring Boot serves both the API and the frontend from a single application
 
 <br>
 
@@ -51,7 +85,7 @@ For a fast and easy setup, you can use Docker Compose to run the entire applicat
 1.  Ensure you have **Docker Desktop** installed, as it includes Docker and Docker Compose.
 2.  Clone the repository:
     ```bash
-    git clone [https://github.com/frankframework/insights.git](https://github.com/frankframework/insights.git)
+    git clone https://github.com/frankframework/insights.git
     cd insights
     ```
 3.  From the root of the project, run the following command. The `--build` flag forces a rebuild of the images to ensure you are running the latest version of the code, and the `-d` flag runs the containers in "detached mode" in the background.
@@ -59,117 +93,231 @@ For a fast and easy setup, you can use Docker Compose to run the entire applicat
     docker compose up -d --build
     ```
 
+The application will be available at `http://localhost:8080`. The backend serves both the API and the frontend application as static resources.
+
+> **Note:** When running via Docker, Trivy is automatically included in the container image (as defined in the Dockerfile), so no additional installation or path configuration is required.
+
 ### Database Seeding
-By default, the database is automatically seeded with mock data to populate the application. This allows you to explore the features immediately after setup.
 
-Please note that not all releases in the mock data set have detailed content. For a full example of a release with associated issues and pull requests, check release v9.0.1.
+By default, the application automatically seeds the database with mock data on startup when running via Docker. This allows you to explore the features immediately without needing to configure GitHub API access or fetch real data.
 
-If you prefer to start with a clean, empty database, you can disable the seeder by setting the use_seeder environment variable to false in the docker-compose.yml file for the db-seeder service.
+Please note that not all releases in the mock data set have detailed content. For a full example of a release with associated issues and pull requests, check release **v9.0.1**.
 
-The application stack, including the frontend, backend, and database, should now be running. You can access the frontend at `http://localhost:4200` and the backend API at `http://localhost:8080`.
+If you prefer to start with a clean, empty database and fetch real data from GitHub, you will need to configure your GitHub API token in the application properties and set `github.fetch=true`.
 
 <br>
 
 ## Manual Development Setup
 
-For active development, a manual setup provides more granular control over the individual components.
+For active development, a manual setup provides more granular control over the individual components. This setup automatically uses the `local` Spring profile for local development configuration.
 
 ### Prerequisites
 
-For a manual setup, you will need Git, Java Development Kit (JDK 21), Node.js with the Angular CLI (`npm install -g @angular/cli`), and a running PostgreSQL database instance. You will also need an IDE for frontend work (like **WebStorm** or **VS Code**) and for the backend (like **IntelliJ IDEA**, **Eclipse**, or **VS Code**). A database tool like **pgAdmin** is optional but recommended for managing your database.
+For a manual setup, you will need:
 
-> **Note on Maven:** A separate installation of Apache Maven is not required. The backend project includes the Maven Wrapper (`mvnw`), which your IDE will automatically use to download dependencies and build the project.
+- **Git** - Version control system
+- **Java Development Kit (JDK 21)** - Required for the backend
+- **Node.js** (version 23 or higher) - Required for the frontend
+- **pnpm** (version 10.4.0 or higher) - Package manager (`npm install -g pnpm`)
+- **PostgreSQL** - Database instance
+- **Trivy** - Security vulnerability scanner ([Installation guide](https://aquasecurity.github.io/trivy/latest/getting-started/installation/))
+- **IDE** - Recommended: **IntelliJ IDEA**, **WebStorm**, **VS Code**, or **Eclipse**
+
+> **Note on Maven:** A separate installation of Apache Maven is not required. The project includes the Maven Wrapper (`mvnw`), which automatically downloads and uses the correct Maven version.
 
 ### Steps
 
 1.  **Clone the Repository**
     ```bash
-    git clone [https://github.com/frankframework/insights.git](https://github.com/frankframework/insights.git)
+    git clone https://github.com/frankframework/insights.git
     cd insights
     ```
 
-2.  **Frontend Setup**
-    Navigate to the frontend directory, install dependencies, and start the development server. `ng serve` hosts the frontend on `http://localhost:4200` and provides live reloading.
-    ```bash
-    cd InsightsFrontend
-    npm install
-    ng serve
-    ```
+2.  **Backend Setup**
+    * **Open Project:** Open the project root directory in your Java IDE. It will automatically detect it as a Maven project.
 
-3.  **Backend Setup**
-    * **Open Project:** Open the `InsightsBackend` directory in your Java IDE. Your IDE will automatically detect it as a Maven project and use the wrapper to set it up.
-    * **Activate Local Profile:** To use a local configuration, you must activate the `local` Spring profile. The easiest way to do this in **IntelliJ IDEA** is by adding the following to your Run Configuration's **VM options**:
-        ```
-        -Dspring.profiles.active=local
-        ```
-        This tells the application to load its settings from `application-local.properties`.
+    * **Spring Profile:** The application is pre-configured to use the `local` Spring profile by default (set in `application.properties`). This automatically loads configuration from `application-local.properties` for your local environment. No additional configuration is needed.
 
     * **Create & Configure Database:**
         * Create a new, empty database in your PostgreSQL instance.
-        * Open the `src/main/resources/application-local.properties` file.
-        * Update the datasource properties with your database URL, username, and password.
+        * Open `src/main/resources/application-local.properties`.
+        * Update the datasource properties with your database credentials:
             ```properties
             spring.datasource.url=jdbc:postgresql://localhost:5432/your_database_name
             spring.datasource.username=your_username
             spring.datasource.password=your_password
             ```
 
+	* **Initial Data Injection:**
+	  To populate your database with GitHub data on first run, set:
+	    ```properties
+		 github.fetch=true
+		```
+	  After the first successful run, set this to `false` to avoid refetching on every startup.
+
     * **Configure GitHub API Access:**
         The application needs a GitHub token to fetch data from the Frank!Framework organization.
-        * Create a **GitHub Personal Access Token (PAT)** with the necessary permissions (e.g., `read:org`, `project`). Follow the official guide: [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
-        * Add your GitHub Personal Access token and the GitHub Project ID to `application-local.properties`:
+        * Create a **GitHub Personal Access Token (PAT)** with permissions: `read:org`, `project`. Follow the official guide: [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+        * Add your token and GitHub Project ID to `application-local.properties`:
             ```properties
             github.token=YOUR_PERSONAL_ACCESS_TOKEN_HERE
             github.project.id=YOUR_GITHUB_PROJECT_ID_HERE
             ```
 
-    * **Initial Data Injection:**
-        To populate your database with data from GitHub for the first time, set the following property in `application-local.properties`:
+    * **Configure Trivy Path:**
+        For local development, you need to configure the full path to your locally installed Trivy executable in `application-local.properties`:
         ```properties
-        github.fetch=true
+        trivy.path=C:/Program Files/trivy/trivy.exe
         ```
-        After the first successful run, it's recommended for development purposes to set this to `false` to avoid refetching all data on every application start.
+        > **Note:** Replace with the actual path to your Trivy executable. This is only required for manual local setup. When running via Docker, Trivy is automatically included in the container (as defined in the Dockerfile), so no path configuration is needed.
 
-    * **Run Application:** Start the backend application directly from your IDE.
+3.  **Frontend Development (Optional)**
 
-The application stack, including the frontend, backend, and database, is now running. You can access the frontend at http://localhost:4200 and the backend API at http://localhost:8080.
+    The frontend is automatically built by Maven during the build process. However, for active frontend development with live reloading:
+
+    * Navigate to the frontend directory:
+        ```bash
+        cd src/main/frontend
+        ```
+    * Install dependencies:
+        ```bash
+        pnpm install
+        ```
+    * Start the development server:
+        ```bash
+        ng serve
+        ```
+
+    The frontend will be available at `http://localhost:4200` with live reloading enabled.
 
 <br>
 
-## Automated Workflows & Quality Assurance
+## Building & Testing
 
-The project uses a suite of automated workflows to ensure code quality, stability, and correctness. These are typically run in a CI/CD pipeline for every pull request and merge to the master branch.
+### Building the Application
 
-**Linting**
+The application uses Maven to build both the backend and frontend into a single executable JAR file.
+
+**Full Build with Tests:**
+```bash
+mvn clean package "-Dspring.profiles.active=local-seed"
+```
+or
+```bash
+mvn clean install "-Dspring.profiles.active=local-seed"
+```
+
+This command:
+1. Installs frontend dependencies using pnpm
+2. Builds the Angular frontend application
+3. Compiles the Java backend
+4. Runs backend unit/integration tests and E2E tests
+5. Packages everything into a single JAR file with the frontend as static resources
+
+> **Automated Testing:** Running `mvn package` or `mvn install` with the `local-seed` profile automatically executes:
+> - **Backend Tests:** JUnit 5 unit and integration tests with Mockito
+> - **End-to-End Tests:** Cypress tests using Testcontainers
+>
+> **Important:** The Cypress E2E tests require the `local-seed` Spring profile to seed the database with test data. This is because the E2E tests verify the complete user interface and workflows, which require actual data to be present in the database (releases, issues, pull requests, etc.). Without seeded data, the tests would have nothing to interact with and would fail. The tests run in a containerized environment via Testcontainers, so no additional setup or running application is required.
+>
+> **Note:** Frontend unit tests (Jasmine/Karma) are not run during the Maven build. To run them separately, see [Running Tests Individually](#running-tests-individually).
+
+**Quick Build (Skip Tests):**
+
+For faster iteration during development, you can skip tests:
+```bash
+mvn clean package -DskipTests
+```
+
+### Running Tests Individually
+
+**Backend Tests Only:**
+```bash
+mvn test
+```
+
+**Frontend Tests Only:**
+```bash
+cd src/main/frontend
+pnpm test
+```
+
+**E2E Tests Interactively:**
+```bash
+cd src/main/frontend
+pnpm run cypress:open  # Interactive mode with UI
+pnpm run cypress:run   # Headless mode
+```
+
+### Running the Application
+
+After building, you can run the application:
+
+**Option 1 - Run JAR:**
+```bash
+java -jar target/insights-*.jar
+```
+
+**Option 2 - IDE:**
+Start the Spring Boot application directly from your IDE (with the `local` profile active by default).
+
+**Option 3 - Maven:**
+```bash
+mvn spring-boot:run
+```
+
+The application will be available at `http://localhost:8080`. If you're running the frontend development server separately, it will be at `http://localhost:4200` and proxy API calls to the backend.
+
 <br>
-Static code analysis is performed on both the backend and frontend to enforce consistent coding styles and catch common programming errors before they are merged.
 
-**Unit & Integration Tests**
-<br>
-Automated tests are run to verify the functionality of individual components (unit tests) and their interactions (integration tests). This forms the core of our regression testing strategy.
+## CI/CD & Quality Assurance
 
-**Build**
-<br>
-The workflow compiles the source code, runs tests, and packages the application into runnable artifacts (e.g., a JAR file for the backend and static assets for the frontend) to ensure it's always in a deployable state.
+The project uses GitHub Actions to run automated workflows for every pull request and merge to the master branch. These workflows ensure code quality, security, and stability before changes are merged.
 
-**End-to-End (E2E) Tests**
-<br>
-These tests simulate real user scenarios by running tests against a fully built and running application in a production-like environment. They verify that the integrated system works as expected from the user's perspective.
+### Continuous Integration Pipeline
 
-**Smoke Tests**
+The CI pipeline (`ci.yaml`) runs the following checks on every pull request:
+
+1. **Code Linting**
+   - Backend: Checkstyle for Java code style enforcement
+   - Frontend: ESLint for TypeScript/JavaScript code quality
+
+2. **Code Formatting**
+   - Spotless validates Java code formatting
+
+3. **Automated Testing**
+   - Backend unit and integration tests (JUnit 5)
+   - Frontend unit tests (Jasmine/Karma)
+   - End-to-end tests (Cypress via Testcontainers)
+
+4. **Build Verification**
+   - Full Maven build with pnpm frontend integration
+   - Validates that the application can be packaged successfully
+
+### Continuous Deployment
+
+**Docker Image Creation**
 <br>
-This workflow starts the full application with the latest version of the code (from a pull request branch or master). It then performs health checks on all core modules to confirm that the application starts up correctly as it should. A failed smoke test indicates a critical issue and typically triggers an immediate rollback.
+On every merge to master, a Docker image is automatically built and pushed to the GitHub Container Registry (`ghcr.io/frankframework/insights`). The image includes both the application and Trivy for vulnerability scanning.
+
+### Security
+
+The project includes multiple security analysis tools:
+- **Trivy:** Scans Frank!Framework release artifacts for CVEs (included in Docker, requires local installation for development)
+- **SonarQube:** Tracks code quality metrics, code smells, and security issues
+
+### Performance Testing
 
 **Stress Tests**
 <br>
-These tests push the system to its limits by simulating high traffic or data load. The goal is to measure performance, identify performance bottlenecks, and ensure the application remains stable and responsive under pressure. This test can be triggered manually to test the newest version of master.
+Stress tests can be triggered manually via GitHub Actions (`stress-tests.yaml`) to test the latest version on master. These tests push the system to its limits by simulating high traffic or data load to measure performance, identify bottlenecks, and ensure the application remains stable and responsive under pressure.
 
 <br>
 
 
 ## Contributing
 
-This is an open-source project, and contributions are highly welcome! We follow the overarching contribution guidelines of the Frank!Framework organization. Before you start, please familiarize yourself with them.
+This is an open-source project, and contributions are highly welcome! We follow the overarching contribution guidelines of the Frank!Framework organization.
 
 **Code of Conduct**
 <br>
@@ -179,19 +327,27 @@ All contributors are expected to adhere to our [Code of Conduct](https://github.
 <br>
 For general guidelines like commit messages and pull request procedures, see the main [CONTRIBUTING.md](https://github.com/frankframework/frankframework/blob/master/CONTRIBUTING.md).
 
-**Frontend Conventions**
+**Project Structure**
 <br>
-All frontend code must adhere to the [Frank!Framework Frontend Conventions](https://github.com/frankframework/frontend-conventions).
+The project is a Maven monorepo with an integrated Angular frontend in `src/main/frontend`. When working on the frontend, always use **pnpm** as the package manager (not npm or yarn).
 
-**Backend Conventions**
+**Code Conventions**
 <br>
-New public classes and methods in the Java backend should be documented with **Javadoc**.
+- **Frontend:** Must adhere to the [Frank!Framework Frontend Conventions](https://github.com/frankframework/frontend-conventions)
+- **Backend:** Document public classes and methods with Javadoc. Follow Checkstyle and Spotless formatting rules
 
-**Quality**
+**Quality Requirements**
 <br>
-All new code must pass the existing tests and should be covered by new tests where applicable.
+Before submitting a pull request:
+- Ensure all CI/CD pipeline checks pass (linting, testing, building)
+- Clearly explain **what** you changed and **why** in your commit messages and pull request description
+- For details on running tests locally, see the [Building & Testing](#building--testing) section
 
-You can contribute by reporting bugs or suggesting new features by creating an issue, or by forking the repository and submitting a pull request with your improvements.
+**How to Contribute**
+<br>
+- Report bugs or suggest features by creating an issue
+- Fork the repository and submit a pull request with your improvements
+- Improve documentation or add examples
 
 ## License
 

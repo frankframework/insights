@@ -9,14 +9,13 @@ import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
-import { KeyValuePipe } from '@angular/common';
 
 @Component({
   selector: 'app-release-graph',
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, KeyValuePipe],
+  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 75;
@@ -54,6 +53,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
   private toastService = inject(ToastrService);
+
+  public get expandedClustersArray(): { key: string; value: ReleaseNode }[] {
+    return [...this.expandedClusters.entries()].map(([key, value]) => ({ key, value }));
+  }
 
   ngOnInit(): void {
     this.isLoading = true;
@@ -398,7 +401,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const allNodes = [...releaseNodeMap.values()].flat();
     const labelX = Math.min(...allNodes.map((n) => n.position.x)) - 550;
     const nodesByY = this.groupNodesByYPosition(allNodes);
-    const sortedYPositions = [...nodesByY.keys()].sort((a, b) => a - b);
+    const sortedYPositions = [...nodesByY.keys()].toSorted((a, b) => a - b);
 
     for (const yPosition of sortedYPositions) {
       const branchLabel = this.determineBranchLabel(yPosition, nodesByY.get(yPosition)!, releases);
@@ -495,10 +498,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const W = svg.clientWidth;
     const H = svg.clientHeight;
 
-    const allCoordinates: { x: number; y: number }[] = [];
-
-    allCoordinates.push(...nodes.map((n) => ({ x: n.position.x, y: n.position.y })));
-
+    const allCoordinates: { x: number; y: number }[] = nodes.map((n) => ({ x: n.position.x, y: n.position.y }));
     for (const link of this.allLinks) {
       const source = this.findNodeById(link.source);
       const target = this.findNodeById(link.target);
