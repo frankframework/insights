@@ -100,7 +100,7 @@ export class IssueBarComponent implements OnInit {
     const borderGradientStops: string[] = [];
     let currentPosition = 0;
 
-    const sortedStates = [...stateDistribution.entries()].sort((a, b) => {
+    const sortedStates = [...stateDistribution.entries()].toSorted((a, b) => {
       const order = ['Todo', 'On hold', 'In Progress', 'Review', 'Done', 'closed', 'open'];
       const indexA = order.indexOf(a[0]);
       const indexB = order.indexOf(b[0]);

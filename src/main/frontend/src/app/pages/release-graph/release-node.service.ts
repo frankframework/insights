@@ -14,13 +14,37 @@ export interface ReleaseNode {
   branch: string;
   originalBranch?: string;
   publishedAt: Date;
+  isCluster?: boolean;
+  clusteredNodes?: ReleaseNode[];
+  isExpanded?: boolean;
+}
+
+export interface TimelineScale {
+  startDate: Date;
+  endDate: Date;
+  pixelsPerDay: number;
+  totalDays: number;
+  quarters: QuarterMarker[];
+  latestReleaseDate: Date;
+}
+
+export interface QuarterMarker {
+  label: string;
+  date: Date;
+  x: number;
+  labelX: number;
+  year: number;
+  quarter: number;
 }
 
 export const SupportColors = {
   FULL: '#30A102',
   SECURITY: '#EF9302',
   NONE: '#FD230E',
+  NIGHTLY: 'darkblue',
 } as const;
+
+export type SupportColor = (typeof SupportColors)[keyof typeof SupportColors];
 
 interface VersionInfo {
   major: number;
@@ -33,6 +57,8 @@ interface VersionInfo {
 export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
+
+  public timelineScale: TimelineScale | null = null;
 
   public structureReleaseData(releases: Release[]): Map<string, ReleaseNode[]>[] {
     const hydratedReleases = releases.map((r) => ({
@@ -80,11 +106,20 @@ export class ReleaseNodeService {
     }
 
     const nodeMap = this.flattenGroupMaps(structuredGroups);
+
+    // Get all nodes to calculate timeline scale
+    const allNodes: ReleaseNode[] = [];
+    for (const nodes of nodeMap.values()) {
+      allNodes.push(...nodes);
+    }
+
+    // Calculate timeline scale based on all publish dates
+    this.timelineScale = this.calculateTimelineScale(allNodes);
+
     const masterNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     this.positionMasterNodes(masterNodes);
 
-    const positionedNodes = new Map<string, ReleaseNode[]>();
-    positionedNodes.set(ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes);
+    const positionedNodes = new Map<string, ReleaseNode[]>([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
 
     const subBranches = this.getSortedSubBranches(nodeMap);
     this.positionSubBranches(subBranches, masterNodes, positionedNodes);
@@ -92,12 +127,13 @@ export class ReleaseNodeService {
     return positionedNodes;
   }
 
-  public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): ReleaseNode[] {
+  public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): void {
     const allNodes: ReleaseNode[] = [];
     for (const nodes of releaseGroups.values()) {
       allNodes.push(...nodes);
     }
 
+    const parentVersionMap = this.buildParentVersionMap(allNodes);
     const versionGroups = new Map<string, ReleaseNode[]>();
     for (const node of allNodes) {
       const versionInfo = this.getVersionInfo(node);
@@ -112,7 +148,7 @@ export class ReleaseNodeService {
 
     const latestPatches = new Set<string>();
     for (const nodesInGroup of versionGroups.values()) {
-      const sortedByPatch = [...nodesInGroup].sort((a, b) => {
+      const sortedByPatch = [...nodesInGroup].toSorted((a, b) => {
         const vA = this.getVersionInfo(a)!;
         const vB = this.getVersionInfo(b)!;
         return vB.patch - vA.patch;
@@ -127,10 +163,11 @@ export class ReleaseNodeService {
       const versionInfo = this.getVersionInfo(node);
       const isPatchVersion = versionInfo !== null && versionInfo.patch > 0;
       const isLatestPatch = latestPatches.has(node.id);
-      node.color = this.determineColor(node, isPatchVersion, isLatestPatch);
+      const parentNode = isPatchVersion
+        ? (parentVersionMap.get(`${versionInfo!.major}.${versionInfo!.minor}`) ?? null)
+        : null;
+      node.color = this.determineColor(node, isPatchVersion, isLatestPatch, parentNode);
     }
-
-    return allNodes;
   }
 
   public getVersionInfo(release: ReleaseNode): VersionInfo | null {
@@ -149,6 +186,74 @@ export class ReleaseNodeService {
     }
 
     return { major, minor, patch, type };
+  }
+
+  public createClusters(nodes: ReleaseNode[]): ReleaseNode[] {
+    if (!this.timelineScale || nodes.length === 0) return nodes;
+
+    const CLUSTER_THRESHOLD = 150;
+    const MIN_SPACING_OUTSIDE = 60;
+    const MIN_SPACING_INSIDE = 70;
+
+    const clusterStartDate = new Date(this.timelineScale.latestReleaseDate);
+    clusterStartDate.setMonth(clusterStartDate.getMonth() - 4);
+
+    const { clusters, consumedNodeIds } = this.findClusterComponents(nodes, clusterStartDate, CLUSTER_THRESHOLD);
+
+    const finalNodes = this.buildClusteredNodeList(nodes, clusters, consumedNodeIds);
+
+    finalNodes.sort((a, b) => a.position.x - b.position.x);
+
+    return this.applyTimelineSpacing(finalNodes, clusterStartDate, MIN_SPACING_OUTSIDE, MIN_SPACING_INSIDE);
+  }
+
+  /**
+   * Expands a cluster node into its individual nodes with proper spacing.
+   * Centers the expanded nodes around the cluster position.
+   * Gives extra spacing to nightly releases due to their longer labels.
+   */
+  public expandCluster(clusterNode: ReleaseNode): ReleaseNode[] {
+    if (!clusterNode.isCluster || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
+      return [clusterNode];
+    }
+
+    const BASE_SPACING = 60;
+    const NIGHTLY_EXTRA_SPACING = 60;
+    const clusteredNodes = clusterNode.clusteredNodes;
+    const centerX = clusterNode.position.x;
+    const centerY = clusterNode.position.y;
+
+    const positions: number[] = [];
+    let currentX = 0;
+
+    for (let index = 0; index < clusteredNodes.length; index++) {
+      const node = clusteredNodes[index];
+      const isNightly = this.isNightlyRelease(node.label);
+      const previousNode = index > 0 ? clusteredNodes[index - 1] : null;
+      const previousIsNightly = previousNode ? this.isNightlyRelease(previousNode.label) : false;
+
+      if (index === 0) {
+        positions.push(0);
+      } else {
+        let spacing = BASE_SPACING;
+        if (isNightly || previousIsNightly) {
+          spacing += NIGHTLY_EXTRA_SPACING;
+        }
+        currentX += spacing;
+        positions.push(currentX);
+      }
+    }
+
+    const totalWidth = positions.at(-1) ?? 0;
+    const startX = centerX - totalWidth / 2;
+
+    return clusteredNodes.map((node, index) => ({
+      ...node,
+      position: {
+        x: startX + positions[index],
+        y: centerY,
+      },
+    }));
   }
 
   /**
@@ -338,48 +443,18 @@ export class ReleaseNodeService {
   }
 
   private positionMasterNodes(nodes: ReleaseNode[]): void {
-    const BASE_SPACING = 250;
-    let currentX = 0;
+    if (!this.timelineScale) return;
 
-    if (nodes.length > 0) {
-      const firstNode = nodes[0];
-      const hasInitialGap = this.hasInitialVersionGap(firstNode);
-      if (hasInitialGap) {
-        currentX = BASE_SPACING * 1.8;
-      }
+    for (const node of nodes) {
+      const x = this.calculateXPositionFromDate(node.publishedAt, this.timelineScale);
+      node.position = { x, y: 0 };
     }
-
-    for (const [index, node] of nodes.entries()) {
-      node.position = { x: currentX, y: 0 };
-
-      if (index < nodes.length - 1) {
-        const nextNode = nodes[index + 1];
-        const hasVersionGap = this.isVersionGap(node, nextNode);
-        const spacing = hasVersionGap ? BASE_SPACING * 1.8 : BASE_SPACING;
-        currentX += spacing;
-      }
-    }
-  }
-
-  private hasInitialVersionGap(firstNode: ReleaseNode): boolean {
-    const vFirst = this.getVersionInfo(firstNode);
-    if (!vFirst) return false;
-    return vFirst.major > 1 || (vFirst.major === 1 && vFirst.minor > 0);
-  }
-
-  private isVersionGap(source: ReleaseNode, target: ReleaseNode): boolean {
-    const vSource = this.getVersionInfo(source);
-    const vTarget = this.getVersionInfo(target);
-    if (!vSource || !vTarget) return false;
-    const majorGap = vTarget.major > vSource.major + 1;
-    const minorGap = vSource.major === vTarget.major && vTarget.minor > vSource.minor + 1;
-    return majorGap || minorGap;
   }
 
   private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
     return [...nodeMap.entries()]
       .filter(([branch]) => branch !== ReleaseNodeService.GITHUB_MASTER_BRANCH)
-      .sort(([branchA], [branchB]) => {
+      .toSorted(([branchA], [branchB]) => {
         const versionA = this.getVersionFromBranchName(branchA);
         const versionB = this.getVersionFromBranchName(branchB);
         if (!versionA || !versionB) return 0;
@@ -404,41 +479,60 @@ export class ReleaseNodeService {
     let yLevel = 1;
 
     for (const [branchName, subNodes] of subBranches) {
-      // MODIFIED: Hide sub-branch if all its nodes are unsupported (applies to major patches)
       if (subNodes.every((n) => this.isUnsupported(n))) continue;
 
       const anchorNode = masterNodes.find((n) => n.originalBranch === branchName);
       if (!anchorNode) continue;
 
-      const baseX = anchorNode.position.x;
       const baseY = yLevel * Y_SPACING;
-      this.positionSubBranchNodes(subNodes, baseX, baseY);
+      this.positionSubBranchNodes(subNodes, baseY);
       positionedNodes.set(branchName, subNodes);
       yLevel++;
     }
   }
 
-  private positionSubBranchNodes(subNodes: ReleaseNode[], baseX: number, baseY: number): void {
-    const firstNode = subNodes[0];
-    const BASE_X_SPACING = 102.5;
-    const INITIAL_OFFSET = 100;
-    const firstNodeLabelWidth = firstNode.label ? firstNode.label.length * 3 : 0;
-    const labelBasedOffset = firstNodeLabelWidth / 2;
-    const totalInitialOffset = INITIAL_OFFSET + labelBasedOffset;
-    let currentX = baseX + totalInitialOffset;
+  private positionSubBranchNodes(subNodes: ReleaseNode[], baseY: number): void {
+    if (!this.timelineScale) return;
 
     for (const node of subNodes) {
-      node.position = { x: currentX, y: baseY };
-      const labelWidth = node.label ? node.label.length * 8 : 0;
-      currentX += BASE_X_SPACING + labelWidth / 2;
+      const x = this.calculateXPositionFromDate(node.publishedAt, this.timelineScale);
+      node.position = { x, y: baseY };
     }
   }
 
-  private determineColor(release: ReleaseNode, isPatchVersion: boolean, isLatestPatch: boolean): string {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) return 'darkblue';
+  /**
+   * Builds a map from version key (e.g., "8.0" or "8.1") to the parent major/minor release node.
+   */
+  private buildParentVersionMap(allNodes: ReleaseNode[]): Map<string, ReleaseNode> {
+    const parentMap = new Map<string, ReleaseNode>();
+
+    for (const node of allNodes) {
+      const versionInfo = this.getVersionInfo(node);
+      if (versionInfo && versionInfo.patch === 0) {
+        const key = `${versionInfo.major}.${versionInfo.minor}`;
+        parentMap.set(key, node);
+      }
+    }
+
+    return parentMap;
+  }
+
+  private determineColor(
+    release: ReleaseNode,
+    isPatchVersion: boolean,
+    isLatestPatch: boolean,
+    parentNode: ReleaseNode | null,
+  ): SupportColor {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+      return SupportColors.NIGHTLY;
+    }
 
     if (isPatchVersion && !isLatestPatch) {
       return SupportColors.NONE;
+    }
+
+    if (isPatchVersion && parentNode) {
+      return this.getPatchColorBasedOnParent(release, parentNode);
     }
 
     const supportDates = this.getSupportEndDates(release);
@@ -450,6 +544,41 @@ export class ReleaseNodeService {
     if (now <= fullSupportEnd) return SupportColors.FULL;
     if (now <= securitySupportEnd) return SupportColors.SECURITY;
     return SupportColors.NONE;
+  }
+
+  /**
+   * Determines patch color based on when it was published relative to parent's support period
+   */
+  private getPatchColorBasedOnParent(patch: ReleaseNode, parent: ReleaseNode): SupportColor {
+    const versionInfo = this.getVersionInfo(patch);
+    if (!versionInfo) return SupportColors.NONE;
+
+    const parentPublishedDate = new Date(parent.publishedAt);
+    const patchPublishedDate = new Date(patch.publishedAt);
+
+    let fullSupportMonths: number;
+    let securitySupportMonths: number;
+
+    if (versionInfo.minor === 0) {
+      fullSupportMonths = 6;
+      securitySupportMonths = 12;
+    } else {
+      fullSupportMonths = 3;
+      securitySupportMonths = 6;
+    }
+
+    const fullSupportEnd = new Date(parentPublishedDate);
+    fullSupportEnd.setMonth(parentPublishedDate.getMonth() + fullSupportMonths);
+    const securitySupportEnd = new Date(parentPublishedDate);
+    securitySupportEnd.setMonth(parentPublishedDate.getMonth() + securitySupportMonths);
+
+    if (patchPublishedDate <= fullSupportEnd) {
+      return SupportColors.FULL;
+    } else if (patchPublishedDate <= securitySupportEnd) {
+      return SupportColors.SECURITY;
+    } else {
+      return SupportColors.NONE;
+    }
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
@@ -465,15 +594,245 @@ export class ReleaseNodeService {
     const versionInfo = this.getVersionInfo(release);
     if (!versionInfo) return null;
 
-    const fullSupportMonths = versionInfo.type === 'major' ? 6 : 3;
-    const securitySupportMonths = versionInfo.type === 'major' ? 12 : 6;
+    let fullSupportMonths: number;
+    let securitySupportMonths: number;
 
-    const published = new Date(release.publishedAt);
-    const fullSupportEnd = new Date(published);
-    fullSupportEnd.setMonth(published.getMonth() + fullSupportMonths);
-    const securitySupportEnd = new Date(published);
-    securitySupportEnd.setMonth(published.getMonth() + securitySupportMonths);
+    const basePublishedDate = new Date(release.publishedAt);
+
+    if (versionInfo.type === 'major') {
+      fullSupportMonths = 6;
+      securitySupportMonths = 12;
+    } else {
+      fullSupportMonths = 3;
+      securitySupportMonths = 6;
+    }
+
+    const fullSupportEnd = new Date(basePublishedDate);
+    fullSupportEnd.setMonth(basePublishedDate.getMonth() + fullSupportMonths);
+    const securitySupportEnd = new Date(basePublishedDate);
+    securitySupportEnd.setMonth(basePublishedDate.getMonth() + securitySupportMonths);
 
     return { fullSupportEnd, securitySupportEnd };
+  }
+
+  /**
+   * Calculates the timeline scale based on all nodes' publish dates.
+   * Uses a fixed width per quarter for consistent, scalable timeline.
+   */
+  private calculateTimelineScale(allNodes: ReleaseNode[]): TimelineScale {
+    if (allNodes.length === 0) {
+      const now = new Date();
+      return {
+        startDate: now,
+        endDate: now,
+        pixelsPerDay: 1,
+        totalDays: 0,
+        quarters: [],
+        latestReleaseDate: now,
+      };
+    }
+
+    const PIXELS_PER_QUARTER = 200;
+
+    const dates = allNodes.map((n) => n.publishedAt.getTime());
+    const minTime = Math.min(...dates);
+    const maxTime = Math.max(...dates);
+    const latestReleaseDate = new Date(maxTime);
+
+    const firstDate = new Date(minTime);
+    const startDate = this.getQuarterStart(firstDate);
+    startDate.setMonth(startDate.getMonth() - 3);
+
+    const lastDate = new Date(maxTime);
+    const endDate = this.getQuarterEnd(lastDate);
+    endDate.setMonth(endDate.getMonth() + 3);
+
+    const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+
+    const AVERAGE_DAYS_PER_QUARTER = 90;
+    const pixelsPerDay = PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
+
+    const quarters = this.generateQuarterMarkers(startDate, endDate, pixelsPerDay);
+
+    return {
+      startDate,
+      endDate,
+      pixelsPerDay,
+      totalDays,
+      quarters,
+      latestReleaseDate,
+    };
+  }
+
+  private getQuarterStart(date: Date): Date {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const quarterStartMonth = Math.floor(month / 3) * 3;
+    return new Date(year, quarterStartMonth, 1);
+  }
+
+  private getQuarterEnd(date: Date): Date {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const quarterStartMonth = Math.floor(month / 3) * 3;
+    return new Date(year, quarterStartMonth + 3, 0);
+  }
+
+  private generateQuarterMarkers(startDate: Date, endDate: Date, pixelsPerDay: number): QuarterMarker[] {
+    const markers: QuarterMarker[] = [];
+    const PIXELS_PER_QUARTER = 200; // Same as in calculateTimelineScale
+    let currentDate = new Date(this.getQuarterStart(startDate));
+
+    while (currentDate <= endDate) {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const quarter = Math.floor(month / 3) + 1;
+
+      const daysSinceStart = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+      const x = daysSinceStart * pixelsPerDay;
+      const labelX = x + PIXELS_PER_QUARTER / 2;
+
+      markers.push({
+        label: `Q${quarter} ${year}`,
+        date: new Date(currentDate),
+        x,
+        labelX,
+        year,
+        quarter,
+      });
+
+      currentDate.setMonth(currentDate.getMonth() + 3);
+    }
+
+    return markers;
+  }
+
+  /**
+   * Calculates the X position for a node based on its publish date.
+   */
+  private calculateXPositionFromDate(publishedAt: Date, scale: TimelineScale): number {
+    const daysSinceStart = (publishedAt.getTime() - scale.startDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceStart * scale.pixelsPerDay;
+  }
+
+  private findClusterComponents(
+    nodes: ReleaseNode[],
+    clusterStartDate: Date,
+    threshold: number,
+  ): { clusters: ReleaseNode[]; consumedNodeIds: Set<string> } {
+    const consumedNodeIds = new Set<string>();
+    const clusters: ReleaseNode[] = [];
+
+    for (const currentNode of nodes) {
+      const inClusterZone = currentNode.publishedAt >= clusterStartDate;
+
+      if (consumedNodeIds.has(currentNode.id) || !inClusterZone) {
+        continue;
+      }
+
+      consumedNodeIds.add(currentNode.id);
+
+      const currentCluster = this.performBFS(currentNode, nodes, threshold, consumedNodeIds);
+
+      const clusterNode = this.createClusterNode(currentCluster);
+
+      if (clusterNode) {
+        clusters.push(clusterNode);
+      } else {
+        consumedNodeIds.delete(currentNode.id);
+      }
+    }
+    return { clusters, consumedNodeIds };
+  }
+
+  private performBFS(
+    startNode: ReleaseNode,
+    allNodes: ReleaseNode[],
+    threshold: number,
+    consumedNodeIds: Set<string>,
+  ): ReleaseNode[] {
+    const clusterNodes: ReleaseNode[] = [];
+    const queue: ReleaseNode[] = [startNode];
+
+    while (queue.length > 0) {
+      const nodeToSearchFrom = queue.shift()!;
+      clusterNodes.push(nodeToSearchFrom);
+
+      for (const potentialNeighbor of allNodes) {
+        if (consumedNodeIds.has(potentialNeighbor.id)) continue;
+
+        const gap = Math.abs(potentialNeighbor.position.x - nodeToSearchFrom.position.x);
+        if (gap < threshold) {
+          consumedNodeIds.add(potentialNeighbor.id);
+          queue.push(potentialNeighbor);
+        }
+      }
+    }
+    return clusterNodes;
+  }
+
+  private createClusterNode(clusterNodes: ReleaseNode[]): ReleaseNode | null {
+    if (clusterNodes.length <= 1) {
+      return null;
+    }
+
+    clusterNodes.sort((a, b) => a.position.x - b.position.x);
+    const firstNodeInCluster = clusterNodes[0];
+
+    return {
+      id: `cluster-${clusterNodes.map((n) => n.id).join('-')}`,
+      label: `${clusterNodes.length}`,
+      position: { x: firstNodeInCluster.position.x, y: firstNodeInCluster.position.y },
+      color: '#dee2e6',
+      branch: firstNodeInCluster.branch,
+      publishedAt: firstNodeInCluster.publishedAt,
+      isCluster: true,
+      clusteredNodes: clusterNodes,
+      isExpanded: false,
+    };
+  }
+
+  private buildClusteredNodeList(
+    allNodes: ReleaseNode[],
+    clusters: ReleaseNode[],
+    consumedNodeIds: Set<string>,
+  ): ReleaseNode[] {
+    const finalNodes = allNodes.filter((node) => !consumedNodeIds.has(node.id));
+
+    finalNodes.push(...clusters);
+
+    return finalNodes;
+  }
+
+  private applyTimelineSpacing(
+    nodes: ReleaseNode[],
+    clusterStartDate: Date,
+    minSpacing: number,
+    minSpacingInside: number,
+  ): ReleaseNode[] {
+    const spacedFinalNodes: ReleaseNode[] = [];
+
+    for (const node of nodes) {
+      const previousNode = spacedFinalNodes.at(-1);
+
+      if (previousNode) {
+        const gap = node.position.x - previousNode.position.x;
+
+        const nodeInZone = node.publishedAt >= clusterStartDate;
+        const previousNodeInZone = previousNode.publishedAt >= clusterStartDate;
+
+        let currentMinSpacing = minSpacing;
+        if (nodeInZone || previousNodeInZone || node.isCluster || previousNode.isCluster) {
+          currentMinSpacing = minSpacingInside;
+        }
+
+        if (gap < currentMinSpacing) {
+          node.position.x = previousNode.position.x + currentMinSpacing;
+        }
+      }
+
+      spacedFinalNodes.push(node);
+    }
+    return spacedFinalNodes;
   }
 }

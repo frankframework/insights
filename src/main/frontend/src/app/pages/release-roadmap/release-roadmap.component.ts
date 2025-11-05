@@ -143,15 +143,19 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   public getVisibleMilestones(): Milestone[] {
-    if (this.viewMode === ViewMode.QUARTERLY) {
-      return this.milestones;
-    }
-
     return this.milestones.filter((milestone) => {
       const issues = this.getIssuesForMilestone(milestone.id);
       if (issues.length === 0) return false;
 
-      return this.milestoneHasIssuesInMonth(milestone, issues);
+      if (this.isUnplannedEpic(milestone)) {
+        return this.hasVisibleUnplannedEpics(milestone, issues);
+      }
+
+      if (this.viewMode === ViewMode.MONTHLY) {
+        return this.milestoneHasIssuesInMonth(milestone, issues);
+      }
+
+      return true;
     });
   }
 
@@ -330,6 +334,33 @@ export class ReleaseRoadmapComponent implements OnInit {
     return milestone.id === this.UNPLANNED_EPICS_ID;
   }
 
+  private hasVisibleUnplannedEpics(milestone: Milestone, issues: Issue[]): boolean {
+    if (!milestone.dueOn) return false;
+
+    const startOffset = 6 * 3600 * 1000;
+    let currentTime = new Date(milestone.dueOn).getTime() + startOffset;
+    const timelineStartTime = this.timelineStartDate.getTime();
+    const timelineEndTime = this.timelineEndDate.getTime();
+    const epicDuration = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    for (const _issue of issues) {
+      const epicEndTime = currentTime + epicDuration;
+
+      if (currentTime < timelineEndTime && epicEndTime > timelineStartTime) {
+        return true;
+      }
+
+      currentTime += epicDuration + this.GAP_MS;
+
+      if (currentTime >= timelineEndTime) {
+        break;
+      }
+    }
+
+    return false;
+  }
+
   private hasUnplannedEpicsInMonth(milestone: Milestone, issues: Issue[]): boolean {
     if (!milestone.dueOn) return false;
 
@@ -442,7 +473,7 @@ export class ReleaseRoadmapComponent implements OnInit {
       .pipe(
         map(({ milestones, unplannedEpics }) => ({
           milestones: this.sortMilestones(this.parseMilestones(milestones).filter((m) => m.dueOn !== null)),
-          unplannedEpics: unplannedEpics.sort((a, b) => a.number - b.number),
+          unplannedEpics: unplannedEpics.toSorted((a, b) => a.number - b.number),
         })),
         switchMap(({ milestones, unplannedEpics }) =>
           this.fetchIssuesForMilestones(milestones).pipe(map(() => ({ milestones, unplannedEpics }))),
@@ -579,7 +610,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
-    return milestones.sort((a, b) => {
+    return milestones.toSorted((a, b) => {
       const versionComparison = this.compareMilestonesByVersion(a, b);
       if (versionComparison !== 0) {
         return versionComparison;

@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
 import { catchError, map, of, tap } from 'rxjs';
-import { ReleaseNode, ReleaseNodeService } from './release-node.service';
+import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { NavigationEnd, Router } from '@angular/router';
@@ -17,7 +17,8 @@ import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipp
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
-  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 50;
+  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 75;
+  private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
@@ -27,6 +28,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public stickyBranchLabels: { label: string; screenY: number }[] = [];
   public skipNodes: SkipNode[] = [];
   public dataForSkipModal: SkipNode | null = null;
+  public quarterMarkers: QuarterMarker[] = [];
+  public expandedClusters = new Map<string, ReleaseNode>();
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -48,6 +51,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private nodeService = inject(ReleaseNodeService);
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
+
+  public get expandedClustersArray(): { key: string; value: ReleaseNode }[] {
+    return [...this.expandedClusters.entries()].map(([key, value]) => ({ key, value }));
+  }
 
   ngOnInit(): void {
     this.isLoading = true;
@@ -148,38 +155,74 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     if (!source || !target) return '';
 
     const isSkipLink = link.isGap || link.isFadeIn;
-    const releaseNodeRadiusWithMargin = isSkipLink ? 10 : 25;
+
+    const nodeRadius = 20;
+
+    const margin = isSkipLink ? 10 : nodeRadius + 2;
 
     if (link.isGap || link.isFadeIn) {
       const [x1, y1] = [source.position.x, source.position.y];
       const [x2, y2] = [target.position.x, target.position.y];
-      const startMargin = link.isFadeIn ? 0 : releaseNodeRadiusWithMargin;
-      return `M ${x1 + startMargin},${y1} L ${x2 - releaseNodeRadiusWithMargin},${y2}`;
+      const startMargin = link.isFadeIn ? 0 : margin;
+      return `M ${x1 + startMargin},${y1} L ${x2 - margin},${y2}`;
     }
 
     const [x1, y1] = [source.position.x, source.position.y];
     const [x2, y2] = [target.position.x, target.position.y];
 
     if (y1 === y2) {
-      return `M ${x1 + releaseNodeRadiusWithMargin},${y1} L ${x2 - releaseNodeRadiusWithMargin},${y2}`;
+      return `M ${x1 + margin},${y1} L ${x2 - margin},${y2}`;
     }
 
     const verticalDirection = y2 > y1 ? 1 : -1;
-    const cornerY = y2 - verticalDirection * releaseNodeRadiusWithMargin;
+    const cornerY = y2 - verticalDirection * margin;
     const horizontalSweep = x2 > x1 ? 0 : 1;
 
     return [
-      `M ${x1},${y1 + releaseNodeRadiusWithMargin}`,
+      `M ${x1},${y1 + margin}`,
       `L ${x1},${cornerY}`,
-      `A ${releaseNodeRadiusWithMargin},${releaseNodeRadiusWithMargin} 0 0,${horizontalSweep} ${
-        x1 + (horizontalSweep ? -releaseNodeRadiusWithMargin : releaseNodeRadiusWithMargin)
-      },${y2}`,
-      `L ${x2 - releaseNodeRadiusWithMargin},${y2}`,
+      `A ${margin},${margin} 0 0,${horizontalSweep} ${x1 + (horizontalSweep ? -margin : margin)},${y2}`,
+      `L ${x2 - margin},${y2}`,
     ].join(' ');
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
     this.router.navigate(['/graph', releaseNodeId]);
+  }
+
+  public toggleCluster(clusterNode: ReleaseNode): void {
+    if (!clusterNode.isCluster) return;
+
+    const nodeIndex = this.releaseNodes.findIndex((n) => n.id === clusterNode.id);
+    if (nodeIndex === -1) return;
+
+    if (clusterNode.isExpanded) {
+      clusterNode.isExpanded = false;
+      const expandedCount = clusterNode.clusteredNodes?.length ?? 0;
+      this.releaseNodes.splice(nodeIndex, expandedCount, clusterNode);
+      this.expandedClusters.delete(clusterNode.id);
+    } else {
+      clusterNode.isExpanded = true;
+      const expandedNodes = this.nodeService.expandCluster(clusterNode);
+      this.releaseNodes.splice(nodeIndex, 1, ...expandedNodes);
+      this.expandedClusters.set(clusterNode.id, clusterNode);
+    }
+  }
+
+  public collapseCluster(clusterId: string): void {
+    const clusterNode = this.expandedClusters.get(clusterId);
+    if (!clusterNode) return;
+
+    const firstExpandedIndex = this.releaseNodes.findIndex((n) =>
+      clusterNode.clusteredNodes?.some((cn) => cn.id === n.id),
+    );
+
+    if (firstExpandedIndex !== -1) {
+      const expandedCount = clusterNode.clusteredNodes?.length ?? 0;
+      clusterNode.isExpanded = false;
+      this.releaseNodes.splice(firstExpandedIndex, expandedCount, clusterNode);
+      this.expandedClusters.delete(clusterId);
+    }
   }
 
   public openSkipNodeModal(skipNodeId: string): void {
@@ -201,11 +244,35 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
   }
 
+  public getLastExpandedNodePosition(clusterNode: ReleaseNode): { x: number; y: number } | null {
+    if (!clusterNode.isExpanded || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
+      return null;
+    }
+
+    const lastNode = clusterNode.clusteredNodes.at(-1);
+    if (!lastNode) {
+      return null;
+    }
+    const lastNodeInArray = this.releaseNodes.find((n) => n.id === lastNode.id);
+    return lastNodeInArray ? lastNodeInArray.position : null;
+  }
+
   private findNodeById(id: string): ReleaseNode | undefined {
     if (id.startsWith('start-node-') && this.releaseNodes.length > 0) {
       const firstNode = this.releaseNodes[0];
-      const hasInitialSkip = this.skipNodes.some((s) => s.id.startsWith('skip-initial-'));
-      const startDistance = hasInitialSkip ? 450 : 350;
+      const hasInitialSkip = this.skipNodes.some((s) => s.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN));
+
+      let startDistance = 300;
+      if (hasInitialSkip) {
+        const initialSkipNode = this.skipNodes.find((s) =>
+          s.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN),
+        );
+        if (initialSkipNode) {
+          startDistance = firstNode.position.x - initialSkipNode.x + startDistance;
+        }
+      } else {
+        startDistance = Math.min(firstNode.position.x * 0.8, startDistance);
+      }
 
       if (firstNode) {
         return {
@@ -228,7 +295,17 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       };
     }
 
-    return this.releaseNodes.find((n) => n.id === id);
+    const node = this.releaseNodes.find((n) => n.id === id);
+    if (node) {
+      return node;
+    }
+
+    const clusterNode = this.releaseNodes.find((n) => n.isCluster && n.clusteredNodes?.some((cn) => cn.id === id));
+    if (clusterNode) {
+      return clusterNode;
+    }
+
+    return undefined;
   }
 
   private getAllReleases(): void {
@@ -258,16 +335,59 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   private buildReleaseGraph(sortedGroups: Map<string, ReleaseNode[]>[]): void {
     const releaseNodeMap = this.nodeService.calculateReleaseCoordinates(sortedGroups);
-    this.releaseNodes = this.nodeService.assignReleaseColors(releaseNodeMap);
+    this.nodeService.assignReleaseColors(releaseNodeMap);
+
+    const clusteredNodeMap = new Map<string, ReleaseNode[]>();
+    for (const [branch, nodes] of releaseNodeMap.entries()) {
+      clusteredNodeMap.set(branch, this.nodeService.createClusters(nodes));
+    }
+
+    this.releaseNodes = [];
+    for (const nodes of clusteredNodeMap.values()) {
+      this.releaseNodes.push(...nodes);
+    }
 
     this.skipNodes = this.linkService.createSkipNodes(sortedGroups, this.releases);
-    const masterNodes = releaseNodeMap.get('master') ?? [];
+
+    this.updateSkipNodesForClusters();
+
+    const masterNodes = clusteredNodeMap.get('master') ?? [];
     const skipNodeLinks = this.linkService.createSkipNodeLinks(this.skipNodes, masterNodes);
 
     this.allLinks = [...this.linkService.createLinks(sortedGroups, this.skipNodes), ...skipNodeLinks];
     this.branchLabels = this.createBranchLabels(releaseNodeMap, this.releases);
 
+    this.quarterMarkers = this.nodeService.timelineScale?.quarters ?? [];
+
     this.checkReleaseGraphLoading();
+  }
+
+  private updateSkipNodesForClusters(): void {
+    for (const skipNode of this.skipNodes) {
+      const isInitial = skipNode.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN);
+
+      if (isInitial) {
+        const firstNode = this.releaseNodes[0];
+        if (firstNode) {
+          skipNode.x = firstNode.position.x / 2;
+          skipNode.y = firstNode.position.y;
+        }
+      } else {
+        const match = skipNode.id.match(/^skip-(.+)-(.+)$/);
+        if (match) {
+          const sourceId = match[1];
+          const targetId = match[2];
+
+          const sourceNode = this.findNodeById(sourceId);
+          const targetNode = this.findNodeById(targetId);
+
+          if (sourceNode && targetNode) {
+            skipNode.x = (sourceNode.position.x + targetNode.position.x) / 2;
+            skipNode.y = sourceNode.position.y;
+          }
+        }
+      }
+    }
   }
 
   private createBranchLabels(
@@ -278,7 +398,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const allNodes = [...releaseNodeMap.values()].flat();
     const labelX = Math.min(...allNodes.map((n) => n.position.x)) - 550;
     const nodesByY = this.groupNodesByYPosition(allNodes);
-    const sortedYPositions = [...nodesByY.keys()].sort((a, b) => a - b);
+    const sortedYPositions = [...nodesByY.keys()].toSorted((a, b) => a - b);
 
     for (const yPosition of sortedYPositions) {
       const branchLabel = this.determineBranchLabel(yPosition, nodesByY.get(yPosition)!, releases);
@@ -375,10 +495,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const W = svg.clientWidth;
     const H = svg.clientHeight;
 
-    const allCoordinates: { x: number; y: number }[] = [];
-
-    allCoordinates.push(...nodes.map((n) => ({ x: n.position.x, y: n.position.y })));
-
+    const allCoordinates: { x: number; y: number }[] = nodes.map((n) => ({ x: n.position.x, y: n.position.y }));
     for (const link of this.allLinks) {
       const source = this.findNodeById(link.source);
       const target = this.findNodeById(link.target);
