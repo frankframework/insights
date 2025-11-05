@@ -444,7 +444,7 @@ export class ReleaseRoadmapComponent implements OnInit {
       .pipe(
         map(({ milestones, unplannedEpics }) => ({
           milestones: this.sortMilestones(this.parseMilestones(milestones).filter((m) => m.dueOn !== null)),
-          unplannedEpics: unplannedEpics.sort((a, b) => a.number - b.number),
+          unplannedEpics: unplannedEpics.toSorted((a, b) => a.number - b.number),
         })),
         switchMap(({ milestones, unplannedEpics }) =>
           this.fetchIssuesForMilestones(milestones).pipe(map(() => ({ milestones, unplannedEpics }))),
@@ -582,7 +582,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private sortMilestones(milestones: Milestone[]): Milestone[] {
-    return milestones.sort((a, b) => {
+    return milestones.toSorted((a, b) => {
       const versionComparison = this.compareMilestonesByVersion(a, b);
       if (versionComparison !== 0) {
         return versionComparison;
