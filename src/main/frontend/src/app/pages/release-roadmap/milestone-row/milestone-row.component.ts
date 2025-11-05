@@ -1,5 +1,5 @@
 import { Component, inject, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
@@ -29,7 +29,7 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
 @Component({
   selector: 'app-milestone-row',
   standalone: true,
-  imports: [CommonModule, IssueBarComponent, DatePipe],
+  imports: [CommonModule, IssueBarComponent],
   templateUrl: './milestone-row.component.html',
   styleUrls: ['./milestone-row.component.scss'],
 })
@@ -678,13 +678,13 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private sortIssuesByPriority(issues: Issue[]): Issue[] {
-    return [...issues].sort((a, b) => {
+    return [...issues].toSorted((a, b) => {
       return this.compareIssues(a, b, false);
     });
   }
 
   private sortIssuesForMonthlyView(issues: Issue[]): Issue[] {
-    return [...issues].sort((a, b) => {
+    return [...issues].toSorted((a, b) => {
       return this.compareIssues(a, b, true);
     });
   }

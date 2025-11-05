@@ -59,7 +59,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
       return;
     }
 
-    this.sortedHighlightedLabels = [...this.highlightedLabels].sort((a, b) => {
+    this.sortedHighlightedLabels = [...this.highlightedLabels].toSorted((a, b) => {
       const normalizedColorA = this.normalizeColor(a.color || '');
       const normalizedColorB = this.normalizeColor(b.color || '');
       const colorComparison = normalizedColorA.localeCompare(normalizedColorB);
@@ -86,7 +86,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
       }
     }
 
-    const sortedEntries = [...pieDataMap.entries()].sort(([nameA, dataA], [nameB, dataB]) => {
+    const sortedEntries = [...pieDataMap.entries()].toSorted(([nameA, dataA], [nameB, dataB]) => {
       const normalizedColorA = this.normalizeColor(dataA.originalColor);
       const normalizedColorB = this.normalizeColor(dataB.originalColor);
       const colorComparison = normalizedColorA.localeCompare(normalizedColorB);
