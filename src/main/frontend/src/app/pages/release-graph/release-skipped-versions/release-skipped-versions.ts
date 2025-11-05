@@ -116,7 +116,7 @@ export class ReleaseSkippedVersions implements OnChanges {
   }
 
   private sortReleaseTree(releaseMap: Map<string, ReleaseTreeNode>): ReleaseTreeNode[] {
-    return [...releaseMap.values()].sort((a, b) => {
+    return [...releaseMap.values()].toSorted((a, b) => {
       const infoA = this.nodeService.getVersionInfo({ label: a.version } as ReleaseNode);
       const infoB = this.nodeService.getVersionInfo({ label: b.version } as ReleaseNode);
       if (!infoA || !infoB) return 0;
