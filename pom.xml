@@ -55,7 +55,7 @@
 		<spring.shedlock>6.10.0</spring.shedlock>
 		<spotless.version>3.0.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
-		<puppycrawl.tools.version>11.0.1</puppycrawl.tools.version>
+		<puppycrawl.tools.version>12.1.1</puppycrawl.tools.version>
 		<jacoco.version>0.8.14</jacoco.version>
 		<maven.model.version>4.0.0-rc-4</maven.model.version>
 		<maven.resolver.supplier.version>1.9.24</maven.resolver.supplier.version>
