@@ -41,7 +41,10 @@ export const SupportColors = {
   FULL: '#30A102',
   SECURITY: '#EF9302',
   NONE: '#FD230E',
+  NIGHTLY: 'darkblue',
 } as const;
+
+export type SupportColor = (typeof SupportColors)[keyof typeof SupportColors];
 
 interface VersionInfo {
   major: number;
@@ -519,8 +522,10 @@ export class ReleaseNodeService {
     isPatchVersion: boolean,
     isLatestPatch: boolean,
     parentNode: ReleaseNode | null,
-  ): string {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) return 'darkblue';
+  ): SupportColor {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+      return SupportColors.NIGHTLY;
+    }
 
     if (isPatchVersion && !isLatestPatch) {
       return SupportColors.NONE;
@@ -544,7 +549,7 @@ export class ReleaseNodeService {
   /**
    * Determines patch color based on when it was published relative to parent's support period
    */
-  private getPatchColorBasedOnParent(patch: ReleaseNode, parent: ReleaseNode): string {
+  private getPatchColorBasedOnParent(patch: ReleaseNode, parent: ReleaseNode): SupportColor {
     const versionInfo = this.getVersionInfo(patch);
     if (!versionInfo) return SupportColors.NONE;
 
