@@ -54,6 +54,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private toastService = inject(ToastrService);
 
+  public get expandedClustersArray(): { key: string; value: ReleaseNode }[] {
+    return [...this.expandedClusters.entries()].map(([key, value]) => ({ key, value }));
+  }
+
   ngOnInit(): void {
     this.isLoading = true;
     this.getAllReleases();
