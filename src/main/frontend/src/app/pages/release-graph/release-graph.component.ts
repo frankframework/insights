@@ -498,7 +498,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const allNodes = this.getAllNodesInBranch(nodesAtY);
     if (allNodes.length === 0) return 'none';
 
-    const sortedNodes = [...allNodes].sort((a, b) => a.position.x - b.position.x);
+    const sortedNodes = [...allNodes].toSorted((a, b) => a.position.x - b.position.x);
     const firstNode = sortedNodes[0];
     const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
     if (!firstVersionInfo) return 'none';
@@ -596,7 +596,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const lifecycles: BranchLifecycle[] = [];
     const nodesByY = this.groupNodesByYPosition([...releaseNodeMap.values()].flat());
-    const sortedYPositions = [...nodesByY.keys()].sort((a, b) => a - b);
+    const sortedYPositions = [...nodesByY.keys()].toSorted((a, b) => a - b);
 
     for (const yPosition of sortedYPositions) {
       if (yPosition === 0) continue;
@@ -606,7 +606,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
       const allNodesInBranch = this.getAllNodesInBranch(nodesAtY);
 
-      const sortedNodes = [...allNodesInBranch].sort((a, b) => a.position.x - b.position.x);
+      const sortedNodes = [...allNodesInBranch].toSorted((a, b) => a.position.x - b.position.x);
 
       if (sortedNodes.length === 0) continue;
 
@@ -671,12 +671,22 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
 
-    phases.push({
-      type: 'supported',
-      startX: firstX,
-      endX: supportEndX,
-      color: 'rgba(144, 238, 144, 0.2)',
-    });
+    const midpointX = firstX + (supportEndX - firstX) / 2;
+
+    phases.push(
+      {
+        type: 'supported',
+        startX: firstX,
+        endX: midpointX,
+        color: 'rgba(144, 238, 144, 0.25)',
+      },
+      {
+        type: 'supported',
+        startX: midpointX,
+        endX: supportEndX,
+        color: 'rgba(251, 146, 60, 0.15)',
+      },
+    );
 
     return phases;
   }
