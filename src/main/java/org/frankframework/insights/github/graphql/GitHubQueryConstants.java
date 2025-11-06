@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.frankframework.insights.common.client.graphql.GraphQLQuery;
 
+import org.frankframework.insights.common.client.graphql.GraphQLQuery;
+
 @Getter
 @AllArgsConstructor
 public enum GitHubQueryConstants implements GraphQLQuery {
