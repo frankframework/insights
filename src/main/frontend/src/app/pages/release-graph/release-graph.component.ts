@@ -10,6 +10,19 @@ import { ToastrService } from 'ngx-toastr';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 
+export interface LifecyclePhase {
+  type: 'supported';
+  startX: number;
+  endX: number;
+  color: string;
+}
+
+export interface BranchLifecycle {
+  branchLabel: string;
+  y: number;
+  phases: LifecyclePhase[];
+}
+
 @Component({
   selector: 'app-release-graph',
   standalone: true,
@@ -25,12 +38,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   public releaseNodes: ReleaseNode[] = [];
   public allLinks: ReleaseLink[] = [];
-  public branchLabels: { label: string; y: number; x: number }[] = [];
-  public stickyBranchLabels: { label: string; screenY: number }[] = [];
+  public branchLabels: { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[] = [];
+  public stickyBranchLabels: { label: string; screenY: number; supportStatus?: 'supported' | 'none' }[] = [];
   public skipNodes: SkipNode[] = [];
   public dataForSkipModal: SkipNode | null = null;
   public quarterMarkers: QuarterMarker[] = [];
   public expandedClusters = new Map<string, ReleaseNode>();
+  public branchLifecycles: BranchLifecycle[] = [];
+  public currentTimeX = 0;
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -359,8 +374,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     this.allLinks = [...this.linkService.createLinks(sortedGroups, this.skipNodes), ...skipNodeLinks];
     this.branchLabels = this.createBranchLabels(releaseNodeMap, this.releases);
+    this.branchLifecycles = this.calculateBranchLifecycles(releaseNodeMap);
 
     this.quarterMarkers = this.nodeService.timelineScale?.quarters ?? [];
+
+    if (this.nodeService.timelineScale) {
+      this.currentTimeX = this.calculateXPositionFromDate(new Date(), this.nodeService.timelineScale);
+    }
 
     this.checkReleaseGraphLoading();
   }
@@ -396,8 +416,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private createBranchLabels(
     releaseNodeMap: Map<string, ReleaseNode[]>,
     releases: Release[],
-  ): { label: string; y: number; x: number }[] {
-    const labels: { label: string; y: number; x: number }[] = [];
+  ): { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[] {
+    const labels: { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[] = [];
     const allNodes = [...releaseNodeMap.values()].flat();
     const labelX = Math.min(...allNodes.map((n) => n.position.x)) - 550;
     const nodesByY = this.groupNodesByYPosition(allNodes);
@@ -405,7 +425,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     for (const yPosition of sortedYPositions) {
       const branchLabel = this.determineBranchLabel(yPosition, nodesByY.get(yPosition)!, releases);
-      this.addUniqueBranchLabel(labels, branchLabel, yPosition, labelX);
+      const supportStatus = yPosition === 0 ? 'supported' : this.getBranchSupportStatus(nodesByY.get(yPosition)!);
+      this.addUniqueBranchLabel(labels, branchLabel, yPosition, labelX, supportStatus);
     }
 
     return labels;
@@ -456,10 +477,11 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private addUniqueBranchLabel(
-    labels: { label: string; y: number; x: number }[],
+    labels: { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[],
     branchLabel: string,
     yPosition: number,
     labelX: number,
+    supportStatus?: 'supported' | 'none',
   ): void {
     const existingLabel = labels.find((l) => l.y === yPosition);
     if (!existingLabel) {
@@ -467,8 +489,44 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
         label: branchLabel,
         y: yPosition,
         x: labelX,
+        supportStatus,
       });
     }
+  }
+
+  private getBranchSupportStatus(nodesAtY: ReleaseNode[]): 'supported' | 'none' {
+    const allNodes = this.getAllNodesInBranch(nodesAtY);
+    if (allNodes.length === 0) return 'none';
+
+    const sortedNodes = [...allNodes].toSorted((a, b) => a.position.x - b.position.x);
+    const firstNode = sortedNodes[0];
+    const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
+    if (!firstVersionInfo) return 'none';
+
+    const branchMajorMinor = `${firstVersionInfo.major}.${firstVersionInfo.minor}`;
+    const majorMinorRelease = this.releases.find((release) => {
+      const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
+      return releaseName.startsWith(`${branchMajorMinor}.0`) && !releaseName.includes('nightly');
+    });
+
+    if (!majorMinorRelease) return 'none';
+
+    const majorMinorNode = this.releaseNodes.find((node) => node.id === majorMinorRelease.id);
+    if (!majorMinorNode) return 'none';
+
+    const versionInfo = this.nodeService.getVersionInfo(majorMinorNode);
+    if (!versionInfo) return 'none';
+
+    const totalSupportQuarters = versionInfo.type === 'major' ? 4 : 2;
+
+    const branchStartDate = new Date(majorMinorRelease.publishedAt);
+    const supportEnd = new Date(branchStartDate);
+    supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
+
+    const now = new Date();
+
+    if (now <= supportEnd) return 'supported';
+    return 'none';
   }
 
   private centerGraph(): void {
@@ -489,6 +547,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       return {
         label: label.label,
         screenY: screenY,
+        supportStatus: label.supportStatus,
       };
     });
   }
@@ -530,6 +589,111 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.translateX = this.minTranslateX + W * 0.1;
 
     return `0 0 ${W} ${H}`;
+  }
+
+  private calculateBranchLifecycles(releaseNodeMap: Map<string, ReleaseNode[]>): BranchLifecycle[] {
+    if (!this.nodeService.timelineScale) return [];
+
+    const lifecycles: BranchLifecycle[] = [];
+    const nodesByY = this.groupNodesByYPosition([...releaseNodeMap.values()].flat());
+    const sortedYPositions = [...nodesByY.keys()].toSorted((a, b) => a - b);
+
+    for (const yPosition of sortedYPositions) {
+      if (yPosition === 0) continue;
+
+      const nodesAtY = nodesByY.get(yPosition)!;
+      const branchLabel = this.determineBranchLabel(yPosition, nodesAtY, this.releases);
+
+      const allNodesInBranch = this.getAllNodesInBranch(nodesAtY);
+
+      const sortedNodes = [...allNodesInBranch].toSorted((a, b) => a.position.x - b.position.x);
+
+      if (sortedNodes.length === 0) continue;
+
+      const phases = this.calculateLifecyclePhasesForBranch(sortedNodes);
+
+      if (phases.length > 0) {
+        lifecycles.push({
+          branchLabel,
+          y: yPosition,
+          phases,
+        });
+      }
+    }
+
+    return lifecycles;
+  }
+
+  private getAllNodesInBranch(nodes: ReleaseNode[]): ReleaseNode[] {
+    const allNodes: ReleaseNode[] = [];
+
+    for (const node of nodes) {
+      if (node.isCluster && node.clusteredNodes) {
+        allNodes.push(...node.clusteredNodes);
+      } else {
+        allNodes.push(node);
+      }
+    }
+
+    return allNodes;
+  }
+
+  private calculateLifecyclePhasesForBranch(sortedNodes: ReleaseNode[]): LifecyclePhase[] {
+    if (!this.nodeService.timelineScale || sortedNodes.length === 0) return [];
+
+    const phases: LifecyclePhase[] = [];
+    const scale = this.nodeService.timelineScale;
+
+    const firstNode = sortedNodes[0];
+    const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
+    if (!firstVersionInfo) return [];
+
+    const branchMajorMinor = `${firstVersionInfo.major}.${firstVersionInfo.minor}`;
+    const majorMinorRelease = this.releases.find((release) => {
+      const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
+      return releaseName.startsWith(`${branchMajorMinor}.0`) && !releaseName.includes('nightly');
+    });
+
+    if (!majorMinorRelease) return [];
+
+    const majorMinorNode = this.releaseNodes.find((node) => node.id === majorMinorRelease.id);
+    if (!majorMinorNode) return [];
+
+    const firstX = majorMinorNode.position.x;
+    const versionInfo = this.nodeService.getVersionInfo(majorMinorNode);
+    if (!versionInfo) return [];
+
+    const totalSupportQuarters = versionInfo.type === 'major' ? 4 : 2;
+
+    const branchStartDate = new Date(majorMinorRelease.publishedAt);
+    const supportEnd = new Date(branchStartDate);
+    supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
+
+    const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
+
+    const midpointX = firstX + (supportEndX - firstX) / 2;
+
+    phases.push(
+      {
+        type: 'supported',
+        startX: firstX,
+        endX: midpointX,
+        color: 'rgba(144, 238, 144, 0.25)',
+      },
+      {
+        type: 'supported',
+        startX: midpointX,
+        endX: supportEndX,
+        color: 'rgba(251, 146, 60, 0.15)',
+      },
+    );
+
+    return phases;
+  }
+
+  private calculateXPositionFromDate(date: Date, scale: { startDate: Date; pixelsPerDay: number }): number {
+    const daysSinceStart = (date.getTime() - scale.startDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceStart * scale.pixelsPerDay;
   }
 
   private checkReleaseGraphLoading(): void {
