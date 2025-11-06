@@ -25,9 +25,12 @@ export class AuthService {
 
   private http = inject(HttpClient);
 
+  /**
+   * Check authentication status by calling the backend
+   * Returns user info if authenticated and authorized (frankframework member)
+   * Sets appropriate error messages for 401 (not authenticated) and 403 (not authorized)
+   */
   public checkAuthStatus(): Observable<User | null> {
-    this.authError.set(null);
-
     return this.http.get<User>('/api/auth/user', { withCredentials: true }).pipe(
       tap((user) => {
         this.currentUser.set(user);
@@ -40,27 +43,21 @@ export class AuthService {
 
         if (error.status === 401 || error.status === 403) {
           const errorResponse = error.error as ErrorResponse;
+
           if (errorResponse?.messages?.length > 0) {
             this.authError.set(errorResponse.messages.join(' '));
-          } else if (error.status === 403) {
-            this.authError.set('Access denied. You must be a member of the frankframework organization.');
-          } else if (error.status === 401) {
-            this.authError.set(null);
+          } else {
+            if (error.status === 401) {
+              this.authError.set('You are not logged in. Please sign in with GitHub.');
+            } else {
+              this.authError.set('Access denied. You must be a member of the frankframework organization.');
+            }
           }
         }
 
         return of(null);
       }),
     );
-  }
-
-  /**
-   * Public method to manually set the authentication error from outside.
-   * Used by the header component to display errors from the popup.
-   * @param message The error message to display.
-   */
-  public setAuthError(message: string | null): void {
-    this.authError.set(message);
   }
 
   public clearError(): void {
