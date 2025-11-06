@@ -9,7 +9,7 @@ updates:
       - "Dependencies"
       - "Java"
 
-  - package-ecosystem: "npm"
+  - package-ecosystem: "pnpm"
     directory: "/src/main/frontend"
     schedule:
       interval: "monthly"
