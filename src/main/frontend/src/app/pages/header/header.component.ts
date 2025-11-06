@@ -13,11 +13,12 @@ export class HeaderComponent implements OnInit {
   public authService = inject(AuthService);
 
   ngOnInit(): void {
+    // Check authentication status on component load
+    // The backend will return appropriate errors (401/403) if not authenticated or not authorized
     this.authService.checkAuthStatus().subscribe();
   }
 
   onLoginWithGitHub(): void {
-    // Full page redirect to GitHub OAuth
     globalThis.location.href = '/oauth2/authorization/github';
   }
 
