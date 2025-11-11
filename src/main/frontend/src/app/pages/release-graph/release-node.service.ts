@@ -116,8 +116,7 @@ export class ReleaseNodeService {
     const masterNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     this.positionMasterNodes(masterNodes);
 
-    const positionedNodes = new Map<string, ReleaseNode[]>();
-    positionedNodes.set(ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes);
+    const positionedNodes = new Map<string, ReleaseNode[]>([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
 
     const subBranches = this.getSortedSubBranches(nodeMap);
     this.positionSubBranches(subBranches, masterNodes, positionedNodes);

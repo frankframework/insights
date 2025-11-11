@@ -147,6 +147,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
   }
 
+  public handleNodeTouchEnd(event: TouchEvent, releaseNode: ReleaseNode): void {
+    if (releaseNode.isCluster) {
+      this.onClusterTouchEnd(event, releaseNode);
+    } else {
+      this.onNodeTouchEnd(event, releaseNode.id);
+    }
+  }
+
   public onWheel(event: WheelEvent): void {
     event.preventDefault();
     const delta = (event.deltaX === 0 ? event.deltaY : event.deltaX) / this.scale;
