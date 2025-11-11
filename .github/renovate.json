@@ -10,6 +10,20 @@
 		"enabled": false
 	},
 	"rangeStrategy": "bump",
+	"ignorePaths": [
+		"**/target/**",
+		"**/node_modules/**"
+	],
+	"postUpgradeTasks": {
+		"commands": [
+			"pnpm install --lockfile-only"
+		],
+		"fileFilters": [
+			"pnpm-lock.yaml",
+			"**/package.json"
+		],
+		"executionMode": "branch"
+	},
 	"packageRules": [
 		{
 			"description": "Maven rule",
@@ -17,10 +31,9 @@
 			"addLabels": ["Java"]
 		},
 		{
-			"description": "Pin all npm dependencies (for pnpm monorepo)",
+			"description": "Bump npm dependencies in pnpm workspace",
 			"matchManagers": ["npm"],
-			"respectLatest": false,
-			"rangeStrategy": "pin",
+			"rangeStrategy": "bump",
 			"addLabels": ["JavaScript"]
 		},
 		{
