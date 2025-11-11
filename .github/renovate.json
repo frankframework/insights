@@ -12,11 +12,11 @@
 			"addLabels": ["Java"]
 		},
 		{
-			"description": "Force bump package.json for pnpm projects",
+			"description": "Pin dependency versions in package.json for pnpm projects",
 			"matchManagers": ["npm"],
 			"matchFileNames": ["pnpm-lock.yaml"],
 			"respectLatest": false,
-			"rangeStrategy": "bump"
+			"rangeStrategy": "pin"
 		},
 		{
 			"description": "Group Angular packages",
