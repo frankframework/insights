@@ -15,7 +15,8 @@
 			"description": "Force bump package.json for pnpm projects",
 			"matchManagers": ["npm"],
 			"matchFileNames": ["pnpm-lock.yaml"],
-			"respectLatest": false
+			"respectLatest": false,
+			"rangeStrategy": "bump"
 		},
 		{
 			"description": "Group Angular packages",
