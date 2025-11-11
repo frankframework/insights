@@ -26,8 +26,7 @@
     }
   ],
   "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["before 6am on the first day of the month"]
+    "enabled": false
   },
   "rangeStrategy": "bump"
 }
