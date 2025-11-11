@@ -5,6 +5,8 @@ import { ReleaseRoadmapComponent } from './release-roadmap.component';
 import { MilestoneService, Milestone } from '../../services/milestone.service'; // Import Milestone
 import { IssueService, Issue } from '../../services/issue.service';
 import { GitHubStates } from '../../app.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const BASE_MOCK_UNPLANNED_EPICS: Issue[] = [
   {
@@ -40,6 +42,8 @@ describe('ReleaseRoadmapComponent', () => {
       providers: [
         { provide: MilestoneService, useValue: milestoneSpy },
         { provide: IssueService, useValue: issueSpy },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     }).compileComponents();
 

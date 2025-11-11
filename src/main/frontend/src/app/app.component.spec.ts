@@ -10,6 +10,8 @@ import {
 import { Subject } from 'rxjs';
 import { AppComponent } from './app.component';
 import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 @Component({ selector: 'router-outlet', template: '' })
 class MockRouterOutletComponent {}
@@ -29,6 +31,8 @@ describe('AppComponent', () => {
       providers: [
         { provide: Router, useClass: MockRouter },
         { provide: ActivatedRoute, useValue: {} },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();

@@ -2,6 +2,8 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { BehaviorSubject } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { TooltipComponent } from './tooltip.component';
 import { TooltipData, TooltipService } from './tooltip.service';
@@ -23,7 +25,11 @@ describe('TooltipService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [TooltipService],
+      providers: [
+        TooltipService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     service = TestBed.inject(TooltipService);
   });
@@ -81,6 +87,8 @@ describe('TooltipComponent', () => {
       imports: [TooltipComponent],
       providers: [
         { provide: TooltipService, useValue: { tooltipState$: tooltipSubject.asObservable() } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     }).compileComponents();
 
