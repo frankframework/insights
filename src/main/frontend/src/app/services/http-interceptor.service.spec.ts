@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { HttpInterceptorService } from './http-interceptor.service';
 
@@ -7,7 +9,11 @@ describe('HttpInterceptorService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [HttpInterceptorService],
+      providers: [
+        HttpInterceptorService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     service = TestBed.inject(HttpInterceptorService);
   });

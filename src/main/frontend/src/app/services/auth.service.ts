@@ -49,11 +49,9 @@ export class AuthService {
         this.isLoading.set(false);
 
         if (error.status === 401) {
-          // 401 = Not authenticated - this is normal when user is not logged in, don't show error
           console.log('AuthService: User is not authenticated (no active session)');
           this.authError.set(null);
         } else if (error.status === 403) {
-          // 403 = Forbidden - user is authenticated but not authorized (not a frankframework member)
           console.warn('AuthService: User authenticated but not authorized (not a frankframework member)');
           const errorResponse = error.error as ErrorResponse;
 
@@ -63,7 +61,6 @@ export class AuthService {
             this.authError.set('Access denied. You must be a member of the frankframework organization.');
           }
         } else {
-          // Other errors (network issues, server errors, etc.)
           console.error('AuthService: Unexpected error from /api/auth/user:', error.status, error.message);
           this.authError.set(null);
         }

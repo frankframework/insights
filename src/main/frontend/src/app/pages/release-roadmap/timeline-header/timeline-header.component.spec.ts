@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DatePipe } from '@angular/common';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TimelineHeaderComponent } from './timeline-header.component';
 
 describe('TimelineHeaderComponent', () => {
@@ -10,7 +12,11 @@ describe('TimelineHeaderComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TimelineHeaderComponent],
-      providers: [DatePipe],
+      providers: [
+        DatePipe,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TimelineHeaderComponent);

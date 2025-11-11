@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { RoadmapLegend } from './roadmap-legend.component';
 import { ISSUE_STATE_STYLES } from '../release-roadmap.component';
 
@@ -8,7 +10,11 @@ describe('RoadmapLegend', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RoadmapLegend]
+      imports: [RoadmapLegend],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RoadmapLegend);

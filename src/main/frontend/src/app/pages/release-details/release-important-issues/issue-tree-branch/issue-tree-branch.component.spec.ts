@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { IssueTreeBranchComponent } from './issue-tree-branch.component';
 import { Issue } from '../../../../services/issue.service';
 import { GitHubStates } from '../../../../app.service';
@@ -36,6 +38,10 @@ describe('IssueTreeBranchComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IssueTreeBranchComponent, IssueTypeTagComponent], // Import standalone components
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(IssueTreeBranchComponent);
