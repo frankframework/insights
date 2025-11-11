@@ -9,16 +9,16 @@
 	"lockFileMaintenance": {
 		"enabled": false
 	},
-	"rangeStrategy": "replace",
 	"ignorePaths": [
 		"**/target/**",
 		"**/node_modules/**"
 	],
 	"postUpgradeTasks": {
 		"commands": [
-			"pnpm install --no-frozen-lockfile"
+			"pnpm install --lockfile-only"
 		],
 		"fileFilters": [
+			"pnpm-workspace.yaml",
 			"pnpm-lock.yaml",
 			"**/package.json"
 		],
@@ -31,9 +31,9 @@
 			"addLabels": ["Java"]
 		},
 		{
-			"description": "Replace npm dependencies in pnpm workspace",
+			"description": "Bump npm dependencies in pnpm workspace",
 			"matchManagers": ["npm"],
-			"rangeStrategy": "replace",
+			"rangeStrategy": "bump",
 			"addLabels": ["JavaScript"]
 		},
 		{
