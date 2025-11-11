@@ -149,10 +149,25 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
   }
 
+  public onClusterTouchEnd(event: TouchEvent, clusterNode: ReleaseNode): void {
+    event.stopPropagation();
+    if (!this.isTouchDragging) {
+      this.toggleCluster(clusterNode);
+    }
+  }
+
   public onSkipNodeTouchEnd(event: TouchEvent, skipNodeId: string): void {
     event.stopPropagation();
     if (!this.isTouchDragging) {
       this.openSkipNodeModal(skipNodeId);
+    }
+  }
+
+  public handleNodeTouchEnd(event: TouchEvent, releaseNode: ReleaseNode): void {
+    if (releaseNode.isCluster) {
+      this.onClusterTouchEnd(event, releaseNode);
+    } else {
+      this.onNodeTouchEnd(event, releaseNode.id);
     }
   }
 
@@ -237,6 +252,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       clusterNode.isExpanded = false;
       this.releaseNodes.splice(firstExpandedIndex, expandedCount, clusterNode);
       this.expandedClusters.delete(clusterId);
+    }
+  }
+
+  public onCollapseButtonTouchEnd(event: TouchEvent, clusterId: string): void {
+    event.stopPropagation();
+    if (!this.isTouchDragging) {
+      this.collapseCluster(clusterId);
     }
   }
 
