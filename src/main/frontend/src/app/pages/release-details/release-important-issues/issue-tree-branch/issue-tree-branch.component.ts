@@ -18,7 +18,8 @@ export class IssueTreeBranchComponent {
 
   protected expanded = false;
 
-  public toggleExpand(): void {
+  public toggleExpand(event?: MouseEvent): void {
+    event?.preventDefault();
     this.expanded = !this.expanded;
   }
 

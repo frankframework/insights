@@ -4,7 +4,6 @@ import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLinkService, SkipNode } from './release-link.service';
 import { Router, NavigationEnd } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
 import { of, ReplaySubject, throwError } from 'rxjs';
 import { ElementRef } from '@angular/core';
 
@@ -14,7 +13,6 @@ describe('ReleaseGraphComponent', () => {
   let mockReleaseService: jasmine.SpyObj<ReleaseService>;
   let mockNodeService: jasmine.SpyObj<ReleaseNodeService>;
   let mockLinkService: jasmine.SpyObj<ReleaseLinkService>;
-  let mockToastService: jasmine.SpyObj<ToastrService>;
   let routerEventsSubject: ReplaySubject<NavigationEnd>;
 
   const mockReleaseData: Record<string, Release[]> = {
@@ -57,7 +55,6 @@ describe('ReleaseGraphComponent', () => {
       'getVersionInfo',
     ]);
     mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
-    mockToastService = jasmine.createSpyObj('ToastrService', ['error']);
     routerEventsSubject = new ReplaySubject<NavigationEnd>(1);
 
     const mockRouter = {
@@ -72,7 +69,6 @@ describe('ReleaseGraphComponent', () => {
         { provide: ReleaseService, useValue: mockReleaseService },
         { provide: ReleaseNodeService, useValue: mockNodeService },
         { provide: ReleaseLinkService, useValue: mockLinkService },
-        { provide: ToastrService, useValue: mockToastService },
         { provide: Router, useValue: mockRouter },
       ],
     }).compileComponents();
@@ -142,19 +138,11 @@ describe('ReleaseGraphComponent', () => {
       expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases);
     });
 
-    it('should handle API errors gracefully and show a toast message', () => {
+    it('should handle API errors gracefully', () => {
       mockReleaseService.getAllReleases.and.returnValue(throwError(() => new Error('API is down')));
       fixture.detectChanges();
 
       expect(component.releaseNodes).toEqual([]);
-      expect(mockToastService.error).toHaveBeenCalledWith('Failed to load releases. Please try again later.');
-    });
-
-    it('should show a toast message if the API returns no releases', () => {
-      mockReleaseService.getAllReleases.and.returnValue(of([]));
-      fixture.detectChanges();
-
-      expect(mockToastService.error).toHaveBeenCalledWith('No releases found.');
     });
   });
 

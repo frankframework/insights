@@ -55,10 +55,12 @@ describe('IssueTreeBranchComponent', () => {
       component.issue = MOCK_ISSUE;
       fixture.detectChanges();
 
-      const linkElement = nativeElement.querySelector('.issue-number') as HTMLAnchorElement;
+      const linkElement = nativeElement.querySelector('.issue-row') as HTMLAnchorElement;
+
+      const numberElement = nativeElement.querySelector('.issue-number') as HTMLSpanElement;
       const titleElement = nativeElement.querySelector('.issue-title') as HTMLSpanElement;
 
-      expect(linkElement.textContent).toContain('#1');
+      expect(numberElement.textContent).toContain('#1');
       expect(linkElement.href).toBe('http://localhost/PROJ-1');
       expect(titleElement.textContent).toBe('This is a parent issue');
     });

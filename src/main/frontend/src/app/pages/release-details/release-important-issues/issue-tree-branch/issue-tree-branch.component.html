@@ -1,5 +1,5 @@
 <div class="issue-tree-branch" [class.expanded]="expanded">
-  <div class="issue-row" [style.margin-left]="getIndent()">
+  <a class="issue-row" target="_blank" rel="noopener noreferrer" [style.margin-left]="getIndent()" [href]="issue.url">
     @if (issue.subIssues?.length) {
       <button
         type="button"
@@ -7,17 +7,17 @@
         aria-label="Toggle sub-issues"
         [class.expanded]="expanded"
         [attr.aria-expanded]="expanded"
-        (click)="toggleExpand()"
+        (click)="toggleExpand($event)"
       >
         ›
       </button>
     }
-    <a class="issue-number" target="_blank" rel="noopener noreferrer" [href]="issue.url">#{{ issue.number }}</a>
+    <span class="issue-number">#{{ issue.number }}</span>
     @if (issue.issueType) {
       <app-issue-type-tag [issueType]="issue.issueType" />
     }
     <span class="issue-title">{{ issue.title }}</span>
-  </div>
+  </a>
   @if (issue.subIssues?.length && this.expanded) {
     @for (sub of issue.subIssues; track sub.id) {
       <app-issue-tree-branch [issue]="sub" [depth]="depth + 1" />
