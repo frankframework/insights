@@ -12,19 +12,28 @@
 			"addLabels": ["Java"]
 		},
 		{
+			"description": "Force bump package.json for pnpm projects",
 			"matchManagers": ["npm"],
-			"addLabels": ["JavaScript"]
+			"matchFileNames": ["pnpm-lock.yaml"],
+			"respectLatest": false
 		},
 		{
 			"description": "Group Angular packages",
+			"matchManagers": ["npm"],
 			"matchPackagePatterns": ["^@angular"],
 			"groupName": "angular-upgrade",
 			"addLabels": ["JavaScript"]
 		},
 		{
 			"description": "Group TypeScript with Angular",
+			"matchManagers": ["npm"],
 			"matchPackageNames": ["typescript"],
 			"groupName": "angular-upgrade",
+			"addLabels": ["JavaScript"]
+		},
+		{
+			"description": "Add label for all other npm packages",
+			"matchManagers": ["npm"],
 			"addLabels": ["JavaScript"]
 		}
 	],
