@@ -10,7 +10,6 @@
 		"enabled": false
 	},
 	"rangeStrategy": "replace",
-	"preserveSemverRanges": false,
 	"ignorePaths": [
 		"**/target/**",
 		"**/node_modules/**"
@@ -35,7 +34,6 @@
 			"description": "Replace npm dependencies in pnpm workspace",
 			"matchManagers": ["npm"],
 			"rangeStrategy": "replace",
-			"preserveSemverRanges": false,
 			"addLabels": ["JavaScript"]
 		},
 		{
