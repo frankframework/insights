@@ -6,40 +6,34 @@
 	"labels": [
 		"Dependencies"
 	],
+	"lockFileMaintenance": {
+		"enabled": false
+	},
+	"rangeStrategy": "bump",
 	"packageRules": [
 		{
+			"description": "Maven rule",
 			"matchManagers": ["maven"],
 			"addLabels": ["Java"]
 		},
 		{
-			"description": "Pin dependency versions in package.json for pnpm projects",
+			"description": "Pin all npm dependencies (for pnpm monorepo)",
 			"matchManagers": ["npm"],
-			"matchFileNames": ["pnpm-lock.yaml"],
 			"respectLatest": false,
-			"rangeStrategy": "pin"
+			"rangeStrategy": "pin",
+			"addLabels": ["JavaScript"]
 		},
 		{
 			"description": "Group Angular packages",
 			"matchManagers": ["npm"],
 			"matchPackagePatterns": ["^@angular"],
-			"groupName": "angular-upgrade",
-			"addLabels": ["JavaScript"]
+			"groupName": "angular-upgrade"
 		},
 		{
 			"description": "Group TypeScript with Angular",
 			"matchManagers": ["npm"],
 			"matchPackageNames": ["typescript"],
-			"groupName": "angular-upgrade",
-			"addLabels": ["JavaScript"]
-		},
-		{
-			"description": "Add label for all other npm packages",
-			"matchManagers": ["npm"],
-			"addLabels": ["JavaScript"]
+			"groupName": "angular-upgrade"
 		}
-	],
-	"lockFileMaintenance": {
-		"enabled": false
-	},
-	"rangeStrategy": "bump"
+	]
 }
