@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { LocationService } from '../../services/location.service';
 
 @Component({
   selector: 'app-header',
@@ -12,10 +13,11 @@ import { AuthService } from '../../services/auth.service';
 export class HeaderComponent {
   public authService = inject(AuthService);
   public showUserMenu = false;
+  private locationService = inject(LocationService);
 
   onLoginWithGitHub(): void {
     this.authService.setLoading(true);
-    globalThis.location.href = '/oauth2/authorization/github';
+    this.locationService.navigateTo('/oauth2/authorization/github');
   }
 
   toggleUserMenu(): void {

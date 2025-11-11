@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { AppService } from '../app.service';
+import { LocationService } from './location.service';
 
 export interface User {
   githubId: number;
@@ -27,6 +28,7 @@ export class AuthService {
 
   private readonly authHeaders: Record<string, boolean> = { withCredentials: true };
   private appService = inject(AppService);
+  private locationService = inject(LocationService);
 
   /**
    * Check authentication status by calling the backend
@@ -89,7 +91,7 @@ export class AuthService {
         console.error('AuthService: Logout failed, clearing state anyway:', error);
         this.isLoading.set(false);
         this.clearAuthState();
-        return of();
+        return of(void 0);
       }),
     );
   }
@@ -98,6 +100,6 @@ export class AuthService {
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
     this.authError.set(null);
-    globalThis.location.href = '/';
+    this.locationService.navigateTo('/');
   }
 }
