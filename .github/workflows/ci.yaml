@@ -31,7 +31,7 @@ jobs:
           cache: 'maven'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@f2b2b233b538f500472c7274c7012f57857d8ce0
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -96,7 +96,7 @@ jobs:
           cache: 'maven'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@f2b2b233b538f500472c7274c7012f57857d8ce0
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
         with:
           version: ${{ env.PNPM_VERSION }}
 
