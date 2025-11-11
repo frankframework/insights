@@ -1,52 +1,32 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": [
-		"config:recommended"
-	],
-	"labels": [
-		"Dependencies"
-	],
-	"lockFileMaintenance": {
-		"enabled": false
-	},
-	"ignorePaths": [
-		"**/target/**",
-		"**/node_modules/**"
-	],
+	"extends": ["config:recommended"],
+	"labels": ["Dependencies"],
+	"ignoreDeps": ["pnpm"],
 	"postUpgradeTasks": {
-		"commands": [
-			"pnpm install --lockfile-only"
-		],
-		"fileFilters": [
-			"pnpm-workspace.yaml",
-			"pnpm-lock.yaml",
-			"**/package.json"
-		],
+		"commands": ["pnpm install --lockfile-only"],
+		"fileFilters": ["pnpm-lock.yaml", "**/package.json"],
 		"executionMode": "branch"
 	},
 	"packageRules": [
 		{
-			"description": "Maven rule",
 			"matchManagers": ["maven"],
 			"addLabels": ["Java"]
 		},
 		{
-			"description": "Bump npm dependencies in pnpm workspace",
+			"matchManagers": ["npm"],
+			"matchDepTypes": ["peerDependencies"],
+			"enabled": false
+		},
+		{
 			"matchManagers": ["npm"],
 			"rangeStrategy": "bump",
 			"addLabels": ["JavaScript"]
 		},
 		{
-			"description": "Group Angular packages",
 			"matchManagers": ["npm"],
-			"matchPackagePatterns": ["^@angular"],
-			"groupName": "angular-upgrade"
-		},
-		{
-			"description": "Group TypeScript with Angular",
-			"matchManagers": ["npm"],
-			"matchPackageNames": ["typescript"],
-			"groupName": "angular-upgrade"
+			"matchPackagePatterns": ["^@angular", "^typescript$"],
+			"groupName": "Angular"
 		}
 	]
 }
