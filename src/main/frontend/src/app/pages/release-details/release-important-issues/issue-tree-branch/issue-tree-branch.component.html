@@ -7,7 +7,7 @@
         aria-label="Toggle sub-issues"
         [class.expanded]="expanded"
         [attr.aria-expanded]="expanded"
-        (click)="$event.preventDefault(); toggleExpand()"
+        (click)="toggleExpand($event)"
       >
         ›
       </button>
