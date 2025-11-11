@@ -1,6 +1,5 @@
 package org.frankframework.insights.businessvalue;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,7 +11,6 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
 @Setter
 public class BusinessValue {
