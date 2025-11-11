@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "before 6am on the first day of the month"
+  ],
+  "labels": [
+    "Dependencies"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["maven"],
+      "addLabels": ["Java"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "addLabels": ["JavaScript"]
+    },
+    {
+      "matchPackagePatterns": ["^@angular"],
+      "matchPackageNames": ["typescript"],
+      "groupName": "angular-upgrade",
+      "addLabels": ["JavaScript"]
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "rangeStrategy": "bump"
+}
