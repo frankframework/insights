@@ -6,6 +6,7 @@ import {
   NavigationCancel,
   NavigationError,
   NavigationStart,
+  ActivatedRoute,
 } from '@angular/router';
 import { LoaderComponent } from './components/loader/loader.component';
 import { HeaderComponent } from './pages/header/header.component';
@@ -24,6 +25,7 @@ export class AppComponent implements OnInit {
   public loading = false;
 
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
 
   constructor() {
@@ -35,8 +37,39 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Always check auth status on init to detect if user has an active session
-    // This is safe because 401 (not logged in) won't show an error, only 403 (not authorized) will
-    this.authService.checkAuthStatus().subscribe();
+    if (this.authService.hasSessionFlag()) {
+      this.authService.checkAuthStatus().subscribe();
+    }
+
+    this.route.queryParams.subscribe((parameters) => {
+      const loginParameter = parameters['login'];
+
+      if (loginParameter === 'success') {
+        this.authService.checkAuthStatus().subscribe({
+          next: () => {
+            this.router.navigate([], {
+              queryParams: {},
+              replaceUrl: true,
+            });
+          },
+          error: (error) => {
+            console.error('Failed to fetch user info after OAuth success:', error);
+            this.authService.setLoading(false);
+            this.router.navigate([], {
+              queryParams: {},
+              replaceUrl: true,
+            });
+          },
+        });
+      } else if (loginParameter === 'error') {
+        console.error('OAuth2 login failed');
+        this.authService.setLoading(false);
+        this.authService.clearError();
+        this.router.navigate([], {
+          queryParams: {},
+          replaceUrl: true,
+        });
+      }
+    });
   }
 }

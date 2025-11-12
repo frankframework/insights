@@ -7,7 +7,7 @@ import {
   NavigationError,
   ActivatedRoute,
 } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { AppComponent } from './app.component';
 import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
@@ -18,6 +18,11 @@ class MockRouterOutletComponent {}
 
 class MockRouter {
   public events = new Subject<NavigationStart | NavigationEnd | NavigationCancel | NavigationError>();
+  navigate: jasmine.Spy | undefined;
+}
+
+class MockActivatedRoute {
+  queryParams = of({});
 }
 
 describe('AppComponent', () => {
@@ -30,7 +35,7 @@ describe('AppComponent', () => {
       imports: [AppComponent, MockRouterOutletComponent],
       providers: [
         { provide: Router, useClass: MockRouter },
-        { provide: ActivatedRoute, useValue: {} },
+        { provide: ActivatedRoute, useClass: MockActivatedRoute },
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -40,6 +45,7 @@ describe('AppComponent', () => {
     fixture = TestBed.createComponent(AppComponent);
     component = fixture.componentInstance;
     router = TestBed.inject(Router) as unknown as MockRouter;
+    router.navigate = jasmine.createSpy('navigate').and.resolveTo(true);
   });
 
   it('should create the app', () => {
@@ -58,10 +64,8 @@ describe('AppComponent', () => {
     it('should set loading to true on NavigationStart event', () => {
       fixture.detectChanges();
 
-      // Simulate the event
       router.events.next(new NavigationStart(1, '/new-page'));
 
-      // Check the result
       expect(component.loading).toBe(true);
     });
 

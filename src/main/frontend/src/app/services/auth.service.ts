@@ -27,6 +27,7 @@ export class AuthService {
   public isLoading = signal<boolean>(false);
 
   private readonly authHeaders: Record<string, boolean> = { withCredentials: true };
+  private readonly SESSION_KEY = 'auth_session';
   private appService = inject(AppService);
   private locationService = inject(LocationService);
 
@@ -43,12 +44,14 @@ export class AuthService {
         this.isAuthenticated.set(true);
         this.authError.set(null);
         this.isLoading.set(false);
+        this.setSessionFlag(true);
         console.log('AuthService: User authenticated successfully:', user.username);
       }),
       catchError((error: HttpErrorResponse) => {
         this.currentUser.set(null);
         this.isAuthenticated.set(false);
         this.isLoading.set(false);
+        this.setSessionFlag(false);
 
         if (error.status === 401) {
           console.log('AuthService: User is not authenticated (no active session)');
@@ -70,6 +73,14 @@ export class AuthService {
         return of(null);
       }),
     );
+  }
+
+  /**
+   * Check if there's a session flag in localStorage
+   * This is used to avoid unnecessary API calls on page refresh
+   */
+  public hasSessionFlag(): boolean {
+    return localStorage.getItem(this.SESSION_KEY) === 'true';
   }
 
   public clearError(): void {
@@ -100,6 +111,18 @@ export class AuthService {
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
     this.authError.set(null);
+    this.setSessionFlag(false);
     this.locationService.navigateTo('/');
+  }
+
+  /**
+   * Set or clear the session flag in localStorage
+   */
+  private setSessionFlag(hasSession: boolean): void {
+    if (hasSession) {
+      localStorage.setItem(this.SESSION_KEY, 'true');
+    } else {
+      localStorage.removeItem(this.SESSION_KEY);
+    }
   }
 }

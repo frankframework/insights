@@ -37,7 +37,7 @@ describe('Release Roadmap End-to-End Tests', () => {
     cy.get('app-header').find('li').contains('Roadmap').click();
 
     cy.tick(5000);
-    cy.get('app-loader').should('not.be.visible');
+    cy.get('app-loader').should('not.exist');
   });
 
   context('Initial Load and View', () => {
