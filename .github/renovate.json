@@ -11,7 +11,8 @@
 	"packageRules": [
 		{
 			"matchManagers": ["maven"],
-			"addLabels": ["Java"]
+			"addLabels": ["Java"],
+			"schedule": ["* 7 * * 1"]
 		},
 		{
 			"matchManagers": ["npm"],
@@ -21,7 +22,8 @@
 		{
 			"matchManagers": ["npm"],
 			"rangeStrategy": "bump",
-			"addLabels": ["JavaScript"]
+			"addLabels": ["JavaScript"],
+			"schedule": ["* 7 1-7 * 1"]
 		},
 		{
 			"matchManagers": ["npm"],
