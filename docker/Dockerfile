@@ -6,7 +6,7 @@ RUN wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSIO
     mv trivy /usr/local/bin/trivy && \
     rm trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
 
-FROM eclipse-temurin:21.0.9_10-jre-jammy AS runner
+FROM eclipse-temurin:25.0.1_8-jre-jammy AS runner
 ARG GID=2000
 ARG UID=2000
 
