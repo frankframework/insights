@@ -11,4 +11,9 @@ public class ApiException extends Exception {
         super(message, cause);
         this.statusCode = statusCode;
     }
+
+    public ApiException(String message, HttpStatus statusCode) {
+        super(message);
+        this.statusCode = statusCode;
+    }
 }

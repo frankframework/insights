@@ -7,8 +7,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,17 +21,17 @@ public class IssueTypeService {
 
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final IssueTypeRepository issueTypeRepository;
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
 
     public IssueTypeService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             IssueTypeRepository issueTypeRepository,
-            GitHubClient gitHubClient,
+            GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.issueTypeRepository = issueTypeRepository;
-        this.gitHubClient = gitHubClient;
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
     }
 
@@ -55,7 +55,7 @@ public class IssueTypeService {
                             .getGitHubIssueTypeCount());
 
             log.info("Start injecting GitHub issue types");
-            Set<IssueTypeDTO> issueTypeDTOS = gitHubClient.getIssueTypes();
+            Set<IssueTypeDTO> issueTypeDTOS = gitHubGraphQLClient.getIssueTypes();
             Set<IssueType> issueTypes = mapper.toEntity(issueTypeDTOS, IssueType.class);
             saveIssueTypes(issueTypes);
         } catch (Exception e) {

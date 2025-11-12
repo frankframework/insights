@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubSingleSelectDTO;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubSingleSelectDTO;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class IssueProjectItemsService {
     private final IssuePriorityRepository issuePriorityRepository;
     private final IssueStateRepository issueStateRepository;
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final String projectId;
     private static final String PRIORITY_FIELD_NAME = "Priority";
@@ -26,14 +26,14 @@ public class IssueProjectItemsService {
     public IssueProjectItemsService(
             IssuePriorityRepository issuePriorityRepository,
             IssueStateRepository issueStateRepository,
-            GitHubClient gitHubClient,
+            GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper,
             GitHubProperties gitHubProperties) {
         this.issuePriorityRepository = issuePriorityRepository;
         this.issueStateRepository = issueStateRepository;
-        this.gitHubClient = gitHubClient;
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
-        this.projectId = gitHubProperties.getProjectId();
+        this.projectId = gitHubProperties.getGraphql().getProjectId();
     }
 
     public void injectIssueProjectItems() throws IssueProjectItemInjectionException {
@@ -46,7 +46,7 @@ public class IssueProjectItemsService {
             log.info("Start injecting GitHub issue project items");
             Set<GitHubSingleSelectDTO.SingleSelectObject> projectItems;
 
-            projectItems = gitHubClient.getIssueProjectItems(projectId);
+            projectItems = gitHubGraphQLClient.getIssueProjectItems(projectId);
 
             if (issuePriorityRepository.count() == 0) {
                 Set<IssuePriority> issuePriorities = fetchAndMapGithubPriorityOptions(projectItems);

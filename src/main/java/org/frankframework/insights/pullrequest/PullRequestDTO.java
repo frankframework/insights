@@ -1,7 +1,7 @@
 package org.frankframework.insights.pullrequest;
 
 import java.time.OffsetDateTime;
-import org.frankframework.insights.github.GitHubEdgesDTO;
+import org.frankframework.insights.github.graphql.GitHubEdgesDTO;
 import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.label.LabelDTO;
 import org.frankframework.insights.milestone.MilestoneDTO;

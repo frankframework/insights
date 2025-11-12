@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.github.graphql.GitHubPropertyState;
 import org.frankframework.insights.issueprojects.IssuePriorityResponse;
 import org.frankframework.insights.issueprojects.IssueStateResponse;
 import org.frankframework.insights.issuetype.IssueTypeResponse;

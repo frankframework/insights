@@ -5,10 +5,15 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
-import org.frankframework.insights.github.*;
+import org.frankframework.insights.github.graphql.GitHubEdgesDTO;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubIssueProjectItemDTO;
+import org.frankframework.insights.github.graphql.GitHubPropertyState;
 import org.frankframework.insights.issueprojects.IssuePriority;
 import org.frankframework.insights.issueprojects.IssuePriorityResponse;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
@@ -29,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class IssueServiceTest {
 
     @Mock
-    private GitHubClient gitHubClient;
+    private GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     private Mapper mapper;
@@ -114,8 +119,8 @@ public class IssueServiceTest {
 
         LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
-        List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
+        GraphQLNodeDTO<LabelDTO> labelNode = new GraphQLNodeDTO<>(labelDTO);
+        List<GraphQLNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
         GitHubEdgesDTO<GitHubIssueProjectItemDTO> emptyProjectItems = new GitHubEdgesDTO<>(Collections.emptyList());
@@ -146,7 +151,7 @@ public class IssueServiceTest {
                 null,
                 emptyProjectItems);
 
-        GitHubNodeDTO<IssueDTO> subIssueNode = new GitHubNodeDTO<>(dto2);
+        GraphQLNodeDTO<IssueDTO> subIssueNode = new GraphQLNodeDTO<>(dto2);
         GitHubEdgesDTO<IssueDTO> subIssuesEdge = new GitHubEdgesDTO<>(List.of(subIssueNode));
 
         dtoSub = new IssueDTO(
@@ -165,7 +170,7 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_savesAllAndHandlesTypeMilestoneAndLabels()
-            throws GitHubClientException, IssueInjectionException {
+            throws GitHubGraphQLClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dto1, dto2);
 
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
@@ -174,7 +179,7 @@ public class IssueServiceTest {
         Map<String, Milestone> milestones = Map.of("m1", milestone);
         Map<String, IssueType> issueTypes = Map.of("it1", issueType);
 
-        when(gitHubClient.getIssues()).thenReturn(DTOs);
+        when(gitHubGraphQLClient.getIssues()).thenReturn(DTOs);
         when(milestoneService.getAllMilestonesMap()).thenReturn(milestones);
         when(issueTypeService.getAllIssueTypesMap()).thenReturn(issueTypes);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -197,9 +202,9 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_mapsPriorityAndPointsFromProjectItems()
-            throws GitHubClientException, IssueInjectionException {
+            throws GitHubGraphQLClientException, IssueInjectionException {
         when(issueProjectItemsService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
-        when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
@@ -211,9 +216,9 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_handlesMissingPriorityMappingGracefully() throws GitHubClientException {
+    public void injectIssues_handlesMissingPriorityMappingGracefully() throws GitHubGraphQLClientException {
         when(issueProjectItemsService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
-        when(gitHubClient.getIssues()).thenReturn(Set.of(dtoSub));
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dtoSub));
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
@@ -221,8 +226,8 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_handlesFieldValuesWithNullNode() throws GitHubClientException {
-        when(gitHubClient.getIssues()).thenReturn(Set.of(dto1));
+    public void injectIssues_handlesFieldValuesWithNullNode() throws GitHubGraphQLClientException {
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
@@ -230,10 +235,10 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_assignsSubIssues() throws GitHubClientException, IssueInjectionException {
+    public void injectIssues_assignsSubIssues() throws GitHubGraphQLClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dtoSub, dto2);
 
-        when(gitHubClient.getIssues()).thenReturn(DTOs);
+        when(gitHubGraphQLClient.getIssues()).thenReturn(DTOs);
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
         when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
         when(milestoneService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
@@ -247,8 +252,8 @@ public class IssueServiceTest {
     }
 
     @Test
-    public void injectIssues_catchesAndWrapsException() throws GitHubClientException {
-        when(gitHubClient.getIssues()).thenThrow(new GitHubClientException("fail", null));
+    public void injectIssues_catchesAndWrapsException() throws GitHubGraphQLClientException {
+        when(gitHubGraphQLClient.getIssues()).thenThrow(new GitHubGraphQLClientException("fail", null));
         assertThrows(IssueInjectionException.class, () -> issueService.injectIssues());
     }
 

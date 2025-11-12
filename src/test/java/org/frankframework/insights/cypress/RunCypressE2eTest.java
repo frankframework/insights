@@ -58,6 +58,7 @@ public class RunCypressE2eTest {
 
     private static void startApplication() {
         SpringApplication springApplication = InsightsApplication.configureApplication();
+        springApplication.setAdditionalProfiles("local-seed");
 
         run = springApplication.run();
 
@@ -112,9 +113,8 @@ public class RunCypressE2eTest {
         CypressTestResults testResults = container.getTestResults();
 
         if (testResults.getNumberOfFailingTests() > 0) {
-            throw new AssertionError(
-                    "Cypress tests failed! " + testResults.getNumberOfFailingTests() + " test(s) failed.\n\n"
-                            + testResults);
+            throw new AssertionError("Cypress tests failed! " + testResults.getNumberOfFailingTests()
+                    + " test(s) failed.\n\n" + testResults);
         }
 
         return testResults.getSuites().stream().map(this::createContainerFromSuite);

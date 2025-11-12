@@ -6,10 +6,10 @@ import static org.mockito.Mockito.*;
 import java.util.*;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubSingleSelectDTO;
-import org.frankframework.insights.github.GitHubSingleSelectProjectItemDTO;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubSingleSelectDTO;
+import org.frankframework.insights.github.graphql.GitHubSingleSelectProjectItemDTO;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -25,12 +25,12 @@ public class IssueProjectItemsServiceTest {
     IssueStateRepository issueStateRepository;
 
     @Mock
-    GitHubClient gitHubClient;
+    GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     Mapper mapper;
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     GitHubProperties gitHubProperties;
 
     @InjectMocks
@@ -43,9 +43,9 @@ public class IssueProjectItemsServiceTest {
 
     @BeforeEach
     public void setup() {
-        when(gitHubProperties.getProjectId()).thenReturn("project123");
+        when(gitHubProperties.getGraphql().getProjectId()).thenReturn("project123");
         issueProjectItemsService = new IssueProjectItemsService(
-                issuePriorityRepository, issueStateRepository, gitHubClient, mapper, gitHubProperties);
+                issuePriorityRepository, issueStateRepository, gitHubGraphQLClient, mapper, gitHubProperties);
 
         priorityDto1 = new GitHubSingleSelectProjectItemDTO("p1", "High", "red", "High Priority");
         priorityDto2 = new GitHubSingleSelectProjectItemDTO("p2", "Low", "green", "Low Priority");
@@ -80,18 +80,18 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldSkipIfRepoNotEmpty()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(1L);
         when(issueStateRepository.count()).thenReturn(1L);
         issueProjectItemsService.injectIssueProjectItems();
-        verify(gitHubClient, never()).getIssueProjectItems(any());
+        verify(gitHubGraphQLClient, never()).getIssueProjectItems(any());
         verify(issuePriorityRepository, never()).saveAll(anySet());
         verify(issueStateRepository, never()).saveAll(anySet());
     }
 
     @Test
     public void injectIssueProjectItems_shouldSaveAllPrioritiesAndStatesFromCorrectFields()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
@@ -102,7 +102,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField, stateField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(priorityDto1, IssuePriority.class)).thenReturn(priorityEntity1);
         when(mapper.toEntity(priorityDto2, IssuePriority.class)).thenReturn(priorityEntity2);
         when(mapper.toEntity(any(GitHubSingleSelectProjectItemDTO.class), eq(IssueState.class)))
@@ -127,7 +127,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleWrongFieldName()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
@@ -136,7 +136,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(wrongField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
@@ -147,7 +147,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleNullName()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
@@ -156,7 +156,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(nullName);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
@@ -167,7 +167,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleNullOptions()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
@@ -176,7 +176,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(nullOptions);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
@@ -187,7 +187,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleEmptyOptions()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
@@ -196,7 +196,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(emptyOptions);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
@@ -207,13 +207,13 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleNoPriorityFieldAtAll()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of();
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
@@ -223,9 +223,9 @@ public class IssueProjectItemsServiceTest {
     }
 
     @Test
-    public void injectIssueProjectItems_shouldWrapGitHubClientException() throws GitHubClientException {
+    public void injectIssueProjectItems_shouldWrapGitHubClientException() throws GitHubGraphQLClientException {
         when(issuePriorityRepository.count()).thenReturn(0L);
-        when(gitHubClient.getIssueProjectItems(anyString())).thenThrow(new RuntimeException("GitHub fail"));
+        when(gitHubGraphQLClient.getIssueProjectItems(anyString())).thenThrow(new RuntimeException("GitHub fail"));
 
         IssueProjectItemInjectionException ex = assertThrows(
                 IssueProjectItemInjectionException.class, () -> issueProjectItemsService.injectIssueProjectItems());
@@ -234,7 +234,7 @@ public class IssueProjectItemsServiceTest {
     }
 
     @Test
-    public void injectIssueProjectItems_shouldWrapPriorityMapperException() throws GitHubClientException {
+    public void injectIssueProjectItems_shouldWrapPriorityMapperException() throws GitHubGraphQLClientException {
         when(issuePriorityRepository.count()).thenReturn(0L);
 
         GitHubSingleSelectDTO.SingleSelectObject priorityField =
@@ -242,7 +242,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(priorityDto1, IssuePriority.class)).thenThrow(new RuntimeException("Mapping failed"));
 
         IssueProjectItemInjectionException ex = assertThrows(
@@ -251,7 +251,7 @@ public class IssueProjectItemsServiceTest {
     }
 
     @Test
-    public void injectIssueProjectItems_shouldWrapStateMapperException() throws GitHubClientException {
+    public void injectIssueProjectItems_shouldWrapStateMapperException() throws GitHubGraphQLClientException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
 
@@ -262,7 +262,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField, stateField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(priorityDto1, IssuePriority.class)).thenReturn(priorityEntity1);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of(priorityEntity1));
         when(mapper.toEntity(any(GitHubSingleSelectProjectItemDTO.class), eq(IssueState.class)))
@@ -293,10 +293,10 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldSaveEmptyIfNoDTOSFromGitHub()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(0L);
-        when(gitHubClient.getIssueProjectItems(anyString())).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getIssueProjectItems(anyString())).thenReturn(Collections.emptySet());
         when(issuePriorityRepository.saveAll(Collections.emptySet())).thenReturn(Collections.emptyList());
         when(issueStateRepository.saveAll(Collections.emptySet())).thenReturn(Collections.emptyList());
 
@@ -307,7 +307,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldOnlySavePrioritiesWhenStatesAlreadyExist()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(1L);
 
@@ -318,7 +318,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField, stateField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(priorityDto1, IssuePriority.class)).thenReturn(priorityEntity1);
         when(mapper.toEntity(priorityDto2, IssuePriority.class)).thenReturn(priorityEntity2);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of(priorityEntity1, priorityEntity2));
@@ -333,7 +333,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldOnlySaveStatesWhenPrioritiesAlreadyExist()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(1L);
         when(issueStateRepository.count()).thenReturn(0L).thenReturn(0L);
 
@@ -344,7 +344,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField, stateField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(any(GitHubSingleSelectProjectItemDTO.class), eq(IssueState.class)))
                 .thenAnswer(invocation -> {
                     GitHubSingleSelectProjectItemDTO dto = invocation.getArgument(0);
@@ -364,7 +364,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldSaveOnlyStatesFromCorrectField()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(1L);
         when(issueStateRepository.count()).thenReturn(0L).thenReturn(0L);
 
@@ -373,7 +373,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(stateField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(any(GitHubSingleSelectProjectItemDTO.class), eq(IssueState.class)))
                 .thenAnswer(invocation -> {
                     GitHubSingleSelectProjectItemDTO dto = invocation.getArgument(0);
@@ -392,7 +392,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleWrongStateFieldName()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(1L);
         when(issueStateRepository.count()).thenReturn(0L).thenReturn(0L);
 
@@ -401,7 +401,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(wrongStateField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsService.injectIssueProjectItems();
@@ -410,7 +410,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleNullStateOptions()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(1L);
         when(issueStateRepository.count()).thenReturn(0L).thenReturn(0L);
 
@@ -419,7 +419,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(nullStateOptions);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsService.injectIssueProjectItems();
@@ -428,7 +428,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleEmptyStateOptions()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(1L);
         when(issueStateRepository.count()).thenReturn(0L).thenReturn(0L);
 
@@ -437,7 +437,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(emptyStateOptions);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsService.injectIssueProjectItems();
@@ -446,7 +446,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldSaveOnlyPrioritiesFromCorrectField()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(1L);
 
@@ -455,7 +455,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(priorityField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(mapper.toEntity(priorityDto1, IssuePriority.class)).thenReturn(priorityEntity1);
         when(mapper.toEntity(priorityDto2, IssuePriority.class)).thenReturn(priorityEntity2);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of(priorityEntity1, priorityEntity2));
@@ -469,7 +469,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleWrongPriorityFieldName()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(1L);
 
@@ -478,7 +478,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(wrongPriorityField);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsService.injectIssueProjectItems();
@@ -487,7 +487,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleNullPriorityOptions()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(1L);
 
@@ -496,7 +496,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(nullPriorityOptions);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsService.injectIssueProjectItems();
@@ -505,7 +505,7 @@ public class IssueProjectItemsServiceTest {
 
     @Test
     public void injectIssueProjectItems_shouldHandleEmptyPriorityOptions()
-            throws GitHubClientException, IssueProjectItemInjectionException {
+            throws GitHubGraphQLClientException, IssueProjectItemInjectionException {
         when(issuePriorityRepository.count()).thenReturn(0L).thenReturn(0L);
         when(issueStateRepository.count()).thenReturn(1L);
 
@@ -514,7 +514,7 @@ public class IssueProjectItemsServiceTest {
 
         Set<GitHubSingleSelectDTO.SingleSelectObject> githubDtos = Set.of(emptyPriorityOptions);
 
-        when(gitHubClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
+        when(gitHubGraphQLClient.getIssueProjectItems("project123")).thenReturn(githubDtos);
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsService.injectIssueProjectItems();

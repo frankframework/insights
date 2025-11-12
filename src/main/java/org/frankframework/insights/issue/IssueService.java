@@ -5,11 +5,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubNodeDTO;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.issueprojects.IssuePriority;
 import org.frankframework.insights.issueprojects.IssuePriorityResponse;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
@@ -40,7 +40,7 @@ public class IssueService {
     private static final String ISSUE_TYPE_EPIC_NAME = "Epic";
     private static final double DEFAULT_POINTS = 3.0;
 
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final IssueRepository issueRepository;
     private final IssueLabelRepository issueLabelRepository;
@@ -51,7 +51,7 @@ public class IssueService {
     private final ReleaseService releaseService;
 
     public IssueService(
-            GitHubClient gitHubClient,
+            GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper,
             IssueRepository issueRepository,
             IssueLabelRepository issueLabelRepository,
@@ -60,7 +60,7 @@ public class IssueService {
             LabelService labelService,
             IssueProjectItemsService issueProjectItemsService,
             ReleaseService releaseService) {
-        this.gitHubClient = gitHubClient;
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.issueRepository = issueRepository;
         this.issueLabelRepository = issueLabelRepository;
@@ -79,7 +79,7 @@ public class IssueService {
         try {
             log.info("Start injecting GitHub issues");
 
-            Set<IssueDTO> issueDTOS = gitHubClient.getIssues();
+            Set<IssueDTO> issueDTOS = gitHubGraphQLClient.getIssues();
 
             Set<Issue> issues = mapIssueDTOs(issueDTOS);
 
@@ -169,7 +169,7 @@ public class IssueService {
 
             Set<Issue> subIssues = issueDTO.subIssues().edges().stream()
                     .filter(Objects::nonNull)
-                    .map(GitHubNodeDTO::node)
+                    .map(GraphQLNodeDTO::node)
                     .map(node -> issueMap.get(node.id()))
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());

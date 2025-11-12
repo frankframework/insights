@@ -2,7 +2,7 @@ package org.frankframework.insights.milestone;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
-import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.github.graphql.GitHubPropertyState;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MilestoneResponse(

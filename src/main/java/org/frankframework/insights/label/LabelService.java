@@ -14,8 +14,8 @@ import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
 import org.frankframework.insights.release.ReleaseService;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class LabelService {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final LabelRepository labelRepository;
     private final IssueLabelRepository issueLabelRepository;
@@ -40,19 +40,19 @@ public class LabelService {
 
     public LabelService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-            GitHubClient gitHubClient,
+            GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper,
             LabelRepository labelRepository,
             IssueLabelRepository issueLabelRepository,
             GitHubProperties gitHubProperties,
             ReleaseService releaseService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
-        this.gitHubClient = gitHubClient;
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.labelRepository = labelRepository;
         this.issueLabelRepository = issueLabelRepository;
         this.releaseService = releaseService;
-        this.includedLabels = gitHubProperties.getIncludedLabels();
+        this.includedLabels = gitHubProperties.getGraphql().getIncludedLabels();
     }
 
     /**
@@ -75,7 +75,7 @@ public class LabelService {
                             .getGitHubLabelCount());
 
             log.info("Start injecting GitHub labels");
-            Set<LabelDTO> labelDTOs = gitHubClient.getLabels();
+            Set<LabelDTO> labelDTOs = gitHubGraphQLClient.getLabels();
             Set<Label> labels = mapper.toEntity(labelDTOs, Label.class);
             saveLabels(labels);
         } catch (Exception e) {

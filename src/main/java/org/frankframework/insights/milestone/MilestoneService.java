@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
-import org.frankframework.insights.github.GitHubClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,14 +21,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MilestoneService {
 
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
 
     private final Mapper mapper;
 
     private final MilestoneRepository milestoneRepository;
 
-    public MilestoneService(GitHubClient gitHubClient, Mapper mapper, MilestoneRepository milestoneRepository) {
-        this.gitHubClient = gitHubClient;
+    public MilestoneService(
+            GitHubGraphQLClient gitHubGraphQLClient, Mapper mapper, MilestoneRepository milestoneRepository) {
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.milestoneRepository = milestoneRepository;
     }
@@ -40,7 +41,7 @@ public class MilestoneService {
     public void injectMilestones() throws MilestoneInjectionException {
         try {
             log.info("Start injecting GitHub milestones");
-            Set<MilestoneDTO> milestoneDTOS = gitHubClient.getMilestones();
+            Set<MilestoneDTO> milestoneDTOS = gitHubGraphQLClient.getMilestones();
             Set<Milestone> milestones = mapper.toEntity(milestoneDTOS, Milestone.class);
             saveMilestones(milestones);
         } catch (Exception e) {

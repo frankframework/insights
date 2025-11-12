@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.servlet.function.RequestPredicate;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 @EnableScheduling
 @EnableSchedulerLock(defaultLockAtMostFor = "PT2H")
 @ConfigurationPropertiesScan
+@EnableWebSecurity
 public class InsightsApplication {
     public static void main(String[] args) {
         SpringApplication app = configureApplication();

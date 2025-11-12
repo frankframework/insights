@@ -3,8 +3,8 @@ package org.frankframework.insights.common.configuration;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -94,7 +94,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             }
 
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
-        } catch (GitHubClientException e) {
+        } catch (GitHubGraphQLClientException e) {
             log.error("Error fetching data statistics", e);
         }
     }

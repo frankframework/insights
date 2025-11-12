@@ -13,7 +13,7 @@ import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.ShedLockConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
 import org.frankframework.insights.issuetype.IssueTypeService;
