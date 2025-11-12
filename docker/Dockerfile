@@ -1,4 +1,4 @@
-FROM alpine:3.18 AS trivy-downloader
+FROM alpine:3.22 AS trivy-downloader
 ARG TRIVY_VERSION=0.67.2
 
 RUN wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz && \
