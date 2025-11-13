@@ -45,6 +45,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public expandedClusters = new Map<string, ReleaseNode>();
   public branchLifecycles: BranchLifecycle[] = [];
   public currentTimeX = 0;
+  public showNotFoundError = false;
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -353,14 +354,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
         tap((releases) => (this.releases = releases)),
         tap((releases) => {
           if (releases.length === 0) {
-            console.error('No releases found.');
+            this.showNotFoundError = true;
           }
           this.checkReleaseGraphLoading();
         }),
         map((releases) => this.nodeService.structureReleaseData(releases)),
         tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
-        catchError((error) => {
-          console.error('Failed to load releases:', error);
+        catchError(() => {
+          this.showNotFoundError = true;
           this.releaseNodes = [];
           this.allLinks = [];
           this.checkReleaseGraphLoading();
