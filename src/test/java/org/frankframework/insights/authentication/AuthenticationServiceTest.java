@@ -51,31 +51,23 @@ public class AuthenticationServiceTest {
     }
 
     @Test
-    public void getUserInfo_whenNotAuthenticated_throwsUnauthorizedException() {
-        assertThatThrownBy(() -> authenticationService.getUserInfo(null))
-                .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("You are not logged in. Please sign in with GitHub.");
-
-        verify(userRepository, never()).findByGithubId(any());
-        verify(userMapper, never()).toResponseDTO(any(), any());
-    }
-
-    @Test
     public void getUserInfo_whenAuthenticatedButNotFrankFrameworkMember_throwsForbiddenException() {
-        when(oAuth2User.getAttributes()).thenReturn(oauthAttributes);
-        when(userRepository.findByGithubId(12345L)).thenReturn(Optional.of(testUser));
+        User nonMemberUser = User.builder()
+                .githubId(12345L)
+                .username("testuser")
+                .avatarUrl("https://github.com/avatars/testuser.png")
+                .isFrankFrameworkMember(false)
+                .build();
 
-        UserResponseDTO nonMemberResponse =
-                new UserResponseDTO(12345L, "testuser", "https://github.com/avatars/testuser.png", false);
-        when(userMapper.toResponseDTO(any(GitHubOAuthAttributes.class), eq(testUser)))
-                .thenReturn(nonMemberResponse);
+        when(oAuth2User.getAttributes()).thenReturn(oauthAttributes);
+        when(userRepository.findByGithubId(12345L)).thenReturn(Optional.of(nonMemberUser));
 
         assertThatThrownBy(() -> authenticationService.getUserInfo(oAuth2User))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Access denied. You must be a member of the frankframework organization on GitHub.");
 
         verify(userRepository).findByGithubId(12345L);
-        verify(userMapper).toResponseDTO(any(GitHubOAuthAttributes.class), eq(testUser));
+        verify(userMapper, never()).toResponseDTO(any(), any());
     }
 
     @Test
@@ -101,23 +93,15 @@ public class AuthenticationServiceTest {
     }
 
     @Test
-    public void getUserInfo_whenAuthenticatedButUserNotInDatabase_usesAttributesOnly() throws ApiException {
+    public void getUserInfo_whenAuthenticatedButUserNotInDatabase_throwsForbiddenException() {
         when(oAuth2User.getAttributes()).thenReturn(oauthAttributes);
         when(userRepository.findByGithubId(12345L)).thenReturn(Optional.empty());
 
-        UserResponseDTO memberResponse =
-                new UserResponseDTO(12345L, "testuser", "https://github.com/avatars/testuser.png", true);
-        when(userMapper.toResponseDTO(any(GitHubOAuthAttributes.class), isNull()))
-                .thenReturn(memberResponse);
-
-        UserResponseDTO result = authenticationService.getUserInfo(oAuth2User);
-
-        assertThat(result).isNotNull();
-        assertThat(result.githubId()).isEqualTo(12345L);
-        assertThat(result.username()).isEqualTo("testuser");
-        assertThat(result.isFrankFrameworkMember()).isTrue();
+        assertThatThrownBy(() -> authenticationService.getUserInfo(oAuth2User))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Access denied. You must be a member of the frankframework organization on GitHub.");
 
         verify(userRepository).findByGithubId(12345L);
-        verify(userMapper).toResponseDTO(any(GitHubOAuthAttributes.class), isNull());
+        verify(userMapper, never()).toResponseDTO(any(), any());
     }
 }

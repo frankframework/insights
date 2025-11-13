@@ -65,7 +65,7 @@ public class UserService extends DefaultOAuth2UserService {
         saveOrUpdateUser(attributes, isFrankFrameworkMember);
 
         log.info(
-                "User '{}' successfully authenticated and saved (frankframework member: {})",
+                "User '{}' successfully authenticated and saved user: {})",
                 attributes.username(),
                 isFrankFrameworkMember);
 

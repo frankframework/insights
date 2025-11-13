@@ -7,6 +7,8 @@ import org.frankframework.insights.user.*;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -19,26 +21,19 @@ public class AuthenticationService {
      * Get user information from OAuth2 principal
      * Used by the /api/auth/user endpoint to return current user info
      *
-     * @param principal OAuth2User from Spring Security
+     * @param principal OAuth2User from Spring Security (guaranteed non-null by Spring Security)
      * @return UserResponseDTO with user information
-     * @throws UnauthorizedException if not authenticated (not logged in)
      * @throws ForbiddenException if authenticated but not a frankframework member
      */
     public UserResponseDTO getUserInfo(OAuth2User principal) throws ApiException {
-        if (principal == null) {
-            throw new UnauthorizedException("You are not logged in. Please sign in with GitHub.");
-        }
-
         GitHubOAuthAttributes attributes = GitHubOAuthAttributes.from(principal.getAttributes());
-        User user = userRepository.findByGithubId(attributes.githubId()).orElse(null);
+        Optional<User> user = userRepository.findByGithubId(attributes.githubId());
 
-        UserResponseDTO userInfo = userMapper.toResponseDTO(attributes, user);
-
-        if (!userInfo.isFrankFrameworkMember()) {
+        if (user.isEmpty() || !user.get().isFrankFrameworkMember()) {
             throw new ForbiddenException(
                     "Access denied. You must be a member of the frankframework organization on GitHub.");
         }
 
-        return userInfo;
+        return userMapper.toResponseDTO(attributes, user.get());
     }
 }

@@ -40,51 +40,6 @@ class UserTest {
     }
 
     @Test
-    void onCreate_setsTimestamps() {
-        // Given
-        User user = User.builder()
-                .githubId(12345L)
-                .username("testuser")
-                .isFrankFrameworkMember(true)
-                .build();
-
-        OffsetDateTime before = OffsetDateTime.now().minusSeconds(1);
-
-        // When
-        user.onCreate();
-
-        // Then
-        OffsetDateTime after = OffsetDateTime.now().plusSeconds(1);
-        assertThat(user.getCreatedAt()).isNotNull();
-        assertThat(user.getUpdatedAt()).isNotNull();
-        assertThat(user.getCreatedAt()).isBetween(before, after);
-        assertThat(user.getUpdatedAt()).isBetween(before, after);
-    }
-
-    @Test
-    void onUpdate_updatesTimestamp() {
-        // Given
-        OffsetDateTime oldTime = OffsetDateTime.now().minusHours(1);
-        User user = User.builder()
-                .githubId(12345L)
-                .username("testuser")
-                .isFrankFrameworkMember(true)
-                .createdAt(oldTime)
-                .updatedAt(oldTime)
-                .build();
-
-        OffsetDateTime before = OffsetDateTime.now().minusSeconds(1);
-
-        // When
-        user.onUpdate();
-
-        // Then
-        OffsetDateTime after = OffsetDateTime.now().plusSeconds(1);
-        assertThat(user.getCreatedAt()).isEqualTo(oldTime); // Should not change
-        assertThat(user.getUpdatedAt()).isBetween(before, after); // Should be updated
-    }
-
-    @Test
     void setters_modifyFields() {
         // Given
         User user = User.builder()

@@ -223,7 +223,7 @@ public class GitHubGraphQLClient extends GraphQLClient {
         Function<GraphQLConnectionDTO<Map<String, Object>>, Collection<Map<String, Object>>> collectionExtractor =
                 connection -> connection.edges() == null
                         ? Set.of()
-                        : connection.edges().stream().map(GraphQLNodeDTO::node).collect(Collectors.toList());
+                        : connection.edges().stream().map(GraphQLNodeDTO::node).collect(Collectors.toSet());
 
         return fetchPaginatedCollection(
                 query, queryVariables, entityType, responseType, collectionExtractor, GraphQLConnectionDTO::pageInfo);
