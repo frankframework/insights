@@ -9,8 +9,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 /**
- * Custom OAuth2 login success handler that redirects to the frontend
- * with a query parameter indicating successful authentication.
+ * Custom OAuth2 login success handler that redirects to the origin of the initial request.
  */
 @Component
 @Slf4j
@@ -21,6 +20,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             HttpServletRequest request, HttpServletResponse response, Authentication authentication)
             throws IOException {
         log.info("OAuth2 authentication successful for user: {}", authentication.getName());
-        getRedirectStrategy().sendRedirect(request, response, "/?login=success");
+        OAuth2RedirectUtil.redirectToOrigin(request, response, getRedirectStrategy(), "login=success");
     }
 }
