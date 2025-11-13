@@ -1,5 +1,9 @@
 <div class="graph-container">
-  @if (!isLoading) {
+  @if (isLoading) {
+    <app-loader />
+  } @else if (this.showNotFoundError) {
+    <span class="error-message">Releases not found, please try again later.</span>
+  } @else {
     <svg
       #svgElement
       id="svgElement"
@@ -39,7 +43,7 @@
 
         @for (lifecycle of branchLifecycles; track lifecycle.branchLabel + '-' + lifecycle.y) {
           <g class="branch-lifecycle">
-            @for (phase of lifecycle.phases; track phase.type) {
+            @for (phase of lifecycle.phases; track phase.startX) {
               <rect
                 class="lifecycle-phase"
                 [attr.data-phase]="phase.type"
@@ -142,7 +146,5 @@
         (versionClicked)="onSkippedVersionClick($event)"
       />
     }
-  } @else {
-    <app-loader />
   }
 </div>
