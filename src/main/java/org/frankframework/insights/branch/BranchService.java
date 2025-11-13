@@ -10,8 +10,8 @@ import org.frankframework.insights.common.entityconnection.branchpullrequest.Bra
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class BranchService {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final BranchRepository branchRepository;
     private final List<String> branchProtectionRegexes;
@@ -30,16 +30,16 @@ public class BranchService {
 
     public BranchService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-            GitHubClient gitHubClient,
+            GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper,
             BranchRepository branchRepository,
             GitHubProperties gitHubProperties,
             BranchPullRequestRepository branchPullRequestRepository) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
-        this.gitHubClient = gitHubClient;
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.branchRepository = branchRepository;
-        this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
+        this.branchProtectionRegexes = gitHubProperties.getGraphql().getBranchProtectionRegexes();
         this.branchPullRequestRepository = branchPullRequestRepository;
     }
 
@@ -65,7 +65,7 @@ public class BranchService {
                             .getGitHubBranchCount(branchProtectionRegexes));
 
             log.info("Start injecting GitHub branches");
-            Set<BranchDTO> branchDTOs = gitHubClient.getBranches();
+            Set<BranchDTO> branchDTOs = gitHubGraphQLClient.getBranches();
             Set<Branch> branches = findProtectedBranchesByRegexPattern(branchDTOs);
 
             if (!branches.isEmpty()) {

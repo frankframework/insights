@@ -9,8 +9,8 @@ import net.javacrumbs.shedlock.core.LockAssert;
 import org.frankframework.insights.branch.BranchInjectionException;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionException;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issueprojects.IssueProjectItemInjectionException;
@@ -94,7 +94,7 @@ public class ShedLockProductionTest {
 
     @Test
     public void should_FetchGitHubData_when_ProductionProfileIsActive()
-            throws LabelInjectionException, GitHubClientException, MilestoneInjectionException,
+            throws LabelInjectionException, GitHubGraphQLClientException, MilestoneInjectionException,
                     BranchInjectionException, ReleaseInjectionException, IssueInjectionException,
                     PullRequestInjectionException, IssueTypeInjectionException, IssueProjectItemInjectionException {
         systemDataInitializer.run();

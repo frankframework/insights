@@ -5,10 +5,10 @@ import static org.mockito.Mockito.*;
 
 import java.util.*;
 import org.frankframework.insights.common.mapper.Mapper;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -24,7 +24,7 @@ public class IssueTypeServiceTest {
     IssueTypeRepository issueTypeRepository;
 
     @Mock
-    GitHubClient gitHubClient;
+    GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     Mapper mapper;
@@ -60,7 +60,7 @@ public class IssueTypeServiceTest {
 
         issueTypeService.injectIssueTypes();
 
-        verify(gitHubClient, never()).getIssueTypes();
+        verify(gitHubGraphQLClient, never()).getIssueTypes();
         verify(issueTypeRepository, never()).saveAll(anySet());
     }
 
@@ -74,7 +74,7 @@ public class IssueTypeServiceTest {
         when(statsDTO.getGitHubIssueTypeCount()).thenReturn(2);
         when(issueTypeRepository.count()).thenReturn(1L);
 
-        when(gitHubClient.getIssueTypes()).thenReturn(dtos);
+        when(gitHubGraphQLClient.getIssueTypes()).thenReturn(dtos);
         when(mapper.toEntity(dtos, IssueType.class)).thenReturn(entities);
         when(issueTypeRepository.saveAll(entities)).thenReturn(saved);
 
@@ -89,7 +89,7 @@ public class IssueTypeServiceTest {
         when(statsDTO.getGitHubIssueTypeCount()).thenReturn(2);
         when(issueTypeRepository.count()).thenReturn(1L);
 
-        when(gitHubClient.getIssueTypes()).thenThrow(new GitHubClientException("fail", null));
+        when(gitHubGraphQLClient.getIssueTypes()).thenThrow(new GitHubGraphQLClientException("fail", null));
 
         assertThrows(IssueTypeInjectionException.class, () -> issueTypeService.injectIssueTypes());
     }
@@ -109,7 +109,7 @@ public class IssueTypeServiceTest {
         when(statsDTO.getGitHubIssueTypeCount()).thenReturn(2);
         when(issueTypeRepository.count()).thenReturn(1L);
 
-        when(gitHubClient.getIssueTypes()).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getIssueTypes()).thenReturn(Collections.emptySet());
         when(mapper.toEntity(Collections.emptySet(), IssueType.class)).thenReturn(Collections.emptySet());
         when(issueTypeRepository.saveAll(Collections.emptySet())).thenReturn(Collections.emptyList());
 
@@ -124,7 +124,7 @@ public class IssueTypeServiceTest {
         when(issueTypeRepository.count()).thenReturn(1L);
 
         Set<IssueTypeDTO> dtos = Set.of(dto1);
-        when(gitHubClient.getIssueTypes()).thenReturn(dtos);
+        when(gitHubGraphQLClient.getIssueTypes()).thenReturn(dtos);
         when(mapper.toEntity(dtos, IssueType.class)).thenThrow(new RuntimeException("Mapping failed"));
 
         assertThrows(IssueTypeInjectionException.class, () -> issueTypeService.injectIssueTypes());

@@ -13,7 +13,8 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.common.properties.ReleaseFixProperties;
-import org.frankframework.insights.github.*;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.pullrequest.PullRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ReleaseServiceTest {
 
     @Mock
-    private GitHubClient gitHubClient;
+    private GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     private Mapper mapper;
@@ -39,8 +40,8 @@ public class ReleaseServiceTest {
     @Mock
     private ReleasePullRequestRepository releasePullRequestRepository;
 
-	@Mock
-	private ReleaseFixProperties releaseFixProperties;
+    @Mock
+    private ReleaseFixProperties releaseFixProperties;
 
     private ReleaseService releaseService;
 
@@ -53,11 +54,11 @@ public class ReleaseServiceTest {
     private PullRequest pr1;
     private BranchPullRequest branchPR1;
 
-	private HashMap<String, OffsetDateTime> overrideMap;
-	private OffsetDateTime originalDate2;
-	private OffsetDateTime overrideDate;
-	private ReleaseDTO releaseToFix;
-	private ReleaseDTO releaseToKeep;
+    private HashMap<String, OffsetDateTime> overrideMap;
+    private OffsetDateTime originalDate2;
+    private OffsetDateTime overrideDate;
+    private ReleaseDTO releaseToFix;
+    private ReleaseDTO releaseToKeep;
 
     @BeforeEach
     public void setUp() {
@@ -95,30 +96,29 @@ public class ReleaseServiceTest {
 
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
 
-		overrideMap = new HashMap<>();
+        overrideMap = new HashMap<>();
 
-		OffsetDateTime originalDate1 = OffsetDateTime.parse("2024-01-15T10:00:00Z");
-		originalDate2 = OffsetDateTime.parse("2024-03-20T14:00:00Z");
-		overrideDate = OffsetDateTime.parse("2025-02-02T12:00:00Z");
+        OffsetDateTime originalDate1 = OffsetDateTime.parse("2024-01-15T10:00:00Z");
+        originalDate2 = OffsetDateTime.parse("2024-03-20T14:00:00Z");
+        overrideDate = OffsetDateTime.parse("2025-02-02T12:00:00Z");
 
-		releaseToFix = new ReleaseDTO("id-1", "v8.0.5", "Release 8.0.5", originalDate1);
-		releaseToKeep = new ReleaseDTO("id-2", "v8.0.4", "Release 8.0.4", originalDate2);
+        releaseToFix = new ReleaseDTO("id-1", "v8.0.5", "Release 8.0.5", originalDate1);
+        releaseToKeep = new ReleaseDTO("id-2", "v8.0.4", "Release 8.0.4", originalDate2);
 
-		when(releaseFixProperties.getDateOverrides()).thenReturn(overrideMap);
+        when(releaseFixProperties.getDateOverrides()).thenReturn(overrideMap);
 
-		releaseService = new ReleaseService(
-				gitHubClient,
-				mapper,
-				releaseRepository,
-				branchService,
-				releasePullRequestRepository,
-				releaseFixProperties
-		);
+        releaseService = new ReleaseService(
+                gitHubGraphQLClient,
+                mapper,
+                releaseRepository,
+                branchService,
+                releasePullRequestRepository,
+                releaseFixProperties);
     }
 
-	@Test
+    @Test
     public void injects_whenDatabaseEmpty() throws Exception {
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -133,7 +133,7 @@ public class ReleaseServiceTest {
 
     @Test
     public void doesNothing_whenNoValidReleases() throws Exception {
-        when(gitHubClient.getReleases()).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Collections.emptySet());
         releaseService.injectReleases();
         verify(releaseRepository, never()).saveAll(anySet());
     }
@@ -147,7 +147,7 @@ public class ReleaseServiceTest {
         rel.setPublishedAt(dto.publishedAt());
         rel.setBranch(masterBranch);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch, featureBranch, masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel));
@@ -168,7 +168,7 @@ public class ReleaseServiceTest {
         rel.setPublishedAt(dto.publishedAt());
         rel.setBranch(null);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch, featureBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel));
@@ -181,7 +181,7 @@ public class ReleaseServiceTest {
 
     @Test
     public void assignsPullRequestsToCorrectReleaseByTimeframe() throws Exception {
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(dto1), eq(Release.class))).thenReturn(rel1);
         when(mapper.toEntity(eq(dto2), eq(Release.class))).thenReturn(rel2);
@@ -196,7 +196,7 @@ public class ReleaseServiceTest {
 
     @Test
     public void assignsNothing_whenNoMatchingBranches() throws Exception {
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -216,7 +216,7 @@ public class ReleaseServiceTest {
 
         ReleaseDTO dto = new ReleaseDTO("id", "vX.Y", "vX.Y", relWithNull.getPublishedAt());
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(noNameBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(relWithNull);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relWithNull));
@@ -233,7 +233,7 @@ public class ReleaseServiceTest {
         pr1.setMergedAt(OffsetDateTime.now().plusYears(5));
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(dto1), eq(Release.class))).thenReturn(rel1);
         when(mapper.toEntity(eq(dto2), eq(Release.class))).thenReturn(rel2);
@@ -248,7 +248,7 @@ public class ReleaseServiceTest {
 
     @Test
     public void masterBranchWithReleases_assignsPRsToMaster() throws Exception {
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
         rel1.setBranch(masterBranch);
@@ -269,7 +269,7 @@ public class ReleaseServiceTest {
         relMalformed.setPublishedAt(dtoMalformed.publishedAt());
         relMalformed.setBranch(masterBranch);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dtoMalformed));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dtoMalformed));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(relMalformed);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relMalformed));
@@ -280,8 +280,8 @@ public class ReleaseServiceTest {
     }
 
     @Test
-    public void throwsReleaseInjectionException_onGitHubClientException() throws GitHubClientException {
-        when(gitHubClient.getReleases()).thenThrow(new GitHubClientException("fail", null));
+    public void throwsReleaseInjectionException_onGitHubClientException() throws GitHubGraphQLClientException {
+        when(gitHubGraphQLClient.getReleases()).thenThrow(new GitHubGraphQLClientException("fail", null));
         assertThrows(ReleaseInjectionException.class, () -> releaseService.injectReleases());
     }
 
@@ -365,7 +365,7 @@ public class ReleaseServiceTest {
         relBad.setPublishedAt(tagBad.publishedAt());
         relBad.setBranch(masterBranch);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch, masterBranch, featureBranch));
         when(mapper.toEntity(eq(tagGood), eq(Release.class))).thenReturn(relGood);
         when(mapper.toEntity(eq(tagBad), eq(Release.class))).thenReturn(relBad);
@@ -411,7 +411,7 @@ public class ReleaseServiceTest {
         pull2.setMergedAt(OffsetDateTime.parse("2025-08-15T12:00:00Z"));
         BranchPullRequest bpr2 = new BranchPullRequest(masterBranch, pull2);
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(dto1, dto2, dto3));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2, dto3));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(invocation -> {
             ReleaseDTO dto = invocation.getArgument(0);
@@ -484,7 +484,7 @@ public class ReleaseServiceTest {
         ReleaseDTO rcRelease = new ReleaseDTO("id1", "v8.1.0-RC1", "v8.1.0-RC1", OffsetDateTime.now());
         ReleaseDTO validRelease = new ReleaseDTO("id2", "v8.1.0", "v8.1.0", OffsetDateTime.now());
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(rcRelease, validRelease));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcRelease, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -506,7 +506,7 @@ public class ReleaseServiceTest {
         ReleaseDTO betaRelease = new ReleaseDTO("id1", "v7.0-B2", "v7.0-B2", OffsetDateTime.now());
         ReleaseDTO validRelease = new ReleaseDTO("id2", "v7.0.0", "v7.0.0", OffsetDateTime.now());
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(betaRelease, validRelease));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(betaRelease, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -530,7 +530,7 @@ public class ReleaseServiceTest {
         ReleaseDTO beta = new ReleaseDTO("id3", "v7.0-B3", "v7.0-B3", OffsetDateTime.now());
         ReleaseDTO validRelease = new ReleaseDTO("id4", "v7.8.0", "v7.8.0", OffsetDateTime.now());
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(rc1, rc2, beta, validRelease));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rc1, rc2, beta, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -553,7 +553,7 @@ public class ReleaseServiceTest {
     public void isValidRelease_shouldHandleNullReleaseName() throws Exception {
         ReleaseDTO nullNameRelease = new ReleaseDTO("id1", null, null, OffsetDateTime.now());
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(nullNameRelease));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(nullNameRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
@@ -569,7 +569,7 @@ public class ReleaseServiceTest {
         ReleaseDTO betaUppercase = new ReleaseDTO("id2", "v7.6-B1", "v7.6-B1", OffsetDateTime.now());
         ReleaseDTO validRelease = new ReleaseDTO("id3", "v7.6.0", "v7.6.0", OffsetDateTime.now());
 
-        when(gitHubClient.getReleases()).thenReturn(Set.of(rcLowercase, betaUppercase, validRelease));
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcLowercase, betaUppercase, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -587,70 +587,70 @@ public class ReleaseServiceTest {
         verify(mapper, never()).toEntity(eq(betaUppercase), eq(Release.class));
     }
 
-	@Test
-	public void testShouldOverrideDateWhenTagNameMatches() {
-		overrideMap.put("v8.0.5", overrideDate);
-		Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
+    @Test
+    public void testShouldOverrideDateWhenTagNameMatches() {
+        overrideMap.put("v8.0.5", overrideDate);
+        Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
 
-		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
 
-		assertNotNull(resultSet);
-		assertEquals(2, resultSet.size());
+        assertNotNull(resultSet);
+        assertEquals(2, resultSet.size());
 
-		ReleaseDTO fixedDto = resultSet.stream()
-				.filter(dto -> "v8.0.5".equals(dto.tagName()))
-				.findFirst()
-				.orElseThrow();
+        ReleaseDTO fixedDto = resultSet.stream()
+                .filter(dto -> "v8.0.5".equals(dto.tagName()))
+                .findFirst()
+                .orElseThrow();
 
-		ReleaseDTO keptDto = resultSet.stream()
-				.filter(dto -> "v8.0.4".equals(dto.tagName()))
-				.findFirst()
-				.orElseThrow();
+        ReleaseDTO keptDto = resultSet.stream()
+                .filter(dto -> "v8.0.4".equals(dto.tagName()))
+                .findFirst()
+                .orElseThrow();
 
-		assertEquals(overrideDate, fixedDto.publishedAt());
-		assertNotSame(releaseToFix, fixedDto);
-		assertEquals("id-1", fixedDto.id());
+        assertEquals(overrideDate, fixedDto.publishedAt());
+        assertNotSame(releaseToFix, fixedDto);
+        assertEquals("id-1", fixedDto.id());
 
-		assertEquals(originalDate2, keptDto.publishedAt());
-		assertSame(releaseToKeep, keptDto);
-	}
+        assertEquals(originalDate2, keptDto.publishedAt());
+        assertSame(releaseToKeep, keptDto);
+    }
 
-	@Test
-	public void testShouldReturnOriginalSetWhenNoMatches() {
-		overrideMap.put("v9.9.9", overrideDate);
-		Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
+    @Test
+    public void testShouldReturnOriginalSetWhenNoMatches() {
+        overrideMap.put("v9.9.9", overrideDate);
+        Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
 
-		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
 
-		assertNotNull(resultSet);
-		assertEquals(2, resultSet.size());
+        assertNotNull(resultSet);
+        assertEquals(2, resultSet.size());
 
-		assertTrue(resultSet.contains(releaseToFix));
-		assertTrue(resultSet.contains(releaseToKeep));
+        assertTrue(resultSet.contains(releaseToFix));
+        assertTrue(resultSet.contains(releaseToKeep));
 
-		assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToFix));
-		assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToKeep));
-	}
+        assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToFix));
+        assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToKeep));
+    }
 
-	@Test
-	public void testShouldReturnSameSetWhenOverridesAreEmpty() {
-		Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
+    @Test
+    public void testShouldReturnSameSetWhenOverridesAreEmpty() {
+        Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
 
-		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
 
-		assertNotNull(resultSet);
-		assertEquals(2, resultSet.size());
-		assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original set instance");
-	}
+        assertNotNull(resultSet);
+        assertEquals(2, resultSet.size());
+        assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original set instance");
+    }
 
-	@Test
-	public void testShouldReturnEmptySetWhenInputIsEmpty() {
-		Set<ReleaseDTO> inputSet = Set.of();
+    @Test
+    public void testShouldReturnEmptySetWhenInputIsEmpty() {
+        Set<ReleaseDTO> inputSet = Set.of();
 
-		Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
+        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
 
-		assertNotNull(resultSet);
-		assertTrue(resultSet.isEmpty());
-		assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original empty set");
-	}
+        assertNotNull(resultSet);
+        assertTrue(resultSet.isEmpty());
+        assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original empty set");
+    }
 }

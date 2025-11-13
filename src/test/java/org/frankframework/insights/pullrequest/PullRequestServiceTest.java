@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import org.frankframework.insights.branch.Branch;
 import org.frankframework.insights.branch.BranchService;
+import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequestRepository;
 import org.frankframework.insights.common.entityconnection.pullrequestissue.PullRequestIssueRepository;
@@ -16,11 +17,10 @@ import org.frankframework.insights.common.entityconnection.pullrequestlabel.Pull
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubEdgesDTO;
-import org.frankframework.insights.github.GitHubNodeDTO;
-import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.github.graphql.GitHubEdgesDTO;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubPropertyState;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueDTO;
 import org.frankframework.insights.issue.IssueService;
@@ -33,6 +33,7 @@ import org.frankframework.insights.milestone.MilestoneService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -41,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class PullRequestServiceTest {
 
     @Mock
-    private GitHubClient gitHubClient;
+    private GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     private Mapper mapper;
@@ -61,7 +62,7 @@ public class PullRequestServiceTest {
     @Mock
     private IssueService issueService;
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private GitHubProperties gitHubProperties;
 
     @Mock
@@ -105,10 +106,10 @@ public class PullRequestServiceTest {
 
         List<String> branchProtectionRegexes = List.of("master", "release");
 
-        when(gitHubProperties.getBranchProtectionRegexes()).thenReturn(branchProtectionRegexes);
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(branchProtectionRegexes);
 
         pullRequestService = new PullRequestService(
-                gitHubClient,
+                gitHubGraphQLClient,
                 mapper,
                 pullRequestRepository,
                 branchPullRequestRepository,
@@ -123,10 +124,10 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldUpdateBranchWithMergedPRs()
-            throws PullRequestInjectionException, GitHubClientException, MappingException {
+            throws PullRequestInjectionException, GitHubGraphQLClientException, MappingException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(masterPR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of(masterPR));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
         when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId()))
@@ -150,23 +151,24 @@ public class PullRequestServiceTest {
     }
 
     @Test
-    public void injectBranchPullRequests_shouldThrowNothingIfGetPullRequestsFails() throws GitHubClientException {
+    public void injectBranchPullRequests_shouldThrowNothingIfGetPullRequestsFails()
+            throws GitHubGraphQLClientException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.singleton(subBranchPR));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Collections.singleton(subBranchPR));
 
         assertDoesNotThrow(() -> pullRequestService.injectBranchPullRequests());
     }
 
     @Test
-    public void injectBranchPullRequests_shouldSkipBranchOnException() throws GitHubClientException {
+    public void injectBranchPullRequests_shouldSkipBranchOnException() throws GitHubGraphQLClientException {
         Branch masterBranch = new Branch();
         masterBranch.setId(UUID.randomUUID().toString());
         masterBranch.setName("master");
 
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch, masterBranch));
-        when(gitHubClient.getBranchPullRequests(masterBranch.getName())).thenReturn(Set.of(masterPR));
-        when(gitHubClient.getBranchPullRequests(testBranch.getName()))
-                .thenThrow(new GitHubClientException("GitHub client error", null));
+        when(gitHubGraphQLClient.getBranchPullRequests(masterBranch.getName())).thenReturn(Set.of(masterPR));
+        when(gitHubGraphQLClient.getBranchPullRequests(testBranch.getName()))
+                .thenThrow(new GitHubGraphQLClientException("GitHub client error", null));
         when(labelService.getAllLabelsMap()).thenReturn(Map.of());
         when(issueService.getAllIssuesMap()).thenReturn(Map.of());
 
@@ -175,11 +177,11 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldHandleNullMergedAtDates()
-            throws PullRequestInjectionException, GitHubClientException {
+            throws PullRequestInjectionException, GitHubGraphQLClientException {
         PullRequestDTO noMergePR = new PullRequestDTO(null, 99, "prX", null, null, null, null, null);
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(noMergePR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of(noMergePR));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(subBranchPR));
 
         pullRequestService.injectBranchPullRequests();
 
@@ -188,12 +190,12 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldAvoidDuplicatePRs()
-            throws PullRequestInjectionException, GitHubClientException, MappingException {
+            throws PullRequestInjectionException, GitHubGraphQLClientException, MappingException {
         PullRequestDTO duplicatePR = new PullRequestDTO("id-2", 2, "pr2", null, OffsetDateTime.now(), null, null, null);
 
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(duplicatePR));
-        when(gitHubClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(duplicatePR));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of(duplicatePR));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/abc")).thenReturn(Set.of(duplicatePR));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(mockPullRequest));
         when(branchPullRequestRepository.findAllByBranch_Id(testBranch.getId())).thenReturn(Collections.emptySet());
@@ -209,14 +211,14 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldSkipWhenNoPullRequests()
-            throws GitHubClientException, PullRequestInjectionException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
         Branch emptyBranch = new Branch();
         emptyBranch.setId(UUID.randomUUID().toString());
         emptyBranch.setName("feature/empty");
 
         when(branchService.getAllBranches()).thenReturn(List.of(emptyBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
-        when(gitHubClient.getBranchPullRequests("feature/empty")).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/empty")).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
@@ -225,7 +227,7 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldHandleNullPRsAndSkip()
-            throws GitHubClientException, PullRequestInjectionException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/nullpr");
@@ -233,8 +235,8 @@ public class PullRequestServiceTest {
         PullRequestDTO prWithNullDate = new PullRequestDTO("id-n", 42, "null pr", null, null, null, null, null);
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(prWithNullDate));
-        when(gitHubClient.getBranchPullRequests("feature/nullpr")).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of(prWithNullDate));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/nullpr")).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
@@ -243,20 +245,20 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldSaveLabelsAndIssues()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/labels");
 
         LabelDTO labelDTO = new LabelDTO("l1", "bug", "desc", "red");
 
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
-        List<GitHubNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
+        GraphQLNodeDTO<LabelDTO> labelNode = new GraphQLNodeDTO<>(labelDTO);
+        List<GraphQLNodeDTO<LabelDTO>> labelNodeList = List.of(labelNode);
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(labelNodeList);
 
         IssueDTO issue =
                 new IssueDTO("i1", 1, "issue1", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
-        GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>(issue);
+        GraphQLNodeDTO<IssueDTO> issueNode = new GraphQLNodeDTO<>(issue);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>(List.of(issueNode));
 
         PullRequestDTO prDto = new PullRequestDTO(
@@ -266,8 +268,8 @@ public class PullRequestServiceTest {
         prEntity.setTitle("pr labels");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(prDto));
-        when(gitHubClient.getBranchPullRequests("feature/labels")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/labels")).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
@@ -296,7 +298,7 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldProcessBranchEvenIfExceptionInOne()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch b1 = new Branch();
         b1.setId(UUID.randomUUID().toString());
         b1.setName("feature/b1");
@@ -310,9 +312,10 @@ public class PullRequestServiceTest {
         prB1.setTitle("b1");
 
         when(branchService.getAllBranches()).thenReturn(List.of(b1, b2));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of(dtoB1));
-        when(gitHubClient.getBranchPullRequests("feature/b1")).thenReturn(Set.of(dtoB1));
-        when(gitHubClient.getBranchPullRequests("feature/b2")).thenThrow(new GitHubClientException("fail b2", null));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of(dtoB1));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/b1")).thenReturn(Set.of(dtoB1));
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/b2"))
+                .thenThrow(new GitHubGraphQLClientException("fail b2", null));
 
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prB1));
@@ -329,14 +332,14 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldNotSaveIfNoMergedPRs()
-            throws GitHubClientException, PullRequestInjectionException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("emptypr");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
-        when(gitHubClient.getBranchPullRequests("emptypr")).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getBranchPullRequests("emptypr")).thenReturn(Collections.emptySet());
 
         pullRequestService.injectBranchPullRequests();
 
@@ -352,11 +355,11 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldNotSaveExistingPullRequests()
-            throws GitHubClientException, PullRequestInjectionException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         PullRequestDTO prDto = mock(PullRequestDTO.class);
 
-        when(gitHubClient.getBranchPullRequests(anyString())).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests(anyString())).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(1);
 
         pullRequestService.injectBranchPullRequests();
@@ -384,11 +387,11 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldSkipBranchOnMappingError()
-            throws PullRequestInjectionException, GitHubClientException, MappingException {
+            throws PullRequestInjectionException, GitHubGraphQLClientException, MappingException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
         PullRequestDTO prDto = mock(PullRequestDTO.class);
 
-        when(gitHubClient.getBranchPullRequests(anyString())).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests(anyString())).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenThrow(new MappingException("Mapping failed", null));
 
@@ -400,9 +403,9 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldThrowPullRequestInjectionException_whenMasterPullRequestFails()
-            throws GitHubClientException {
+            throws GitHubGraphQLClientException {
         when(branchService.getAllBranches()).thenReturn(List.of(testBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenThrow(new RuntimeException("GitHub API failure"));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenThrow(new RuntimeException("GitHub API failure"));
 
         PullRequestInjectionException exception =
                 assertThrows(PullRequestInjectionException.class, () -> pullRequestService.injectBranchPullRequests());
@@ -413,7 +416,7 @@ public class PullRequestServiceTest {
     @Test
     public void
             fetchCombinedPullRequestsForBranch_shouldFetchBothCurrentAndHistoricalNames_whenBranchMatchesNewPattern()
-                    throws GitHubClientException, PullRequestInjectionException, MappingException {
+                    throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/7.8");
@@ -432,9 +435,9 @@ public class PullRequestServiceTest {
         prEntityOld.setTitle("old PR");
 
         when(branchService.getAllBranches()).thenReturn(List.of(releaseBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("release/7.8")).thenReturn(Set.of(prFromNewName));
-        when(gitHubClient.getBranchPullRequests("7.8-release")).thenReturn(Set.of(prFromOldName));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("release/7.8")).thenReturn(Set.of(prFromNewName));
+        when(gitHubGraphQLClient.getBranchPullRequests("7.8-release")).thenReturn(Set.of(prFromOldName));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntityNew, prEntityOld));
         when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId()))
@@ -445,14 +448,14 @@ public class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubClient, times(1)).getBranchPullRequests("release/7.8");
-        verify(gitHubClient, times(1)).getBranchPullRequests("7.8-release");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("release/7.8");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("7.8-release");
         verify(pullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
     public void fetchCombinedPullRequestsForBranch_shouldOnlyFetchCurrentName_whenBranchDoesNotMatchPattern()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch featureBranch = new Branch();
         featureBranch.setId(UUID.randomUUID().toString());
         featureBranch.setName("feature/xyz");
@@ -465,8 +468,8 @@ public class PullRequestServiceTest {
         prEntity.setTitle("feature PR");
 
         when(branchService.getAllBranches()).thenReturn(List.of(featureBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("feature/xyz")).thenReturn(Set.of(prFromFeature));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/xyz")).thenReturn(Set.of(prFromFeature));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(featureBranch.getId()))
@@ -477,13 +480,14 @@ public class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubClient, times(1)).getBranchPullRequests("feature/xyz");
-        verify(gitHubClient, never()).getBranchPullRequests(argThat(arg -> arg != null && arg.endsWith("-release")));
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("feature/xyz");
+        verify(gitHubGraphQLClient, never())
+                .getBranchPullRequests(argThat(arg -> arg != null && arg.endsWith("-release")));
     }
 
     @Test
     public void fetchCombinedPullRequestsForBranch_shouldHandleVersionWithMultipleDigits()
-            throws GitHubClientException, PullRequestInjectionException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/10.15");
@@ -492,19 +496,19 @@ public class PullRequestServiceTest {
                 new PullRequestDTO("id-new", 500, "new PR", null, OffsetDateTime.now(), null, null, null);
 
         when(branchService.getAllBranches()).thenReturn(List.of(releaseBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("release/10.15")).thenReturn(Set.of(prFromNewName));
-        when(gitHubClient.getBranchPullRequests("10.15-release")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("release/10.15")).thenReturn(Set.of(prFromNewName));
+        when(gitHubGraphQLClient.getBranchPullRequests("10.15-release")).thenReturn(Set.of());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubClient, times(1)).getBranchPullRequests("release/10.15");
-        verify(gitHubClient, times(1)).getBranchPullRequests("10.15-release");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("release/10.15");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("10.15-release");
     }
 
     @Test
     public void fetchCombinedPullRequestsForBranch_shouldDeduplicatePullRequests_whenSamePRExistsInBothNames()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/9.0");
@@ -517,9 +521,9 @@ public class PullRequestServiceTest {
         prEntity.setTitle("duplicate PR");
 
         when(branchService.getAllBranches()).thenReturn(List.of(releaseBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("release/9.0")).thenReturn(Set.of(duplicatePR));
-        when(gitHubClient.getBranchPullRequests("9.0-release")).thenReturn(Set.of(duplicatePR));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("release/9.0")).thenReturn(Set.of(duplicatePR));
+        when(gitHubGraphQLClient.getBranchPullRequests("9.0-release")).thenReturn(Set.of(duplicatePR));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId()))
@@ -530,14 +534,14 @@ public class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubClient, times(1)).getBranchPullRequests("release/9.0");
-        verify(gitHubClient, times(1)).getBranchPullRequests("9.0-release");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("release/9.0");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("9.0-release");
         verify(pullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
     public void fetchCombinedPullRequestsForBranch_shouldHandleEmptyHistoricalPullRequests()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/8.1");
@@ -550,9 +554,9 @@ public class PullRequestServiceTest {
         prEntity.setTitle("new PR only");
 
         when(branchService.getAllBranches()).thenReturn(List.of(releaseBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("release/8.1")).thenReturn(Set.of(prFromNewName));
-        when(gitHubClient.getBranchPullRequests("8.1-release")).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("release/8.1")).thenReturn(Set.of(prFromNewName));
+        when(gitHubGraphQLClient.getBranchPullRequests("8.1-release")).thenReturn(Collections.emptySet());
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(releaseBranch.getId()))
@@ -563,34 +567,34 @@ public class PullRequestServiceTest {
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubClient, times(1)).getBranchPullRequests("release/8.1");
-        verify(gitHubClient, times(1)).getBranchPullRequests("8.1-release");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("release/8.1");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("8.1-release");
         verify(pullRequestRepository, times(1)).saveAll(anySet());
     }
 
     @Test
     public void fetchCombinedPullRequestsForBranch_shouldHandleHistoricalNameQueryFailure()
-            throws GitHubClientException, PullRequestInjectionException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
         Branch releaseBranch = new Branch();
         releaseBranch.setId(UUID.randomUUID().toString());
         releaseBranch.setName("release/6.5");
 
         when(branchService.getAllBranches()).thenReturn(List.of(releaseBranch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("release/6.5")).thenReturn(Set.of(masterPR));
-        when(gitHubClient.getBranchPullRequests("6.5-release"))
-                .thenThrow(new GitHubClientException("Historical query failed", null));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("release/6.5")).thenReturn(Set.of(masterPR));
+        when(gitHubGraphQLClient.getBranchPullRequests("6.5-release"))
+                .thenThrow(new GitHubGraphQLClientException("Historical query failed", null));
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubClient, times(1)).getBranchPullRequests("release/6.5");
-        verify(gitHubClient, times(1)).getBranchPullRequests("6.5-release");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("release/6.5");
+        verify(gitHubGraphQLClient, times(1)).getBranchPullRequests("6.5-release");
         verify(branchPullRequestRepository, never()).saveAll(anySet());
     }
 
     @Test
     public void injectBranchPullRequests_shouldAssignMilestonesToPullRequests()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/milestone");
@@ -608,8 +612,8 @@ public class PullRequestServiceTest {
         milestone.setTitle("Milestone 1");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("feature/milestone")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/milestone")).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
@@ -626,7 +630,7 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldHandleNullMilestone()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/nomilestone");
@@ -639,8 +643,8 @@ public class PullRequestServiceTest {
         prEntity.setTitle("pr without milestone");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("feature/nomilestone")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/nomilestone")).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
@@ -656,13 +660,13 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldSkipLabelsNotFoundInLabelService()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/labels-missing");
 
         LabelDTO labelDTO = new LabelDTO("l-unknown", "unknown label", "desc", "blue");
-        GitHubNodeDTO<LabelDTO> labelNode = new GitHubNodeDTO<>(labelDTO);
+        GraphQLNodeDTO<LabelDTO> labelNode = new GraphQLNodeDTO<>(labelDTO);
         GitHubEdgesDTO<LabelDTO> labelEdges = new GitHubEdgesDTO<>(List.of(labelNode));
 
         PullRequestDTO prDto = new PullRequestDTO(
@@ -672,8 +676,9 @@ public class PullRequestServiceTest {
         prEntity.setTitle("pr with unknown label");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("feature/labels-missing")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/labels-missing"))
+                .thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
@@ -688,12 +693,12 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldSkipNullIssueNodes()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/null-issues");
 
-        GitHubNodeDTO<IssueDTO> nullIssueNode = new GitHubNodeDTO<>(null);
+        GraphQLNodeDTO<IssueDTO> nullIssueNode = new GraphQLNodeDTO<>(null);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>(List.of(nullIssueNode));
 
         PullRequestDTO prDto = new PullRequestDTO(
@@ -703,8 +708,8 @@ public class PullRequestServiceTest {
         prEntity.setTitle("pr with null issue");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("feature/null-issues")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/null-issues")).thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());
@@ -719,14 +724,14 @@ public class PullRequestServiceTest {
 
     @Test
     public void injectBranchPullRequests_shouldSkipIssuesNotFoundInIssueService()
-            throws GitHubClientException, PullRequestInjectionException, MappingException {
+            throws GitHubGraphQLClientException, PullRequestInjectionException, MappingException {
         Branch branch = new Branch();
         branch.setId(UUID.randomUUID().toString());
         branch.setName("feature/issues-missing");
 
         IssueDTO issueDTO = new IssueDTO(
                 "i-unknown", 999, "unknown issue", GitHubPropertyState.OPEN, null, null, null, null, null, null, null);
-        GitHubNodeDTO<IssueDTO> issueNode = new GitHubNodeDTO<>(issueDTO);
+        GraphQLNodeDTO<IssueDTO> issueNode = new GraphQLNodeDTO<>(issueDTO);
         GitHubEdgesDTO<IssueDTO> closingIssuesEdges = new GitHubEdgesDTO<>(List.of(issueNode));
 
         PullRequestDTO prDto = new PullRequestDTO(
@@ -736,8 +741,9 @@ public class PullRequestServiceTest {
         prEntity.setTitle("pr with unknown issue");
 
         when(branchService.getAllBranches()).thenReturn(List.of(branch));
-        when(gitHubClient.getBranchPullRequests("master")).thenReturn(Set.of());
-        when(gitHubClient.getBranchPullRequests("feature/issues-missing")).thenReturn(Set.of(prDto));
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("feature/issues-missing"))
+                .thenReturn(Set.of(prDto));
         when(branchPullRequestRepository.countAllByBranch_Id(any())).thenReturn(0);
         when(mapper.toEntity(anySet(), eq(PullRequest.class))).thenReturn(Set.of(prEntity));
         when(branchPullRequestRepository.findAllByBranch_Id(branch.getId())).thenReturn(Collections.emptySet());

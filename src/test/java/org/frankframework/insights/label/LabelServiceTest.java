@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,16 +23,17 @@ import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsDTO;
-import org.frankframework.insights.github.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.release.Release;
 import org.frankframework.insights.release.ReleaseNotFoundException;
 import org.frankframework.insights.release.ReleaseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -46,7 +46,7 @@ public class LabelServiceTest {
     private GitHubRepositoryStatisticsService statisticsService;
 
     @Mock
-    private GitHubClient gitHubClient;
+    private GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     private Mapper mapper;
@@ -63,6 +63,9 @@ public class LabelServiceTest {
     @Mock
     private GitHubRepositoryStatisticsDTO statisticsDTO;
 
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private GitHubProperties gitHubProperties;
+
     @Captor
     private ArgumentCaptor<LinkedHashSet<Label>> labelSetCaptor;
 
@@ -72,12 +75,11 @@ public class LabelServiceTest {
     public void setUp() {
         List<String> includedColors = List.of("D73A4A", "B60205", "007BFF", "1D76DB", "123456");
 
-        GitHubProperties gitHubProperties = mock(GitHubProperties.class);
-        when(gitHubProperties.getIncludedLabels()).thenReturn(includedColors);
+        when(gitHubProperties.getGraphql().getIncludedLabels()).thenReturn(includedColors);
 
         labelService = new LabelService(
                 statisticsService,
-                gitHubClient,
+                gitHubGraphQLClient,
                 mapper,
                 labelRepository,
                 issueLabelRepository,
@@ -86,14 +88,14 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void shouldSkipIfLabelCountsAreEqual() throws LabelInjectionException, GitHubClientException {
+    public void shouldSkipIfLabelCountsAreEqual() throws LabelInjectionException, GitHubGraphQLClientException {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(5);
         when(labelRepository.count()).thenReturn(5L);
 
         labelService.injectLabels();
 
-        verify(gitHubClient, never()).getLabels();
+        verify(gitHubGraphQLClient, never()).getLabels();
         verify(labelRepository, never()).saveAll(anySet());
     }
 
@@ -107,7 +109,7 @@ public class LabelServiceTest {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(10);
         when(labelRepository.count()).thenReturn(1L);
-        when(gitHubClient.getLabels()).thenReturn(dtos);
+        when(gitHubGraphQLClient.getLabels()).thenReturn(dtos);
         when(mapper.toEntity(dtos, Label.class)).thenReturn(entities);
 
         labelService.injectLabels();
@@ -116,11 +118,11 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void shouldThrowLabelInjectionException_whenClientFails() throws GitHubClientException {
+    public void shouldThrowLabelInjectionException_whenClientFails() throws GitHubGraphQLClientException {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(4);
         when(labelRepository.count()).thenReturn(1L);
-        when(gitHubClient.getLabels()).thenThrow(new GitHubClientException("API fetch failed", null));
+        when(gitHubGraphQLClient.getLabels()).thenThrow(new GitHubGraphQLClientException("API fetch failed", null));
 
         assertThrows(LabelInjectionException.class, () -> labelService.injectLabels());
     }
@@ -130,7 +132,7 @@ public class LabelServiceTest {
         when(statisticsService.getGitHubRepositoryStatisticsDTO()).thenReturn(statisticsDTO);
         when(statisticsDTO.getGitHubLabelCount()).thenReturn(10);
         when(labelRepository.count()).thenReturn(0L);
-        when(gitHubClient.getLabels()).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getLabels()).thenReturn(Collections.emptySet());
         when(mapper.toEntity(anySet(), eq(Label.class))).thenThrow(new MappingException("Mapping failed", null));
 
         assertThrows(LabelInjectionException.class, () -> labelService.injectLabels());

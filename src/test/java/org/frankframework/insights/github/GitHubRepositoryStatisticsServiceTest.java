@@ -4,18 +4,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.util.List;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubRefsDTO;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
+import org.frankframework.insights.github.graphql.GitHubTotalCountDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class GitHubRepositoryStatisticsServiceTest {
 
-    private GitHubClient gitHubClient;
+    private GitHubGraphQLClient gitHubGraphQLClient;
     private GitHubRepositoryStatisticsService service;
 
     @BeforeEach
     public void setup() {
-        gitHubClient = mock(GitHubClient.class);
-        service = new GitHubRepositoryStatisticsService(gitHubClient);
+        gitHubGraphQLClient = mock(GitHubGraphQLClient.class);
+        service = new GitHubRepositoryStatisticsService(gitHubGraphQLClient);
     }
 
     @Test
@@ -28,21 +34,21 @@ public class GitHubRepositoryStatisticsServiceTest {
 
         GitHubRepositoryStatisticsDTO dto = new GitHubRepositoryStatisticsDTO(totalCountDTO, totalCountDTO, refsDTO);
 
-        when(gitHubClient.getRepositoryStatistics()).thenReturn(dto);
+        when(gitHubGraphQLClient.getRepositoryStatistics()).thenReturn(dto);
 
         service.fetchRepositoryStatistics();
 
         assertSame(dto, service.getGitHubRepositoryStatisticsDTO());
-        verify(gitHubClient, times(1)).getRepositoryStatistics();
+        verify(gitHubGraphQLClient, times(1)).getRepositoryStatistics();
     }
 
     @Test
     public void fetchRepositoryStatistics_whenGitHubClientThrows_setsDtoNullAndThrows() throws Exception {
-        when(gitHubClient.getRepositoryStatistics()).thenThrow(new GitHubClientException("fail", null));
+        when(gitHubGraphQLClient.getRepositoryStatistics()).thenThrow(new GitHubGraphQLClientException("fail", null));
 
-        assertThrows(GitHubClientException.class, service::fetchRepositoryStatistics);
+        assertThrows(GitHubGraphQLClientException.class, service::fetchRepositoryStatistics);
         assertNull(service.getGitHubRepositoryStatisticsDTO());
-        verify(gitHubClient).getRepositoryStatistics();
+        verify(gitHubGraphQLClient).getRepositoryStatistics();
     }
 
     @Test

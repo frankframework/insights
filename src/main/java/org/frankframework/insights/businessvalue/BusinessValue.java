@@ -2,13 +2,12 @@ package org.frankframework.insights.businessvalue;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.frankframework.insights.issue.Issue;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+import org.frankframework.insights.issue.Issue;
 
 @Entity
 @Getter

@@ -18,8 +18,8 @@ import org.frankframework.insights.common.entityconnection.pullrequestlabel.Pull
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.common.properties.GitHubProperties;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.label.Label;
@@ -37,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class PullRequestService {
 
-    private final GitHubClient gitHubClient;
+    private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final PullRequestRepository pullRequestRepository;
     private final BranchPullRequestRepository branchPullRequestRepository;
@@ -52,7 +52,7 @@ public class PullRequestService {
     private static final Pattern NEW_BRANCH_NAME_PATTERN = Pattern.compile("release/([\\d.]+)");
 
     public PullRequestService(
-            GitHubClient gitHubClient,
+            GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper,
             PullRequestRepository pullRequestRepository,
             BranchPullRequestRepository branchPullRequestRepository,
@@ -63,14 +63,14 @@ public class PullRequestService {
             PullRequestLabelRepository pullRequestLabelRepository,
             PullRequestIssueRepository pullRequestIssueRepository,
             LabelService labelService) {
-        this.gitHubClient = gitHubClient;
+        this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.pullRequestRepository = pullRequestRepository;
         this.branchPullRequestRepository = branchPullRequestRepository;
         this.branchService = branchService;
         this.milestoneService = milestoneService;
         this.issueService = issueService;
-        this.branchProtectionRegexes = gitHubProperties.getBranchProtectionRegexes();
+        this.branchProtectionRegexes = gitHubProperties.getGraphql().getBranchProtectionRegexes();
         this.pullRequestLabelRepository = pullRequestLabelRepository;
         this.pullRequestIssueRepository = pullRequestIssueRepository;
         this.labelService = labelService;
@@ -104,11 +104,11 @@ public class PullRequestService {
      *
      * @param branch The branch for which to fetch pull requests.
      * @return A combined set of PullRequestDTOs from both current and historical branch names.
-     * @throws GitHubClientException if the API call fails.
+     * @throws GitHubGraphQLClientException if the API call fails.
      */
-    private Set<PullRequestDTO> fetchCombinedPullRequestsForBranch(Branch branch) throws GitHubClientException {
+    private Set<PullRequestDTO> fetchCombinedPullRequestsForBranch(Branch branch) throws GitHubGraphQLClientException {
         String currentName = branch.getName();
-        Set<PullRequestDTO> currentPullRequests = gitHubClient.getBranchPullRequests(currentName);
+        Set<PullRequestDTO> currentPullRequests = gitHubGraphQLClient.getBranchPullRequests(currentName);
         log.info(
                 "Fetched {} pull requests for branch with current name: [{}]", currentPullRequests.size(), currentName);
 
@@ -123,7 +123,7 @@ public class PullRequestService {
                     currentName,
                     oldName);
 
-            Set<PullRequestDTO> historicalPrs = gitHubClient.getBranchPullRequests(oldName);
+            Set<PullRequestDTO> historicalPrs = gitHubGraphQLClient.getBranchPullRequests(oldName);
             log.info("Fetched {} pull requests for historical name [{}]", historicalPrs.size(), oldName);
             combinedPullRequests.addAll(historicalPrs);
         }
@@ -143,7 +143,7 @@ public class PullRequestService {
     private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
         try {
             Set<PullRequestDTO> masterPullRequests =
-                    gitHubClient.getBranchPullRequests(branchProtectionRegexes.getFirst());
+                    gitHubGraphQLClient.getBranchPullRequests(branchProtectionRegexes.getFirst());
             return sortPullRequestsByMergedAt(masterPullRequests);
         } catch (Exception e) {
             throw new PullRequestInjectionException("Error while injecting GitHub pull requests of branch master", e);

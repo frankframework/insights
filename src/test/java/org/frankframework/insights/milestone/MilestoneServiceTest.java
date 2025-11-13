@@ -6,9 +6,9 @@ import static org.mockito.Mockito.*;
 import java.util.*;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
-import org.frankframework.insights.github.GitHubClient;
-import org.frankframework.insights.github.GitHubClientException;
-import org.frankframework.insights.github.GitHubPropertyState;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubPropertyState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class MilestoneServiceTest {
 
     @Mock
-    GitHubClient gitHubClient;
+    GitHubGraphQLClient gitHubGraphQLClient;
 
     @Mock
     Mapper mapper;
@@ -54,12 +54,12 @@ public class MilestoneServiceTest {
 
     @Test
     public void injectMilestones_shouldSaveAllMilestones()
-            throws MilestoneInjectionException, GitHubClientException, MappingException {
+            throws MilestoneInjectionException, GitHubGraphQLClientException, MappingException {
         Set<MilestoneDTO> DTOs = Set.of(milestoneDTO1, milestoneDTO2);
         Set<Milestone> entities = Set.of(milestone1, milestone2);
         List<Milestone> saved = List.of(milestone1, milestone2);
 
-        when(gitHubClient.getMilestones()).thenReturn(DTOs);
+        when(gitHubGraphQLClient.getMilestones()).thenReturn(DTOs);
         when(mapper.toEntity(DTOs, Milestone.class)).thenReturn(entities);
         when(milestoneRepository.saveAll(entities)).thenReturn(saved);
 
@@ -69,8 +69,8 @@ public class MilestoneServiceTest {
     }
 
     @Test
-    public void injectMilestones_shouldThrowOnException() throws GitHubClientException {
-        when(gitHubClient.getMilestones()).thenThrow(new RuntimeException("fail"));
+    public void injectMilestones_shouldThrowOnException() throws GitHubGraphQLClientException {
+        when(gitHubGraphQLClient.getMilestones()).thenThrow(new RuntimeException("fail"));
 
         assertThrows(MilestoneInjectionException.class, () -> milestoneService.injectMilestones());
     }
