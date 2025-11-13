@@ -38,10 +38,12 @@ public class BusinessValueController {
      */
     @PostMapping
     public ResponseEntity<BusinessValueResponse> createBusinessValue(
-            @RequestBody BusinessValueRequest request,
-            @AuthenticationPrincipal OAuth2User principal) throws ApiException {
-        log.info("User {} is creating a new business value with name: {}",
-                principal.getAttribute("login"), request.name());
+            @RequestBody BusinessValueRequest request, @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info(
+                "User {} is creating a new business value with name: {}",
+                principal.getAttribute("login"),
+                request.name());
 
         BusinessValueResponse response = businessValueService.createBusinessValue(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -56,8 +58,8 @@ public class BusinessValueController {
      * @throws ApiException if the release is not found
      */
     @GetMapping("/release/{releaseId}")
-    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(
-            @PathVariable String releaseId) throws ApiException {
+    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId)
+            throws ApiException {
         log.info("Fetching business values for release with id: {}", releaseId);
 
         Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
@@ -91,8 +93,7 @@ public class BusinessValueController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<BusinessValueResponse> getBusinessValueById(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal OAuth2User principal) throws ApiException {
+            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) throws ApiException {
         log.info("User {} is fetching business value with id: {}", principal.getAttribute("login"), id);
 
         BusinessValueResponse response = businessValueService.getBusinessValueById(id);
@@ -113,9 +114,9 @@ public class BusinessValueController {
     public ResponseEntity<BusinessValueResponse> updateBusinessValue(
             @PathVariable UUID id,
             @RequestBody BusinessValueRequest request,
-            @AuthenticationPrincipal OAuth2User principal) throws ApiException {
-        log.info("User {} is updating business value with id: {}",
-                principal.getAttribute("login"), id);
+            @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info("User {} is updating business value with id: {}", principal.getAttribute("login"), id);
 
         BusinessValueResponse response = businessValueService.updateBusinessValue(id, request);
         return ResponseEntity.ok(response);
@@ -136,9 +137,13 @@ public class BusinessValueController {
     public ResponseEntity<BusinessValueResponse> connectIssues(
             @PathVariable UUID id,
             @RequestBody ConnectIssuesRequest request,
-            @AuthenticationPrincipal OAuth2User principal) throws ApiException {
-        log.info("User {} is connecting {} issues to business value with id: {}",
-                principal.getAttribute("login"), request.issueIds().size(), id);
+            @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info(
+                "User {} is connecting {} issues to business value with id: {}",
+                principal.getAttribute("login"),
+                request.issueIds().size(),
+                id);
 
         BusinessValueResponse response = businessValueService.connectIssuesToBusinessValue(id, request);
         return ResponseEntity.ok(response);
@@ -159,9 +164,13 @@ public class BusinessValueController {
     public ResponseEntity<BusinessValueResponse> disconnectIssues(
             @PathVariable UUID id,
             @RequestBody ConnectIssuesRequest request,
-            @AuthenticationPrincipal OAuth2User principal) throws ApiException {
-        log.info("User {} is disconnecting {} issues from business value with id: {}",
-                principal.getAttribute("login"), request.issueIds().size(), id);
+            @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info(
+                "User {} is disconnecting {} issues from business value with id: {}",
+                principal.getAttribute("login"),
+                request.issueIds().size(),
+                id);
 
         BusinessValueResponse response = businessValueService.disconnectIssuesFromBusinessValue(id, request.issueIds());
         return ResponseEntity.ok(response);
@@ -183,9 +192,12 @@ public class BusinessValueController {
     public ResponseEntity<BusinessValueResponse> updateIssueConnections(
             @PathVariable UUID id,
             @RequestBody ConnectIssuesRequest request,
-            @AuthenticationPrincipal OAuth2User principal) throws ApiException {
-        log.info("User {} is replacing issue connections for business value with id: {}",
-                principal.getAttribute("login"), id);
+            @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info(
+                "User {} is replacing issue connections for business value with id: {}",
+                principal.getAttribute("login"),
+                id);
 
         BusinessValueResponse response = businessValueService.replaceIssueConnections(id, request);
         return ResponseEntity.ok(response);
