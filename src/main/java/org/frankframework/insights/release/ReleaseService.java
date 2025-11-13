@@ -12,7 +12,6 @@
 	import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 	import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 	import org.frankframework.insights.common.mapper.Mapper;
-	import org.frankframework.insights.common.properties.ReleaseFixProperties;
 	import org.frankframework.insights.github.GitHubClient;
 	import org.frankframework.insights.pullrequest.PullRequest;
 	import org.springframework.stereotype.Service;
@@ -36,7 +35,6 @@
 		private static final int FIRST_RELEASE_INDEX = 0;
 		private static final int MAJOR = 1;
 		private static final int MINOR = 2;
-		private final HashMap<String, OffsetDateTime> releaseDateOverrides;
 
 		/**
 		 * Constructor for ReleaseService.
@@ -52,14 +50,12 @@
 				Mapper mapper,
 				ReleaseRepository releaseRepository,
 				BranchService branchService,
-				ReleasePullRequestRepository releasePullRequestRepository,
-				ReleaseFixProperties releaseFixProperties) {
+				ReleasePullRequestRepository releasePullRequestRepository) {
 			this.gitHubClient = gitHubClient;
 			this.mapper = mapper;
 			this.releaseRepository = releaseRepository;
 			this.branchService = branchService;
 			this.releasePullRequestRepository = releasePullRequestRepository;
-			this.releaseDateOverrides = releaseFixProperties.getDateOverrides();
 		}
 
 		/**
@@ -72,14 +68,12 @@
 			try {
 				Set<ReleaseDTO> releaseDTOs = gitHubClient.getReleases();
 
-				Set<ReleaseDTO> manualFixedReleaseDTOs = applyManualDateFixes(releaseDTOs);
-
 				List<Branch> allBranches = branchService.getAllBranches();
 				Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
 						branchService.getBranchPullRequestsByBranches(allBranches);
 
 				Map<Boolean, List<ReleaseDTO>> partitionedReleases =
-						manualFixedReleaseDTOs.stream().collect(Collectors.partitioningBy(ReleaseDTO::isValid));
+						releaseDTOs.stream().collect(Collectors.partitioningBy(ReleaseDTO::isValid));
 
 				List<ReleaseDTO> validReleaseDTOs = partitionedReleases.getOrDefault(true, Collections.emptyList());
 				List<ReleaseDTO> invalidReleaseDTOs = partitionedReleases.getOrDefault(false, Collections.emptyList());
@@ -133,7 +127,7 @@
 				invalidReleaseDTOs.stream()
 						.filter(invalidRelease -> invalidRelease.tagName() != null
 								&& invalidRelease.tagName().startsWith(baseVersion.get()))
-						.map(ReleaseDTO::publishedAt)
+						.map(ReleaseDTO::getReleaseDate)
 						.filter(Objects::nonNull)
 						.min(Comparator.naturalOrder())
 						.ifPresent(earliestDate -> earliestBetaRCDates.put(validTagName, earliestDate));
@@ -163,6 +157,7 @@
 
 			Release release = mapper.toEntity(dto, Release.class);
 			release.setBranch(selectedBranch);
+			release.setPublishedAt(dto.getReleaseDate());
 			return release;
 		}
 
@@ -323,40 +318,6 @@
 		 */
 		private boolean isInRange(OffsetDateTime date, OffsetDateTime start, OffsetDateTime end) {
 			return date != null && (date.isEqual(start) || date.isAfter(start)) && date.isBefore(end);
-		}
-
-		protected Set<ReleaseDTO> applyManualDateFixes(Set<ReleaseDTO> releaseDTOs) {
-			if (this.releaseDateOverrides == null || this.releaseDateOverrides.isEmpty()) {
-				return releaseDTOs;
-			}
-
-			log.info("Checking for manual release date overrides for {} releases...", releaseDTOs.size());
-
-			return releaseDTOs.stream()
-					.map(releaseDto -> {
-						OffsetDateTime overrideDate = this.releaseDateOverrides.get(releaseDto.tagName());
-
-						if (overrideDate == null) {
-							return releaseDto;
-						}
-
-						try {
-							log.warn(
-									"Overriding publishedAt property for release [{}]: old='{}', new='{}'",
-									releaseDto.tagName(),
-									releaseDto.publishedAt(),
-									overrideDate);
-
-							return new ReleaseDTO(releaseDto.id(), releaseDto.tagName(), releaseDto.name(), overrideDate);
-						} catch (Exception e) {
-							log.error(
-									"Failed to apply override date for release [{}]. Using original date.",
-									releaseDto.tagName(),
-									e);
-							return releaseDto;
-						}
-					})
-					.collect(Collectors.toSet());
 		}
 
 		/**
