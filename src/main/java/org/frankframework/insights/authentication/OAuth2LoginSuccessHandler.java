@@ -33,16 +33,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             throws IOException {
         log.info("OAuth2 authentication successful for user: {}", authentication.getName());
 
-        // Verify that the authenticated user is a FrankFramework member
         if (authentication.getPrincipal() instanceof OAuth2User oauth2User) {
             GitHubOAuthAttributes attributes = GitHubOAuthAttributes.from(oauth2User.getAttributes());
 
-            // Check membership status from database (saved by UserService during loadUser)
             User user = userRepository.findByGithubId(attributes.githubId()).orElse(null);
 
             if (user == null || !user.isFrankFrameworkMember()) {
                 log.warn("User '{}' is not a FrankFramework member - denying access", attributes.username());
-                // Clear authentication and redirect to failure
                 request.getSession().invalidate();
                 getRedirectStrategy().sendRedirect(request, response, "/?login=forbidden");
                 return;
