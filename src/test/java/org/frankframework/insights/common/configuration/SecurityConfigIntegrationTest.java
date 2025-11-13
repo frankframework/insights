@@ -40,16 +40,16 @@ public class SecurityConfigIntegrationTest {
     @Autowired
     private SessionRegistry sessionRegistry;
 
-	private OAuth2User oauth2User;
+    private OAuth2User oauth2User;
 
     @BeforeEach
     public void setUp() {
-		User testUser = User.builder()
-				.githubId(99999L)
-				.username("testuser")
-				.avatarUrl("https://github.com/avatars/testuser.png")
-				.isFrankFrameworkMember(true)
-				.build();
+        User testUser = User.builder()
+                .githubId(99999L)
+                .username("testuser")
+                .avatarUrl("https://github.com/avatars/testuser.png")
+                .isFrankFrameworkMember(true)
+                .build();
         userRepository.save(testUser);
 
         Map<String, Object> attributes = Map.of(
@@ -64,14 +64,14 @@ public class SecurityConfigIntegrationTest {
     @AfterEach
     public void tearDown() {
         userRepository.deleteAll();
-        sessionRegistry.getAllPrincipals().forEach(principal -> sessionRegistry.getAllSessions(principal, false).forEach(SessionInformation::expireNow));
+        sessionRegistry.getAllPrincipals().forEach(principal -> sessionRegistry
+                .getAllSessions(principal, false)
+                .forEach(SessionInformation::expireNow));
     }
 
     @Test
     public void sessionIsNotCreated_whenAccessingPublicEndpoint() throws Exception {
-        MvcResult result = mockMvc.perform(get("/"))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result = mockMvc.perform(get("/")).andExpect(status().isOk()).andReturn();
 
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
         assertThat(session).isNull();
@@ -79,8 +79,9 @@ public class SecurityConfigIntegrationTest {
 
     @Test
     public void sessionIsCreated_whenAuthenticatedViaOAuth2() throws Exception {
-        MvcResult result = mockMvc.perform(
-                        get("/api/auth/user").with(oauth2Login().oauth2User(oauth2User)).with(csrf()))
+        MvcResult result = mockMvc.perform(get("/api/auth/user")
+                        .with(oauth2Login().oauth2User(oauth2User))
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -133,16 +134,15 @@ public class SecurityConfigIntegrationTest {
 
         allSessions = sessionRegistry.getAllSessions(oauth2User, true);
         assertThat(allSessions).hasSize(4);
-        assertThat(allSessions.stream().filter(SessionInformation::isExpired))
-                .hasSize(1);
-        assertThat(allSessions.stream().filter(s -> !s.isExpired()))
-                .hasSize(3);
+        assertThat(allSessions.stream().filter(SessionInformation::isExpired)).hasSize(1);
+        assertThat(allSessions.stream().filter(s -> !s.isExpired())).hasSize(3);
     }
 
     @Test
     public void logout_invalidatesSession() throws Exception {
-        MvcResult loginResult = mockMvc.perform(
-                        get("/api/auth/user").with(oauth2Login().oauth2User(oauth2User)).with(csrf()))
+        MvcResult loginResult = mockMvc.perform(get("/api/auth/user")
+                        .with(oauth2Login().oauth2User(oauth2User))
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -150,15 +150,15 @@ public class SecurityConfigIntegrationTest {
         assertThat(session).isNotNull();
         assertThat(session.isInvalid()).isFalse();
 
-        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf()))
-                .andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf())).andExpect(status().is3xxRedirection());
 
         assertThat(session.isInvalid()).isTrue();
     }
 
     private MockHttpSession createAuthenticatedSession() throws Exception {
-        MvcResult result = mockMvc.perform(
-                        get("/api/auth/user").with(oauth2Login().oauth2User(oauth2User)).with(csrf()))
+        MvcResult result = mockMvc.perform(get("/api/auth/user")
+                        .with(oauth2Login().oauth2User(oauth2User))
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -168,5 +168,5 @@ public class SecurityConfigIntegrationTest {
     private void createAndRegisterAuthenticatedSession() throws Exception {
         MockHttpSession session = createAuthenticatedSession();
         sessionRegistry.registerNewSession(session.getId(), oauth2User);
-	}
+    }
 }

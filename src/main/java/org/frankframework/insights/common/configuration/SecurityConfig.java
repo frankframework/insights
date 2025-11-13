@@ -15,7 +15,7 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
 public class SecurityConfig {
-
+    private static final int MAX_ALLOWED_SESSIONS = 3;
     private final UserService userService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
@@ -58,10 +58,10 @@ public class SecurityConfig {
                         .permitAll())
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers("/api/auth/logout", "/oauth2/**", "/login/**"))
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .sessionFixation().changeSessionId()
-                        .maximumSessions(3)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionFixation()
+                        .changeSessionId()
+                        .maximumSessions(MAX_ALLOWED_SESSIONS)
                         .maxSessionsPreventsLogin(false)
                         .sessionRegistry(sessionRegistry));
         return http.build();
