@@ -241,6 +241,18 @@ public class IssueService {
     }
 
     /**
+     * Fetches all root issues associated with a specific release ID.
+     * @param releaseId the ID of the release to fetch issues for
+     * @return Set of root issues associated with the release (without sub-issues or labels)
+     * @throws ReleaseNotFoundException if the release is not found
+     */
+    public Set<Issue> getRootIssuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
+        Release release = releaseService.checkIfReleaseExists(releaseId);
+        Set<Issue> allIssues = issueRepository.findIssuesByReleaseId(release.getId());
+        return filterRootIssues(allIssues);
+    }
+
+    /**
      * Fetches all issues associated with a specific release ID.
      * @param releaseId the ID of the release to fetch issues for
      * @return Set of issues associated with the release, including sub-issues and labels
