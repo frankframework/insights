@@ -22,7 +22,6 @@ public class IssueResponse {
     private GitHubPropertyState state;
     private OffsetDateTime closedAt;
     private String url;
-    private String businessValue;
     private MilestoneResponse milestone;
     private IssueTypeResponse issueType;
     private IssuePriorityResponse issuePriority;

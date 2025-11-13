@@ -46,8 +46,8 @@ public class BusinessValueService {
             throws ReleaseNotFoundException {
         log.info("Fetching business values for release with id: {}", releaseId);
 
-        Set<IssueResponse> issueResponses = issueService.getIssuesByReleaseId(releaseId);
-        Set<String> businessValueNames = extractBusinessValueNames(issueResponses);
+        Set<Issue> rootIssues = issueService.getRootIssuesByReleaseId(releaseId);
+        Set<String> businessValueNames = extractBusinessValueNames(rootIssues);
         Set<BusinessValue> businessValues = fetchBusinessValuesByNames(businessValueNames);
 
         log.info("Retrieved {} business values for release {}", businessValues.size(), releaseId);
@@ -226,18 +226,24 @@ public class BusinessValueService {
         return connectIssuesToBusinessValue(businessValueId, request);
     }
 
-    /**
-     * Finds a business value by ID or throws exception.
-     */
-    private BusinessValue findBusinessValueById(UUID id) throws BusinessValueNotFoundException {
+	/**
+	 * Finds a business value by its ID or throws an exception if not found.
+	 * @param id the UUID of the business value
+	 * @return the business value entity
+	 * @throws BusinessValueNotFoundException if the business value is not found
+	 */
+	private BusinessValue findBusinessValueById(UUID id) throws BusinessValueNotFoundException {
         return businessValueRepository.findById(id)
                 .orElseThrow(() -> new BusinessValueNotFoundException("Business value with id " + id + " not found"));
     }
 
-    /**
-     * Disconnects all currently connected issues from a business value.
-     */
-    private void disconnectAllCurrentIssues(UUID businessValueId, BusinessValue businessValue)
+	/**
+	 * Disconnects all currently connected issues from a business value.
+	 * @param businessValueId the UUID of the business value
+	 * @param businessValue the business value entity
+	 * @throws BusinessValueNotFoundException if the business value is not found
+	 */
+	private void disconnectAllCurrentIssues(UUID businessValueId, BusinessValue businessValue)
             throws BusinessValueNotFoundException {
         if (businessValue.getIssues() != null && !businessValue.getIssues().isEmpty()) {
             Set<String> currentIssueIds = businessValue.getIssues().stream()
@@ -249,15 +255,26 @@ public class BusinessValueService {
         }
     }
 
-    private Set<String> extractBusinessValueNames(Set<IssueResponse> issueResponses) {
-        Set<String> names = issueResponses.stream()
-                .map(IssueResponse::getBusinessValue)
+	/**
+	 * Extracts unique business value names from a set of issues.
+	 * @param issues the set of issues
+	 * @return set of unique business value names
+	 */
+    private Set<String> extractBusinessValueNames(Set<Issue> issues) {
+        Set<String> names = issues.stream()
+                .map(Issue::getBusinessValue)
                 .filter(Objects::nonNull)
+                .map(BusinessValue::getName)
                 .collect(Collectors.toSet());
-        log.info("Extracted {} unique business value names from {} issues", names.size(), issueResponses.size());
+        log.info("Extracted {} unique business value names from {} issues", names.size(), issues.size());
         return names;
     }
 
+	/**
+	 * Fetches business value entities by their names.
+	 * @param names the set of business value names
+	 * @return set of business value entities
+	 */
     private Set<BusinessValue> fetchBusinessValuesByNames(Set<String> names) {
         return names.stream()
                 .map(businessValueRepository::findByName)
@@ -266,6 +283,12 @@ public class BusinessValueService {
                 .collect(Collectors.toSet());
     }
 
+	/**
+	 * Fetches and validates issues by their IDs.
+	 * @param issueIds the set of issue IDs
+	 * @return set of issue entities
+	 * @throws IssueNotFoundException if any of the issues are not found
+	 */
     private Set<Issue> fetchAndValidateIssues(Set<String> issueIds) throws IssueNotFoundException {
         Map<String, Optional<Issue>> issueMap = issueIds.stream()
                 .collect(Collectors.toMap(id -> id, issueRepository::findById));
@@ -286,6 +309,11 @@ public class BusinessValueService {
                 .collect(Collectors.toSet());
     }
 
+	/**
+	 * Fetches issues by their IDs.
+	 * @param issueIds the set of issue IDs
+	 * @return set of issue entities
+	 */
     private Set<Issue> fetchIssuesByIds(Set<String> issueIds) {
         return issueIds.stream()
                 .map(issueRepository::findById)
@@ -294,6 +322,11 @@ public class BusinessValueService {
                 .collect(Collectors.toSet());
     }
 
+	/**
+	 * Collects all issues including their sub-issues recursively.
+	 * @param issues the set of root issues
+	 * @return set of all issues including sub-issues
+	 */
     private Set<Issue> collectAllIssuesWithSubIssues(Set<Issue> issues) {
         Set<Issue> allIssues = issues.stream()
                 .flatMap(issue -> collectIssueWithSubIssuesStream(issue).stream())
@@ -303,11 +336,21 @@ public class BusinessValueService {
         return allIssues;
     }
 
+	/**
+	 * Sets the business value on a set of issues.
+	 * @param issues the set of issues
+	 * @param businessValue the business value to set
+	 */
     private void setBusinessValueOnIssues(Set<Issue> issues, BusinessValue businessValue) {
         log.info("Setting business value '{}' on {} issues", businessValue.getName(), issues.size());
         issues.forEach(issue -> issue.setBusinessValue(businessValue));
     }
 
+	/**
+	 * Clears the business value from a set of issues.
+	 * @param issues the set of issues
+	 * @param businessValue the business value to clear
+	 */
     private void clearBusinessValueFromIssues(Set<Issue> issues, BusinessValue businessValue) {
         log.info("Clearing business value '{}' from {} issues", businessValue.getName(), issues.size());
         issues.stream()
@@ -315,6 +358,11 @@ public class BusinessValueService {
                 .forEach(issue -> issue.setBusinessValue(null));
     }
 
+	/**
+	 * Recursively collects an issue and all its sub-issues using streams.
+	 * @param issue the root issue
+	 * @return set of the issue and all its sub-issues
+	 */
     private Set<Issue> collectIssueWithSubIssuesStream(Issue issue) {
         Set<Issue> result = new HashSet<>();
         result.add(issue);
