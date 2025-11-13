@@ -43,7 +43,7 @@
 
         @for (lifecycle of branchLifecycles; track lifecycle.branchLabel + '-' + lifecycle.y) {
           <g class="branch-lifecycle">
-            @for (phase of lifecycle.phases; track phase.type) {
+            @for (phase of lifecycle.phases; track phase.startX) {
               <rect
                 class="lifecycle-phase"
                 [attr.data-phase]="phase.type"
