@@ -2,11 +2,10 @@ package org.frankframework.insights.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.web.RedirectStrategy;
-
 import java.io.IOException;
 import java.net.URI;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.web.RedirectStrategy;
 
 /**
  * Utility class for OAuth2 handlers that provides common redirect logic.
@@ -26,7 +25,10 @@ public final class OAuth2RedirectUtil {
      * @param queryParam Optional query parameter to add (e.g., "login=success")
      */
     public static void redirectToOrigin(
-            HttpServletRequest request, HttpServletResponse response, RedirectStrategy redirectStrategy, String queryParam)
+            HttpServletRequest request,
+            HttpServletResponse response,
+            RedirectStrategy redirectStrategy,
+            String queryParam)
             throws IOException {
         String referer = request.getHeader("Referer");
         String redirectUrl = "/";
@@ -50,7 +52,6 @@ public final class OAuth2RedirectUtil {
             log.info("No referer header present, redirecting to root");
         }
 
-        // Add query parameter if provided
         if (queryParam != null && !queryParam.isEmpty()) {
             redirectUrl += "?" + queryParam;
         }
