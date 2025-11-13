@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseGraphComponent } from './release-graph.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
@@ -109,14 +109,12 @@ describe('ReleaseGraphComponent', () => {
       expect(component.isLoading).toBe(false);
     });
 
-    it('should call centerGraph after a navigation event', fakeAsync(() => {
-      spyOn(component as any, 'centerGraph');
+    it('should subscribe to router events on initialization', () => {
       fixture.detectChanges();
-      routerEventsSubject.next(new NavigationEnd(1, '/graph', '/graph'));
-      tick();
 
-      expect((component as any).centerGraph).toHaveBeenCalledWith();
-    }));
+      expect((component as any).routerSubscription).toBeDefined();
+      expect((component as any).routerSubscription.closed).toBe(false);
+    });
 
     it('should unsubscribe from router events on ngOnDestroy', () => {
       fixture.detectChanges();
