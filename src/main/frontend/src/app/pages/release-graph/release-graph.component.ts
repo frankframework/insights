@@ -78,7 +78,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     this.routerSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd && this.router.url.includes('/graph')) {
-        setTimeout(() => this.centerGraph(), 0);
+        requestAnimationFrame(() => requestAnimationFrame(() => this.centerGraph()));
       }
     });
   }
@@ -719,7 +719,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private checkReleaseGraphLoading(): void {
     if (this.isLoading) {
       this.isLoading = false;
-      setTimeout(() => this.centerGraph(), 50);
+      requestAnimationFrame(() => requestAnimationFrame(() => this.centerGraph()));
     }
   }
 }
