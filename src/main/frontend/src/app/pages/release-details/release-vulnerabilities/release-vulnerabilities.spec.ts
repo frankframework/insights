@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseVulnerabilities } from './release-vulnerabilities';
 import { Vulnerability, VulnerabilitySeverities } from '../../../services/vulnerability.service';
 
@@ -46,7 +48,11 @@ describe('ReleaseVulnerabilities', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ReleaseVulnerabilities]
+      imports: [ReleaseVulnerabilities],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseVulnerabilities);

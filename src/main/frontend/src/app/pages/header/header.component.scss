@@ -64,4 +64,225 @@
       }
     }
   }
+
+  .auth-section {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    padding-right: 2.5rem;
+
+    .github-login-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 8px;
+      transition: background-color 0.2s;
+
+      svg {
+        display: block;
+      }
+
+      &:hover:not(:disabled) {
+        background-color: #f6f8fa;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .spinner {
+        animation: spin 1s linear infinite;
+      }
+    }
+
+    .user-profile {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #f6f8fa;
+      }
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid #e1e4e8;
+      }
+
+      .username {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #24292e;
+
+        @media (max-width: 540px) {
+          display: none;
+        }
+      }
+
+      .user-menu {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        background-color: white;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+        min-width: 280px;
+        z-index: 50;
+        padding: 0.5rem 0;
+
+        .user-menu-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.75rem 1rem;
+
+          .avatar-large {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #e1e4e8;
+          }
+
+          .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+
+            .username-large {
+              font-size: 0.95rem;
+              font-weight: 600;
+              color: #24292e;
+            }
+
+            .user-id {
+              font-size: 0.8rem;
+              color: #57606a;
+            }
+          }
+        }
+
+        .user-menu-divider {
+          height: 1px;
+          background-color: #d0d7de;
+          margin: 0.5rem 0;
+        }
+
+        .user-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          width: 100%;
+          padding: 0.6rem 1rem;
+          background: none;
+          border: none;
+          text-align: left;
+          font-size: 0.9rem;
+          color: #24292e;
+          cursor: pointer;
+          transition: background-color 0.2s;
+
+          svg {
+            flex-shrink: 0;
+          }
+
+          &:hover {
+            background-color: #f6f8fa;
+          }
+
+          &.logout-btn {
+            color: #cf222e;
+
+            &:hover {
+              background-color: #ffebe9;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.auth-error-banner {
+  position: fixed;
+  top: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  max-width: 90%;
+  width: 600px;
+  background-color: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  .error-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .error-icon {
+      flex-shrink: 0;
+      color: #dc2626;
+    }
+
+    .error-message {
+      flex: 1;
+      font-size: 0.9rem;
+      color: #991b1b;
+      line-height: 1.5;
+    }
+
+    .dismiss-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #dc2626;
+      cursor: pointer;
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: #fee2e2;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    top: 4.5rem;
+    width: calc(100% - 2rem);
+    padding: 0.75rem;
+
+    .error-content {
+      .error-message {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

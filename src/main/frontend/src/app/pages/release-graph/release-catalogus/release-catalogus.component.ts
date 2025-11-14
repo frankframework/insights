@@ -1,6 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-release-catalogus',
@@ -12,6 +13,9 @@ import { ModalComponent } from '../../../components/modal/modal.component';
 export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
   public modalOpen = false;
   public isSmallScreen = false;
+
+  protected authService = inject(AuthService);
+
   private mediaQueryList: MediaQueryList | null = null;
   private mediaListener: (() => void) | null = null;
 

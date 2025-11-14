@@ -1,7 +1,18 @@
 {
   "/api": {
-    "target": "http://localhost:8080/",
+    "target": "http://localhost:8080",
     "secure": false,
-    "ws": true
+    "ws": true,
+    "changeOrigin": true
+  },
+  "/oauth2": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/login": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
   }
 }

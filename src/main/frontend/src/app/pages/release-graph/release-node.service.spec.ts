@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseNode, ReleaseNodeService, SupportColors, TimelineScale } from './release-node.service';
 import { Branch, Release } from '../../services/release.service';
 
@@ -96,7 +98,11 @@ describe('ReleaseNodeService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [ReleaseNodeService],
+      providers: [
+        ReleaseNodeService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     service = TestBed.inject(ReleaseNodeService);
     mockReleases = createMockData() as any;

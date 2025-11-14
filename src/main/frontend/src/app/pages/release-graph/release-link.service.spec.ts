@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseLinkService, Release, SkipNode } from './release-link.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 
@@ -47,7 +49,9 @@ describe('ReleaseLinkService', () => {
     TestBed.configureTestingModule({
       providers: [
         ReleaseLinkService,
-        { provide: ReleaseNodeService, useValue: nodeServiceSpy }
+        { provide: ReleaseNodeService, useValue: nodeServiceSpy },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     });
     service = TestBed.inject(ReleaseLinkService);
