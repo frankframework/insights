@@ -9,8 +9,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.stereotype.Component;
 
 /**
- * Custom OAuth2 login failure handler that redirects to the frontend
- * with a query parameter indicating failed authentication.
+ * Custom OAuth2 login failure handler that redirects to the origin of the initial request.
  */
 @Component
 @Slf4j
@@ -21,6 +20,6 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
         log.error("OAuth2 authentication failed: {}", exception.getMessage());
-        getRedirectStrategy().sendRedirect(request, response, "/?login=error");
+        OAuth2RedirectUtil.redirectToOrigin(request, response, getRedirectStrategy(), "login=error");
     }
 }

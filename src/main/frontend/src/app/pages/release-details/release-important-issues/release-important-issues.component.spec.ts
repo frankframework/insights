@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SimpleChange } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseImportantIssuesComponent } from './release-important-issues.component';
 import { Issue } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
@@ -29,6 +31,10 @@ describe('ReleaseImportantIssuesComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseImportantIssuesComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseImportantIssuesComponent);

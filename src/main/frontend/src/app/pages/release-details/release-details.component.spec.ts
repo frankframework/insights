@@ -3,6 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { of, throwError, Subject } from 'rxjs';
 import { delay } from 'rxjs/operators';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseDetailsComponent } from './release-details.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { LabelService, Label } from '../../services/label.service';
@@ -62,6 +64,8 @@ describe('ReleaseDetailsComponent', () => {
         { provide: VulnerabilityService, useValue: mockVulnerabilityService },
         { provide: Location, useValue: mockLocation },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     }).compileComponents();
 

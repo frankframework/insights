@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
+import { LocationService } from '../../services/location.service';
 
 @Component({
   selector: 'app-header',
@@ -8,4 +10,30 @@ import { NgOptimizedImage } from '@angular/common';
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
-export class HeaderComponent {}
+export class HeaderComponent {
+  public authService = inject(AuthService);
+  public showUserMenu = false;
+  private locationService = inject(LocationService);
+
+  onLoginWithGitHub(): void {
+    this.authService.setLoading(true);
+    this.locationService.navigateTo('/oauth2/authorization/github');
+  }
+
+  toggleUserMenu(): void {
+    this.showUserMenu = !this.showUserMenu;
+  }
+
+  closeUserMenu(): void {
+    this.showUserMenu = false;
+  }
+
+  onLogout(): void {
+    this.closeUserMenu();
+    this.authService.logout().subscribe();
+  }
+
+  onDismissError(): void {
+    this.authService.clearError();
+  }
+}

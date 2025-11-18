@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { ReleaseSkippedVersions } from './release-skipped-versions';
 
@@ -8,7 +10,11 @@ describe('ReleaseSkippedVersions', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ReleaseSkippedVersions]
+      imports: [ReleaseSkippedVersions],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     })
     .compileComponents();
 

@@ -6,6 +6,8 @@ import { ReleaseLinkService, SkipNode } from './release-link.service';
 import { Router, NavigationEnd } from '@angular/router';
 import { of, ReplaySubject, throwError } from 'rxjs';
 import { ElementRef } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('ReleaseGraphComponent', () => {
   let component: ReleaseGraphComponent;
@@ -70,6 +72,8 @@ describe('ReleaseGraphComponent', () => {
         { provide: ReleaseNodeService, useValue: mockNodeService },
         { provide: ReleaseLinkService, useValue: mockLinkService },
         { provide: Router, useValue: mockRouter },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     }).compileComponents();
 

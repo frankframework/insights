@@ -48,6 +48,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             log.info("User '{}' is a verified FrankFramework member - granting access", attributes.username());
         }
 
-        getRedirectStrategy().sendRedirect(request, response, "/?login=success");
+        OAuth2RedirectUtil.redirectToOrigin(request, response, getRedirectStrategy(), "login=success");
     }
 }
