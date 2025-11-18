@@ -26,7 +26,6 @@ export class AuthService {
   public authError = signal<string | null>(null);
   public isLoading = signal<boolean>(false);
 
-  private readonly authHeaders: Record<string, boolean> = { withCredentials: true };
   private readonly SESSION_KEY = 'auth_session';
   private appService = inject(AppService);
   private locationService = inject(LocationService);
@@ -38,7 +37,7 @@ export class AuthService {
    */
   public checkAuthStatus(): Observable<User | null> {
     this.isLoading.set(true);
-    return this.appService.get<User>(this.appService.createAPIUrl('auth/user'), this.authHeaders).pipe(
+    return this.appService.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
       tap((user) => {
         this.currentUser.set(user);
         this.isAuthenticated.set(true);
@@ -93,7 +92,7 @@ export class AuthService {
 
   public logout(): Observable<void> {
     this.isLoading.set(true);
-    return this.appService.post<void>(this.appService.createAPIUrl('auth/logout'), undefined, this.authHeaders).pipe(
+    return this.appService.post<void>(this.appService.createAPIUrl('auth/logout')).pipe(
       tap(() => {
         this.isLoading.set(false);
         this.clearAuthState();

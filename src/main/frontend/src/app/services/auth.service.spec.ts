@@ -1,10 +1,11 @@
 
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AuthService, User, ErrorResponse } from './auth.service';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
+import { HttpInterceptorService } from './http-interceptor.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -26,8 +27,13 @@ describe('AuthService', () => {
         AuthService,
         AppService,
         { provide: LocationService, useValue: mockLocationService },
-        provideHttpClient(),
+        provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
+        {
+          provide: HTTP_INTERCEPTORS,
+          useClass: HttpInterceptorService,
+          multi: true,
+        },
       ],
     });
 

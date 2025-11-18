@@ -13,7 +13,6 @@ export type GitHubState = (typeof GitHubStates)[keyof typeof GitHubStates];
   providedIn: 'root',
 })
 export class AppService {
-  private readonly WITH_CREDENTIALS: string = 'withCredentials';
   private http = inject(HttpClient);
 
   /**
@@ -26,16 +25,10 @@ export class AppService {
    */
   public get<T>(url: string, parameters?: Record<string, string | number | boolean>): Observable<T> {
     let httpParameters = new HttpParams();
-    const options: { params?: HttpParams; withCredentials?: boolean } = {};
 
     if (parameters) {
       for (const key of Object.keys(parameters)) {
         const value = parameters[key];
-
-        if (key === this.WITH_CREDENTIALS) {
-          options.withCredentials = value as boolean;
-          continue;
-        }
 
         if (value !== undefined && value !== null && value !== '') {
           httpParameters = httpParameters.set(key, String(value));
@@ -43,8 +36,7 @@ export class AppService {
       }
     }
 
-    options.params = httpParameters;
-    return this.http.get<T>(url, options);
+    return this.http.get<T>(url, { params: httpParameters });
   }
 
   /**
@@ -54,27 +46,14 @@ export class AppService {
    * @template B - The request body type.
    * @param url - The API endpoint URL.
    * @param body - Optional request body.
-   * @param options - Optional HTTP options like withCredentials.
+   * @param options - Optional HTTP headers as key-value pairs.
    * @returns An Observable of type `T` containing the response data.
    */
-  public post<T, B = unknown>(url: string, body?: B, options?: Record<string, boolean | string>): Observable<T> {
-    const httpOptions: { withCredentials?: boolean; headers?: Record<string, string> } = {};
+  public post<T, B = unknown>(url: string, body?: B, options?: Record<string, string>): Observable<T> {
+    const httpOptions: { headers?: Record<string, string> } = {};
 
-    if (options) {
-      if (options[this.WITH_CREDENTIALS] !== undefined) {
-        httpOptions.withCredentials = options[this.WITH_CREDENTIALS] as boolean;
-      }
-
-      const headerKeys = Object.keys(options).filter((key) => key !== this.WITH_CREDENTIALS);
-      if (headerKeys.length > 0) {
-        httpOptions.headers = {};
-        for (const key of headerKeys) {
-          const value = options[key];
-          if (typeof value === 'string') {
-            httpOptions.headers[key] = value;
-          }
-        }
-      }
+    if (options && Object.keys(options).length > 0) {
+      httpOptions.headers = options;
     }
 
     return this.http.post<T>(url, body ?? null, httpOptions);
