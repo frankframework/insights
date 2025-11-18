@@ -6,7 +6,9 @@ query releases($after: String) {
 					id
 					tagName
 					name
-					publishedAt
+					tagCommit {
+						committedDate
+					}
 				}
 			}
 			pageInfo {

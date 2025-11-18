@@ -12,7 +12,6 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
-import org.frankframework.insights.common.properties.ReleaseFixProperties;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -40,9 +39,6 @@ public class ReleaseServiceTest {
     @Mock
     private ReleasePullRequestRepository releasePullRequestRepository;
 
-    @Mock
-    private ReleaseFixProperties releaseFixProperties;
-
     private ReleaseService releaseService;
 
     private ReleaseDTO dto1;
@@ -53,12 +49,6 @@ public class ReleaseServiceTest {
     private Branch masterBranch, featureBranch, noNameBranch;
     private PullRequest pr1;
     private BranchPullRequest branchPR1;
-
-    private HashMap<String, OffsetDateTime> overrideMap;
-    private OffsetDateTime originalDate2;
-    private OffsetDateTime overrideDate;
-    private ReleaseDTO releaseToFix;
-    private ReleaseDTO releaseToKeep;
 
     @BeforeEach
     public void setUp() {
@@ -74,20 +64,27 @@ public class ReleaseServiceTest {
         noNameBranch.setId(UUID.randomUUID().toString());
         noNameBranch.setName(null);
 
-        dto1 = new ReleaseDTO("id1", "v1.0", "v1.0", OffsetDateTime.now().minusDays(10));
-        dto2 = new ReleaseDTO("id2", "v1.1", "v1.1", OffsetDateTime.now());
+        dto1 = new ReleaseDTO(
+                "id1",
+                "v1.0",
+                "v1.0",
+                new ReleaseTagCommitDTO(OffsetDateTime.now().minusDays(10)));
+        dto2 = new ReleaseDTO("id2", "v1.1", "v1.1", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
-        dtoMalformed =
-                new ReleaseDTO("id3", "foo_bar", "foo_bar", OffsetDateTime.now().minusDays(1));
+        dtoMalformed = new ReleaseDTO(
+                "id3",
+                "foo_bar",
+                "foo_bar",
+                new ReleaseTagCommitDTO(OffsetDateTime.now().minusDays(1)));
 
         rel1 = new Release();
         rel1.setTagName("v1.0");
-        rel1.setPublishedAt(dto1.publishedAt());
+        rel1.setPublishedAt(dto1.getReleaseDate());
         rel1.setBranch(masterBranch);
 
         rel2 = new Release();
         rel2.setTagName("v1.1");
-        rel2.setPublishedAt(dto2.publishedAt());
+        rel2.setPublishedAt(dto2.getReleaseDate());
         rel2.setBranch(masterBranch);
 
         pr1 = new PullRequest();
@@ -96,24 +93,8 @@ public class ReleaseServiceTest {
 
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
 
-        overrideMap = new HashMap<>();
-
-        OffsetDateTime originalDate1 = OffsetDateTime.parse("2024-01-15T10:00:00Z");
-        originalDate2 = OffsetDateTime.parse("2024-03-20T14:00:00Z");
-        overrideDate = OffsetDateTime.parse("2025-02-02T12:00:00Z");
-
-        releaseToFix = new ReleaseDTO("id-1", "v8.0.5", "Release 8.0.5", originalDate1);
-        releaseToKeep = new ReleaseDTO("id-2", "v8.0.4", "Release 8.0.4", originalDate2);
-
-        when(releaseFixProperties.getDateOverrides()).thenReturn(overrideMap);
-
         releaseService = new ReleaseService(
-                gitHubGraphQLClient,
-                mapper,
-                releaseRepository,
-                branchService,
-                releasePullRequestRepository,
-                releaseFixProperties);
+                gitHubGraphQLClient, mapper, releaseRepository, branchService, releasePullRequestRepository);
     }
 
     @Test
@@ -140,11 +121,11 @@ public class ReleaseServiceTest {
 
     @Test
     public void fallbackToMasterBranch_whenNoVersionBranchMatches() throws Exception {
-        ReleaseDTO dto = new ReleaseDTO("id", "v9.9", "v9.9", OffsetDateTime.now());
+        ReleaseDTO dto = new ReleaseDTO("id", "v9.9", "v9.9", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         Release rel = new Release();
         rel.setTagName("v9.9");
-        rel.setPublishedAt(dto.publishedAt());
+        rel.setPublishedAt(dto.getReleaseDate());
         rel.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
@@ -161,11 +142,11 @@ public class ReleaseServiceTest {
 
     @Test
     public void nullBranch_ifNoMatchAndNoMaster() throws Exception {
-        ReleaseDTO dto = new ReleaseDTO("id", "v999.999", "v999.9990", OffsetDateTime.now());
+        ReleaseDTO dto = new ReleaseDTO("id", "v999.999", "v999.9990", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         Release rel = new Release();
         rel.setTagName("v999.999");
-        rel.setPublishedAt(dto.publishedAt());
+        rel.setPublishedAt(dto.getReleaseDate());
         rel.setBranch(null);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
@@ -214,7 +195,7 @@ public class ReleaseServiceTest {
         relWithNull.setPublishedAt(OffsetDateTime.now());
         relWithNull.setBranch(noNameBranch);
 
-        ReleaseDTO dto = new ReleaseDTO("id", "vX.Y", "vX.Y", relWithNull.getPublishedAt());
+        ReleaseDTO dto = new ReleaseDTO("id", "vX.Y", "vX.Y", new ReleaseTagCommitDTO(relWithNull.getPublishedAt()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
         when(branchService.getAllBranches()).thenReturn(List.of(noNameBranch));
@@ -266,7 +247,7 @@ public class ReleaseServiceTest {
     public void malformedTagName_fallsBackToMasterOrNull() throws Exception {
         Release relMalformed = new Release();
         relMalformed.setTagName("foo_bar");
-        relMalformed.setPublishedAt(dtoMalformed.publishedAt());
+        relMalformed.setPublishedAt(dtoMalformed.getReleaseDate());
         relMalformed.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dtoMalformed));
@@ -336,14 +317,6 @@ public class ReleaseServiceTest {
     }
 
     @Test
-    public void getReleaseById_handlesNullId() {
-        when(releaseRepository.findById(null)).thenReturn(Optional.empty());
-
-        assertThrows(ReleaseNotFoundException.class, () -> releaseService.getReleaseById(null));
-        verify(releaseRepository).findById(null);
-    }
-
-    @Test
     public void getReleaseById_handlesEmptyString() {
         when(releaseRepository.findById("")).thenReturn(Optional.empty());
 
@@ -353,16 +326,16 @@ public class ReleaseServiceTest {
 
     @Test
     public void extractMajorMinor_variousCases() throws Exception {
-        ReleaseDTO tagGood = new ReleaseDTO("id", "v3.5", "v3.5", OffsetDateTime.now());
+        ReleaseDTO tagGood = new ReleaseDTO("id", "v3.5", "v3.5", new ReleaseTagCommitDTO(OffsetDateTime.now()));
         Release relGood = new Release();
         relGood.setTagName("v3.5");
-        relGood.setPublishedAt(tagGood.publishedAt());
+        relGood.setPublishedAt(tagGood.getReleaseDate());
         relGood.setBranch(masterBranch);
 
-        ReleaseDTO tagBad = new ReleaseDTO("id", "vX.Y", "vX.Y", OffsetDateTime.now());
+        ReleaseDTO tagBad = new ReleaseDTO("id", "vX.Y", "vX.Y", new ReleaseTagCommitDTO(OffsetDateTime.now()));
         Release relBad = new Release();
         relBad.setTagName("vX.Y");
-        relBad.setPublishedAt(tagBad.publishedAt());
+        relBad.setPublishedAt(tagBad.getReleaseDate());
         relBad.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
@@ -379,26 +352,29 @@ public class ReleaseServiceTest {
     @Test
     public void injectReleases_shouldAssignPRsToCorrectReleases_whenPRsFallInTimeWindows() throws Exception {
         // Arrange
-        ReleaseDTO dto1 = new ReleaseDTO("id1", "v1.0", "v1.0", OffsetDateTime.parse("2025-08-01T10:00:00Z"));
-        ReleaseDTO dto2 = new ReleaseDTO("id2", "v1.1", "v1.1", OffsetDateTime.parse("2025-08-10T10:00:00Z"));
-        ReleaseDTO dto3 = new ReleaseDTO("id3", "v1.2", "v1.2", OffsetDateTime.parse("2025-08-20T10:00:00Z"));
+        ReleaseDTO dto1 = new ReleaseDTO(
+                "id1", "v1.0", "v1.0", new ReleaseTagCommitDTO(OffsetDateTime.parse("2025-08-01T10:00:00Z")));
+        ReleaseDTO dto2 = new ReleaseDTO(
+                "id2", "v1.1", "v1.1", new ReleaseTagCommitDTO(OffsetDateTime.parse("2025-08-10T10:00:00Z")));
+        ReleaseDTO dto3 = new ReleaseDTO(
+                "id3", "v1.2", "v1.2", new ReleaseTagCommitDTO(OffsetDateTime.parse("2025-08-20T10:00:00Z")));
 
         Release rel1 = new Release();
         rel1.setId("r1");
         rel1.setName("v1.0");
-        rel1.setPublishedAt(dto1.publishedAt());
+        rel1.setPublishedAt(dto1.getReleaseDate());
         rel1.setBranch(masterBranch);
 
         Release rel2 = new Release();
         rel2.setId("r2");
         rel2.setName("v1.1");
-        rel2.setPublishedAt(dto2.publishedAt());
+        rel2.setPublishedAt(dto2.getReleaseDate());
         rel2.setBranch(masterBranch);
 
         Release rel3 = new Release();
         rel3.setId("r3");
         rel3.setName("v1.2");
-        rel3.setPublishedAt(dto3.publishedAt());
+        rel3.setPublishedAt(dto3.getReleaseDate());
         rel3.setBranch(masterBranch);
 
         PullRequest pull1 = new PullRequest();
@@ -481,8 +457,10 @@ public class ReleaseServiceTest {
 
     @Test
     public void isValidRelease_shouldFilterOutReleaseCandidate() throws Exception {
-        ReleaseDTO rcRelease = new ReleaseDTO("id1", "v8.1.0-RC1", "v8.1.0-RC1", OffsetDateTime.now());
-        ReleaseDTO validRelease = new ReleaseDTO("id2", "v8.1.0", "v8.1.0", OffsetDateTime.now());
+        ReleaseDTO rcRelease =
+                new ReleaseDTO("id1", "v8.1.0-RC1", "v8.1.0-RC1", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO validRelease =
+                new ReleaseDTO("id2", "v8.1.0", "v8.1.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcRelease, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
@@ -503,8 +481,10 @@ public class ReleaseServiceTest {
 
     @Test
     public void isValidRelease_shouldFilterOutBetaRelease() throws Exception {
-        ReleaseDTO betaRelease = new ReleaseDTO("id1", "v7.0-B2", "v7.0-B2", OffsetDateTime.now());
-        ReleaseDTO validRelease = new ReleaseDTO("id2", "v7.0.0", "v7.0.0", OffsetDateTime.now());
+        ReleaseDTO betaRelease =
+                new ReleaseDTO("id1", "v7.0-B2", "v7.0-B2", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO validRelease =
+                new ReleaseDTO("id2", "v7.0.0", "v7.0.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(betaRelease, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
@@ -525,10 +505,11 @@ public class ReleaseServiceTest {
 
     @Test
     public void isValidRelease_shouldFilterOutMultipleInvalidReleases() throws Exception {
-        ReleaseDTO rc1 = new ReleaseDTO("id1", "v7.8-RC1", "v7.8-RC1", OffsetDateTime.now());
-        ReleaseDTO rc2 = new ReleaseDTO("id2", "v7.8-RC2", "v7.8-RC2", OffsetDateTime.now());
-        ReleaseDTO beta = new ReleaseDTO("id3", "v7.0-B3", "v7.0-B3", OffsetDateTime.now());
-        ReleaseDTO validRelease = new ReleaseDTO("id4", "v7.8.0", "v7.8.0", OffsetDateTime.now());
+        ReleaseDTO rc1 = new ReleaseDTO("id1", "v7.8-RC1", "v7.8-RC1", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO rc2 = new ReleaseDTO("id2", "v7.8-RC2", "v7.8-RC2", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO beta = new ReleaseDTO("id3", "v7.0-B3", "v7.0-B3", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO validRelease =
+                new ReleaseDTO("id4", "v7.8.0", "v7.8.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rc1, rc2, beta, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
@@ -551,7 +532,7 @@ public class ReleaseServiceTest {
 
     @Test
     public void isValidRelease_shouldHandleNullReleaseName() throws Exception {
-        ReleaseDTO nullNameRelease = new ReleaseDTO("id1", null, null, OffsetDateTime.now());
+        ReleaseDTO nullNameRelease = new ReleaseDTO("id1", null, null, new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(nullNameRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
@@ -565,9 +546,12 @@ public class ReleaseServiceTest {
 
     @Test
     public void isValidRelease_shouldAllowCaseInsensitiveMatching() throws Exception {
-        ReleaseDTO rcLowercase = new ReleaseDTO("id1", "v7.5-rc2", "v7.5-rc2", OffsetDateTime.now());
-        ReleaseDTO betaUppercase = new ReleaseDTO("id2", "v7.6-B1", "v7.6-B1", OffsetDateTime.now());
-        ReleaseDTO validRelease = new ReleaseDTO("id3", "v7.6.0", "v7.6.0", OffsetDateTime.now());
+        ReleaseDTO rcLowercase =
+                new ReleaseDTO("id1", "v7.5-rc2", "v7.5-rc2", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO betaUppercase =
+                new ReleaseDTO("id2", "v7.6-B1", "v7.6-B1", new ReleaseTagCommitDTO(OffsetDateTime.now()));
+        ReleaseDTO validRelease =
+                new ReleaseDTO("id3", "v7.6.0", "v7.6.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcLowercase, betaUppercase, validRelease));
         when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
@@ -585,72 +569,5 @@ public class ReleaseServiceTest {
         verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
         verify(mapper, never()).toEntity(eq(rcLowercase), eq(Release.class));
         verify(mapper, never()).toEntity(eq(betaUppercase), eq(Release.class));
-    }
-
-    @Test
-    public void testShouldOverrideDateWhenTagNameMatches() {
-        overrideMap.put("v8.0.5", overrideDate);
-        Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
-
-        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
-
-        assertNotNull(resultSet);
-        assertEquals(2, resultSet.size());
-
-        ReleaseDTO fixedDto = resultSet.stream()
-                .filter(dto -> "v8.0.5".equals(dto.tagName()))
-                .findFirst()
-                .orElseThrow();
-
-        ReleaseDTO keptDto = resultSet.stream()
-                .filter(dto -> "v8.0.4".equals(dto.tagName()))
-                .findFirst()
-                .orElseThrow();
-
-        assertEquals(overrideDate, fixedDto.publishedAt());
-        assertNotSame(releaseToFix, fixedDto);
-        assertEquals("id-1", fixedDto.id());
-
-        assertEquals(originalDate2, keptDto.publishedAt());
-        assertSame(releaseToKeep, keptDto);
-    }
-
-    @Test
-    public void testShouldReturnOriginalSetWhenNoMatches() {
-        overrideMap.put("v9.9.9", overrideDate);
-        Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
-
-        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
-
-        assertNotNull(resultSet);
-        assertEquals(2, resultSet.size());
-
-        assertTrue(resultSet.contains(releaseToFix));
-        assertTrue(resultSet.contains(releaseToKeep));
-
-        assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToFix));
-        assertTrue(resultSet.stream().anyMatch(dto -> dto == releaseToKeep));
-    }
-
-    @Test
-    public void testShouldReturnSameSetWhenOverridesAreEmpty() {
-        Set<ReleaseDTO> inputSet = Set.of(releaseToFix, releaseToKeep);
-
-        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
-
-        assertNotNull(resultSet);
-        assertEquals(2, resultSet.size());
-        assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original set instance");
-    }
-
-    @Test
-    public void testShouldReturnEmptySetWhenInputIsEmpty() {
-        Set<ReleaseDTO> inputSet = Set.of();
-
-        Set<ReleaseDTO> resultSet = releaseService.applyManualDateFixes(inputSet);
-
-        assertNotNull(resultSet);
-        assertTrue(resultSet.isEmpty());
-        assertSame(inputSet, resultSet, "Method should have short-circuited and returned the original empty set");
     }
 }

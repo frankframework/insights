@@ -3,7 +3,7 @@ package org.frankframework.insights.release;
 import java.time.OffsetDateTime;
 import java.util.regex.Pattern;
 
-public record ReleaseDTO(String id, String tagName, String name, OffsetDateTime publishedAt) {
+public record ReleaseDTO(String id, String tagName, String name, ReleaseTagCommitDTO tagCommit) {
 
     private static final Pattern RC_PATTERN = Pattern.compile("-RC\\d+", Pattern.CASE_INSENSITIVE);
     private static final Pattern BETA_PATTERN = Pattern.compile("-B\\d+", Pattern.CASE_INSENSITIVE);
@@ -19,5 +19,17 @@ public record ReleaseDTO(String id, String tagName, String name, OffsetDateTime 
             return false;
         }
         return !RC_PATTERN.matcher(name).find() && !BETA_PATTERN.matcher(name).find();
+    }
+
+    /**
+     * Gets the release date from the commit date.
+     *
+     * @return The release date from the tag commit
+     */
+    public OffsetDateTime getReleaseDate() {
+        if (tagCommit != null && tagCommit.committedDate() != null) {
+            return tagCommit.committedDate();
+        }
+        return null;
     }
 }
