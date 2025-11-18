@@ -1,3 +1,5 @@
 package org.frankframework.insights.businessvalue;
 
-public record BusinessValueRequest(String name, String description) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record BusinessValueRequest(@NotBlank String name, @NotBlank String description) {}

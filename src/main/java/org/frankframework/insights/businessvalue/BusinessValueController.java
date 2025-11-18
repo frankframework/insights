@@ -1,5 +1,6 @@
 package org.frankframework.insights.businessvalue;
 
+import jakarta.validation.Valid;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -38,7 +39,7 @@ public class BusinessValueController {
      */
     @PostMapping
     public ResponseEntity<BusinessValueResponse> createBusinessValue(
-            @RequestBody BusinessValueRequest request, @AuthenticationPrincipal OAuth2User principal)
+            @Valid @RequestBody BusinessValueRequest request, @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info(
                 "User {} is creating a new business value with name: {}",
@@ -113,7 +114,7 @@ public class BusinessValueController {
     @PutMapping("/{id}")
     public ResponseEntity<BusinessValueResponse> updateBusinessValue(
             @PathVariable UUID id,
-            @RequestBody BusinessValueRequest request,
+            @Valid @RequestBody BusinessValueRequest request,
             @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info("User {} is updating business value with id: {}", principal.getAttribute("login"), id);
@@ -136,7 +137,7 @@ public class BusinessValueController {
     @PostMapping("/{id}/connect-issues")
     public ResponseEntity<BusinessValueResponse> connectIssues(
             @PathVariable UUID id,
-            @RequestBody ConnectIssuesRequest request,
+            @Valid @RequestBody ConnectIssuesRequest request,
             @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info(
@@ -163,7 +164,7 @@ public class BusinessValueController {
     @PostMapping("/{id}/disconnect-issues")
     public ResponseEntity<BusinessValueResponse> disconnectIssues(
             @PathVariable UUID id,
-            @RequestBody ConnectIssuesRequest request,
+            @Valid @RequestBody ConnectIssuesRequest request,
             @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info(
@@ -191,7 +192,7 @@ public class BusinessValueController {
     @PutMapping("/{id}/issues")
     public ResponseEntity<BusinessValueResponse> updateIssueConnections(
             @PathVariable UUID id,
-            @RequestBody ConnectIssuesRequest request,
+            @Valid @RequestBody ConnectIssuesRequest request,
             @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info(

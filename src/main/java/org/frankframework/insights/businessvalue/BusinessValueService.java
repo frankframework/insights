@@ -175,8 +175,9 @@ public class BusinessValueService {
             }
         }
 
-        BusinessValue updatedBusinessValue =
-                businessValueRepository.save(mapper.toEntity(request, BusinessValue.class));
+        businessValue.setName(request.name());
+        businessValue.setDescription(request.description());
+        BusinessValue updatedBusinessValue = businessValueRepository.save(businessValue);
         log.info("Successfully updated business value with id: {}", id);
 
         return mapToResponse(updatedBusinessValue);
