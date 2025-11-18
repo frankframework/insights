@@ -43,7 +43,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, SessionRegistry sessionRegistry)
             throws Exception {
         http.authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/user")
+                        .requestMatchers("/api/business-value/release/**")
+                        .permitAll()
+                        .requestMatchers("/api/auth/user", "/api/business-value/**")
                         .authenticated()
                         .anyRequest()
                         .permitAll())

@@ -33,7 +33,7 @@ import org.springframework.web.client.RestTemplate;
 /**
  * Comprehensive integration tests for UserService that test the full OAuth2 authentication flow
  * with real H2 database interactions and mocked external GitHub API calls.
-
+ *
  * These tests verify:
  * - OAuth2 user loading and authentication
  * - Database persistence and updates
