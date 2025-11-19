@@ -16,6 +16,7 @@ export interface SkipNode {
   skippedCount: number;
   skippedVersions: string[];
   label: string;
+  isMiniNode?: boolean;
 }
 
 export interface Release {
@@ -128,6 +129,8 @@ export class ReleaseLinkService {
 
     if (minorReleases.length === 0) return null;
 
+    const isMiniNode = source.isMiniNode || target.isMiniNode;
+
     return {
       id: `skip-${source.id}-${target.id}`,
       x: (source.position.x + target.position.x) / 2,
@@ -135,6 +138,7 @@ export class ReleaseLinkService {
       skippedCount: minorReleases.length,
       skippedVersions: skippedReleases.map((r) => (r.name.startsWith('v') ? r.name : `v${r.name}`)),
       label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`,
+      isMiniNode,
     };
   }
 
@@ -238,8 +242,8 @@ export class ReleaseLinkService {
     firstSubNode: ReleaseNode,
     masterNodes: ReleaseNode[],
   ): ReleaseLink | null {
-    const anchorNodeOnMaster = masterNodes.find((node) => node.originalBranch === branchName);
-    return anchorNodeOnMaster ? this.buildLink(anchorNodeOnMaster, firstSubNode) : null;
+    const miniNode = masterNodes.find((node) => node.originalBranch === branchName && node.isMiniNode);
+    return miniNode ? this.buildLink(miniNode, firstSubNode) : null;
   }
 
   private createIntraBranchLinks(nodes: ReleaseNode[]): ReleaseLink[] {
@@ -283,6 +287,10 @@ export class ReleaseLinkService {
   }
 
   private isVersionGap(source: ReleaseNode, target: ReleaseNode): boolean {
+    if (source.isMiniNode || target.isMiniNode) {
+      return false;
+    }
+
     const vSource = this.nodeService.getVersionInfo(source);
     const vTarget = this.nodeService.getVersionInfo(target);
 

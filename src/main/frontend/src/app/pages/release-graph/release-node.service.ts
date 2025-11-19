@@ -17,6 +17,8 @@ export interface ReleaseNode {
   isCluster?: boolean;
   clusteredNodes?: ReleaseNode[];
   isExpanded?: boolean;
+  isMiniNode?: boolean;
+  linkedBranchNode?: string;
 }
 
 export interface TimelineScale {
@@ -88,13 +90,22 @@ export class ReleaseNodeService {
       if (branchReleases.length === 0) continue;
 
       const subBranchNodes = this.createReleaseNodes(branchReleases);
-      const anchorNode = subBranchNodes.shift()!;
-      anchorNode.originalBranch = branchName;
-      filteredMasterNodes.push(anchorNode);
+      const firstBranchNode = subBranchNodes[0];
 
-      if (subBranchNodes.length > 0) {
-        subBranchMaps.push(new Map([[branchName, subBranchNodes]]));
-      }
+      const miniNode: ReleaseNode = {
+        id: `mini-${firstBranchNode.id}`,
+        label: '',
+        branch: ReleaseNodeService.GITHUB_MASTER_BRANCH,
+        publishedAt: firstBranchNode.publishedAt,
+        color: '',
+        position: { x: 0, y: 0 },
+        isMiniNode: true,
+        originalBranch: branchName,
+        linkedBranchNode: firstBranchNode.id,
+      };
+
+      filteredMasterNodes.push(miniNode);
+      subBranchMaps.push(new Map([[branchName, subBranchNodes]]));
     }
 
     this.sortByNightlyAndDate(filteredMasterNodes, (node) => node.label);
@@ -133,7 +144,7 @@ export class ReleaseNodeService {
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): void {
     const allNodes: ReleaseNode[] = [];
     for (const nodes of releaseGroups.values()) {
-      allNodes.push(...nodes);
+      allNodes.push(...nodes.filter((n) => !n.isMiniNode));
     }
 
     const parentVersionMap = this.buildParentVersionMap(allNodes);
@@ -194,6 +205,9 @@ export class ReleaseNodeService {
   public createClusters(nodes: ReleaseNode[]): ReleaseNode[] {
     if (!this.timelineScale || nodes.length === 0) return nodes;
 
+    const miniNodes = nodes.filter((n) => n.isMiniNode);
+    const regularNodes = nodes.filter((n) => !n.isMiniNode);
+
     const CLUSTER_THRESHOLD = 150;
     const MIN_SPACING_OUTSIDE = 60;
     const MIN_SPACING_INSIDE = 70;
@@ -201,9 +215,11 @@ export class ReleaseNodeService {
     const clusterStartDate = new Date(this.timelineScale.latestReleaseDate);
     clusterStartDate.setMonth(clusterStartDate.getMonth() - 4);
 
-    const { clusters, consumedNodeIds } = this.findClusterComponents(nodes, clusterStartDate, CLUSTER_THRESHOLD);
+    const { clusters, consumedNodeIds } = this.findClusterComponents(regularNodes, clusterStartDate, CLUSTER_THRESHOLD);
 
-    const finalNodes = this.buildClusteredNodeList(nodes, clusters, consumedNodeIds);
+    const finalNodes = this.buildClusteredNodeList(regularNodes, clusters, consumedNodeIds);
+
+    finalNodes.push(...miniNodes);
 
     finalNodes.sort((a, b) => a.position.x - b.position.x);
 
@@ -368,6 +384,10 @@ export class ReleaseNodeService {
    */
   private filterUnsupportedMinorReleases(masterNodes: ReleaseNode[]): ReleaseNode[] {
     return masterNodes.filter((node) => {
+      if (node.isMiniNode) {
+        return true;
+      }
+
       const versionInfo = this.getVersionInfo(node);
 
       if (node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
@@ -538,22 +558,27 @@ export class ReleaseNodeService {
     for (const [branchName, subNodes] of subBranches) {
       if (subNodes.every((n) => this.isUnsupported(n))) continue;
 
-      const anchorNode = masterNodes.find((n) => n.originalBranch === branchName);
-      if (!anchorNode) continue;
+      const miniNode = masterNodes.find((n) => n.originalBranch === branchName && n.isMiniNode);
+      if (!miniNode) continue;
 
       const baseY = yLevel * Y_SPACING;
-      this.positionSubBranchNodes(subNodes, baseY);
+      this.positionSubBranchNodes(subNodes, baseY, miniNode);
       positionedNodes.set(branchName, subNodes);
       yLevel++;
     }
   }
 
-  private positionSubBranchNodes(subNodes: ReleaseNode[], baseY: number): void {
+  private positionSubBranchNodes(subNodes: ReleaseNode[], baseY: number, miniNode: ReleaseNode): void {
     if (!this.timelineScale) return;
 
-    for (const node of subNodes) {
-      const x = this.calculateXPositionFromDate(node.publishedAt, this.timelineScale);
-      node.position = { x, y: baseY };
+    for (const subNode of subNodes) {
+      const x = this.calculateXPositionFromDate(subNode.publishedAt, this.timelineScale);
+      subNode.position = { x, y: baseY };
+    }
+
+    const MINI_NODE_OFFSET = 40;
+    if (subNodes.length > 0) {
+      miniNode.position.x = subNodes[0].position.x - MINI_NODE_OFFSET;
     }
   }
 
@@ -881,7 +906,8 @@ export class ReleaseNodeService {
     for (const node of nodes) {
       const previousNode = spacedFinalNodes.at(-1);
 
-      if (previousNode) {
+      // Skip spacing adjustment for mini nodes - they need to maintain their offset from branch nodes
+      if (previousNode && !node.isMiniNode) {
         const gap = node.position.x - previousNode.position.x;
 
         const nodeInZone = node.publishedAt >= clusterStartDate;
