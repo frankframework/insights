@@ -17,6 +17,8 @@ export interface SkipNode {
   skippedVersions: string[];
   label: string;
   isMiniNode?: boolean;
+  sourceNodeId?: string;
+  targetNodeId?: string;
 }
 
 export interface Release {
@@ -41,8 +43,10 @@ export class ReleaseLinkService {
     const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
     if (masterNodes.length === 0) return [];
 
+    const allNodes = this.getAllNodesFlat(structuredGroups);
+
     return [
-      ...this.createIntraBranchLinks(masterNodes),
+      ...this.createIntraBranchLinks(masterNodes, allNodes),
       ...this.createBranchLinks(structuredGroups.slice(1), masterNodes),
       ...this.createSpecialLinks(masterNodes, skipNodes),
     ];
@@ -139,6 +143,8 @@ export class ReleaseLinkService {
       skippedVersions: skippedReleases.map((r) => (r.name.startsWith('v') ? r.name : `v${r.name}`)),
       label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`,
       isMiniNode,
+      sourceNodeId: source.id,
+      targetNodeId: target.id,
     };
   }
 
@@ -256,13 +262,13 @@ export class ReleaseLinkService {
     return miniNode ? this.buildLink(miniNode, firstBranchNode) : null;
   }
 
-  private createIntraBranchLinks(nodes: ReleaseNode[]): ReleaseLink[] {
+  private createIntraBranchLinks(nodes: ReleaseNode[], allNodes: ReleaseNode[] = []): ReleaseLink[] {
     const links: ReleaseLink[] = [];
     for (let index = 0; index < nodes.length - 1; index++) {
       const source = nodes[index];
       const target = nodes[index + 1];
 
-      if (!this.isVersionGap(source, target)) {
+      if (!this.isVersionGap(source, target, allNodes)) {
         links.push(this.buildLink(source, target));
       }
     }
@@ -340,12 +346,14 @@ export class ReleaseLinkService {
   }
 
   private handleRegularSkipNode(skipNode: SkipNode, masterNodes: ReleaseNode[], links: ReleaseLink[]): void {
-    const sourceNodeIndex = this.findSourceNodeIndex(skipNode, masterNodes);
+    // Use the stored source and target node IDs
+    if (!skipNode.sourceNodeId || !skipNode.targetNodeId) return;
 
-    if (sourceNodeIndex !== -1 && sourceNodeIndex < masterNodes.length - 1) {
-      const sourceNode = masterNodes[sourceNodeIndex];
-      const targetNode = masterNodes[sourceNodeIndex + 1];
+    // Find the actual nodes by ID
+    const sourceNode = masterNodes.find((node) => node.id === skipNode.sourceNodeId);
+    const targetNode = masterNodes.find((node) => node.id === skipNode.targetNodeId);
 
+    if (sourceNode && targetNode) {
       links.push(
         {
           id: `${sourceNode.id}-to-${skipNode.id}`,
@@ -361,15 +369,5 @@ export class ReleaseLinkService {
         },
       );
     }
-  }
-
-  private findSourceNodeIndex(skipNode: SkipNode, masterNodes: ReleaseNode[]): number {
-    return masterNodes.findIndex((_, index) => {
-      const nextNode = masterNodes[index + 1];
-      return (
-        nextNode &&
-        skipNode.x === (masterNodes[index].position.x + nextNode.position.x) / 2
-      );
-    });
   }
 }
