@@ -74,21 +74,27 @@
     .priority {
       font-size: 0.8125rem;
       font-weight: 600;
-      opacity: 0.85;
+      opacity: 0.75;
       white-space: nowrap;
-      color: inherit;
       min-width: 70px;
       text-align: left;
+      color: black;
+    }
+
+    .priority::first-letter {
+      color: deepskyblue;
+      text-shadow: 0 0 0 black;
     }
 
     .points {
       flex-shrink: 0;
       font-size: 0.8125rem;
       font-weight: 700;
-      opacity: 0.9;
+      opacity: 0.75;
       white-space: nowrap;
       min-width: 60px;
       text-align: left;
+      color: black;
     }
   }
 }
