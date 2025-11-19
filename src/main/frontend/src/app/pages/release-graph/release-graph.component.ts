@@ -482,7 +482,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private determineBranchLabel(yPosition: number, nodesAtY: ReleaseNode[], releases: Release[]): string {
-    return yPosition === 0 ? this.getMasterBranchLabel(nodesAtY, releases) : this.getSubBranchLabel(nodesAtY, releases);
+    return yPosition === 0 ? this.getMasterBranchLabel(nodesAtY, releases) : this.getBranchLabel(nodesAtY, releases);
   }
 
   private getMasterBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
@@ -494,7 +494,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return 'master';
   }
 
-  private getSubBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
+  private getBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
     const branchCounts = new Map<string, number>();
 
     for (const node of nodesAtY) {

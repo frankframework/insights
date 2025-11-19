@@ -78,19 +78,19 @@ export class ReleaseNodeService {
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
 
     const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
-    const masterNodes = this.createReleaseNodes(masterReleases);
+    const nodes = this.createReleaseNodes(masterReleases);
 
-    const filteredMasterNodes = this.filterUnsupportedMinorReleases(masterNodes);
+    const filteredNodes = this.filterUnsupportedMinorReleases(nodes);
 
     groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
 
-    const subBranchMaps: Map<string, ReleaseNode[]>[] = [];
+    const branchMaps: Map<string, ReleaseNode[]>[] = [];
 
     for (const [branchName, branchReleases] of groupedByBranch.entries()) {
       if (branchReleases.length === 0) continue;
 
-      const subBranchNodes = this.createReleaseNodes(branchReleases);
-      const firstBranchNode = subBranchNodes[0];
+      const branchNodes = this.createReleaseNodes(branchReleases);
+      const firstBranchNode = branchNodes[0];
 
       const miniNode: ReleaseNode = {
         id: `mini-${firstBranchNode.id}`,
@@ -104,14 +104,14 @@ export class ReleaseNodeService {
         linkedBranchNode: firstBranchNode.id,
       };
 
-      filteredMasterNodes.push(miniNode);
-      subBranchMaps.push(new Map([[branchName, subBranchNodes]]));
+      filteredNodes.push(miniNode);
+      branchMaps.push(new Map([[branchName, branchNodes]]));
     }
 
-    this.sortByNightlyAndDate(filteredMasterNodes, (node) => node.label);
+    this.sortByNightlyAndDate(filteredNodes, (node) => node.label);
 
-    const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, filteredMasterNodes]]);
-    return [masterMap, ...subBranchMaps];
+    const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, filteredNodes]]);
+    return [masterMap, ...branchMaps];
   }
 
   public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
@@ -130,13 +130,13 @@ export class ReleaseNodeService {
     // Calculate timeline scale based on all publish dates
     this.timelineScale = this.calculateTimelineScale(allNodes);
 
-    const masterNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
-    this.positionMasterNodes(masterNodes);
+    const masterBranchNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
+    this.positionMasterNodes(masterBranchNodes);
 
-    const positionedNodes = new Map<string, ReleaseNode[]>([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
+    const positionedNodes = new Map<string, ReleaseNode[]>([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterBranchNodes]]);
 
-    const subBranches = this.getSortedSubBranches(nodeMap);
-    this.positionSubBranches(subBranches, masterNodes, positionedNodes);
+    const branches = this.getSortedBranches(nodeMap);
+    this.positionBranches(branches, masterBranchNodes, positionedNodes);
 
     return positionedNodes;
   }
@@ -528,7 +528,7 @@ export class ReleaseNodeService {
     }
   }
 
-  private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
+  private getSortedBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
     return [...nodeMap.entries()]
       .filter(([branch]) => branch !== ReleaseNodeService.GITHUB_MASTER_BRANCH)
       .toSorted(([branchA], [branchB]) => {
@@ -547,38 +547,38 @@ export class ReleaseNodeService {
       : null;
   }
 
-  private positionSubBranches(
-    subBranches: [string, ReleaseNode[]][],
+  private positionBranches(
+    branches: [string, ReleaseNode[]][],
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
     const Y_SPACING = 90;
     let yLevel = 1;
 
-    for (const [branchName, subNodes] of subBranches) {
-      if (subNodes.every((n) => this.isUnsupported(n))) continue;
+    for (const [branchName, nodes] of branches) {
+      if (nodes.every((n) => this.isUnsupported(n))) continue;
 
       const miniNode = masterNodes.find((n) => n.originalBranch === branchName && n.isMiniNode);
       if (!miniNode) continue;
 
       const baseY = yLevel * Y_SPACING;
-      this.positionSubBranchNodes(subNodes, baseY, miniNode);
-      positionedNodes.set(branchName, subNodes);
+      this.positionBranchNodes(nodes, baseY, miniNode);
+      positionedNodes.set(branchName, nodes);
       yLevel++;
     }
   }
 
-  private positionSubBranchNodes(subNodes: ReleaseNode[], baseY: number, miniNode: ReleaseNode): void {
+  private positionBranchNodes(nodes: ReleaseNode[], baseY: number, miniNode: ReleaseNode): void {
     if (!this.timelineScale) return;
 
-    for (const subNode of subNodes) {
-      const x = this.calculateXPositionFromDate(subNode.publishedAt, this.timelineScale);
-      subNode.position = { x, y: baseY };
+    for (const node of nodes) {
+      const x = this.calculateXPositionFromDate(node.publishedAt, this.timelineScale);
+      node.position = { x, y: baseY };
     }
 
     const MINI_NODE_OFFSET = 40;
-    if (subNodes.length > 0) {
-      miniNode.position.x = subNodes[0].position.x - MINI_NODE_OFFSET;
+    if (nodes.length > 0) {
+      miniNode.position.x = nodes[0].position.x - MINI_NODE_OFFSET;
     }
   }
 
