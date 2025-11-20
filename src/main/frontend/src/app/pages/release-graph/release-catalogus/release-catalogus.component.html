@@ -16,55 +16,88 @@
   <app-modal [title]="'Release Support'" (closed)="toggleModal()">
     <ng-container>
       <div class="release-modal-content">
+        <h3 class="legend-section-title">Status</h3>
+
         <div class="release-content-item">
           <div class="release-content-item-icon">
-            <img src="assets/icons/status-nightly.svg" alt="" width="40" height="40" />
+            <img src="assets/icons/status-latest-stable.svg" alt="" width="40" height="40" />
           </div>
-          <p>Nightly build, always supported, may contain bugs</p>
+          <p><strong>Latest Stable</strong> - Most recent stable release with full support</p>
         </div>
+
+        <div class="release-content-item">
+          <div class="release-content-item-icon">
+            <img src="assets/icons/status-cutting-edge.svg" alt="" width="40" height="40" />
+          </div>
+          <p><strong>Cutting Edge</strong> - Master nightly build with latest features, may contain bugs</p>
+        </div>
+
         <div class="release-content-item">
           <div class="release-content-item-icon">
             <img src="assets/icons/status-supported.svg" alt="" width="40" height="40" />
           </div>
-          <p>Fully supported</p>
+          <p><strong>Supported</strong> - Receives bug fixes and technical support</p>
         </div>
+
         <div class="release-content-item">
           <div class="release-content-item-icon">
-            <img src="assets/icons/status-security.svg" alt="" width="40" height="40" />
+            <img src="assets/icons/status-lts.svg" alt="" width="40" height="40" />
           </div>
-          <p>Only security support, no technical support</p>
+          <p><strong>LTS</strong> - Major versions with extended support period</p>
         </div>
+
         <div class="release-content-item">
           <div class="release-content-item-icon">
-            <img src="assets/icons/status-unsupported.svg" alt="" width="40" height="40" />
+            <img src="assets/icons/status-eol.svg" alt="" width="40" height="40" />
           </div>
-          <p>Not supported, no exceptions</p>
+          <p><strong>EOL</strong> - Only receives critical CVE security updates</p>
         </div>
+
+        <div class="release-content-item">
+          <div class="release-content-item-icon">
+            <img src="assets/icons/status-historical.svg" alt="" width="40" height="40" />
+          </div>
+          <p><strong>Historical / Archived</strong> - No support, archived for reference only</p>
+        </div>
+
         <div class="release-content-item">
           <div class="release-content-item-icon">
             <img src="assets/icons/status-skipped.svg" alt="" width="40" height="40" />
           </div>
-          <p>Skipped unsupported versions</p>
+          <p><strong>Skipped Versions</strong> - Represents multiple unsupported versions</p>
         </div>
+
         <div class="release-content-item">
           <div class="release-content-item-icon">
             <img src="assets/icons/status-cluster.svg" alt="" width="40" height="40" />
           </div>
-          <p>Clustered releases, because the publication dates of these releases are too close together</p>
+          <p><strong>Clustered Releases</strong> - Multiple releases with close publication dates</p>
         </div>
+
+        <h3 class="legend-section-title">Branch Timeline</h3>
+
         <div class="release-content-item">
           <div class="release-content-item-icon support-timeline-icon">
-            <div class="support-rectangle"></div>
+            <div class="support-rectangle support-active"></div>
           </div>
-          <p>Branch support timeline, shows the support period for each release branch</p>
+          <p><strong>Active Support</strong> - Branch is receiving active development and bug fixes</p>
         </div>
+
         <div class="release-content-item">
-          <div class="release-content-item-icon support-dot-icon">
-            <div class="support-dot"></div>
+          <div class="release-content-item-icon support-timeline-icon">
+            <div class="support-rectangle support-security"></div>
           </div>
-          <p>Branch is currently supported in any way.</p>
+          <p><strong>Security Support</strong> - Branch receives only security updates</p>
         </div>
-        <p>
+
+        <div class="release-content-item">
+          <div class="release-content-item-icon support-timeline-icon">
+            <div class="support-rectangle support-unsupported"></div>
+          </div>
+          <p><strong>Unsupported</strong> - Branch is no longer supported</p>
+        </div>
+
+        <p class="policy-text">
           Our policy is to provide major versions with one year of security support and six months of technical support.
           For minor versions, these support periods are six months for security support and three months for technical
           support.

@@ -22,10 +22,30 @@
   flex-direction: column;
   gap: .5rem;
 
+  .legend-section-title {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 0.25rem;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
   p {
     border-left: #444444 3px solid;
     padding-inline: 1rem;
     padding-block: 0.25rem;
+  }
+
+  .policy-text {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #666;
   }
 }
 
@@ -53,19 +73,22 @@
       .support-rectangle {
         width: 36px;
         height: 20px;
-        background-color: rgba(144, 238, 144, 0.35);
-        border: 1.5px solid rgba(144, 238, 144, 0.6);
         border-radius: 3px;
-      }
-    }
 
-    &.support-dot-icon {
-      .support-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background-color: #90ee90;
-        box-shadow: 0 0 4px rgba(144, 238, 144, 0.6);
+        &.support-active {
+          background-color: rgba(144, 238, 144, 0.35);
+          border: 1.5px solid rgba(144, 238, 144, 0.6);
+        }
+
+        &.support-security {
+          background-color: rgba(239, 147, 2, 0.25);
+          border: 1.5px solid rgba(239, 147, 2, 0.5);
+        }
+
+        &.support-unsupported {
+          background-color: rgba(169, 169, 169, 0.25);
+          border: 1.5px solid rgba(169, 169, 169, 0.5);
+        }
       }
     }
   }
