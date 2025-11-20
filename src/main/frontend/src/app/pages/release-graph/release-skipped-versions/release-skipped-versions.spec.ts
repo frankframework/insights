@@ -159,7 +159,7 @@ describe('ReleaseSkippedVersions', () => {
 
       component.closeModal();
 
-      expect(component.closed.emit).toHaveBeenCalled();
+      expect(component.closed.emit).toHaveBeenCalledWith();
     });
 
     it('should not create release tree if skipNode is null', () => {

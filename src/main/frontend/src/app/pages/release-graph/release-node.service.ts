@@ -965,10 +965,6 @@ export class ReleaseNodeService {
     return finalNodes;
   }
 
-  /**
-   * Helper methods for new color system
-   */
-
   private findLatestStable(nodes: ReleaseNode[]): ReleaseNode | null {
     const nonNightly = nodes.filter((n) => !this.isNightlyRelease(n.label));
     if (nonNightly.length === 0) return null;
@@ -1022,12 +1018,10 @@ export class ReleaseNodeService {
   }
 
   private isEOLBranch(nodes: ReleaseNode[]): boolean {
-    // EOL = all unsupported releases + has nightly
     const hasNightly = nodes.some((n) => this.isNightlyRelease(n.label));
     if (!hasNightly) return false;
 
-    const allUnsupported = this.isBranchUnsupported(nodes);
-    return allUnsupported;
+    return this.isBranchUnsupported(nodes);
   }
 
   private isBranchUnsupported(nodes: ReleaseNode[]): boolean {
@@ -1057,24 +1051,6 @@ export class ReleaseNodeService {
       if (nodeVersion.major > latestVersion.major) return node;
       return latest;
     });
-  }
-
-  private findBranchForVersion(
-    branchGroups: Map<string, ReleaseNode[]>,
-    versionNode: ReleaseNode,
-  ): ReleaseNode[] | null {
-    const versionInfo = this.getVersionInfo(versionNode);
-    if (!versionInfo) return null;
-
-    const branchKey = `${versionInfo.major}.${versionInfo.minor}`;
-
-    for (const [branchName, nodes] of branchGroups) {
-      if (branchName.includes(branchKey)) {
-        return nodes;
-      }
-    }
-
-    return null;
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
