@@ -205,6 +205,11 @@
       transition: transform 0.15s ease-out;
     }
 
+    .sleeping-icon {
+      pointer-events: none;
+      opacity: 0.85;
+    }
+
     &:hover {
       circle, text {
         transform: scale(1.05);
