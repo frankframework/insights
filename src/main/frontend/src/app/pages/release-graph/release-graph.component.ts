@@ -684,12 +684,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
 
-    // Offset startX to align with mini node position (40 pixels to the left)
     const MINI_NODE_OFFSET = 40;
     const offsetStartX = firstX - MINI_NODE_OFFSET;
     const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
 
-    // Check if branch is outdated (support ended)
     const now = new Date();
     const isOutdated = now > supportEnd;
 
