@@ -89,6 +89,8 @@ public class ReleaseService {
 
             saveAllReleases(releases);
 
+            deleteObsoleteReleases(releases);
+
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
                     .filter(r -> r.getBranch() != null)
                     .collect(Collectors.groupingBy(
@@ -289,6 +291,7 @@ public class ReleaseService {
 
     /**
      * Assigns pull requests to a specific release based on a time range.
+     * Deletes all existing pull request associations for the release before assigning new ones.
      *
      * @param release The release to assign pull requests to.
      * @param branchPRs The set of branch pull requests to consider.
@@ -297,6 +300,8 @@ public class ReleaseService {
      */
     private void assignPullRequests(
             Release release, Set<BranchPullRequest> branchPRs, OffsetDateTime from, OffsetDateTime to) {
+        releasePullRequestRepository.deleteAllByReleaseId(release.getId());
+
         Set<PullRequest> prs = branchPRs.stream()
                 .map(BranchPullRequest::getPullRequest)
                 .filter(p -> isInRange(p.getMergedAt(), from, to))
@@ -328,6 +333,33 @@ public class ReleaseService {
     private void saveAllReleases(Set<Release> releases) {
         List<Release> savedReleases = releaseRepository.saveAll(releases);
         log.info("Saved {} releases.", savedReleases.size());
+    }
+
+    /**
+     * Deletes releases from the database that no longer exist on GitHub.
+     * Compares the current releases from GitHub with the existing releases in the database
+     * and removes any releases that are no longer present on GitHub.
+     *
+     * @param currentGitHubReleases The set of releases currently fetched from GitHub.
+     */
+    private void deleteObsoleteReleases(Set<Release> currentGitHubReleases) {
+        Set<String> githubReleaseIds = currentGitHubReleases.stream()
+                .map(Release::getId)
+                .collect(Collectors.toSet());
+
+        List<Release> allDatabaseReleases = releaseRepository.findAll();
+
+        List<Release> releasesToDelete = allDatabaseReleases.stream()
+                .filter(dbRelease -> !githubReleaseIds.contains(dbRelease.getId()))
+                .toList();
+
+        if (!releasesToDelete.isEmpty()) {
+            // Delete all associated release-pull request connections first to avoid foreign key constraint violations
+            releasesToDelete.forEach(release -> releasePullRequestRepository.deleteAllByReleaseId(release.getId()));
+
+            releaseRepository.deleteAll(releasesToDelete);
+            log.info("Deleted {} obsolete releases that no longer exist on GitHub.", releasesToDelete.size());
+        }
     }
 
     /**

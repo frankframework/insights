@@ -9,8 +9,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -30,10 +33,13 @@ public class ReleaseArtifactService {
     private static final int BUFFER_SIZE = 4096;
 
     private final String releaseArchiveDirectory;
+    private final ReleaseRepository releaseRepository;
 
     public ReleaseArtifactService(
-            @Value("${release.archive.directory:/release-archive}") String releaseArchiveDirectory) {
+            @Value("${release.archive.directory:/release-archive}") String releaseArchiveDirectory,
+            ReleaseRepository releaseRepository) {
         this.releaseArchiveDirectory = releaseArchiveDirectory;
+        this.releaseRepository = releaseRepository;
     }
 
     @Transactional
@@ -50,6 +56,71 @@ public class ReleaseArtifactService {
 
         return releaseDir;
     }
+
+	/**
+	 * Deletes release artifact directories that no longer correspond to any release in the database.
+	 * This cleanup ensures that the file system stays in sync with the database after releases are deleted.
+	 */
+	@Transactional
+	public void deleteObsoleteReleaseArtifacts() {
+		Path archiveDir = Paths.get(releaseArchiveDirectory);
+
+		if (!Files.exists(archiveDir)) {
+			log.debug("Release archive directory {} does not exist, skipping cleanup.", releaseArchiveDirectory);
+			return;
+		}
+
+		try {
+			Set<String> validReleaseNames = releaseRepository.findAll().stream()
+					.map(Release::getName)
+					.collect(Collectors.toSet());
+
+			List<Path> obsoleteDirectories;
+			try (Stream<Path> stream = Files.list(archiveDir)) {
+				obsoleteDirectories = stream
+						.filter(Files::isDirectory)
+						.filter(dir -> !validReleaseNames.contains(dir.getFileName().toString()))
+						.toList();
+			}
+
+			for (Path obsoleteDir : obsoleteDirectories) {
+				try {
+					deleteDirectoryRecursively(obsoleteDir);
+					log.info("Deleted obsolete release artifact directory: {}", obsoleteDir.getFileName());
+				} catch (IOException e) {
+					log.error("Failed to delete obsolete release artifact directory: {}", obsoleteDir, e);
+				}
+			}
+
+			if (!obsoleteDirectories.isEmpty()) {
+				log.info("Cleaned up {} obsolete release artifact directories.", obsoleteDirectories.size());
+			} else {
+				log.debug("No obsolete release artifact directories found.");
+			}
+		} catch (IOException e) {
+			log.error("Error while cleaning up obsolete release artifacts in {}", releaseArchiveDirectory, e);
+		}
+	}
+
+	/**
+	 * Recursively deletes a directory and all its contents.
+	 */
+	private void deleteDirectoryRecursively(Path directory) throws IOException {
+		if (!Files.exists(directory)) {
+			return;
+		}
+
+		try (Stream<Path> walk = Files.walk(directory)) {
+			walk.sorted((a, b) -> -a.compareTo(b))
+					.forEach(path -> {
+						try {
+							Files.delete(path);
+						} catch (IOException e) {
+							log.error("Failed to delete {}", path, e);
+						}
+					});
+		}
+	}
 
     private boolean releaseDirectoryExists(Path releaseDir, Release release) throws IOException {
         if (Files.isDirectory(releaseDir)) {

@@ -23,6 +23,7 @@ import org.frankframework.insights.milestone.MilestoneInjectionException;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestInjectionException;
 import org.frankframework.insights.pullrequest.PullRequestService;
+import org.frankframework.insights.release.ReleaseArtifactService;
 import org.frankframework.insights.release.ReleaseInjectionException;
 import org.frankframework.insights.release.ReleaseService;
 import org.frankframework.insights.vulnerability.VulnerabilityService;
@@ -66,6 +67,9 @@ public class ShedLockProductionTest {
     @Mock
     private ReleaseService releaseService;
 
+	@Mock
+	private ReleaseArtifactService releaseArtifactService;
+
     @Mock
     private VulnerabilityService vulnerabilityService;
 
@@ -83,6 +87,7 @@ public class ShedLockProductionTest {
                 issueService,
                 pullRequestService,
                 releaseService,
+				releaseArtifactService,
                 vulnerabilityService);
 
         Field field = SystemDataInitializer.class.getDeclaredField("dataFetchEnabled");

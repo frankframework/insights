@@ -182,10 +182,19 @@ public class IssueService {
 
     /**
      * Assigns labels to issues based on the provided issue DTOs.
+     * Deletes all existing label associations for the issues before assigning new ones.
      * @param savedIssues the set of saved issues to assign labels to
      * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
      */
     private void assignLabelsToIssues(Set<Issue> savedIssues, Map<String, IssueDTO> issueDtoMap) {
+        List<String> issueIds = savedIssues.stream()
+                .map(Issue::getId)
+                .toList();
+
+        if (!issueIds.isEmpty()) {
+            issueLabelRepository.deleteAllByIssue_IdIn(issueIds);
+        }
+
         Set<IssueLabel> allPullRequestLabels = buildAllIssueLabels(savedIssues, issueDtoMap);
 
         if (!allPullRequestLabels.isEmpty()) {
