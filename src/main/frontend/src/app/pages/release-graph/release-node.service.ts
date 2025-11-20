@@ -57,6 +57,7 @@ interface VersionInfo {
 export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
+  private static readonly GITHUB_SNAPSHOT_DISPLAY: string = 'snapshot';
 
   public timelineScale: TimelineScale | null = null;
 
@@ -220,7 +221,7 @@ export class ReleaseNodeService {
     }
 
     const BASE_SPACING = 60;
-    const NIGHTLY_EXTRA_SPACING = 60;
+    const SNAPSHOT_EXTRA_SPACING = 30;
     const clusteredNodes = clusterNode.clusteredNodes;
     const centerX = clusterNode.position.x;
     const centerY = clusterNode.position.y;
@@ -239,7 +240,7 @@ export class ReleaseNodeService {
       } else {
         let spacing = BASE_SPACING;
         if (isNightly || previousIsNightly) {
-          spacing += NIGHTLY_EXTRA_SPACING;
+          spacing += SNAPSHOT_EXTRA_SPACING;
         }
         currentX += spacing;
         positions.push(currentX);
@@ -391,7 +392,9 @@ export class ReleaseNodeService {
    * 2. Matches pattern vX.Y.Z-YYYYMMDD.HHMMSS (nightly)
    */
   private isNightlyRelease(label: string): boolean {
-    if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+    // NOTE: This checks the *original* release name (passed in from release.name) or the node label
+    // If checking the node label, we must check for the DISPLAY term ('snapshot')
+    if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
       return true;
     }
 
@@ -445,12 +448,45 @@ export class ReleaseNodeService {
   private createReleaseNodes(releases: (Release & { publishedAt: Date })[]): ReleaseNode[] {
     return releases.map((r) => ({
       id: r.id,
-      label: r.name,
+      label: this.transformNodeLabel(r),
       branch: r.branch.name,
       publishedAt: r.publishedAt,
       color: '',
       position: { x: 0, y: 0 },
     }));
+  }
+
+  /**
+   * Transforms the release tagName into the final display label based on a set of rules:
+   * 1. Strips "release/" prefix.
+   * 2. Handles 'master' nightly releases by extracting version from release.name and converting 'nightly' to 'snapshot'.
+   * 3. Converts all other 'nightly' references to 'snapshot'.
+   */
+  private transformNodeLabel(release: Release): string {
+    let label = release.tagName;
+
+    label = label.replace(/^release\//, '');
+
+    const isMasterNightly =
+      label.toLowerCase().includes(ReleaseNodeService.GITHUB_MASTER_BRANCH.toLowerCase()) &&
+      this.isNightlyRelease(release.name);
+
+    if (isMasterNightly) {
+      const match = release.name.match(/^v?(\d+\.\d+)/i);
+      label = match
+        ? `${match[1]}-${ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY}`
+        : label.replace(
+            new RegExp(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE, 'i'),
+            ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY,
+          );
+    } else {
+      label = label.replace(
+        new RegExp(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE, 'i'),
+        ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY,
+      );
+    }
+
+    return label;
   }
 
   private flattenGroupMaps(groupMaps: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
@@ -523,13 +559,19 @@ export class ReleaseNodeService {
 
   /**
    * Builds a map from version key (e.g., "8.0" or "8.1") to the parent major/minor release node.
+   *
+   * FIX: This method now explicitly excludes snapshot/nightly releases to ensure that only
+   * genuine minor/major versions are used as parent anchors for support calculations.
    */
   private buildParentVersionMap(allNodes: ReleaseNode[]): Map<string, ReleaseNode> {
     const parentMap = new Map<string, ReleaseNode>();
 
     for (const node of allNodes) {
       const versionInfo = this.getVersionInfo(node);
-      if (versionInfo && versionInfo.patch === 0) {
+
+      const isSnapshot = node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY);
+
+      if (versionInfo && versionInfo.patch === 0 && !isSnapshot) {
         const key = `${versionInfo.major}.${versionInfo.minor}`;
         parentMap.set(key, node);
       }
@@ -544,7 +586,7 @@ export class ReleaseNodeService {
     isLatestPatch: boolean,
     parentNode: ReleaseNode | null,
   ): SupportColor {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
       return SupportColors.NIGHTLY;
     }
 
@@ -603,7 +645,10 @@ export class ReleaseNodeService {
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) return false;
+    // Corrected to check for 'snapshot' to ensure nightlies are never considered unsupported
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
+      return false;
+    }
 
     const supportDates = this.getSupportEndDates(release);
     if (!supportDates) return true;

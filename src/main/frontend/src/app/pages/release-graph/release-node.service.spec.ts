@@ -21,14 +21,21 @@ const createMockData = (): Release[] => {
       name: 'v8.0',
       publishedAt: new Date('2023-12-20T10:00:00Z'),
       branch: branches['master'],
-      tagName: '',
+      tagName: 'v8.0',
     },
     {
       id: 'master-2',
       name: 'v7.0',
       publishedAt: new Date('2022-12-20T10:00:00Z'),
       branch: branches['master'],
-      tagName: '',
+      tagName: 'v7.0',
+    },
+    {
+      id: 'master-nightly',
+      name: 'v9.4.0-20251108.042330 (nightly)',
+      publishedAt: new Date('2025-06-10T10:00:00Z'),
+      branch: branches['master'],
+      tagName: 'master-nightly',
     },
 
     {
@@ -36,58 +43,58 @@ const createMockData = (): Release[] => {
       name: 'v9.0.0',
       publishedAt: new Date('2025-01-10T10:00:00Z'),
       branch: branches['b90'],
-      tagName: '',
+      tagName: 'release/v9.0.0',
     },
     {
       id: '9.0-node-1',
       name: 'v9.0.1',
       publishedAt: new Date('2025-02-10T10:00:00Z'),
       branch: branches['b90'],
-      tagName: '',
+      tagName: 'release/v9.0.1',
     },
     {
       id: '9.0-nightly',
       name: 'v9.0.2 (nightly)',
       publishedAt: new Date('2025-03-10T10:00:00Z'),
       branch: branches['b90'],
-      tagName: '',
+      tagName: 'v9.0.2-nightly',
     },
     {
       id: '8.4-anchor',
       name: 'v8.4.0',
       publishedAt: new Date('2025-04-15T10:00:00Z'),
       branch: branches['b84'],
-      tagName: '',
+      tagName: 'release/v8.4.0',
     },
     {
       id: '8.4-node-1',
       name: 'v8.4.1',
       publishedAt: new Date('2025-05-15T10:00:00Z'),
       branch: branches['b84'],
-      tagName: '',
+      tagName: 'release/v8.4.1',
     },
     {
       id: '7.2-anchor',
       name: 'v7.2.0',
       publishedAt: new Date('2022-06-01T10:00:00Z'),
       branch: branches['b72'],
-      tagName: '',
+      tagName: 'release/v7.2.0',
     },
     {
       id: '7.2-node-1',
       name: 'v7.2.1',
       publishedAt: new Date('2022-07-01T10:00:00Z'),
       branch: branches['b72'],
-      tagName: '',
+      tagName: 'release/v7.2.1',
     },
 
-    // Branch met 1 release
+    // Branch met 1 release (will not produce a sub-branch map)
     {
       id: '6.5-anchor',
       name: 'v6.5.0',
       publishedAt: new Date('2025-01-01T10:00:00Z'),
       branch: branches['b_single'],
-      tagName: '',
+      tagName: 'release/v6.5.0',
     },
   ];
 };
@@ -200,8 +207,12 @@ describe('ReleaseNodeService', () => {
 
     it('should position sub-branch nodes on a positive Y axis', () => {
       const positionedMap = service.calculateReleaseCoordinates(structuredData);
-      const subBranchNodes = positionedMap.get('release/9.0')!;
-      for (const node of subBranchNodes) {
+      const subBranchNodes = positionedMap.get('release/9.0');
+
+      expect(subBranchNodes).toBeDefined();
+      expect(subBranchNodes!.length).toBeGreaterThan(0);
+
+      for (const node of subBranchNodes!) {
         expect(node.position.y).toBeGreaterThan(0);
       }
     });
@@ -230,16 +241,76 @@ describe('ReleaseNodeService', () => {
     });
   });
 
+  describe('transformNodeLabel', () => {
+    it('should strip "release/" prefix and replace "nightly" with "snapshot"', () => {
+      const mockRelease: Release = {
+        id: '1', name: 'v1.2.3 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
+        tagName: 'release/v1.2.3-nightly'
+      };
+      const label = (service as any).transformNodeLabel(mockRelease);
+
+      expect(label).toBe('v1.2.3-snapshot');
+    });
+
+    it('should replace "nightly" with "snapshot" on standard tags without prefix', () => {
+      const mockRelease: Release = {
+        id: '1', name: 'v1.2.3 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
+        tagName: 'v1.2.3-nightly-2025'
+      };
+      const label = (service as any).transformNodeLabel(mockRelease);
+
+      expect(label).toBe('v1.2.3-snapshot-2025');
+    });
+
+    it('should convert "master-nightly" to X.Y-snapshot and strip the "v" prefix', () => {
+      const mockRelease: Release = {
+        id: '1',
+        name: 'v9.4.0-20251108.042330 (nightly)',
+        publishedAt: new Date(),
+        branch: { id: 'b', name: 'master' },
+        tagName: 'master-nightly'
+      };
+      const label = (service as any).transformNodeLabel(mockRelease);
+
+      expect(label).toBe('9.4-snapshot');
+    });
+
+    it('should handle master-nightly when release.name lacks "v" prefix', () => {
+      const mockRelease: Release = {
+        id: '1',
+        name: '9.4.0-20251108.042330 (nightly)',
+        publishedAt: new Date(),
+        branch: { id: 'b', name: 'master' },
+        tagName: 'master-nightly'
+      };
+      const label = (service as any).transformNodeLabel(mockRelease);
+
+      expect(label).toBe('9.4-snapshot');
+    });
+
+    it('should handle releases without nightly or master tags and strip prefix', () => {
+      const mockRelease: Release = {
+        id: '1', name: 'v10.0.0', publishedAt: new Date(), branch: { id: 'b', name: '10.0' },
+        tagName: 'release/v10.0.0'
+      };
+      const label = (service as any).transformNodeLabel(mockRelease);
+
+      expect(label).toBe('v10.0.0');
+    });
+  });
+
   describe('assignReleaseColors and determineColor', () => {
     const NOW = new Date('2025-06-15T12:00:00Z');
     const TWO_WEEKS_AGO = new Date(NOW.getTime() - 14 * 24 * 60 * 60 * 1000);
     const TWO_MONTHS_AGO = new Date(NOW.getTime() - 60 * 24 * 60 * 60 * 1000);
     const FOUR_MONTHS_AGO = new Date(NOW.getTime() - 120 * 24 * 60 * 60 * 1000);
-    const FIVE_MONTHS_AGO = new Date(NOW.getTime() - 150 * 24 * 60 * 60 * 1000);
     const THREE_YEARS_AGO = new Date(NOW.getTime() - 3 * 365 * 24 * 60 * 60 * 1000);
+    const FOUR_YEARS_AGO = new Date(NOW.getTime() - 4 * 365 * 24 * 60 * 60 * 1000);
+
+    const PARENT_SUPPORTED_DATE = TWO_MONTHS_AGO;
 
     it('should assign FULL support color for a recent major release (v9.0.0)', () => {
-      const node = { label: 'v9.0.0', publishedAt: FIVE_MONTHS_AGO } as any;
+      const node = { label: 'v9.0.0', publishedAt: PARENT_SUPPORTED_DATE } as any;
       const color = (service as any).determineColor(node, false, false);
 
       expect(color).toBe(SupportColors.FULL);
@@ -259,11 +330,11 @@ describe('ReleaseNodeService', () => {
       expect(color).toBe(SupportColors.NONE);
     });
 
-    it('should assign darkblue for a nightly release', () => {
-      const node = { label: 'v9.0.2 (nightly)' } as any;
+    it('should assign darkblue for a nightly/snapshot release', () => {
+      const node = { label: 'v9.0.2-snapshot' } as any;
       const color = (service as any).determineColor(node, false, false);
 
-      expect(color).toBe('darkblue');
+      expect(color).toBe(SupportColors.NIGHTLY);
     });
 
     describe('latest patch version logic', () => {
@@ -277,19 +348,21 @@ describe('ReleaseNodeService', () => {
       });
 
       it('should assign normal support colors to the latest patch version', () => {
-        const node = { label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO } as any;
+        const parentNode = { publishedAt: PARENT_SUPPORTED_DATE } as ReleaseNode;
+        const node = { label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, branch: 'master' } as any;
         const isPatchVersion = true;
         const isLatestPatch = true;
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
+
+        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch, parentNode);
 
         expect(color).toBe(SupportColors.FULL);
       });
 
       it('should not affect major versions (v9.0.0) - they get their own support colors', () => {
-        const node = { label: 'v9.0.0', publishedAt: FIVE_MONTHS_AGO } as any;
+        const node = { label: 'v9.0.0', publishedAt: PARENT_SUPPORTED_DATE } as any;
         const isPatchVersion = false;
         const isLatestPatch = false;
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
+        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch, null);
 
         expect(color).toBe(SupportColors.FULL);
       });
@@ -298,7 +371,7 @@ describe('ReleaseNodeService', () => {
         const node = { label: 'v8.4.0', publishedAt: FOUR_MONTHS_AGO } as any;
         const isPatchVersion = false;
         const isLatestPatch = false;
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
+        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch, null);
 
         expect(color).toBe(SupportColors.SECURITY);
       });
@@ -312,7 +385,9 @@ describe('ReleaseNodeService', () => {
           { id: '3', label: 'v8.4.3', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
         ];
 
-        const releaseGroups = new Map([['master', nodes]]);
+        const parentNode = { id: 'p', label: 'v8.4.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' }
+        const releaseGroups = new Map([['master', [...nodes, parentNode]]]);
+
         service.assignReleaseColors(releaseGroups);
 
         expect(nodes[0].color).toBe(SupportColors.NONE);
@@ -321,26 +396,36 @@ describe('ReleaseNodeService', () => {
       });
 
       it('should handle multiple version series independently', () => {
+        const FOUR_YEARS_AGO_PLUS_2DAYS = new Date(FOUR_YEARS_AGO.getTime() + 2 * 86_400_000);
+        const FOUR_YEARS_AGO_PLUS_3DAYS = new Date(FOUR_YEARS_AGO.getTime() + 3 * 86_400_000);
+
+        const parent78 = { id: 'p78', label: 'v7.8.0', publishedAt: FOUR_YEARS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' }
+
         const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v7.8.1', publishedAt: THREE_YEARS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v7.8.2', publishedAt: THREE_YEARS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '1', label: 'v7.8.1', publishedAt: FOUR_YEARS_AGO_PLUS_2DAYS, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '2', label: 'v7.8.2', publishedAt: FOUR_YEARS_AGO_PLUS_2DAYS, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '5', label: 'v7.8.3', publishedAt: FOUR_YEARS_AGO_PLUS_3DAYS, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+
           { id: '3', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
           { id: '4', label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
         ];
 
-        const releaseGroups = new Map([['master', nodes]]);
+        const parent84 = { id: 'p84', label: 'v8.4.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' }
+        const releaseGroups = new Map([['master', [...nodes, parent78, parent84]]]);
+
         service.assignReleaseColors(releaseGroups);
 
         expect(nodes[0].color).toBe(SupportColors.NONE);
         expect(nodes[1].color).toBe(SupportColors.NONE);
-        expect(nodes[2].color).toBe(SupportColors.NONE);
-        expect(nodes[3].color).toBe(SupportColors.FULL);
+
+        expect(nodes[3].color).toBe(SupportColors.NONE);
+        expect(nodes[4].color).toBe(SupportColors.FULL);
       });
 
       it('should not affect major and minor version colors', () => {
         const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v8.0.0', publishedAt: FIVE_MONTHS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v8.4.0', publishedAt: TWO_MONTHS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '1', label: 'v8.0.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' },
+          { id: '2', label: 'v8.4.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' },
           { id: '3', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
         ];
 
@@ -493,6 +578,9 @@ describe('ReleaseNodeService', () => {
   });
 
   describe('expandCluster', () => {
+    const EXPECTED_SPACING_NORMAL = 60;
+    const EXPECTED_SPACING_NIGHTLY = 90;
+
     it('should expand cluster into individual nodes with spacing', () => {
       const clusteredNodes: ReleaseNode[] = [
         { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
@@ -514,15 +602,21 @@ describe('ReleaseNodeService', () => {
 
       expect(result.length).toBe(3);
 
+      const spacing1 = result[1].position.x - result[0].position.x;
+      const spacing2 = result[2].position.x - result[1].position.x;
+
+      expect(spacing1).toBe(EXPECTED_SPACING_NORMAL);
+      expect(spacing2).toBe(EXPECTED_SPACING_NORMAL);
+
       const avgX = result.reduce((sum, n) => sum + n.position.x, 0) / result.length;
 
-      expect(Math.abs(avgX - 500)).toBeLessThan(1); // Should be very close to 500
+      expect(Math.abs(avgX - 500)).toBeLessThan(1);
     });
 
-    it('should give extra spacing to nightly releases', () => {
+    it('should give extra spacing to nightly/snapshot releases', () => {
       const clusteredNodes: ReleaseNode[] = [
         { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        { id: '2', label: 'v9.0.2-nightly', position: { x: 0, y: 0 }, branch: 'master', color: 'blue', publishedAt: new Date() },
+        { id: '2', label: 'v9.0.2-snapshot', position: { x: 0, y: 0 }, branch: 'master', color: 'blue', publishedAt: new Date() },
         { id: '3', label: 'v9.0.3', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
       ];
       const clusterNode: ReleaseNode = {
@@ -542,11 +636,8 @@ describe('ReleaseNodeService', () => {
       const spacing1 = result[1].position.x - result[0].position.x;
       const spacing2 = result[2].position.x - result[1].position.x;
 
-      const BASE_SPACING = 60;
-      const NIGHTLY_EXTRA_SPACING = 60;
-
-      expect(spacing1).toBe(BASE_SPACING + NIGHTLY_EXTRA_SPACING);
-      expect(spacing2).toBe(BASE_SPACING + NIGHTLY_EXTRA_SPACING)
+      expect(spacing1).toBe(EXPECTED_SPACING_NIGHTLY);
+      expect(spacing2).toBe(EXPECTED_SPACING_NIGHTLY);
     });
 
     it('should return original node if not a cluster', () => {
