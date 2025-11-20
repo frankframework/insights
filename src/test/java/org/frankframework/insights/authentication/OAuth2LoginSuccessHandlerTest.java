@@ -6,9 +6,7 @@ import static org.mockito.Mockito.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-
 import org.frankframework.insights.user.UserRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +19,8 @@ public class OAuth2LoginSuccessHandlerTest {
 
     private OAuth2LoginSuccessHandler handler;
 
-	@Mock
-	private UserRepository userRepository;
+    @Mock
+    private UserRepository userRepository;
 
     @Mock
     private HttpServletRequest request;

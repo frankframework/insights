@@ -161,7 +161,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenNoObsoleteDirectories_shouldNotDeleteAnything() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenNoObsoleteDirectories_shouldNotDeleteAnything() {
         Release release1 = createRelease("7.8.0", "v7.8.0");
         Release release2 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1, release2);
@@ -182,7 +182,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenObsoleteDirectoriesExist_shouldDeleteThem() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenObsoleteDirectoriesExist_shouldDeleteThem() {
         Release release1 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1);
 
@@ -212,7 +212,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withMixOfValidAndObsolete_shouldOnlyDeleteObsolete() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withMixOfValidAndObsolete_shouldOnlyDeleteObsolete() {
         Release release1 = createRelease("8.0.0", "v8.0.0");
         Release release2 = createRelease("7.9.0", "v7.9.0");
         List<Release> releases = List.of(release1, release2);
@@ -240,7 +240,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenListDirectoriesFails_shouldHandleGracefully() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenListDirectoriesFails_shouldHandleGracefully() {
         mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
         when(releaseRepository.findAll()).thenReturn(new ArrayList<>());
         mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenThrow(new IOException("Permission denied"));

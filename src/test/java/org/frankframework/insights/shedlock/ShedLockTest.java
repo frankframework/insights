@@ -62,8 +62,8 @@ public class ShedLockTest {
     @Mock
     private ReleaseService releaseService;
 
-	@Mock
-	private ReleaseArtifactService releaseArtifactService;
+    @Mock
+    private ReleaseArtifactService releaseArtifactService;
 
     @Mock
     private VulnerabilityService vulnerabilityService;
@@ -82,7 +82,7 @@ public class ShedLockTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-				releaseArtifactService,
+                releaseArtifactService,
                 vulnerabilityService);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);

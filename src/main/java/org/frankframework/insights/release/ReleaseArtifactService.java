@@ -57,70 +57,68 @@ public class ReleaseArtifactService {
         return releaseDir;
     }
 
-	/**
-	 * Deletes release artifact directories that no longer correspond to any release in the database.
-	 * This cleanup ensures that the file system stays in sync with the database after releases are deleted.
-	 */
-	@Transactional
-	public void deleteObsoleteReleaseArtifacts() {
-		Path archiveDir = Paths.get(releaseArchiveDirectory);
+    /**
+     * Deletes release artifact directories that no longer correspond to any release in the database.
+     * This cleanup ensures that the file system stays in sync with the database after releases are deleted.
+     */
+    @Transactional
+    public void deleteObsoleteReleaseArtifacts() {
+        Path archiveDir = Paths.get(releaseArchiveDirectory);
 
-		if (!Files.exists(archiveDir)) {
-			log.debug("Release archive directory {} does not exist, skipping cleanup.", releaseArchiveDirectory);
-			return;
-		}
+        if (!Files.exists(archiveDir)) {
+            log.debug("Release archive directory {} does not exist, skipping cleanup.", releaseArchiveDirectory);
+            return;
+        }
 
-		try {
-			Set<String> validReleaseNames = releaseRepository.findAll().stream()
-					.map(Release::getName)
-					.collect(Collectors.toSet());
+        try {
+            Set<String> validReleaseNames =
+                    releaseRepository.findAll().stream().map(Release::getName).collect(Collectors.toSet());
 
-			List<Path> obsoleteDirectories;
-			try (Stream<Path> stream = Files.list(archiveDir)) {
-				obsoleteDirectories = stream
-						.filter(Files::isDirectory)
-						.filter(dir -> !validReleaseNames.contains(dir.getFileName().toString()))
-						.toList();
-			}
+            List<Path> obsoleteDirectories;
+            try (Stream<Path> stream = Files.list(archiveDir)) {
+                obsoleteDirectories = stream.filter(Files::isDirectory)
+                        .filter(dir ->
+                                !validReleaseNames.contains(dir.getFileName().toString()))
+                        .toList();
+            }
 
-			for (Path obsoleteDir : obsoleteDirectories) {
-				try {
-					deleteDirectoryRecursively(obsoleteDir);
-					log.info("Deleted obsolete release artifact directory: {}", obsoleteDir.getFileName());
-				} catch (IOException e) {
-					log.error("Failed to delete obsolete release artifact directory: {}", obsoleteDir, e);
-				}
-			}
+            for (Path obsoleteDir : obsoleteDirectories) {
+                try {
+                    deleteDirectoryRecursively(obsoleteDir);
+                    log.info("Deleted obsolete release artifact directory: {}", obsoleteDir.getFileName());
+                } catch (IOException e) {
+                    log.error("Failed to delete obsolete release artifact directory: {}", obsoleteDir, e);
+                }
+            }
 
-			if (!obsoleteDirectories.isEmpty()) {
-				log.info("Cleaned up {} obsolete release artifact directories.", obsoleteDirectories.size());
-			} else {
-				log.debug("No obsolete release artifact directories found.");
-			}
-		} catch (IOException e) {
-			log.error("Error while cleaning up obsolete release artifacts in {}", releaseArchiveDirectory, e);
-		}
-	}
+            if (!obsoleteDirectories.isEmpty()) {
+                log.info("Cleaned up {} obsolete release artifact directories.", obsoleteDirectories.size());
+            } else {
+                log.debug("No obsolete release artifact directories found.");
+            }
+        } catch (IOException e) {
+            log.error("Error while cleaning up obsolete release artifacts in {}", releaseArchiveDirectory, e);
+        }
+    }
 
-	/**
-	 * Recursively deletes a directory and all its contents.
-	 */
-	private void deleteDirectoryRecursively(Path directory) throws IOException {
-		if (!Files.exists(directory)) {
-			return;
-		}
+    /**
+     * Recursively deletes a directory and all its contents.
+     */
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        if (!Files.exists(directory)) {
+            return;
+        }
 
-		try (Stream<Path> walk = Files.walk(directory)) {
-			walk.sorted((a, b) -> -a.compareTo(b))
-					.forEach(path -> {
-						try {
-							Files.delete(path);
-						} catch (IOException e) {
-							log.error("Failed to delete {}", path, e);
-						}
-					});
-		}
-	}
+        try (Stream<Path> walk = Files.walk(directory)) {
+            walk.sorted((a, b) -> -a.compareTo(b)).forEach(path -> {
+                try {
+                    Files.delete(path);
+                } catch (IOException e) {
+                    log.error("Failed to delete {}", path, e);
+                }
+            });
+        }
+    }
 
     private boolean releaseDirectoryExists(Path releaseDir, Release release) throws IOException {
         if (Files.isDirectory(releaseDir)) {

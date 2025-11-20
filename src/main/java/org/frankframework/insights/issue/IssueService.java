@@ -187,9 +187,7 @@ public class IssueService {
      * @param issueDtoMap a map of issue IDs to their corresponding issue DTOs
      */
     private void assignLabelsToIssues(Set<Issue> savedIssues, Map<String, IssueDTO> issueDtoMap) {
-        List<String> issueIds = savedIssues.stream()
-                .map(Issue::getId)
-                .toList();
+        List<String> issueIds = savedIssues.stream().map(Issue::getId).toList();
 
         if (!issueIds.isEmpty()) {
             issueLabelRepository.deleteAllByIssue_IdIn(issueIds);

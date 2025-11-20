@@ -35,8 +35,8 @@ public class ReleaseArtifactServiceIntegrationTest {
     @TempDir
     Path tempDir;
 
-	@Mock
-	private ReleaseRepository releaseRepository;
+    @Mock
+    private ReleaseRepository releaseRepository;
 
     private ReleaseArtifactService releaseArtifactService;
     private MockedStatic<URI> mockedUri;

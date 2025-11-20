@@ -199,9 +199,8 @@ public class PullRequestService {
         Map<String, PullRequestDTO> pullRequestDtoMap =
                 pullRequestDTOS.stream().collect(Collectors.toMap(PullRequestDTO::id, Function.identity()));
 
-        List<String> pullRequestIds = savedPullRequests.stream()
-                .map(PullRequest::getId)
-                .toList();
+        List<String> pullRequestIds =
+                savedPullRequests.stream().map(PullRequest::getId).toList();
 
         if (!pullRequestIds.isEmpty()) {
             pullRequestLabelRepository.deleteAllByPullRequest_IdIn(pullRequestIds);

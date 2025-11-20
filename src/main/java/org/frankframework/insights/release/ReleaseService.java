@@ -343,9 +343,8 @@ public class ReleaseService {
      * @param currentGitHubReleases The set of releases currently fetched from GitHub.
      */
     private void deleteObsoleteReleases(Set<Release> currentGitHubReleases) {
-        Set<String> githubReleaseIds = currentGitHubReleases.stream()
-                .map(Release::getId)
-                .collect(Collectors.toSet());
+        Set<String> githubReleaseIds =
+                currentGitHubReleases.stream().map(Release::getId).collect(Collectors.toSet());
 
         List<Release> allDatabaseReleases = releaseRepository.findAll();
 

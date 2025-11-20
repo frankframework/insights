@@ -57,8 +57,8 @@ public class ShedLockLocalTest {
     @Mock
     private ReleaseService releaseService;
 
-	@Mock
-	private ReleaseArtifactService releaseArtifactService;
+    @Mock
+    private ReleaseArtifactService releaseArtifactService;
 
     @Mock
     private VulnerabilityService vulnerabilityService;
@@ -77,7 +77,7 @@ public class ShedLockLocalTest {
                 issueService,
                 pullRequestService,
                 releaseService,
-				releaseArtifactService,
+                releaseArtifactService,
                 vulnerabilityService);
 
         Field field = SystemDataInitializer.class.getDeclaredField("dataFetchEnabled");
