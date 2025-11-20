@@ -71,14 +71,18 @@
       justify-content: flex-end;
     }
 
-    .priority {
+    %monthly-info-base {
       font-size: 0.8125rem;
-      font-weight: 600;
       opacity: 0.75;
       white-space: nowrap;
-      min-width: 70px;
       text-align: left;
       color: black;
+    }
+
+    .priority {
+      @extend %monthly-info-base;
+      font-weight: 600;
+      min-width: 70px;
     }
 
     .priority::first-letter {
@@ -87,14 +91,10 @@
     }
 
     .points {
+      @extend %monthly-info-base;
       flex-shrink: 0;
-      font-size: 0.8125rem;
       font-weight: 700;
-      opacity: 0.75;
-      white-space: nowrap;
       min-width: 60px;
-      text-align: left;
-      color: black;
     }
   }
 }
