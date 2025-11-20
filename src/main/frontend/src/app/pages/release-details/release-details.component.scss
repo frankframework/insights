@@ -27,12 +27,26 @@
   padding-bottom: 1.5rem;
   border-bottom: 2px solid #e5e7eb;
 
-  h2 {
-    margin: 0;
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: #1f2937;
-    letter-spacing: -0.025em;
+  .header-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: end;
+
+    h2 {
+      margin: 0;
+      font-size: 1.875rem;
+      font-weight: 700;
+      color: #1f2937;
+      letter-spacing: -0.025em;
+    }
+
+    span {
+      font-size: 1.1rem;
+      color: #5c626e;
+      margin-top: 0.5rem;
+      display: block;
+    }
   }
 
   .back-button {

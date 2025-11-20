@@ -5,7 +5,10 @@
         <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
         Back
       </button>
-      <h2>{{ release.name }}</h2>
+      <div class="header-details">
+        <h2>{{ release.name }}</h2>
+        <span>{{ release.publishedAt | date: 'longDate' }}</span>
+      </div>
     </div>
 
     <div class="release-details-body">
