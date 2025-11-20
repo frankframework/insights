@@ -130,11 +130,17 @@
     </svg>
 
     <div class="branch-labels-sticky">
-      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
+      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label; let idx = $index) {
         <div class="sticky-branch-label-container" [style.top.px]="stickyLabel.screenY - 75">
           <span class="sticky-branch-label">{{ stickyLabel.label }}</span>
-          @if (stickyLabel.supportStatus === 'supported') {
-            <span class="support-status-dot"></span>
+          @if (isMajorVersionBranch(stickyLabel.label)) {
+            <img
+              class="branch-shield-icon"
+              src="assets/icons/shield-lts-version.svg"
+              alt="LTS version"
+              width="17.5"
+              height="17.5"
+            />
           }
         </div>
       }

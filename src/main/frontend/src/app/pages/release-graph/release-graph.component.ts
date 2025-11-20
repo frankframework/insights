@@ -38,8 +38,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   public releaseNodes: ReleaseNode[] = [];
   public allLinks: ReleaseLink[] = [];
-  public branchLabels: { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[] = [];
-  public stickyBranchLabels: { label: string; screenY: number; supportStatus?: 'supported' | 'none' }[] = [];
+  public branchLabels: { label: string; y: number; x: number }[] = [];
+  public stickyBranchLabels: { label: string; screenY: number }[] = [];
   public skipNodes: SkipNode[] = [];
   public dataForSkipModal: SkipNode | null = null;
   public quarterMarkers: QuarterMarker[] = [];
@@ -307,6 +307,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
   }
 
+  public isMajorVersionBranch(branchLabel: string): boolean {
+    const match = branchLabel.match(/(\d+)\.(\d+)$/);
+    if (!match) return false;
+    const minor = Number.parseInt(match[2], 10);
+    return minor === 0;
+  }
+
   public getLastExpandedNodePosition(clusterNode: ReleaseNode): { x: number; y: number } | null {
     if (!clusterNode.isExpanded || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
       return null;
@@ -461,8 +468,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private createBranchLabels(
     releaseNodeMap: Map<string, ReleaseNode[]>,
     releases: Release[],
-  ): { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[] {
-    const labels: { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[] = [];
+  ): { label: string; y: number; x: number }[] {
+    const labels: { label: string; y: number; x: number }[] = [];
     const allNodes = [...releaseNodeMap.values()].flat();
     const labelX = Math.min(...allNodes.map((n) => n.position.x)) - 550;
     const nodesByY = this.groupNodesByYPosition(allNodes);
@@ -470,8 +477,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     for (const yPosition of sortedYPositions) {
       const branchLabel = this.determineBranchLabel(yPosition, nodesByY.get(yPosition)!, releases);
-      const supportStatus = yPosition === 0 ? 'supported' : this.getBranchSupportStatus(nodesByY.get(yPosition)!);
-      this.addUniqueBranchLabel(labels, branchLabel, yPosition, labelX, supportStatus);
+      this.addUniqueBranchLabel(labels, branchLabel, yPosition, labelX);
     }
 
     return labels;
@@ -522,11 +528,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private addUniqueBranchLabel(
-    labels: { label: string; y: number; x: number; supportStatus?: 'supported' | 'none' }[],
+    labels: { label: string; y: number; x: number }[],
     branchLabel: string,
     yPosition: number,
     labelX: number,
-    supportStatus?: 'supported' | 'none',
   ): void {
     const existingLabel = labels.find((l) => l.y === yPosition);
     if (!existingLabel) {
@@ -534,45 +539,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
         label: branchLabel,
         y: yPosition,
         x: labelX,
-        supportStatus,
       });
     }
   }
 
-  private getBranchSupportStatus(nodesAtY: ReleaseNode[]): 'supported' | 'none' {
-    const allNodes = this.getAllNodesInBranch(nodesAtY);
-    if (allNodes.length === 0) return 'none';
-
-    const sortedNodes = [...allNodes].toSorted((a, b) => a.position.x - b.position.x);
-    const firstNode = sortedNodes[0];
-    const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
-    if (!firstVersionInfo) return 'none';
-
-    const branchMajorMinor = `${firstVersionInfo.major}.${firstVersionInfo.minor}`;
-    const majorMinorRelease = this.releases.find((release) => {
-      const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
-      return releaseName.startsWith(`${branchMajorMinor}.0`) && !releaseName.includes('nightly');
-    });
-
-    if (!majorMinorRelease) return 'none';
-
-    const majorMinorNode = this.releaseNodes.find((node) => node.id === majorMinorRelease.id);
-    if (!majorMinorNode) return 'none';
-
-    const versionInfo = this.nodeService.getVersionInfo(majorMinorNode);
-    if (!versionInfo) return 'none';
-
-    const totalSupportQuarters = versionInfo.type === 'major' ? 4 : 2;
-
-    const branchStartDate = new Date(majorMinorRelease.publishedAt);
-    const supportEnd = new Date(branchStartDate);
-    supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
-
-    const now = new Date();
-
-    if (now <= supportEnd) return 'supported';
-    return 'none';
-  }
 
   private centerGraph(): void {
     if (!this.svgElement?.nativeElement || this.releaseNodes.length === 0) return;
@@ -592,7 +562,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       return {
         label: label.label,
         screenY: screenY,
-        supportStatus: label.supportStatus,
       };
     });
   }
