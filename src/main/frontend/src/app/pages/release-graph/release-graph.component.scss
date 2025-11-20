@@ -107,19 +107,11 @@
     }
 
     .skip-text {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: bold;
       text-anchor: middle;
-      fill: #6c757d;
+      fill: #7f8a93;
       dominant-baseline: middle;
-    }
-
-    .skip-label {
-      font-size: 11px;
-      font-weight: normal;
-      text-anchor: middle;
-      fill: #6c757d;
-      font-style: italic;
     }
 
     &:hover .skip-circle {
@@ -218,6 +210,31 @@
         transform: scale(1.05);
         cursor: pointer;
       }
+    }
+
+    &.mini-node {
+      pointer-events: none;
+
+      circle {
+        stroke: #999;
+        stroke-width: 2;
+      }
+
+      &:hover circle {
+        transform: none;
+        cursor: default;
+      }
+    }
+  }
+
+  .mini-skip-node {
+    .skip-circle {
+      stroke-width: 1;
+      stroke-dasharray: 5, 1.5;
+    }
+
+    .mini-skip-text {
+      font-size: 7px;
     }
   }
 

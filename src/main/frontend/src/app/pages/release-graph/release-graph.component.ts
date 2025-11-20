@@ -166,6 +166,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   public handleNodeTouchEnd(event: TouchEvent, releaseNode: ReleaseNode): void {
+    if (releaseNode.isMiniNode) {
+      return;
+    }
     if (releaseNode.isCluster) {
       this.onClusterTouchEnd(event, releaseNode);
     } else {
@@ -187,10 +190,18 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     if (!source || !target) return '';
 
     const isSkipLink = link.isGap || link.isFadeIn;
-
+    const isMiniNode = source.isMiniNode || false;
+    const miniNodeRadius = 8;
     const nodeRadius = 20;
 
-    const margin = isSkipLink ? 10 : nodeRadius + 2;
+    let margin: number;
+    if (isSkipLink) {
+      margin = 10;
+    } else if (isMiniNode) {
+      margin = miniNodeRadius;
+    } else {
+      margin = nodeRadius + 2;
+    }
 
     if (link.isGap || link.isFadeIn) {
       const [x1, y1] = [source.position.x, source.position.y];
@@ -204,6 +215,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     if (y1 === y2) {
       return `M ${x1 + margin},${y1} L ${x2 - margin},${y2}`;
+    }
+
+    if (isMiniNode && y2 > y1) {
+      const curveRadius = 20;
+      const targetLeftSide = x2 - nodeRadius - 2;
+      const cornerY = y2 - curveRadius;
+
+      return [
+        `M ${x1},${y1 + margin}`,
+        `L ${x1},${cornerY}`,
+        `A ${curveRadius},${curveRadius} 0 0,0 ${x1 + curveRadius},${y2}`,
+        `L ${targetLeftSide},${y2}`,
+      ].join(' ');
     }
 
     const verticalDirection = y2 > y1 ? 1 : -1;
@@ -465,7 +489,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private determineBranchLabel(yPosition: number, nodesAtY: ReleaseNode[], releases: Release[]): string {
-    return yPosition === 0 ? this.getMasterBranchLabel(nodesAtY, releases) : this.getSubBranchLabel(nodesAtY, releases);
+    return yPosition === 0 ? this.getMasterBranchLabel(nodesAtY, releases) : this.getBranchLabel(nodesAtY, releases);
   }
 
   private getMasterBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
@@ -477,7 +501,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return 'master';
   }
 
-  private getSubBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
+  private getBranchLabel(nodesAtY: ReleaseNode[], releases: Release[]): string {
     const branchCounts = new Map<string, number>();
 
     for (const node of nodesAtY) {
@@ -692,7 +716,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
 
-    const midpointX = firstX + (supportEndX - firstX) / 2;
+    // Offset startX to align with mini node position (40 pixels to the left)
+    const MINI_NODE_OFFSET = 40;
+    const offsetStartX = firstX - MINI_NODE_OFFSET;
+    const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
 
     // Check if branch is outdated (support ended)
     const now = new Date();
@@ -701,7 +728,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     phases.push(
       {
         type: 'supported',
-        startX: firstX,
+        startX: offsetStartX,
         endX: midpointX,
         color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(144, 238, 144, 0.25)',
         stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(144, 238, 144, 0.4)',

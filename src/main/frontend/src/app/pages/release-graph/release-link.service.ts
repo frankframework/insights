@@ -16,6 +16,9 @@ export interface SkipNode {
   skippedCount: number;
   skippedVersions: string[];
   label: string;
+  isMiniNode?: boolean;
+  sourceNodeId?: string;
+  targetNodeId?: string;
 }
 
 export interface Release {
@@ -40,9 +43,11 @@ export class ReleaseLinkService {
     const masterNodes = structuredGroups[0].get(ReleaseLinkService.GITHUB_MASTER_BRANCH) ?? [];
     if (masterNodes.length === 0) return [];
 
+    const allNodes = this.getAllNodesFlat(structuredGroups);
+
     return [
-      ...this.createIntraBranchLinks(masterNodes),
-      ...this.createSubBranchLinks(structuredGroups.slice(1), masterNodes),
+      ...this.createIntraBranchLinks(masterNodes, allNodes),
+      ...this.createBranchLinks(structuredGroups.slice(1), masterNodes),
       ...this.createSpecialLinks(masterNodes, skipNodes),
     ];
   }
@@ -108,7 +113,7 @@ export class ReleaseLinkService {
       const source = masterNodes[index];
       const target = masterNodes[index + 1];
 
-      if (this.isVersionGap(source, target)) {
+      if (this.isVersionGap(source, target, allNodes)) {
         const skipNode = this.createSkipNodeBetween(source, target, allNodes, allReleases);
         if (skipNode) {
           skipNodes.push(skipNode);
@@ -128,6 +133,8 @@ export class ReleaseLinkService {
 
     if (minorReleases.length === 0) return null;
 
+    const isMiniNode = source.isMiniNode || target.isMiniNode;
+
     return {
       id: `skip-${source.id}-${target.id}`,
       x: (source.position.x + target.position.x) / 2,
@@ -135,6 +142,9 @@ export class ReleaseLinkService {
       skippedCount: minorReleases.length,
       skippedVersions: skippedReleases.map((r) => (r.name.startsWith('v') ? r.name : `v${r.name}`)),
       label: minorReleases.length === 1 ? '1 skipped' : `${minorReleases.length} skipped`,
+      isMiniNode,
+      sourceNodeId: source.id,
+      targetNodeId: target.id,
     };
   }
 
@@ -180,8 +190,14 @@ export class ReleaseLinkService {
     allNodes: ReleaseNode[],
     allReleases: Release[],
   ): Release[] {
-    const vSource = this.nodeService.getVersionInfo(source);
-    const vTarget = this.nodeService.getVersionInfo(target);
+    // Resolve mini nodes to their linked branch nodes for version comparison
+    const sourceNode = source.isMiniNode ? this.getLinkedBranchNode(source, allNodes) : source;
+    const targetNode = target.isMiniNode ? this.getLinkedBranchNode(target, allNodes) : target;
+
+    if (!sourceNode || !targetNode) return [];
+
+    const vSource = this.nodeService.getVersionInfo(sourceNode);
+    const vTarget = this.nodeService.getVersionInfo(targetNode);
     if (!vSource || !vTarget) return [];
 
     return allReleases.filter((release) => {
@@ -204,7 +220,11 @@ export class ReleaseLinkService {
     allNodes: ReleaseNode[],
     allReleases: Release[],
   ): Release[] {
-    const vFirst = this.nodeService.getVersionInfo(firstNode);
+    // Resolve mini node to its linked branch node for version comparison
+    const nodeToCheck = firstNode.isMiniNode ? this.getLinkedBranchNode(firstNode, allNodes) : firstNode;
+    if (!nodeToCheck) return [];
+
+    const vFirst = this.nodeService.getVersionInfo(nodeToCheck);
     if (!vFirst) return [];
 
     return allReleases.filter((release) => {
@@ -218,37 +238,37 @@ export class ReleaseLinkService {
     });
   }
 
-  private createSubBranchLinks(subGroups: Map<string, ReleaseNode[]>[], masterNodes: ReleaseNode[]): ReleaseLink[] {
+  private createBranchLinks(branchGroups: Map<string, ReleaseNode[]>[], masterNodes: ReleaseNode[]): ReleaseLink[] {
     const links: ReleaseLink[] = [];
-    for (const subGroup of subGroups) {
-      const [branchName, subNodes] = [...subGroup.entries()][0];
-      if (subNodes.length === 0) continue;
+    for (const branchGroup of branchGroups) {
+      const [branchName, branchNodes] = [...branchGroup.entries()][0];
+      if (branchNodes.length === 0) continue;
 
-      const anchorLink = this.createAnchorLink(branchName, subNodes[0], masterNodes);
+      const anchorLink = this.createAnchorLink(branchName, branchNodes[0], masterNodes);
       if (anchorLink) {
         links.push(anchorLink);
       }
-      links.push(...this.createIntraBranchLinks(subNodes));
+      links.push(...this.createIntraBranchLinks(branchNodes));
     }
     return links;
   }
 
   private createAnchorLink(
     branchName: string,
-    firstSubNode: ReleaseNode,
+    firstBranchNode: ReleaseNode,
     masterNodes: ReleaseNode[],
   ): ReleaseLink | null {
-    const anchorNodeOnMaster = masterNodes.find((node) => node.originalBranch === branchName);
-    return anchorNodeOnMaster ? this.buildLink(anchorNodeOnMaster, firstSubNode) : null;
+    const miniNode = masterNodes.find((node) => node.originalBranch === branchName && node.isMiniNode);
+    return miniNode ? this.buildLink(miniNode, firstBranchNode) : null;
   }
 
-  private createIntraBranchLinks(nodes: ReleaseNode[]): ReleaseLink[] {
+  private createIntraBranchLinks(nodes: ReleaseNode[], allNodes: ReleaseNode[] = []): ReleaseLink[] {
     const links: ReleaseLink[] = [];
     for (let index = 0; index < nodes.length - 1; index++) {
       const source = nodes[index];
       const target = nodes[index + 1];
 
-      if (!this.isVersionGap(source, target)) {
+      if (!this.isVersionGap(source, target, allNodes)) {
         links.push(this.buildLink(source, target));
       }
     }
@@ -282,9 +302,15 @@ export class ReleaseLinkService {
     return links;
   }
 
-  private isVersionGap(source: ReleaseNode, target: ReleaseNode): boolean {
-    const vSource = this.nodeService.getVersionInfo(source);
-    const vTarget = this.nodeService.getVersionInfo(target);
+  private isVersionGap(source: ReleaseNode, target: ReleaseNode, allNodes: ReleaseNode[] = []): boolean {
+    // Get actual nodes for version comparison (resolve mini nodes to their linked branch nodes)
+    const sourceNode = source.isMiniNode ? this.getLinkedBranchNode(source, allNodes) : source;
+    const targetNode = target.isMiniNode ? this.getLinkedBranchNode(target, allNodes) : target;
+
+    if (!sourceNode || !targetNode) return false;
+
+    const vSource = this.nodeService.getVersionInfo(sourceNode);
+    const vTarget = this.nodeService.getVersionInfo(targetNode);
 
     if (vSource && vTarget) {
       const majorGap = vTarget.major > vSource.major + 1;
@@ -292,6 +318,11 @@ export class ReleaseLinkService {
       return majorGap || minorGap;
     }
     return false;
+  }
+
+  private getLinkedBranchNode(miniNode: ReleaseNode, allNodes: ReleaseNode[]): ReleaseNode | null {
+    if (!miniNode.linkedBranchNode) return null;
+    return allNodes.find((node) => node.id === miniNode.linkedBranchNode) ?? null;
   }
 
   private buildLink(source: ReleaseNode, target: ReleaseNode): ReleaseLink {
@@ -315,12 +346,14 @@ export class ReleaseLinkService {
   }
 
   private handleRegularSkipNode(skipNode: SkipNode, masterNodes: ReleaseNode[], links: ReleaseLink[]): void {
-    const sourceNodeIndex = this.findSourceNodeIndex(skipNode, masterNodes);
+    // Use the stored source and target node IDs
+    if (!skipNode.sourceNodeId || !skipNode.targetNodeId) return;
 
-    if (sourceNodeIndex !== -1 && sourceNodeIndex < masterNodes.length - 1) {
-      const sourceNode = masterNodes[sourceNodeIndex];
-      const targetNode = masterNodes[sourceNodeIndex + 1];
+    // Find the actual nodes by ID
+    const sourceNode = masterNodes.find((node) => node.id === skipNode.sourceNodeId);
+    const targetNode = masterNodes.find((node) => node.id === skipNode.targetNodeId);
 
+    if (sourceNode && targetNode) {
       links.push(
         {
           id: `${sourceNode.id}-to-${skipNode.id}`,
@@ -336,16 +369,5 @@ export class ReleaseLinkService {
         },
       );
     }
-  }
-
-  private findSourceNodeIndex(skipNode: SkipNode, masterNodes: ReleaseNode[]): number {
-    return masterNodes.findIndex((_, index) => {
-      const nextNode = masterNodes[index + 1];
-      return (
-        nextNode &&
-        this.isVersionGap(masterNodes[index], nextNode) &&
-        skipNode.x === (masterNodes[index].position.x + nextNode.position.x) / 2
-      );
-    });
   }
 }

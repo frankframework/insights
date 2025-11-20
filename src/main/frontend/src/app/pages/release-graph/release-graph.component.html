@@ -89,6 +89,7 @@
           <g
             class="release-node"
             [class.cluster-node]="releaseNode.isCluster"
+            [class.mini-node]="releaseNode.isMiniNode"
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
             (click)="releaseNode.isCluster ? toggleCluster(releaseNode) : openReleaseNodeDetails(releaseNode.id)"
@@ -101,6 +102,8 @@
               <circle r="20" fill="#ffffff" stroke="#ced4da" stroke-width="5" />
               <path d="M -6 -6 L -1 0 L -6 6 M 1 -6 L 6 0 L 1 6" class="cluster-icon" />
               <text y="-30" class="cluster-label">{{ releaseNode.clusteredNodes!.length }} releases</text>
+            } @else if (releaseNode.isMiniNode) {
+              <circle r="6" fill="white" />
             } @else {
               <circle r="20" [attr.fill]="releaseNode.color" />
               <text y="-30">
@@ -119,8 +122,8 @@
             (touchend)="onSkipNodeTouchEnd($event, skipNode.id)"
             (touchcancel)="onSkipNodeTouchEnd($event, skipNode.id)"
           >
-            <circle r="20" class="skip-circle" />
-            <text y="2" class="skip-text">{{ skipNode.skippedCount }}</text>
+            <circle r="15" class="skip-circle" />
+            <text y="1" class="skip-text">{{ skipNode.skippedCount }}</text>
           </g>
         }
       </g>

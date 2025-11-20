@@ -12,7 +12,6 @@ const createMockData = (): Release[] => {
     b90: { id: 'b-90', name: 'release/9.0' },
     b84: { id: 'b-84', name: 'release/8.4' },
     b72: { id: 'b-72', name: 'release/7.2' },
-    b_single: { id: 'b-single', name: 'release/6.5' },
   };
 
   return [
@@ -31,11 +30,11 @@ const createMockData = (): Release[] => {
       tagName: 'v7.0',
     },
     {
-      id: 'master-nightly',
+      id: 'master-snapshot',
       name: 'v9.4.0-20251108.042330 (nightly)',
       publishedAt: new Date('2025-06-10T10:00:00Z'),
       branch: branches['master'],
-      tagName: 'master-nightly',
+      tagName: 'master-snapshot',
     },
 
     {
@@ -87,15 +86,6 @@ const createMockData = (): Release[] => {
       branch: branches['b72'],
       tagName: 'release/v7.2.1',
     },
-
-    // Branch met 1 release (will not produce a sub-branch map)
-    {
-      id: '6.5-anchor',
-      name: 'v6.5.0',
-      publishedAt: new Date('2025-01-01T10:00:00Z'),
-      branch: branches['b_single'],
-      tagName: 'release/v6.5.0',
-    },
   ];
 };
 
@@ -131,7 +121,7 @@ describe('ReleaseNodeService', () => {
       const structuredData = service.structureReleaseData(mockReleases);
       const masterNodes = structuredData[0].get(MASTER_BRANCH_NAME)!;
 
-      const anchorNode = masterNodes.find((node) => node.id === '8.4-anchor');
+      const anchorNode = masterNodes.find((node) => node.originalBranch === 'release/8.4');
 
       expect(anchorNode).toBeDefined();
       expect(anchorNode?.originalBranch).toBe('release/8.4');
@@ -156,28 +146,22 @@ describe('ReleaseNodeService', () => {
       };
 
       const nightlyReleases: Release[] = [
-        { id: 'R1-ANCHOR', name: 'v1.0.0', publishedAt: new Date('2024-10-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: '' },
-        { id: 'N1-OLD', name: 'v1.0.1-nightly', publishedAt: new Date('2024-11-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: '' },
-        { id: 'N2-OLDER', name: 'v1.0.2-nightly', publishedAt: new Date('2024-11-15T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: '' },
-        { id: 'N3-LATEST', name: 'v1.0.3-nightly', publishedAt: new Date('2024-11-20T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: '' },
+        { id: 'R1-ANCHOR', name: 'v1.0.0', publishedAt: new Date('2024-10-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.0' },
+        { id: 'N1-OLD', name: 'v1.0.1-snapshot', publishedAt: new Date('2024-11-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.1-snapshot' },
+        { id: 'N2-OLDER', name: 'v1.0.2-snapshot', publishedAt: new Date('2024-11-15T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.2-snapshot' },
+        { id: 'N3-LATEST', name: 'v1.0.3-snapshot', publishedAt: new Date('2024-11-20T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.3-snapshot' },
       ];
 
       const allReleases = [...mockReleases, ...nightlyReleases];
 
       const structuredData = service.structureReleaseData(allReleases);
 
-      const masterNodes = structuredData[0].get(MASTER_BRANCH_NAME)!;
-      const anchorNode = masterNodes.find((node) => node.id === 'R1-ANCHOR');
-
-      expect(anchorNode).toBeDefined();
-      expect(anchorNode?.originalBranch).toBe(branchName);
-
       const subBranchMap = structuredData.find(m => m.has(branchName));
       const subBranchNodes = subBranchMap?.get(branchName) ?? [];
 
-      expect(subBranchNodes.length).toBe(1);
-      expect(subBranchNodes[0].id).toBe('N3-LATEST');
-      expect(subBranchNodes[0].label).toContain('nightly');
+      expect(subBranchNodes.length).toBe(2);
+      expect(subBranchNodes[0].id).toBe('R1-ANCHOR');
+      expect(subBranchNodes[1].id).toBe('N3-LATEST');
       expect(subBranchNodes.some(n => n.id === 'N1-OLD')).toBeFalse();
       expect(subBranchNodes.some(n => n.id === 'N2-OLDER')).toBeFalse();
     });
@@ -493,7 +477,6 @@ describe('ReleaseNodeService', () => {
       const pixelsPerDay = 2;
       const markers = (service as any).generateQuarterMarkers(startDate, endDate, pixelsPerDay);
 
-      // Q4 2023, Q1 2024, Q2 2024
       expect(markers.length).toBe(3);
       expect(markers[0].label).toBe('Q4 2023');
       expect(markers[1].label).toBe('Q1 2024');

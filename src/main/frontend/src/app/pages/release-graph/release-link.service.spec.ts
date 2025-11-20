@@ -20,16 +20,26 @@ describe('ReleaseLinkService', () => {
   let service: ReleaseLinkService;
   let mockNodeService: jasmine.SpyObj<ReleaseNodeService>;
 
-  const masterNode1 = createMockNode('master-1');
-  const masterNode2 = createMockNode('master-2');
-  const anchorNode8 = createMockNode('anchor-8.0', 'release/8.0');
-  const masterNode3 = createMockNode('master-3');
+  const masterNode1 = createMockNode('master-1', undefined, 'v10.0.0');
+  const masterNode3 = createMockNode('master-3', undefined, 'v11.0.0');
 
-  const subNode8_1 = createMockNode('sub-8.0-1', 'release/8.0');
-  const subNode8_2 = createMockNode('sub-8.0-2', 'release/8.0');
+  const subNode8_1 = createMockNode('sub-8.0-1', 'release/8.0', 'v8.0.0');
+  const subNode8_2 = createMockNode('sub-8.0-2', 'release/8.0', 'v8.0.1');
 
-  const anchorNode9 = createMockNode('anchor-9.0', 'release/9.0');
-  const subNode9_1 = createMockNode('sub-9.0-1', 'release/9.0');
+  const subNode9_1 = createMockNode('sub-9.0-1', 'release/9.0', 'v9.0.0');
+
+  const miniNode8: ReleaseNode = {
+    ...createMockNode(`mini-${subNode8_1.id}`, 'master', subNode8_1.label),
+    isMiniNode: true,
+    originalBranch: subNode8_1.branch,
+    linkedBranchNode: subNode8_1.id,
+  };
+  const miniNode9: ReleaseNode = {
+    ...createMockNode(`mini-${subNode9_1.id}`, 'master', subNode9_1.label),
+    isMiniNode: true,
+    originalBranch: subNode9_1.branch,
+    linkedBranchNode: subNode9_1.id,
+  };
 
   beforeEach(() => {
     const nodeServiceSpy = jasmine.createSpyObj('ReleaseNodeService', ['getVersionInfo', 'timelineScale']);
@@ -136,10 +146,10 @@ describe('ReleaseLinkService', () => {
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
-        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } }, // Yes
-        { id: 'v7.0.1', name: 'v7.0.1', branch: { name: MASTER_BRANCH_NAME } }, // No (patch)
-        { id: 'v7.1.0', name: 'v7.1.0', branch: { name: MASTER_BRANCH_NAME } }, // Yes
-        { id: 'v7.1.1', name: 'v7.1.1', branch: { name: MASTER_BRANCH_NAME } }  // No (patch)
+        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } },
+        { id: 'v7.0.1', name: 'v7.0.1', branch: { name: MASTER_BRANCH_NAME } },
+        { id: 'v7.1.0', name: 'v7.1.0', branch: { name: MASTER_BRANCH_NAME } },
+        { id: 'v7.1.1', name: 'v7.1.1', branch: { name: MASTER_BRANCH_NAME } }
       ];
 
       masterNodes[0].position = { x: 0, y: 0 };
@@ -206,7 +216,9 @@ describe('ReleaseLinkService', () => {
         y: 0,
         skippedCount: 1,
         skippedVersions: ['v7.0.0'],
-        label: '1 skipped'
+        label: '1 skipped',
+        sourceNodeId: 'v6.0.0',
+        targetNodeId: 'v8.0.0',
       }];
 
       const links = service.createSkipNodeLinks(skipNodes, masterNodes);
@@ -251,17 +263,15 @@ describe('ReleaseLinkService', () => {
     });
 
     it('should only create intra-branch links for master if no sub-branches are provided', () => {
-      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, [masterNode1, masterNode2, masterNode3]]])];
+      const structuredGroups = [new Map([[MASTER_BRANCH_NAME, [masterNode1, masterNode3]]])];
       const links = service.createLinks(structuredGroups, []);
 
-      expect(links.length).toBe(3);
+      expect(links.length).toBe(2);
       const intraBranchLinks = links.filter(link => !link.source.startsWith('start-node-'));
 
-      expect(intraBranchLinks.length).toBe(2);
+      expect(intraBranchLinks.length).toBe(1);
       expect(intraBranchLinks[0].source).toBe('master-1');
-      expect(intraBranchLinks[0].target).toBe('master-2');
-      expect(intraBranchLinks[1].source).toBe('master-2');
-      expect(intraBranchLinks[1].target).toBe('master-3');
+      expect(intraBranchLinks[0].target).toBe('master-3');
     });
 
     it('should not crash and return an empty array if master branch is missing or empty', () => {
@@ -275,14 +285,6 @@ describe('ReleaseLinkService', () => {
 
       expect(links2).toEqual([]);
     });
-
-    it('should not create links for a sub-branch that has an empty node array', () => {
-      const masterNodes = [masterNode1, masterNode2];
-      const subGroups = [new Map([['empty-branch', []]])];
-      const links = (service as any).createSubBranchLinks(subGroups, masterNodes);
-
-      expect(links.length).toBe(0);
-    });
   });
 
   describe('Core Linking Logic', () => {
@@ -290,7 +292,7 @@ describe('ReleaseLinkService', () => {
     let structuredGroups: Map<string, ReleaseNode[]>[];
 
     beforeEach(() => {
-      masterNodes = [masterNode1, anchorNode8, anchorNode9, masterNode3];
+      masterNodes = [masterNode1, miniNode8, miniNode9, masterNode3];
       structuredGroups = [
         new Map([[MASTER_BRANCH_NAME, masterNodes]]),
         new Map([['release/8.0', [subNode8_1, subNode8_2]]]),
@@ -298,15 +300,9 @@ describe('ReleaseLinkService', () => {
       ];
     });
 
-    it('should create all expected links for a full graph structure', () => {
-      const links = service.createLinks(structuredGroups, []);
-
-      expect(links.length).toBe(7);
-    });
-
     it('should create a correct anchor link from a master node to a sub-branch node', () => {
       const links = service.createLinks(structuredGroups, []);
-      const anchorLink = links.find((link) => link.source === 'anchor-8.0' && link.target.startsWith('sub-'));
+      const anchorLink = links.find((link) => link.source === miniNode8.id && link.target === subNode8_1.id);
 
       expect(anchorLink).toBeDefined();
       expect(anchorLink?.target).toBe('sub-8.0-1');
@@ -321,11 +317,11 @@ describe('ReleaseLinkService', () => {
     });
 
     it('should NOT create an anchor link if its anchor node is missing from the master list', () => {
-      const incompleteMasterNodes = [masterNode1, anchorNode8, masterNode3];
+      const incompleteMasterNodes = [masterNode1, miniNode8, masterNode3];
       const groups = [new Map([[MASTER_BRANCH_NAME, incompleteMasterNodes]]), new Map([['release/9.0', [subNode9_1]]])];
       const links = service.createLinks(groups, []);
 
-      const missingAnchorLink = links.find((link) => link.target === 'sub-9.0-1');
+      const missingAnchorLink = links.find((link) => link.source === miniNode9.id);
 
       expect(missingAnchorLink).toBeUndefined();
     });
@@ -341,7 +337,7 @@ describe('ReleaseLinkService', () => {
       }];
 
       const links = service.createLinks(structuredGroups, skipNodes);
-      const fadeInLink = links.find((link) => link.isFadeIn || link.source.startsWith('start-node-'));
+      const fadeInLink = links.find((link) => link.isGap && link.source.startsWith('start-node-'));
 
       expect(fadeInLink).toBeDefined();
       expect(fadeInLink?.isGap).toBe(true);

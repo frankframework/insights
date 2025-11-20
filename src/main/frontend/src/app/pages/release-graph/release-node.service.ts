@@ -17,6 +17,8 @@ export interface ReleaseNode {
   isCluster?: boolean;
   clusteredNodes?: ReleaseNode[];
   isExpanded?: boolean;
+  isMiniNode?: boolean;
+  linkedBranchNode?: string;
 }
 
 export interface TimelineScale {
@@ -58,6 +60,7 @@ export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
   private static readonly GITHUB_SNAPSHOT_DISPLAY: string = 'snapshot';
+  private static readonly PIXELS_PER_QUARTER: number = 200;
 
   public timelineScale: TimelineScale | null = null;
 
@@ -76,31 +79,40 @@ export class ReleaseNodeService {
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
 
     const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
-    const masterNodes = this.createReleaseNodes(masterReleases);
+    const nodes = this.createReleaseNodes(masterReleases);
 
-    const filteredMasterNodes = this.filterUnsupportedMinorReleases(masterNodes);
+    const filteredNodes = this.filterUnsupportedMinorReleases(nodes);
 
     groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
 
-    const subBranchMaps: Map<string, ReleaseNode[]>[] = [];
+    const branchMaps: Map<string, ReleaseNode[]>[] = [];
 
     for (const [branchName, branchReleases] of groupedByBranch.entries()) {
       if (branchReleases.length === 0) continue;
 
-      const subBranchNodes = this.createReleaseNodes(branchReleases);
-      const anchorNode = subBranchNodes.shift()!;
-      anchorNode.originalBranch = branchName;
-      filteredMasterNodes.push(anchorNode);
+      const branchNodes = this.createReleaseNodes(branchReleases);
+      const firstBranchNode = branchNodes[0];
 
-      if (subBranchNodes.length > 0) {
-        subBranchMaps.push(new Map([[branchName, subBranchNodes]]));
-      }
+      const miniNode: ReleaseNode = {
+        id: `mini-${firstBranchNode.id}`,
+        label: '',
+        branch: ReleaseNodeService.GITHUB_MASTER_BRANCH,
+        publishedAt: firstBranchNode.publishedAt,
+        color: '',
+        position: { x: 0, y: 0 },
+        isMiniNode: true,
+        originalBranch: branchName,
+        linkedBranchNode: firstBranchNode.id,
+      };
+
+      filteredNodes.push(miniNode);
+      branchMaps.push(new Map([[branchName, branchNodes]]));
     }
 
-    this.sortByNightlyAndDate(filteredMasterNodes, (node) => node.label);
+    this.sortByNightlyAndDate(filteredNodes, (node) => node.label);
 
-    const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, filteredMasterNodes]]);
-    return [masterMap, ...subBranchMaps];
+    const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, filteredNodes]]);
+    return [masterMap, ...branchMaps];
   }
 
   public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
@@ -119,13 +131,15 @@ export class ReleaseNodeService {
     // Calculate timeline scale based on all publish dates
     this.timelineScale = this.calculateTimelineScale(allNodes);
 
-    const masterNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
-    this.positionMasterNodes(masterNodes);
+    const masterBranchNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
+    this.positionMasterNodes(masterBranchNodes);
 
-    const positionedNodes = new Map<string, ReleaseNode[]>([[ReleaseNodeService.GITHUB_MASTER_BRANCH, masterNodes]]);
+    const positionedNodes = new Map<string, ReleaseNode[]>([
+      [ReleaseNodeService.GITHUB_MASTER_BRANCH, masterBranchNodes],
+    ]);
 
-    const subBranches = this.getSortedSubBranches(nodeMap);
-    this.positionSubBranches(subBranches, masterNodes, positionedNodes);
+    const branches = this.getSortedBranches(nodeMap);
+    this.positionBranches(branches, masterBranchNodes, positionedNodes);
 
     return positionedNodes;
   }
@@ -133,7 +147,7 @@ export class ReleaseNodeService {
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): void {
     const allNodes: ReleaseNode[] = [];
     for (const nodes of releaseGroups.values()) {
-      allNodes.push(...nodes);
+      allNodes.push(...nodes.filter((n) => !n.isMiniNode));
     }
 
     const parentVersionMap = this.buildParentVersionMap(allNodes);
@@ -194,6 +208,9 @@ export class ReleaseNodeService {
   public createClusters(nodes: ReleaseNode[]): ReleaseNode[] {
     if (!this.timelineScale || nodes.length === 0) return nodes;
 
+    const miniNodes = nodes.filter((n) => n.isMiniNode);
+    const regularNodes = nodes.filter((n) => !n.isMiniNode);
+
     const CLUSTER_THRESHOLD = 150;
     const MIN_SPACING_OUTSIDE = 60;
     const MIN_SPACING_INSIDE = 70;
@@ -201,9 +218,11 @@ export class ReleaseNodeService {
     const clusterStartDate = new Date(this.timelineScale.latestReleaseDate);
     clusterStartDate.setMonth(clusterStartDate.getMonth() - 4);
 
-    const { clusters, consumedNodeIds } = this.findClusterComponents(nodes, clusterStartDate, CLUSTER_THRESHOLD);
+    const { clusters, consumedNodeIds } = this.findClusterComponents(regularNodes, clusterStartDate, CLUSTER_THRESHOLD);
 
-    const finalNodes = this.buildClusteredNodeList(nodes, clusters, consumedNodeIds);
+    const finalNodes = this.buildClusteredNodeList(regularNodes, clusters, consumedNodeIds);
+
+    finalNodes.push(...miniNodes);
 
     finalNodes.sort((a, b) => a.position.x - b.position.x);
 
@@ -368,6 +387,10 @@ export class ReleaseNodeService {
    */
   private filterUnsupportedMinorReleases(masterNodes: ReleaseNode[]): ReleaseNode[] {
     return masterNodes.filter((node) => {
+      if (node.isMiniNode) {
+        return true;
+      }
+
       const versionInfo = this.getVersionInfo(node);
 
       if (node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
@@ -392,8 +415,6 @@ export class ReleaseNodeService {
    * 2. Matches pattern vX.Y.Z-YYYYMMDD.HHMMSS (nightly)
    */
   private isNightlyRelease(label: string): boolean {
-    // NOTE: This checks the *original* release name (passed in from release.name) or the node label
-    // If checking the node label, we must check for the DISPLAY term ('snapshot')
     if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
       return true;
     }
@@ -508,7 +529,7 @@ export class ReleaseNodeService {
     }
   }
 
-  private getSortedSubBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
+  private getSortedBranches(nodeMap: Map<string, ReleaseNode[]>): [string, ReleaseNode[]][] {
     return [...nodeMap.entries()]
       .filter(([branch]) => branch !== ReleaseNodeService.GITHUB_MASTER_BRANCH)
       .toSorted(([branchA], [branchB]) => {
@@ -527,41 +548,43 @@ export class ReleaseNodeService {
       : null;
   }
 
-  private positionSubBranches(
-    subBranches: [string, ReleaseNode[]][],
+  private positionBranches(
+    branches: [string, ReleaseNode[]][],
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
     const Y_SPACING = 90;
     let yLevel = 1;
 
-    for (const [branchName, subNodes] of subBranches) {
-      if (subNodes.every((n) => this.isUnsupported(n))) continue;
+    for (const [branchName, nodes] of branches) {
+      if (nodes.every((n) => this.isUnsupported(n))) continue;
 
-      const anchorNode = masterNodes.find((n) => n.originalBranch === branchName);
-      if (!anchorNode) continue;
+      const miniNode = masterNodes.find((n) => n.originalBranch === branchName && n.isMiniNode);
+      if (!miniNode) continue;
 
       const baseY = yLevel * Y_SPACING;
-      this.positionSubBranchNodes(subNodes, baseY);
-      positionedNodes.set(branchName, subNodes);
+      this.positionBranchNodes(nodes, baseY, miniNode);
+      positionedNodes.set(branchName, nodes);
       yLevel++;
     }
   }
 
-  private positionSubBranchNodes(subNodes: ReleaseNode[], baseY: number): void {
+  private positionBranchNodes(nodes: ReleaseNode[], baseY: number, miniNode: ReleaseNode): void {
     if (!this.timelineScale) return;
 
-    for (const node of subNodes) {
+    for (const node of nodes) {
       const x = this.calculateXPositionFromDate(node.publishedAt, this.timelineScale);
       node.position = { x, y: baseY };
+    }
+
+    const MINI_NODE_OFFSET = 40;
+    if (nodes.length > 0) {
+      miniNode.position.x = nodes[0].position.x - MINI_NODE_OFFSET;
     }
   }
 
   /**
    * Builds a map from version key (e.g., "8.0" or "8.1") to the parent major/minor release node.
-   *
-   * FIX: This method now explicitly excludes snapshot/nightly releases to ensure that only
-   * genuine minor/major versions are used as parent anchors for support calculations.
    */
   private buildParentVersionMap(allNodes: ReleaseNode[]): Map<string, ReleaseNode> {
     const parentMap = new Map<string, ReleaseNode>();
@@ -645,7 +668,6 @@ export class ReleaseNodeService {
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
-    // Corrected to check for 'snapshot' to ensure nightlies are never considered unsupported
     if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
       return false;
     }
@@ -698,8 +720,6 @@ export class ReleaseNodeService {
       };
     }
 
-    const PIXELS_PER_QUARTER = 200;
-
     const dates = allNodes.map((n) => n.publishedAt.getTime());
     const minTime = Math.min(...dates);
     const maxTime = Math.max(...dates);
@@ -716,7 +736,7 @@ export class ReleaseNodeService {
     const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
 
     const AVERAGE_DAYS_PER_QUARTER = 90;
-    const pixelsPerDay = PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
+    const pixelsPerDay = ReleaseNodeService.PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
 
     const quarters = this.generateQuarterMarkers(startDate, endDate, pixelsPerDay);
 
@@ -746,7 +766,6 @@ export class ReleaseNodeService {
 
   private generateQuarterMarkers(startDate: Date, endDate: Date, pixelsPerDay: number): QuarterMarker[] {
     const markers: QuarterMarker[] = [];
-    const PIXELS_PER_QUARTER = 200; // Same as in calculateTimelineScale
     let currentDate = new Date(this.getQuarterStart(startDate));
 
     while (currentDate <= endDate) {
@@ -756,7 +775,7 @@ export class ReleaseNodeService {
 
       const daysSinceStart = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
       const x = daysSinceStart * pixelsPerDay;
-      const labelX = x + PIXELS_PER_QUARTER / 2;
+      const labelX = x + ReleaseNodeService.PIXELS_PER_QUARTER / 2;
 
       markers.push({
         label: `Q${quarter} ${year}`,
@@ -881,7 +900,8 @@ export class ReleaseNodeService {
     for (const node of nodes) {
       const previousNode = spacedFinalNodes.at(-1);
 
-      if (previousNode) {
+      // Skip spacing adjustment for mini nodes - they need to maintain their offset from branch nodes
+      if (previousNode && !node.isMiniNode) {
         const gap = node.position.x - previousNode.position.x;
 
         const nodeInZone = node.publishedAt >= clusterStartDate;
