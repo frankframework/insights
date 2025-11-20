@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,7 +111,7 @@ public class ReleaseArtifactService {
         }
 
         try (Stream<Path> walk = Files.walk(directory)) {
-            walk.sorted((a, b) -> -a.compareTo(b)).forEach(path -> {
+            walk.sorted(Comparator.reverseOrder()).forEach(path -> {
                 try {
                     Files.delete(path);
                 } catch (IOException e) {
