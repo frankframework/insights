@@ -60,6 +60,7 @@ export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
   private static readonly GITHUB_SNAPSHOT_DISPLAY: string = 'snapshot';
+  private static readonly PIXELS_PER_QUARTER: number = 200;
 
   public timelineScale: TimelineScale | null = null;
 
@@ -414,8 +415,6 @@ export class ReleaseNodeService {
    * 2. Matches pattern vX.Y.Z-YYYYMMDD.HHMMSS (nightly)
    */
   private isNightlyRelease(label: string): boolean {
-    // NOTE: This checks the *original* release name (passed in from release.name) or the node label
-    // If checking the node label, we must check for the DISPLAY term ('snapshot')
     if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
       return true;
     }
@@ -586,9 +585,6 @@ export class ReleaseNodeService {
 
   /**
    * Builds a map from version key (e.g., "8.0" or "8.1") to the parent major/minor release node.
-   *
-   * FIX: This method now explicitly excludes snapshot/nightly releases to ensure that only
-   * genuine minor/major versions are used as parent anchors for support calculations.
    */
   private buildParentVersionMap(allNodes: ReleaseNode[]): Map<string, ReleaseNode> {
     const parentMap = new Map<string, ReleaseNode>();
@@ -672,7 +668,6 @@ export class ReleaseNodeService {
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
-    // Corrected to check for 'snapshot' to ensure nightlies are never considered unsupported
     if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
       return false;
     }
@@ -725,8 +720,6 @@ export class ReleaseNodeService {
       };
     }
 
-    const PIXELS_PER_QUARTER = 200;
-
     const dates = allNodes.map((n) => n.publishedAt.getTime());
     const minTime = Math.min(...dates);
     const maxTime = Math.max(...dates);
@@ -743,7 +736,7 @@ export class ReleaseNodeService {
     const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
 
     const AVERAGE_DAYS_PER_QUARTER = 90;
-    const pixelsPerDay = PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
+    const pixelsPerDay = ReleaseNodeService.PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
 
     const quarters = this.generateQuarterMarkers(startDate, endDate, pixelsPerDay);
 
@@ -773,7 +766,6 @@ export class ReleaseNodeService {
 
   private generateQuarterMarkers(startDate: Date, endDate: Date, pixelsPerDay: number): QuarterMarker[] {
     const markers: QuarterMarker[] = [];
-    const PIXELS_PER_QUARTER = 200; // Same as in calculateTimelineScale
     let currentDate = new Date(this.getQuarterStart(startDate));
 
     while (currentDate <= endDate) {
@@ -783,7 +775,7 @@ export class ReleaseNodeService {
 
       const daysSinceStart = (currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
       const x = daysSinceStart * pixelsPerDay;
-      const labelX = x + PIXELS_PER_QUARTER / 2;
+      const labelX = x + ReleaseNodeService.PIXELS_PER_QUARTER / 2;
 
       markers.push({
         label: `Q${quarter} ${year}`,
