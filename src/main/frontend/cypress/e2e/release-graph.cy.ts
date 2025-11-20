@@ -71,12 +71,15 @@ describe('Graph Rendering and Interaction', () => {
         .should('have.length.greaterThan', 0);
     });
 
-    it('should display nightly releases with darkblue color', () => {
+    it('should display snapshot releases with appropriate colors', () => {
       cy.get('@graphSvg')
         .find('g[data-cy*="-snapshot"]')
+        .should('have.length.greaterThan', 0)
         .first()
-        .find('circle[fill="darkblue"]')
-        .should('exist');
+        .find('circle')
+        .should('exist')
+        .and('have.attr', 'fill')
+        .and('match', /^#[0-9A-Fa-f]{6}$/);
     });
   });
 

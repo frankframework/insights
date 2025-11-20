@@ -283,143 +283,187 @@ describe('ReleaseNodeService', () => {
     });
   });
 
-  describe('assignReleaseColors and determineColor', () => {
+  describe('assignReleaseColors', () => {
     const NOW = new Date('2025-06-15T12:00:00Z');
-    const TWO_WEEKS_AGO = new Date(NOW.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const TWO_MONTHS_AGO = new Date(NOW.getTime() - 60 * 24 * 60 * 60 * 1000);
-    const FOUR_MONTHS_AGO = new Date(NOW.getTime() - 120 * 24 * 60 * 60 * 1000);
-    const THREE_YEARS_AGO = new Date(NOW.getTime() - 3 * 365 * 24 * 60 * 60 * 1000);
-    const FOUR_YEARS_AGO = new Date(NOW.getTime() - 4 * 365 * 24 * 60 * 60 * 1000);
+    const ONE_MONTH_AGO = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const THIRTEEN_MONTHS_AGO = new Date(NOW.getTime() - 395 * 24 * 60 * 60 * 1000);
 
-    const PARENT_SUPPORTED_DATE = TWO_MONTHS_AGO;
+    it('should assign CUTTING_EDGE color to master nightly', () => {
+      const masterNightly: ReleaseNode = {
+        id: 'master-nightly',
+        label: '9.4-snapshot',
+        publishedAt: NOW,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: MASTER_BRANCH_NAME,
+      };
 
-    it('should assign FULL support color for a recent major release (v9.0.0)', () => {
-      const node = { label: 'v9.0.0', publishedAt: PARENT_SUPPORTED_DATE } as any;
-      const color = (service as any).determineColor(node, false, false);
+      const releaseGroups = new Map([[MASTER_BRANCH_NAME, [masterNightly]]]);
+      service.assignReleaseColors(releaseGroups);
 
-      expect(color).toBe(SupportColors.FULL);
+      expect(masterNightly.color).toBe(SupportColors.CUTTING_EDGE);
     });
 
-    it('should assign SECURITY support color for an older minor release (v8.4.0)', () => {
-      const node = { label: 'v8.4.0', publishedAt: FOUR_MONTHS_AGO } as any;
-      const color = (service as any).determineColor(node, false, false);
+    it('should assign LTS color to latest major release and its nightly', () => {
+      const majorRelease: ReleaseNode = {
+        id: 'major-1',
+        label: 'v9.0.0',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/9.0',
+      };
 
-      expect(color).toBe(SupportColors.SECURITY);
+      const majorNightly: ReleaseNode = {
+        id: 'major-nightly',
+        label: 'v9.0.1-snapshot',
+        publishedAt: NOW,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/9.0',
+      };
+
+      const releaseGroups = new Map([['release/9.0', [majorRelease, majorNightly]]]);
+      service.assignReleaseColors(releaseGroups);
+
+      expect(majorRelease.color).toBe(SupportColors.LTS);
+      expect(majorNightly.color).toBe(SupportColors.LTS);
     });
 
-    it('should assign NONE support color for an unsupported release (v7.2.0)', () => {
-      const node = { label: 'v7.2.0', publishedAt: THREE_YEARS_AGO } as any;
-      const color = (service as any).determineColor(node, false, false);
+    it('should assign LATEST_STABLE to latest minor release when it is not LTS', () => {
+      const olderMajor: ReleaseNode = {
+        id: 'major-old',
+        label: 'v8.0.0',
+        publishedAt: THIRTEEN_MONTHS_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: MASTER_BRANCH_NAME,
+      };
 
-      expect(color).toBe(SupportColors.NONE);
+      const latestMinor: ReleaseNode = {
+        id: 'minor-latest',
+        label: 'v8.4.0',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/8.4',
+      };
+
+      const latestMinorNightly: ReleaseNode = {
+        id: 'minor-nightly',
+        label: 'v8.4.1-snapshot',
+        publishedAt: NOW,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/8.4',
+      };
+
+      const releaseGroups = new Map([
+        [MASTER_BRANCH_NAME, [olderMajor]],
+        ['release/8.4', [latestMinor, latestMinorNightly]],
+      ]);
+      service.assignReleaseColors(releaseGroups);
+
+      expect(latestMinor.color).toBe(SupportColors.LATEST_STABLE);
+      expect(latestMinorNightly.color).toBe(SupportColors.LATEST_STABLE);
     });
 
-    it('should assign darkblue for a nightly/snapshot release', () => {
-      const node = { label: 'v9.0.2-snapshot' } as any;
-      const color = (service as any).determineColor(node, false, false);
+    it('should assign HISTORICAL color to all nodes initially', () => {
+      const node1: ReleaseNode = {
+        id: '1',
+        label: 'v1.0.0',
+        publishedAt: THIRTEEN_MONTHS_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: MASTER_BRANCH_NAME,
+      };
 
-      expect(color).toBe(SupportColors.NIGHTLY);
+      const node2: ReleaseNode = {
+        id: '2',
+        label: 'v2.0.0',
+        publishedAt: THIRTEEN_MONTHS_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: MASTER_BRANCH_NAME,
+      };
+
+      const releaseGroups = new Map([[MASTER_BRANCH_NAME, [node1, node2]]]);
+      service.assignReleaseColors(releaseGroups);
+
+      expect(node1.color).toBe(SupportColors.HISTORICAL);
+      expect(node2.color).toBe(SupportColors.HISTORICAL);
     });
 
-    describe('latest patch version logic', () => {
-      it('should assign NONE color to older patch versions regardless of support dates', () => {
-        const node = { label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO } as any;
-        const isPatchVersion = true;
-        const isLatestPatch = false;
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch);
+    it('should not assign colors to mini nodes', () => {
+      const regularNode: ReleaseNode = {
+        id: 'regular',
+        label: 'v9.0.0',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/9.0',
+      };
 
-        expect(color).toBe(SupportColors.NONE);
-      });
+      const miniNode: ReleaseNode = {
+        id: 'mini',
+        label: '',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: MASTER_BRANCH_NAME,
+        isMiniNode: true,
+      };
 
-      it('should assign normal support colors to the latest patch version', () => {
-        const parentNode = { publishedAt: PARENT_SUPPORTED_DATE } as ReleaseNode;
-        const node = { label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, branch: 'master' } as any;
-        const isPatchVersion = true;
-        const isLatestPatch = true;
+      const releaseGroups = new Map([['release/9.0', [regularNode, miniNode]]]);
+      service.assignReleaseColors(releaseGroups);
 
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch, parentNode);
-
-        expect(color).toBe(SupportColors.FULL);
-      });
-
-      it('should not affect major versions (v9.0.0) - they get their own support colors', () => {
-        const node = { label: 'v9.0.0', publishedAt: PARENT_SUPPORTED_DATE } as any;
-        const isPatchVersion = false;
-        const isLatestPatch = false;
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch, null);
-
-        expect(color).toBe(SupportColors.FULL);
-      });
-
-      it('should not affect minor versions (v8.4.0) - they get their own support colors', () => {
-        const node = { label: 'v8.4.0', publishedAt: FOUR_MONTHS_AGO } as any;
-        const isPatchVersion = false;
-        const isLatestPatch = false;
-        const color = (service as any).determineColor(node, isPatchVersion, isLatestPatch, null);
-
-        expect(color).toBe(SupportColors.SECURITY);
-      });
+      expect(regularNode.color).not.toBe('');
+      expect(miniNode.color).toBe('');
     });
 
-    describe('assignReleaseColors - integration with latest patch logic', () => {
-      it('should identify and color only the latest patch in a series correctly', () => {
-        const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '3', label: 'v8.4.3', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-        ];
+    it('should handle branches with only nightly releases', () => {
+      const nightlyOnly: ReleaseNode = {
+        id: 'nightly',
+        label: 'v8.0.1-snapshot',
+        publishedAt: NOW,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/8.0',
+      };
 
-        const parentNode = { id: 'p', label: 'v8.4.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' }
-        const releaseGroups = new Map([['master', [...nodes, parentNode]]]);
+      const releaseGroups = new Map([['release/8.0', [nightlyOnly]]]);
+      service.assignReleaseColors(releaseGroups);
 
-        service.assignReleaseColors(releaseGroups);
+      expect(nightlyOnly.color).toBeDefined();
+    });
 
-        expect(nodes[0].color).toBe(SupportColors.NONE);
-        expect(nodes[1].color).toBe(SupportColors.NONE);
-        expect(nodes[2].color).toBe(SupportColors.FULL);
-      });
+    it('should correctly identify and color the latest LTS even with multiple major versions', () => {
+      const olderMajor: ReleaseNode = {
+        id: 'old-major',
+        label: 'v8.0.0',
+        publishedAt: THIRTEEN_MONTHS_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/8.0',
+      };
 
-      it('should handle multiple version series independently', () => {
-        const FOUR_YEARS_AGO_PLUS_2DAYS = new Date(FOUR_YEARS_AGO.getTime() + 2 * 86_400_000);
-        const FOUR_YEARS_AGO_PLUS_3DAYS = new Date(FOUR_YEARS_AGO.getTime() + 3 * 86_400_000);
+      const latestMajor: ReleaseNode = {
+        id: 'latest-major',
+        label: 'v9.0.0',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/9.0',
+      };
 
-        const parent78 = { id: 'p78', label: 'v7.8.0', publishedAt: FOUR_YEARS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' }
+      const releaseGroups = new Map([
+        ['release/8.0', [olderMajor]],
+        ['release/9.0', [latestMajor]],
+      ]);
+      service.assignReleaseColors(releaseGroups);
 
-        const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v7.8.1', publishedAt: FOUR_YEARS_AGO_PLUS_2DAYS, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v7.8.2', publishedAt: FOUR_YEARS_AGO_PLUS_2DAYS, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '5', label: 'v7.8.3', publishedAt: FOUR_YEARS_AGO_PLUS_3DAYS, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-
-          { id: '3', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '4', label: 'v8.4.2', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-        ];
-
-        const parent84 = { id: 'p84', label: 'v8.4.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' }
-        const releaseGroups = new Map([['master', [...nodes, parent78, parent84]]]);
-
-        service.assignReleaseColors(releaseGroups);
-
-        expect(nodes[0].color).toBe(SupportColors.NONE);
-        expect(nodes[1].color).toBe(SupportColors.NONE);
-
-        expect(nodes[3].color).toBe(SupportColors.NONE);
-        expect(nodes[4].color).toBe(SupportColors.FULL);
-      });
-
-      it('should not affect major and minor version colors', () => {
-        const nodes: ReleaseNode[] = [
-          { id: '1', label: 'v8.0.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '2', label: 'v8.4.0', publishedAt: PARENT_SUPPORTED_DATE, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-          { id: '3', label: 'v8.4.1', publishedAt: TWO_WEEKS_AGO, color: '', position: { x: 0, y: 0 }, branch: 'master' },
-        ];
-
-        const releaseGroups = new Map([['master', nodes]]);
-        service.assignReleaseColors(releaseGroups);
-
-        expect(nodes[0].color).toBe(SupportColors.FULL);
-        expect(nodes[1].color).toBe(SupportColors.FULL);
-        expect(nodes[2].color).toBe(SupportColors.FULL);
-      });
+      expect(latestMajor.color).toBe(SupportColors.LTS);
+      expect(olderMajor.color).toBe(SupportColors.HISTORICAL);
     });
   });
 

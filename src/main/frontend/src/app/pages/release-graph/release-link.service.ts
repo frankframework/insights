@@ -190,7 +190,6 @@ export class ReleaseLinkService {
     allNodes: ReleaseNode[],
     allReleases: Release[],
   ): Release[] {
-    // Resolve mini nodes to their linked branch nodes for version comparison
     const sourceNode = source.isMiniNode ? this.getLinkedBranchNode(source, allNodes) : source;
     const targetNode = target.isMiniNode ? this.getLinkedBranchNode(target, allNodes) : target;
 
@@ -220,7 +219,6 @@ export class ReleaseLinkService {
     allNodes: ReleaseNode[],
     allReleases: Release[],
   ): Release[] {
-    // Resolve mini node to its linked branch node for version comparison
     const nodeToCheck = firstNode.isMiniNode ? this.getLinkedBranchNode(firstNode, allNodes) : firstNode;
     if (!nodeToCheck) return [];
 
@@ -303,7 +301,6 @@ export class ReleaseLinkService {
   }
 
   private isVersionGap(source: ReleaseNode, target: ReleaseNode, allNodes: ReleaseNode[] = []): boolean {
-    // Get actual nodes for version comparison (resolve mini nodes to their linked branch nodes)
     const sourceNode = source.isMiniNode ? this.getLinkedBranchNode(source, allNodes) : source;
     const targetNode = target.isMiniNode ? this.getLinkedBranchNode(target, allNodes) : target;
 
@@ -346,10 +343,8 @@ export class ReleaseLinkService {
   }
 
   private handleRegularSkipNode(skipNode: SkipNode, masterNodes: ReleaseNode[], links: ReleaseLink[]): void {
-    // Use the stored source and target node IDs
     if (!skipNode.sourceNodeId || !skipNode.targetNodeId) return;
 
-    // Find the actual nodes by ID
     const sourceNode = masterNodes.find((node) => node.id === skipNode.sourceNodeId);
     const targetNode = masterNodes.find((node) => node.id === skipNode.targetNodeId);
 
