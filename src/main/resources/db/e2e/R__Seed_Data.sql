@@ -24,6 +24,8 @@ MERGE INTO milestone (id, number, title, state, url, due_on, open_issue_count, c
 	('milestone-overflow', 14, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/14', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 20, 0),
 	('milestone-no-issues', 15, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/15', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 0, 0);
 
+-- Corrected the BRANCH_ID for the v7.9 releases to use the properly defined 'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'
+
 MERGE INTO release (id, tag_name, name, published_at, branch_id) KEY(id) VALUES
 	('RE_kwDOAIg5ds4MwqlG','release/9.1-nightly','v9.1.1-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvOS4x'),
 	('RE_kwDOAIg5ds4JaYPG','master-nightly','v9.2.0-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg=='),
@@ -60,11 +62,11 @@ MERGE INTO release (id, tag_name, name, published_at, branch_id) KEY(id) VALUES
 	('RE_kwDOAIg5ds4H2uLY','v7.8.4','v7.8.4', DATEADD('MONTH', -21, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
 	('RE_kwDOAIg5ds4H-_so','v7.8.5','v7.8.5', DATEADD('MONTH', -20, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvNy44'),
 	('RE_kwDOAIg5ds4Hlplu','v7.9-RC1','v7.9-RC1', DATEADD('MONTH', -19, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
-	('RE_kwDOAIg5ds4H_D0j','v7.9.0','v7.9.0', DATEADD('MONTH', -18, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS-release'),
-	('RE_kwDOAIg5ds4I9mAj','v7.9.2','v7.9.2', DATEADD('MONTH', -17, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS-release'),
-	('RE_kwDOAIg5ds4JT_pm','v7.9.3','v7.9.3', DATEADD('MONTH', -16, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS-release'),
-	('RE_kwDOAIg5ds4KrI8p','v7.9.4','v7.9.4', DATEADD('MONTH', -15, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS-release'),
-	('RE_kwDOAIg5ds4L1QJF','7.9-nightly','v7.9.7-nightly', DATEADD('MONTH', -15, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS-release'),
+	('RE_kwDOAIg5ds4H_D0j','v7.9.0','v7.9.0', DATEADD('MONTH', -18, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+	('RE_kwDOAIg5ds4I9mAj','v7.9.2','v7.9.2', DATEADD('MONTH', -17, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+	('RE_kwDOAIg5ds4JT_pm','v7.9.3','v7.9.3', DATEADD('MONTH', -16, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+	('RE_kwDOAIg5ds4KrI8p','v7.9.4','v7.9.4', DATEADD('MONTH', -15, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
+	('RE_kwDOAIg5ds4L1QJF','7.9-nightly','v7.9.7-nightly', DATEADD('MONTH', -15, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'),
 	('MDc6UmVsZWFzZTQ5MDUxNjU=','v6.1','v6.1', DATEADD('MONTH', -48, CURRENT_TIMESTAMP()),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg==');
 
 MERGE INTO issue_type (id, name, description, color) KEY(id) VALUES
