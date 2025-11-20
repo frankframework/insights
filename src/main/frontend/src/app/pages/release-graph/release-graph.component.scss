@@ -100,6 +100,9 @@
       stroke: #adb5bd;
       stroke-width: 2;
       stroke-dasharray: 4, 3;
+      transition: transform 0.15s ease-out;
+      transform-box: fill-box;
+      transform-origin: center;
     }
 
     .skip-text {
@@ -110,9 +113,10 @@
       dominant-baseline: middle;
     }
 
-    &:hover .skip-circle {
-      fill: #e9ecef;
-      stroke: #868e96;
+    &:hover {
+      .skip-circle {
+        transform: scale(1.05);
+      }
     }
   }
 
