@@ -45,7 +45,7 @@ export const SupportColors = {
   SUPPORTED: '#007BFF',
   LTS: '#9370DB',
   EOL: '#DC3545',
-  HISTORICAL: '#D3D3D3',
+  HISTORICAL: '#F8F8F8',
   ARCHIVED: '#F0F0F0',
 } as const;
 
