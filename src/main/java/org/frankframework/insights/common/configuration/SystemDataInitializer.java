@@ -11,6 +11,7 @@ import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
+import org.frankframework.insights.release.ReleaseArtifactService;
 import org.frankframework.insights.release.ReleaseService;
 import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final IssueService issueService;
     private final PullRequestService pullRequestService;
     private final ReleaseService releaseService;
+    private final ReleaseArtifactService releaseArtifactService;
     private final VulnerabilityService vulnerabilityService;
 
     @Value("${data.fetch-enabled}")
@@ -45,6 +47,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             IssueService issueService,
             PullRequestService pullRequestService,
             ReleaseService releaseService,
+            ReleaseArtifactService releaseArtifactService,
             VulnerabilityService vulnerabilityService) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
@@ -55,6 +58,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.issueService = issueService;
         this.pullRequestService = pullRequestService;
         this.releaseService = releaseService;
+        this.releaseArtifactService = releaseArtifactService;
         this.vulnerabilityService = vulnerabilityService;
     }
 
@@ -121,8 +125,10 @@ public class SystemDataInitializer implements CommandLineRunner {
             releaseService.injectReleases();
             log.info("Done fetching all GitHub data");
 
-            log.info("Start fetching vulnerability data");
+            log.info("Cleaning up obsolete release artifacts");
+            releaseArtifactService.deleteObsoleteReleaseArtifacts();
 
+            log.info("Start fetching vulnerability data");
             vulnerabilityService.scanAndSaveVulnerabilitiesForAllReleases();
 
             log.info("Done fetching all vulnerability data");
