@@ -543,7 +543,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
   }
 
-
   private centerGraph(): void {
     if (!this.svgElement?.nativeElement || this.releaseNodes.length === 0) return;
     this.viewBox = this.calculateViewBox(this.releaseNodes);
