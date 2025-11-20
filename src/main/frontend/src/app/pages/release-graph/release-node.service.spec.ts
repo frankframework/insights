@@ -394,6 +394,77 @@ describe('ReleaseNodeService', () => {
       expect(node2.color).toBe(SupportColors.HISTORICAL);
     });
 
+    it('should not assign colors to mini nodes', () => {
+      const regularNode: ReleaseNode = {
+        id: 'regular',
+        label: 'v9.0.0',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/9.0',
+      };
+
+      const miniNode: ReleaseNode = {
+        id: 'mini',
+        label: '',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: MASTER_BRANCH_NAME,
+        isMiniNode: true,
+      };
+
+      const releaseGroups = new Map([['release/9.0', [regularNode, miniNode]]]);
+      service.assignReleaseColors(releaseGroups);
+
+      expect(regularNode.color).not.toBe('');
+      expect(miniNode.color).toBe('');
+    });
+
+    it('should handle branches with only nightly releases', () => {
+      const nightlyOnly: ReleaseNode = {
+        id: 'nightly',
+        label: 'v8.0.1-snapshot',
+        publishedAt: NOW,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/8.0',
+      };
+
+      const releaseGroups = new Map([['release/8.0', [nightlyOnly]]]);
+      service.assignReleaseColors(releaseGroups);
+
+      expect(nightlyOnly.color).toBeDefined();
+    });
+
+    it('should correctly identify and color the latest LTS even with multiple major versions', () => {
+      const olderMajor: ReleaseNode = {
+        id: 'old-major',
+        label: 'v8.0.0',
+        publishedAt: THIRTEEN_MONTHS_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/8.0',
+      };
+
+      const latestMajor: ReleaseNode = {
+        id: 'latest-major',
+        label: 'v9.0.0',
+        publishedAt: ONE_MONTH_AGO,
+        color: '',
+        position: { x: 0, y: 0 },
+        branch: 'release/9.0',
+      };
+
+      const releaseGroups = new Map([
+        ['release/8.0', [olderMajor]],
+        ['release/9.0', [latestMajor]],
+      ]);
+      service.assignReleaseColors(releaseGroups);
+
+      expect(latestMajor.color).toBe(SupportColors.LTS);
+      expect(olderMajor.color).toBe(SupportColors.HISTORICAL);
+    });
   });
 
   describe('getVersionFromBranchName', () => {
