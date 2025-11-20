@@ -69,6 +69,8 @@ export class ReleaseNodeService {
     const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
     this.sortGroupedReleases(groupedByBranch);
 
+    this.removeDuplicateNightlies(groupedByBranch);
+
     this.pruneUnsupportedMinorBranches(groupedByBranch);
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
 
@@ -254,6 +256,25 @@ export class ReleaseNodeService {
         y: centerY,
       },
     }));
+  }
+
+  /**
+   * Iterates through the grouped releases and keeps only the latest nightly release
+   * for any branch that contains more than one nightly release.
+   * This assumes the releases are already sorted by date (ascending).
+   */
+  private removeDuplicateNightlies(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): void {
+    for (const [branchName, releases] of groupedByBranch.entries()) {
+      const nightlyReleases = releases.filter((r) => this.isNightlyRelease(r.name));
+
+      if (nightlyReleases.length > 1) {
+        const latestNightly = nightlyReleases.at(-1)!;
+
+        const filteredReleases = releases.filter((r) => !this.isNightlyRelease(r.name) || r.id === latestNightly.id);
+
+        groupedByBranch.set(branchName, filteredReleases);
+      }
+    }
   }
 
   /**
