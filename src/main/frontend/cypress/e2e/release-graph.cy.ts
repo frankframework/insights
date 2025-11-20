@@ -72,7 +72,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should display nightly releases with darkblue color', () => {
-      cy.get('@graphSvg').find('g[data-cy="node-v9.1.1-SNAPSHOT"]')
+      cy.get('@graphSvg').find('g[data-cy="node-9.1-snapshot"]')
         .find('circle[fill="darkblue"]')
         .should('exist');
     });
@@ -110,6 +110,8 @@ describe('Graph Rendering and Interaction', () => {
     it('should expand cluster on click', () => {
       cy.get('@graphSvg').find('g[data-cy^="node-v"]').its('length').then((initialNodeCount) => {
         cy.get('@graphSvg').find('g.cluster-node').first().as('clusterNode').click({ force: true });
+
+        cy.wait(50);
 
         cy.get('@graphSvg').find('g[data-cy^="node-v"]').should('have.length.greaterThan', initialNodeCount);
 
