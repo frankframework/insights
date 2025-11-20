@@ -54,7 +54,7 @@ describe('Graph Rendering and Interaction', () => {
   context('Branch and Node Rendering (based on Seeder data)', () => {
     it('should render sub-branch nodes on different y-levels', () => {
       cy.get('@graphSvg')
-        .find('g[data-cy^="node-v"]')
+        .find('g[data-cy^="node-"]')
         .filter((i, el) => {
           const transform = el.getAttribute('transform');
           return transform?.match(/translate\([^,]+,\s*0\)/) !== null;
@@ -62,7 +62,7 @@ describe('Graph Rendering and Interaction', () => {
         .should('have.length.greaterThan', 0);
 
       cy.get('@graphSvg')
-        .find('g[data-cy^="node-v"]')
+        .find('g[data-cy^="node-"]')
         .filter((i, el) => {
           const transform = el.getAttribute('transform');
           const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
