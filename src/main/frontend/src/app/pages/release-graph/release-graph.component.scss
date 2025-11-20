@@ -217,22 +217,15 @@
   }
 
   .release-node {
-    circle {
+    circle, text {
       transition: transform 0.15s ease-out;
     }
 
-    text {
-      transition: transform 0.15s ease-out;
-    }
-
-    &:hover circle {
-      transform: scale(1.05);
-      cursor: pointer;
-    }
-
-    &:hover text {
-      transform: scale(1.05);
-      cursor: pointer;
+    &:hover {
+      circle, text {
+        transform: scale(1.05);
+        cursor: pointer;
+      }
     }
   }
 
