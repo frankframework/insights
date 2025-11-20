@@ -240,7 +240,7 @@ export class ReleaseNodeService {
     }
 
     const BASE_SPACING = 60;
-    const SNAPSHOT_EXTRA_SPACING = 30;
+    const SNAPSHOT_EXTRA_SPACING = 10;
     const clusteredNodes = clusterNode.clusteredNodes;
     const centerX = clusterNode.position.x;
     const centerY = clusterNode.position.y;
@@ -552,7 +552,7 @@ export class ReleaseNodeService {
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
-    const Y_SPACING = 90;
+    const Y_SPACING = 85;
     let yLevel = 1;
 
     for (const [branchName, nodes] of branches) {
