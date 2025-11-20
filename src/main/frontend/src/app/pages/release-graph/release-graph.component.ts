@@ -627,7 +627,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.scale = targetHeight / Math.max(graphH, 1);
     const scaledGraphH = graphH * this.scale;
     const topPadding = (H - scaledGraphH) / 2;
-    this.translateY = -minY * this.scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING;
+    this.translateY = -minY * this.scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING - 20;
 
     this.maxTranslateX = -minX * this.scale + W * 0.2;
     this.minTranslateX = W - maxX * this.scale - W * 0.45;
