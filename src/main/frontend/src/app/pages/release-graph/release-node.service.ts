@@ -45,7 +45,7 @@ export const SupportColors = {
   SUPPORTED: '#007BFF',
   LTS: '#9370DB',
   EOL: '#DC3545',
-  HISTORICAL: '#F8F8F8',
+  HISTORICAL: '#D3D3D3',
   ARCHIVED: '#F0F0F0',
 } as const;
 
@@ -724,7 +724,7 @@ export class ReleaseNodeService {
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
-    const Y_SPACING = 85;
+    const Y_SPACING = 90;
     let yLevel = 1;
 
     for (const [branchName, nodes] of branches) {
