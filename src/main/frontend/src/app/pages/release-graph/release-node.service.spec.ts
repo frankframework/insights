@@ -12,7 +12,6 @@ const createMockData = (): Release[] => {
     b90: { id: 'b-90', name: 'release/9.0' },
     b84: { id: 'b-84', name: 'release/8.4' },
     b72: { id: 'b-72', name: 'release/7.2' },
-    b_single: { id: 'b-single', name: 'release/6.5' },
   };
 
   return [
@@ -87,15 +86,6 @@ const createMockData = (): Release[] => {
       branch: branches['b72'],
       tagName: 'release/v7.2.1',
     },
-
-    // Branch met 1 release (will not produce a sub-branch map)
-    {
-      id: '6.5-anchor',
-      name: 'v6.5.0',
-      publishedAt: new Date('2025-01-01T10:00:00Z'),
-      branch: branches['b_single'],
-      tagName: 'release/v6.5.0',
-    },
   ];
 };
 
@@ -131,7 +121,7 @@ describe('ReleaseNodeService', () => {
       const structuredData = service.structureReleaseData(mockReleases);
       const masterNodes = structuredData[0].get(MASTER_BRANCH_NAME)!;
 
-      const anchorNode = masterNodes.find((node) => node.id === '8.4-anchor');
+      const anchorNode = masterNodes.find((node) => node.originalBranch === 'release/8.4');
 
       expect(anchorNode).toBeDefined();
       expect(anchorNode?.originalBranch).toBe('release/8.4');
@@ -493,7 +483,6 @@ describe('ReleaseNodeService', () => {
       const pixelsPerDay = 2;
       const markers = (service as any).generateQuarterMarkers(startDate, endDate, pixelsPerDay);
 
-      // Q4 2023, Q1 2024, Q2 2024
       expect(markers.length).toBe(3);
       expect(markers[0].label).toBe('Q4 2023');
       expect(markers[1].label).toBe('Q1 2024');

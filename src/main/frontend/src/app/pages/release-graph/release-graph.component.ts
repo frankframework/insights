@@ -194,7 +194,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const miniNodeRadius = 6;
     const nodeRadius = 20;
 
-    const margin = isSkipLink ? 10 : isMiniNode ? miniNodeRadius + 2 : nodeRadius + 2;
+    let margin: number;
+    if (isSkipLink) {
+      margin = 10;
+    } else if (isMiniNode) {
+      margin = miniNodeRadius + 2;
+    } else {
+      margin = nodeRadius + 2;
+    }
 
     if (link.isGap || link.isFadeIn) {
       const [x1, y1] = [source.position.x, source.position.y];

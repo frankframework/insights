@@ -86,13 +86,11 @@ export class ReleaseSkippedVersions implements OnChanges {
     info: { type: 'major' | 'minor' | 'patch'; major: number; minor: number },
     releaseMap: Map<string, ReleaseTreeNode>,
   ): void {
-    const mapKey =
-      info.type === 'minor'
-        ? `v${info.major}.${info.minor}`
-        : (release.name.startsWith('v')
-          ? release.name
-          : `v${release.name}`);
-    const displayVersion = release.name.startsWith('v') ? release.name : `v${release.name}`;
+    const prefixedReleaseName = release.name.startsWith('v') ? release.name : `v${release.name}`;
+
+    const mapKey = info.type === 'minor' ? `v${info.major}.${info.minor}` : prefixedReleaseName;
+
+    const displayVersion = prefixedReleaseName;
     const existingNode = releaseMap.get(mapKey);
 
     releaseMap.set(mapKey, {
