@@ -6,14 +6,7 @@ describe('Graph Rendering and Interaction', () => {
   });
 
   const robustClickNode = (nodeCySelector: string) => {
-    cy.get('body').then(($body) => {
-      if ($body.find(nodeCySelector).length > 0) {
-        cy.get(nodeCySelector).click({ force: true });
-      } else {
-        cy.get('g.cluster-node').first().should('be.visible').click({ force: true });
-        cy.get(nodeCySelector).should('be.visible').click({ force: true });
-      }
-    });
+    cy.get(nodeCySelector).click({ force: true });
   };
 
   context('Initial State', () => {
@@ -70,7 +63,7 @@ describe('Graph Rendering and Interaction', () => {
 
       cy.get('@graphSvg')
         .find('g[data-cy^="node-v"]')
-              .filter((i, el) => {
+        .filter((i, el) => {
           const transform = el.getAttribute('transform');
           const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
           return parseFloat(yPos || '0') > 0;
@@ -79,7 +72,7 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should display nightly releases with darkblue color', () => {
-      cy.get('@graphSvg').find('g[data-cy="node-v9.0.2-20251030.042333 (nightly)"]')
+      cy.get('@graphSvg').find('g[data-cy="node-v9.1.1-SNAPSHOT"]')
         .find('circle[fill="darkblue"]')
         .should('exist');
     });
@@ -116,7 +109,7 @@ describe('Graph Rendering and Interaction', () => {
 
     it('should expand cluster on click', () => {
       cy.get('@graphSvg').find('g[data-cy^="node-v"]').its('length').then((initialNodeCount) => {
-        cy.get('@graphSvg').find('g.cluster-node').first().click({ force: true });
+        cy.get('@graphSvg').find('g.cluster-node').first().as('clusterNode').click({ force: true });
 
         cy.get('@graphSvg').find('g[data-cy^="node-v"]').should('have.length.greaterThan', initialNodeCount);
 
