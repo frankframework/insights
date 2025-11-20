@@ -14,6 +14,7 @@ export interface LifecyclePhase {
   startX: number;
   endX: number;
   color: string;
+  stroke: string;
 }
 
 export interface BranchLifecycle {
@@ -693,18 +694,24 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const midpointX = firstX + (supportEndX - firstX) / 2;
 
+    // Check if branch is outdated (support ended)
+    const now = new Date();
+    const isOutdated = now > supportEnd;
+
     phases.push(
       {
         type: 'supported',
         startX: firstX,
         endX: midpointX,
-        color: 'rgba(144, 238, 144, 0.25)',
+        color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(144, 238, 144, 0.25)',
+        stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(144, 238, 144, 0.4)',
       },
       {
         type: 'supported',
         startX: midpointX,
         endX: supportEndX,
-        color: 'rgba(251, 146, 60, 0.15)',
+        color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(251, 146, 60, 0.15)',
+        stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(251, 146, 60, 0.25)',
       },
     );
 

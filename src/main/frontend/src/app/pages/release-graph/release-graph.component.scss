@@ -181,14 +181,6 @@
     .lifecycle-phase {
       transition: opacity 0.2s;
       stroke-width: 1;
-
-      &[data-phase="supported"]:first-child {
-        stroke: rgba(144, 238, 144, 0.4);
-      }
-
-      &[data-phase="supported"]:nth-child(2) {
-        stroke: rgba(251, 146, 60, 0.25);
-      }
     }
   }
 
