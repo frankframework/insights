@@ -59,8 +59,13 @@
         position: absolute;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         transform: translateY(-50%);
+
+        .branch-shield-icon {
+          flex-shrink: 0;
+          display: block;
+        }
 
         .sticky-branch-label {
           font-size: 14px;
@@ -71,15 +76,6 @@
           text-anchor: start;
           dominant-baseline: central;
           opacity: 0.9;
-        }
-
-        .support-status-dot {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          flex-shrink: 0;
-          background-color: #90ee90;
-          box-shadow: 0 0 4px rgba(144, 238, 144, 0.6);
         }
       }
     }
