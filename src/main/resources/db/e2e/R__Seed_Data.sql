@@ -24,8 +24,6 @@ MERGE INTO milestone (id, number, title, state, url, due_on, open_issue_count, c
 	('milestone-overflow', 14, 'Release 9.6.0 (Overflow)', 0, 'http://example.com/milestone/14', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 20, 0),
 	('milestone-no-issues', 15, 'Release 9.7.0 (No Issues)', 0, 'http://example.com/milestone/15', DATEADD('MONTH', 2, CURRENT_TIMESTAMP()), 0, 0);
 
--- Corrected the BRANCH_ID for the v7.9 releases to use the properly defined 'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzLzcuOS1yZWxlYXNl'
-
 MERGE INTO release (id, tag_name, name, published_at, branch_id) KEY(id) VALUES
 	('RE_kwDOAIg5ds4MwqlG','release/9.1-nightly','v9.1.1-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL3JlbGVhc2UvOS4x'),
 	('RE_kwDOAIg5ds4JaYPG','master-nightly','v9.2.0-nightly', CURRENT_TIMESTAMP(),'MDM6UmVmODkyNzYwNjpyZWZzL2hlYWRzL21hc3Rlcg=='),
