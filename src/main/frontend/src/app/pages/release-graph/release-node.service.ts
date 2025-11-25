@@ -58,6 +58,11 @@ interface VersionInfo {
   type: 'major' | 'minor' | 'patch';
 }
 
+interface SupportDates {
+  fullSupportEnd: Date;
+  securitySupportEnd: Date;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
@@ -969,21 +974,21 @@ export class ReleaseNodeService {
     const nonNightly = nodes.filter((n) => !this.isNightlyRelease(n.label));
     if (nonNightly.length === 0) return null;
 
-    return nonNightly.reduce((latest, node) => {
-      const latestVersion = this.getVersionInfo(latest);
-      const nodeVersion = this.getVersionInfo(node);
+    const nodesWithVersions = nonNightly
+      .map((node) => ({ node, version: this.getVersionInfo(node) }))
+      .filter((item) => item.version !== null);
 
-      if (!latestVersion || !nodeVersion) return latest;
+    if (nodesWithVersions.length === 0) return null;
 
-      if (nodeVersion.major > latestVersion.major) return node;
-      if (nodeVersion.major < latestVersion.major) return latest;
+    return nodesWithVersions.reduce((latest, current) =>
+      this.compareVersions(current.version!, latest.version!) > 0 ? current : latest,
+    ).node;
+  }
 
-      if (nodeVersion.minor > latestVersion.minor) return node;
-      if (nodeVersion.minor < latestVersion.minor) return latest;
-
-      if (nodeVersion.patch > latestVersion.patch) return node;
-      return latest;
-    });
+  private compareVersions(v1: VersionInfo, v2: VersionInfo): number {
+    if (v1.major !== v2.major) return v1.major - v2.major;
+    if (v1.minor !== v2.minor) return v1.minor - v2.minor;
+    return v1.patch - v2.patch;
   }
 
   private findLatestNightly(nodes: ReleaseNode[]): ReleaseNode | null {
@@ -1064,7 +1069,7 @@ export class ReleaseNodeService {
     return new Date() > supportDates.securitySupportEnd;
   }
 
-  private getSupportEndDates(release: ReleaseNode): { fullSupportEnd: Date; securitySupportEnd: Date } | null {
+  private getSupportEndDates(release: ReleaseNode): SupportDates | null {
     const versionInfo = this.getVersionInfo(release);
     if (!versionInfo) return null;
 
