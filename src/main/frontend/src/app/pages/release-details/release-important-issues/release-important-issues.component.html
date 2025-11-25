@@ -1,45 +1,16 @@
-<div>
+<div class="important-issues-wrapper">
   <div class="important-issues-header">
-    <h2>Important issues</h2>
+    <h3>Important Issues</h3>
     <div class="header-controls">
-      <label>
+      <label class="issue-type-filter">
         <select data-cy="issue-type-filter" [ngModel]="selectedType()" (ngModelChange)="selectedType.set($event)">
           @for (type of issueTypeOptions(); track type.value) {
             <option [ngValue]="type.value">{{ type.label }}</option>
           }
         </select>
       </label>
-      <label class="business-value-toggle">
-        <input type="checkbox" [checked]="showBusinessValues()" (change)="toggleBusinessValues()" />
-        <span>Business Value</span>
-      </label>
     </div>
   </div>
-
-  @if (showBusinessValues()) {
-    <div class="business-values-container">
-      <h3>Business Values</h3>
-      @if (isLoadingBusinessValues()) {
-        <p class="loading-message">Loading business values...</p>
-      } @else if (businessValues().length > 0) {
-        <ul class="business-values-list">
-          @for (businessValue of businessValues(); track businessValue.id) {
-            <li class="business-value-item">
-              <div class="business-value-title">{{ businessValue.title }}</div>
-              <div class="business-value-description">{{ businessValue.description }}</div>
-              @if (businessValue.issueUrl) {
-                <a [href]="businessValue.issueUrl" target="_blank" rel="noopener noreferrer" class="business-value-link">
-                  View Issue #{{ businessValue.issueNumber }}
-                </a>
-              }
-            </li>
-          }
-        </ul>
-      } @else {
-        <p class="no-business-values">No business values found for this release.</p>
-      }
-    </div>
-  }
 
   <div class="important-issues-container">
     @if (sortedAndFilteredIssues().length) {
@@ -47,7 +18,7 @@
         <app-issue-tree-branch [issue]="issue" [depth]="0" />
       }
     } @else {
-      <p>No important issues found for this release.</p>
+      <p class="no-issues">No important issues found for this release.</p>
     }
   </div>
 </div>

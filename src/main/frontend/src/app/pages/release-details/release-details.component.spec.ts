@@ -256,4 +256,74 @@ describe('ReleaseDetailsComponent', () => {
       expect(mockLocation.back).toHaveBeenCalledWith();
     });
   });
+
+  describe('toggleBusinessValue', () => {
+    it('should toggle showBusinessValue from true to false', () => {
+      component.showBusinessValue.set(true);
+
+      component.toggleBusinessValue();
+
+      expect(component.showBusinessValue()).toBe(false);
+    });
+
+    it('should toggle showBusinessValue from false to true', () => {
+      component.showBusinessValue.set(false);
+
+      component.toggleBusinessValue();
+
+      expect(component.showBusinessValue()).toBe(true);
+    });
+
+    it('should toggle showBusinessValue multiple times correctly', () => {
+      const initialState = component.showBusinessValue();
+
+      component.toggleBusinessValue();
+
+      expect(component.showBusinessValue()).toBe(!initialState);
+
+      component.toggleBusinessValue();
+
+      expect(component.showBusinessValue()).toBe(initialState);
+    });
+  });
+
+  describe('toggleImportantIssues', () => {
+    it('should toggle showImportantIssues from true to false', () => {
+      component.showImportantIssues.set(true);
+
+      component.toggleImportantIssues();
+
+      expect(component.showImportantIssues()).toBe(false);
+    });
+
+    it('should toggle showImportantIssues from false to true', () => {
+      component.showImportantIssues.set(false);
+
+      component.toggleImportantIssues();
+
+      expect(component.showImportantIssues()).toBe(true);
+    });
+
+    it('should toggle showImportantIssues multiple times correctly', () => {
+      const initialState = component.showImportantIssues();
+
+      component.toggleImportantIssues();
+
+      expect(component.showImportantIssues()).toBe(!initialState);
+
+      component.toggleImportantIssues();
+
+      expect(component.showImportantIssues()).toBe(initialState);
+    });
+  });
+
+  describe('Signal initial states', () => {
+    it('should initialize showBusinessValue to true', () => {
+      expect(component.showBusinessValue()).toBe(true);
+    });
+
+    it('should initialize showImportantIssues to false', () => {
+      expect(component.showImportantIssues()).toBe(false);
+    });
+  });
 });

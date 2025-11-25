@@ -27,8 +27,28 @@
                 <p>No new highlights found for this release.</p>
               </div>
             }
-            @if (releaseIssues) {
-              <app-release-important-issues [releaseIssues]="releaseIssues" [releaseId]="release.id" />
+
+            <div class="section-toggle-container">
+              <label class="section-toggle" [class.active]="showBusinessValue()">
+                <input type="checkbox" [checked]="showBusinessValue()" (change)="toggleBusinessValue()" />
+                <span class="toggle-label">Business Values</span>
+              </label>
+              <label class="section-toggle" [class.active]="showImportantIssues()">
+                <input type="checkbox" [checked]="showImportantIssues()" (change)="toggleImportantIssues()" />
+                <span class="toggle-label">Important Issues</span>
+              </label>
+            </div>
+
+            @if (showBusinessValue()) {
+              <div class="section-content">
+                <app-release-business-value [releaseId]="release.id" />
+              </div>
+            }
+
+            @if (releaseIssues && showImportantIssues()) {
+              <div class="section-content">
+                <app-release-important-issues [releaseIssues]="releaseIssues" [releaseId]="release.id" />
+              </div>
             }
           }
         </div>
