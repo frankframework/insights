@@ -8,11 +8,6 @@
         <li class="business-value-item">
           <div class="business-value-title">{{ businessValue.title }}</div>
           <div class="business-value-description">{{ businessValue.description }}</div>
-          @if (businessValue.issueUrl) {
-            <a target="_blank" rel="noopener noreferrer" class="business-value-link" [href]="businessValue.issueUrl">
-              View Issue #{{ businessValue.issueNumber }}
-            </a>
-          }
         </li>
       }
     </ul>

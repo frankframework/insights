@@ -6,8 +6,6 @@ export interface BusinessValue {
   id: string;
   title: string;
   description: string;
-  issueNumber?: number;
-  issueUrl?: string;
 }
 
 @Injectable({
