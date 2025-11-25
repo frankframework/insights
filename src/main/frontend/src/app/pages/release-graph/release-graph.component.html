@@ -68,7 +68,7 @@
         }
 
         @for (entry of expandedClustersArray; track entry.key) {
-          @if (entry.value.clusteredNodes && entry.value.clusteredNodes.length > 0) {
+          @if (shouldShowCollapseButton(entry.value)) {
             @let lastNodePos = getLastExpandedNodePosition(entry.value);
             @if (lastNodePos) {
               <g
