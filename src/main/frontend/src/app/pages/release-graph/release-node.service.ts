@@ -561,9 +561,9 @@ export class ReleaseNodeService {
    * even if a recent patch was released.
    */
   private pruneHistoricalBranchesWithoutNightly(
-    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
   ): void {
-    const entries = Array.from(groupedByBranch.entries());
+    const entries = [...groupedByBranch.entries()];
 
     for (const [branchName, releases] of entries) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) {
@@ -572,19 +572,19 @@ export class ReleaseNodeService {
 
       if (releases.length === 0) continue;
 
-      const latestByDate = releases.reduce((prev, current) =>
-        (prev.publishedAt > current.publishedAt) ? prev : current
+      const latestByDate = releases.reduce((previous, current) =>
+        previous.publishedAt > current.publishedAt ? previous : current,
       );
 
       if (this.isNightlyRelease(latestByDate.name)) {
         continue;
       }
 
-      let rootRelease = releases.find(r => r.name.endsWith('.0') || r.tagName.endsWith('.0'));
+      let rootRelease = releases.find((r) => r.name.endsWith('.0') || r.tagName.endsWith('.0'));
 
       if (!rootRelease) {
-        rootRelease = releases.reduce((prev, current) =>
-          (prev.publishedAt < current.publishedAt) ? prev : current
+        rootRelease = releases.reduce((previous, current) =>
+          previous.publishedAt < current.publishedAt ? previous : current,
         );
       }
 
