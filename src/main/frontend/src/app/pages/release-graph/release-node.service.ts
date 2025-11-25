@@ -231,7 +231,7 @@ export class ReleaseNodeService {
 
   /**
    * Expands a cluster node into its individual nodes with proper spacing.
-   * Centers the expanded nodes around the cluster position.
+   * The first node starts at the cluster position, and subsequent nodes follow.
    * Gives extra spacing to nightly releases due to their longer labels.
    */
   public expandCluster(clusterNode: ReleaseNode): ReleaseNode[] {
@@ -240,7 +240,7 @@ export class ReleaseNodeService {
     }
 
     const BASE_SPACING = 60;
-    const SNAPSHOT_EXTRA_SPACING = 30;
+    const SNAPSHOT_EXTRA_SPACING = 10;
     const clusteredNodes = clusterNode.clusteredNodes;
     const centerX = clusterNode.position.x;
     const centerY = clusterNode.position.y;
@@ -266,13 +266,10 @@ export class ReleaseNodeService {
       }
     }
 
-    const totalWidth = positions.at(-1) ?? 0;
-    const startX = centerX - totalWidth / 2;
-
     return clusteredNodes.map((node, index) => ({
       ...node,
       position: {
-        x: startX + positions[index],
+        x: centerX + positions[index],
         y: centerY,
       },
     }));
@@ -553,7 +550,7 @@ export class ReleaseNodeService {
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
-    const Y_SPACING = 90;
+    const Y_SPACING = 85;
     let yLevel = 1;
 
     for (const [branchName, nodes] of branches) {

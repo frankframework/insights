@@ -31,7 +31,7 @@ export interface BranchLifecycle {
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
-  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 75;
+  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
@@ -683,6 +683,20 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return allNodes;
   }
 
+  private identifyAnyNodeById(nodeId: string): ReleaseNode | undefined {
+    const node = this.releaseNodes.find((n) => n.id === nodeId);
+    if (node) return node;
+
+    for (const n of this.releaseNodes) {
+      if (n.isCluster && n.clusteredNodes) {
+        const clusteredNode = n.clusteredNodes.find((cn) => cn.id === nodeId);
+        if (clusteredNode) return clusteredNode;
+      }
+    }
+
+    return undefined;
+  }
+
   private calculateLifecyclePhasesForBranch(sortedNodes: ReleaseNode[]): LifecyclePhase[] {
     if (!this.nodeService.timelineScale || sortedNodes.length === 0) return [];
 
@@ -701,7 +715,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     if (!majorMinorRelease) return [];
 
-    const majorMinorNode = this.releaseNodes.find((node) => node.id === majorMinorRelease.id);
+    const majorMinorNode = this.identifyAnyNodeById(majorMinorRelease.id);
     if (!majorMinorNode) return [];
 
     const firstX = majorMinorNode.position.x;
@@ -716,12 +730,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
 
-    // Offset startX to align with mini node position (40 pixels to the left)
     const MINI_NODE_OFFSET = 40;
     const offsetStartX = firstX - MINI_NODE_OFFSET;
     const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
 
-    // Check if branch is outdated (support ended)
     const now = new Date();
     const isOutdated = now > supportEnd;
 
