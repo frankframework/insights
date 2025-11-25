@@ -443,6 +443,70 @@ describe('ReleaseGraphComponent', () => {
     });
   });
 
+  describe('Nightly Toggle Functionality', () => {
+    it('should toggle showNightlies state', () => {
+      expect(component.showNightlies).toBe(false);
+
+      component.toggleNightlies();
+
+      expect(component.showNightlies).toBe(true);
+
+      component.toggleNightlies();
+
+      expect(component.showNightlies).toBe(false);
+    });
+
+    it('should return all nodes when showNightlies is true', () => {
+      const snapshotNode: ReleaseNode = {
+        id: 'snapshot-1',
+        label: 'v1.0.0-snapshot',
+        position: { x: 100, y: 100 },
+        branch: 'release',
+        color: 'darkblue',
+        publishedAt: new Date(),
+      };
+      const regularNode: ReleaseNode = {
+        id: 'regular-1',
+        label: 'v1.0.0',
+        position: { x: 200, y: 0 },
+        branch: 'master',
+        color: 'green',
+        publishedAt: new Date(),
+      };
+      component.releaseNodes = [regularNode, snapshotNode];
+      component.showNightlies = true;
+
+      expect(component.visibleReleaseNodes).toEqual([regularNode, snapshotNode]);
+    });
+
+    it('should filter out nightly nodes when showNightlies is false', () => {
+      const snapshotNode: ReleaseNode = {
+        id: 'snapshot-1',
+        label: 'v1.0.0-snapshot',
+        position: { x: 100, y: 100 },
+        branch: 'release',
+        color: 'darkblue',
+        publishedAt: new Date(),
+      };
+      const regularNode: ReleaseNode = {
+        id: 'regular-1',
+        label: 'v1.0.0',
+        position: { x: 200, y: 0 },
+        branch: 'master',
+        color: 'green',
+        publishedAt: new Date(),
+      };
+      component.releaseNodes = [regularNode, snapshotNode];
+      component.showNightlies = false;
+
+      const visible = component.visibleReleaseNodes;
+
+      expect(visible.length).toBe(1);
+      expect(visible[0]).toBe(regularNode);
+    });
+
+  });
+
   describe('(private) findNodeById', () => {
     // eslint-disable-next-line no-unused-vars
     let findNodeById: (_id: string) => ReleaseNode | undefined;

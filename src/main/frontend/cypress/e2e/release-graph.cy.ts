@@ -167,6 +167,55 @@ describe('Graph Rendering and Interaction', () => {
     });
   });
 
+  context('Nightly Toggle Functionality', () => {
+    it('should display the nightly toggle button', () => {
+      cy.get('.nightly-toggle-mobile').should('be.visible');
+    });
+
+    it('should toggle nightlies on click', () => {
+      cy.get('.nightly-toggle-mobile').should('not.have.class', 'active');
+
+      cy.get('.nightly-toggle-mobile').click();
+
+      cy.get('.nightly-toggle-mobile').should('have.class', 'active');
+    });
+
+    it('should change moon icon styling when active', () => {
+      cy.get('.nightly-toggle-mobile').click();
+
+      cy.get('.nightly-toggle-mobile.active .moon-icon').should('have.css', 'background-color', 'rgb(30, 58, 138)');
+    });
+
+    it('should show snapshot nodes when toggle is active', () => {
+      cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').then(($snapshots) => {
+        if ($snapshots.length > 0) {
+          cy.get('.nightly-toggle-mobile').click();
+          cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').should('be.visible');
+        } else {
+          cy.log('No snapshot nodes found - skipping test');
+        }
+      });
+    });
+
+    it('should display snapshot labels always', () => {
+      cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').first().then(($snapshot) => {
+        if ($snapshot.length > 0) {
+          cy.wrap($snapshot).find('text').should('exist');
+        } else {
+          cy.log('No snapshot nodes found - skipping test');
+        }
+      });
+    });
+
+    it('should toggle state on multiple clicks', () => {
+      cy.get('.nightly-toggle-mobile').should('not.have.class', 'active');
+      cy.get('.nightly-toggle-mobile').click();
+      cy.get('.nightly-toggle-mobile').should('have.class', 'active');
+      cy.get('.nightly-toggle-mobile').click();
+      cy.get('.nightly-toggle-mobile').should('not.have.class', 'active');
+    });
+  });
+
   context('Touch Events on Mobile', () => {
     it('should pan the graph on touch swipe gesture', () => {
       let initialTransform: string | undefined;
