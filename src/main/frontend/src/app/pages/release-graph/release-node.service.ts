@@ -45,8 +45,8 @@ export const SupportColors = {
   SUPPORTED: '#007BFF',
   LTS: '#9370DB',
   EOL: '#DC3545',
-  HISTORICAL: '#D3D3D3',
-  ARCHIVED: '#F0F0F0',
+  HISTORICAL: '#F8F8F8',
+  ARCHIVED: '#F8F8F8',
 } as const;
 
 export type SupportColor = (typeof SupportColors)[keyof typeof SupportColors];
@@ -177,7 +177,7 @@ export class ReleaseNodeService {
     }
 
     const BASE_SPACING = 60;
-    const SNAPSHOT_EXTRA_SPACING = 10;
+    const SNAPSHOT_EXTRA_SPACING = 30;
     const clusteredNodes = clusterNode.clusteredNodes!;
     const startX = clusterNode.position.x;
     const centerY = clusterNode.position.y;

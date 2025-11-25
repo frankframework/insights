@@ -635,9 +635,8 @@ describe('ReleaseNodeService', () => {
       expect(spacing1).toBe(EXPECTED_SPACING_NORMAL);
       expect(spacing2).toBe(EXPECTED_SPACING_NORMAL);
 
-      const avgX = result.reduce((sum, n) => sum + n.position.x, 0) / result.length;
-
-      expect(Math.abs(avgX - 500)).toBeLessThan(1);
+      // First node should start at the cluster position
+      expect(result[0].position.x).toBe(500);
     });
 
     it('should give extra spacing to nightly/snapshot releases', () => {
