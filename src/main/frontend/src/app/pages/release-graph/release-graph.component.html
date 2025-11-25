@@ -21,8 +21,8 @@
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
         @for (quarter of quarterMarkers; track quarter.label) {
           <g class="quarter-marker">
-            <line class="quarter-line" [attr.x1]="quarter.x" [attr.y1]="-95" [attr.x2]="quarter.x" [attr.y2]="1000" />
-            <text y="-110" class="quarter-label" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
+            <line class="quarter-line" [attr.x1]="quarter.x" [attr.y1]="-90" [attr.x2]="quarter.x" [attr.y2]="1000" />
+            <text y="-105" class="quarter-label" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
           </g>
         }
 
