@@ -142,7 +142,7 @@ describe('ReleaseBusinessValueComponent', () => {
       });
 
       expect(component.businessValues()).toEqual([]);
-      expect(consoleErrorSpy).toHaveBeenCalledWith();
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load business values:', jasmine.any(Error));
     });
   });
 
