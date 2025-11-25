@@ -200,7 +200,7 @@ export class ReleaseNodeService {
     const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
     this.sortGroupedReleases(groupedByBranch);
     this.removeDuplicateNightlies(groupedByBranch);
-    this.pruneUnsupportedMinorBranches(groupedByBranch);
+    this.pruneHistoricalBranchesWithoutNightly(groupedByBranch);
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
     return groupedByBranch;
   }
@@ -548,6 +548,57 @@ export class ReleaseNodeService {
         if (allUnsupported) {
           groupedByBranch.delete(branchName);
         }
+      }
+    }
+  }
+
+  /**
+   * Removes branches that are historically dead.
+   * Logic:
+   * 1. If it has an active Nightly -> KEEP (Active development).
+   * 2. If NO Nightly -> Check the SUPPORT status of the BRANCH ROOT (the .0 release).
+   * If the .0 release is unsupported, the whole branch is considered historical/skipped,
+   * even if a recent patch was released.
+   */
+  private pruneHistoricalBranchesWithoutNightly(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>
+  ): void {
+    const entries = Array.from(groupedByBranch.entries());
+
+    for (const [branchName, releases] of entries) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) {
+        continue;
+      }
+
+      if (releases.length === 0) continue;
+
+      const latestByDate = releases.reduce((prev, current) =>
+        (prev.publishedAt > current.publishedAt) ? prev : current
+      );
+
+      if (this.isNightlyRelease(latestByDate.name)) {
+        continue;
+      }
+
+      let rootRelease = releases.find(r => r.name.endsWith('.0') || r.tagName.endsWith('.0'));
+
+      if (!rootRelease) {
+        rootRelease = releases.reduce((prev, current) =>
+          (prev.publishedAt < current.publishedAt) ? prev : current
+        );
+      }
+
+      const rootNode: ReleaseNode = {
+        id: rootRelease.id,
+        label: this.transformNodeLabel(rootRelease),
+        branch: rootRelease.branch.name,
+        publishedAt: rootRelease.publishedAt,
+        position: { x: 0, y: 0 },
+        color: '',
+      };
+
+      if (this.isUnsupported(rootNode)) {
+        groupedByBranch.delete(branchName);
       }
     }
   }
