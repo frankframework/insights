@@ -47,6 +47,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public branchLifecycles: BranchLifecycle[] = [];
   public currentTimeX = 0;
   public showNotFoundError = false;
+  public showNightlies = false;
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -73,6 +74,31 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return [...this.expandedClusters.entries()].map(([key, value]) => ({ key, value }));
   }
 
+  public get visibleReleaseNodes(): ReleaseNode[] {
+    if (this.showNightlies) {
+      return this.releaseNodes;
+    }
+    return this.releaseNodes.filter((node) => !this.isNightlyNode(node));
+  }
+
+  public get visibleLinks(): ReleaseLink[] {
+    if (this.showNightlies) {
+      return this.allLinks;
+    }
+
+    return this.allLinks.filter((link) => {
+      const sourceNode = this.findNodeById(link.source);
+      const targetNode = this.findNodeById(link.target);
+
+      if (!sourceNode || !targetNode) return true;
+
+      const isSourceHidden = this.isNightlyNode(sourceNode);
+      const isTargetHidden = this.isNightlyNode(targetNode);
+
+      return !isSourceHidden && !isTargetHidden;
+    });
+  }
+
   ngOnInit(): void {
     this.isLoading = true;
     this.getAllReleases();
@@ -86,6 +112,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
+  }
+
+  public toggleNightlies(): void {
+    this.showNightlies = !this.showNightlies;
   }
 
   public onMouseDown(event: MouseEvent): void {
@@ -325,6 +355,18 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
     const lastNodeInArray = this.releaseNodes.find((n) => n.id === lastNode.id);
     return lastNodeInArray ? lastNodeInArray.position : null;
+  }
+
+  private isNightlyNode(node: ReleaseNode): boolean {
+    if (node.isMiniNode || node.isCluster) {
+      return false;
+    }
+
+    if (node.position.y === 0) {
+      return false;
+    }
+    const label = node.label.toLowerCase();
+    return label.includes('snapshot') || /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/.test(node.label);
   }
 
   private findNodeById(id: string): ReleaseNode | undefined {
