@@ -14,6 +14,7 @@ import org.frankframework.insights.issuetype.IssueTypeService;
 import org.frankframework.insights.label.LabelService;
 import org.frankframework.insights.milestone.MilestoneService;
 import org.frankframework.insights.pullrequest.PullRequestService;
+import org.frankframework.insights.release.ReleaseArtifactService;
 import org.frankframework.insights.release.ReleaseService;
 import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +58,9 @@ public class ShedLockLocalTest {
     private ReleaseService releaseService;
 
     @Mock
+    private ReleaseArtifactService releaseArtifactService;
+
+    @Mock
     private VulnerabilityService vulnerabilityService;
 
     private SystemDataInitializer systemDataInitializer;
@@ -73,6 +77,7 @@ public class ShedLockLocalTest {
                 issueService,
                 pullRequestService,
                 releaseService,
+                releaseArtifactService,
                 vulnerabilityService);
 
         Field field = SystemDataInitializer.class.getDeclaredField("dataFetchEnabled");
