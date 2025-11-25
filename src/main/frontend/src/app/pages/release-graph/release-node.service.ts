@@ -266,12 +266,10 @@ export class ReleaseNodeService {
       }
     }
 
-    const startX = centerX;
-
     return clusteredNodes.map((node, index) => ({
       ...node,
       position: {
-        x: startX + positions[index],
+        x: centerX + positions[index],
         y: centerY,
       },
     }));
