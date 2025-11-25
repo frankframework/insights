@@ -532,27 +532,6 @@ export class ReleaseNodeService {
   }
 
   /**
-   * Removes minor release branches entirely if all their nodes are unsupported.
-   */
-  private pruneUnsupportedMinorBranches(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): void {
-    for (const [branchName, releases] of groupedByBranch.entries()) {
-      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH || releases.length === 0) {
-        continue;
-      }
-
-      const firstReleaseNode = this.createReleaseNodes([releases[0]])[0];
-      const versionInfo = this.getVersionInfo(firstReleaseNode);
-
-      if (versionInfo?.type === 'minor') {
-        const allUnsupported = this.createReleaseNodes(releases).every((node) => this.isUnsupported(node));
-        if (allUnsupported) {
-          groupedByBranch.delete(branchName);
-        }
-      }
-    }
-  }
-
-  /**
    * Removes branches that are historically dead.
    * Logic:
    * 1. If it has an active Nightly -> KEEP (Active development).
