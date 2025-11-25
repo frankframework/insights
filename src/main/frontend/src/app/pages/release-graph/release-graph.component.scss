@@ -42,10 +42,85 @@
     display: none;
   }
 
+  .nightly-toggle,
+  .nightly-toggle-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 54px;
+    height: 28px;
+    border-radius: 14px;
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    pointer-events: all;
+    padding: 3px;
+
+    .moon-icon {
+      width: 22px;
+      height: 22px;
+      fill: #6c757d;
+      transition: all 0.2s ease-in-out;
+      background-color: #ffffff;
+      border-radius: 50%;
+      padding: 4px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+      transform: translateX(-5px);
+    }
+
+    &:hover {
+      background-color: #dee2e6;
+      border-color: #ced4da;
+    }
+
+    &:active {
+      .moon-icon {
+        transform: translateX(-5px) scale(0.96);
+      }
+    }
+
+    &.active {
+      .moon-icon {
+        background-color: #1e3a8a;
+        transform: translateX(20px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+        path {
+          stroke: #ffffff;
+        }
+      }
+
+      &:active {
+        .moon-icon {
+          transform: translateX(20px) scale(0.96);
+        }
+      }
+    }
+  }
+
+  .nightly-toggle {
+    display: none;
+  }
+
+  .nightly-toggle-mobile {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 100;
+  }
+
   @media (min-width: 992px) {
+    .nightly-toggle-mobile {
+      display: none;
+    }
+
     .branch-labels-sticky {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
       padding-inline: 1rem;
       width: 120px;
       height: 100%;
@@ -54,6 +129,11 @@
       left: 0;
       top: 75px;
       pointer-events: none;
+
+      .nightly-toggle {
+        display: flex;
+        margin-top: 2rem;
+      }
 
       .sticky-branch-label-container {
         position: absolute;

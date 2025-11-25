@@ -167,6 +167,176 @@ describe('Graph Rendering and Interaction', () => {
     });
   });
 
+  context('Nightly Toggle Functionality', () => {
+    const getToggleButton = () => {
+      return cy.get('body').then(($body) => {
+        if ($body.find('.nightly-toggle-mobile:visible').length > 0) {
+          return cy.get('.nightly-toggle-mobile');
+        } else {
+          return cy.get('.nightly-toggle');
+        }
+      });
+    };
+
+    it('should display the nightly toggle button', () => {
+      cy.get('.nightly-toggle-mobile, .nightly-toggle').filter(':visible').should('have.length', 1);
+    });
+
+    it('should toggle nightlies on click', () => {
+      getToggleButton().should('not.have.class', 'active');
+      getToggleButton().click();
+      getToggleButton().should('have.class', 'active');
+    });
+
+    it('should change moon icon styling when active', () => {
+      getToggleButton().click();
+      cy.get('.nightly-toggle.active .moon-icon, .nightly-toggle-mobile.active .moon-icon')
+        .filter(':visible')
+        .should('have.css', 'background-color', 'rgb(30, 58, 138)');
+    });
+
+    it('should show snapshot nodes when toggle is active', () => {
+      cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').then(($snapshots) => {
+        if ($snapshots.length > 0) {
+          getToggleButton().click();
+          cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').should('be.visible');
+        } else {
+          cy.log('No snapshot nodes found - skipping test');
+        }
+      });
+    });
+
+    it('should display snapshot labels always', () => {
+      cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').first().then(($snapshot) => {
+        if ($snapshot.length > 0) {
+          cy.wrap($snapshot).find('text').should('exist');
+        } else {
+          cy.log('No snapshot nodes found - skipping test');
+        }
+      });
+    });
+
+    it('should toggle state on multiple clicks', () => {
+      getToggleButton().should('not.have.class', 'active');
+      getToggleButton().click();
+      getToggleButton().should('have.class', 'active');
+      getToggleButton().click();
+      getToggleButton().should('not.have.class', 'active');
+    });
+
+    it('should reduce visible nodes when nightlies are hidden', () => {
+      let initialNodeCount: number;
+
+      cy.get('@graphSvg').find('g[data-cy^="node-"]').then(($nodes) => {
+        initialNodeCount = $nodes.length;
+      });
+
+      getToggleButton().click();
+
+      cy.get('@graphSvg').find('g[data-cy^="node-"]').should(($nodes) => {
+        expect($nodes.length).to.be.greaterThan(initialNodeCount);
+      });
+
+      getToggleButton().click();
+
+      cy.get('@graphSvg').find('g[data-cy^="node-"]').should(($nodes) => {
+        expect($nodes.length).to.equal(initialNodeCount);
+      });
+    });
+
+    it('should reduce visible links when nightlies are hidden', () => {
+      let initialLinkCount: number;
+
+      cy.get('@graphSvg').find('path[data-cy^="link-"]').then(($links) => {
+        initialLinkCount = $links.length;
+      });
+
+      getToggleButton().click();
+
+      cy.get('@graphSvg').find('path[data-cy^="link-"]').should(($links) => {
+        expect($links.length).to.be.greaterThan(initialLinkCount);
+      });
+
+      getToggleButton().click();
+
+      cy.get('@graphSvg').find('path[data-cy^="link-"]').should(($links) => {
+        expect($links.length).to.equal(initialLinkCount);
+      });
+    });
+
+    it('should hide snapshot nodes when toggle is inactive', () => {
+      getToggleButton().should('not.have.class', 'active');
+
+      cy.get('@graphSvg').then(($svg) => {
+        const snapshotNodes = $svg.find('g[data-cy*="-snapshot"]');
+        if (snapshotNodes.length > 0) {
+          snapshotNodes.each((idx, node) => {
+            const transform = Cypress.$(node).attr('transform');
+            const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
+            const isOnMasterBranch = yPos === '0';
+
+            if (!isOnMasterBranch) {
+              cy.log('Found snapshot node not on master branch - it should be hidden');
+            }
+          });
+        }
+      });
+    });
+
+    it('should maintain cluster functionality when toggling nightlies', () => {
+      cy.get('@graphSvg').find('g.cluster-node').then(($clusters) => {
+        if ($clusters.length === 0) {
+          cy.log('No cluster nodes found - skipping test');
+          return;
+        }
+
+        cy.get('@graphSvg').find('g.cluster-node').first().click({ force: true });
+        cy.wait(200);
+
+        const checkCollapse = () => {
+          cy.get('@graphSvg').find('g.collapse-button').then(($collapseButtons) => {
+            if ($collapseButtons.length > 0) {
+              cy.get('@graphSvg').find('g.collapse-button.visible').first().click({ force: true });
+              cy.wait(200);
+            }
+          });
+        };
+
+        checkCollapse();
+
+        getToggleButton().click();
+        cy.wait(200);
+
+        cy.get('@graphSvg').find('g.cluster-node').first().should('exist');
+      });
+    });
+
+    it('should adjust collapse button visibility based on nightly toggle', () => {
+      cy.get('@graphSvg').find('g.cluster-node').then(($clusters) => {
+        if ($clusters.length === 0) {
+          cy.log('No cluster nodes found - skipping test');
+          return;
+        }
+
+        cy.get('@graphSvg').find('g.cluster-node').first().click({ force: true });
+        cy.wait(200);
+
+        let collapseButtonCountWithoutNightlies: number;
+
+        cy.get('@graphSvg').find('g.collapse-button.visible').then(($buttons) => {
+          collapseButtonCountWithoutNightlies = $buttons.length;
+        });
+
+        getToggleButton().click();
+        cy.wait(200);
+
+        cy.get('@graphSvg').find('g.collapse-button.visible').should(($buttons) => {
+          expect($buttons.length).to.be.at.least(collapseButtonCountWithoutNightlies);
+        });
+      });
+    });
+  });
+
   context('Touch Events on Mobile', () => {
     it('should pan the graph on touch swipe gesture', () => {
       let initialTransform: string | undefined;

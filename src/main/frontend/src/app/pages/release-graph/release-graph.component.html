@@ -21,7 +21,7 @@
       <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
         @for (quarter of quarterMarkers; track quarter.label) {
           <g class="quarter-marker">
-            <line class="quarter-line" [attr.x1]="quarter.x" [attr.y1]="-80" [attr.x2]="quarter.x" [attr.y2]="1000" />
+            <line class="quarter-line" [attr.x1]="quarter.x" [attr.y1]="-90" [attr.x2]="quarter.x" [attr.y2]="1000" />
             <text y="-100" class="quarter-label" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
           </g>
         }
@@ -30,14 +30,14 @@
           <line
             class="current-time-line"
             [attr.x1]="currentTimeX"
-            [attr.y1]="-70"
+            [attr.y1]="-80"
             [attr.x2]="currentTimeX"
             [attr.y2]="1000"
           />
           <path
             class="current-time-chevron"
             d="M -8 0 L 0 8 L 8 0 Z"
-            [attr.transform]="'translate(' + currentTimeX + ', -80)'"
+            [attr.transform]="'translate(' + currentTimeX + ', -90)'"
           />
         </g>
 
@@ -58,7 +58,7 @@
           </g>
         }
 
-        @for (link of allLinks; track link) {
+        @for (link of visibleLinks; track link) {
           <path
             [attr.data-cy]="'link-' + link.id"
             [attr.d]="getCustomPath(link)"
@@ -68,7 +68,7 @@
         }
 
         @for (entry of expandedClustersArray; track entry.key) {
-          @if (entry.value.clusteredNodes && entry.value.clusteredNodes.length > 0) {
+          @if (shouldShowCollapseButton(entry.value)) {
             @let lastNodePos = getLastExpandedNodePosition(entry.value);
             @if (lastNodePos) {
               <g
@@ -85,7 +85,7 @@
           }
         }
 
-        @for (releaseNode of releaseNodes; track releaseNode.id) {
+        @for (releaseNode of visibleReleaseNodes; track releaseNode.id) {
           <g
             class="release-node"
             [class.cluster-node]="releaseNode.isCluster"
@@ -140,7 +140,20 @@
     </svg>
 
     <div class="branch-labels-sticky">
-      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label; let idx = $index) {
+      <button
+        class="nightly-toggle"
+        title="Toggle Nightly Releases"
+        [class.active]="showNightlies"
+        (click)="toggleNightlies()"
+      >
+        <svg viewBox="0 0 24 24" class="moon-icon">
+          <path
+            d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+            [attr.stroke]="showNightlies ? '#ffffff' : 'none'"
+          />
+        </svg>
+      </button>
+      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
         <div class="sticky-branch-label-container" [style.top.px]="stickyLabel.screenY - 75">
           <span class="sticky-branch-label">{{ stickyLabel.label }}</span>
           @if (isMajorVersionBranch(stickyLabel.label)) {
@@ -155,6 +168,17 @@
         </div>
       }
     </div>
+
+    <button
+      class="nightly-toggle-mobile"
+      title="Toggle Nightly Releases"
+      [class.active]="showNightlies"
+      (click)="toggleNightlies()"
+    >
+      <svg viewBox="0 0 24 24" class="moon-icon">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+    </button>
 
     <app-release-catalogus />
 

@@ -47,6 +47,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public branchLifecycles: BranchLifecycle[] = [];
   public currentTimeX = 0;
   public showNotFoundError = false;
+  public showNightlies = false;
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -73,6 +74,63 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return [...this.expandedClusters.entries()].map(([key, value]) => ({ key, value }));
   }
 
+  public get visibleReleaseNodes(): ReleaseNode[] {
+    if (this.showNightlies) {
+      return this.releaseNodes;
+    }
+
+    const filteredNodes: ReleaseNode[] = [];
+
+    for (const node of this.releaseNodes) {
+      // Skip nightly nodes that are not clusters
+      if (!node.isCluster && this.isNightlyNode(node)) {
+        continue;
+      }
+
+      // Handle cluster nodes
+      if (node.isCluster && node.clusteredNodes) {
+        const visibleClusteredNodes = node.clusteredNodes.filter((n) => !this.isNightlyNode(n));
+
+        // If cluster has 0 visible nodes, skip it entirely
+        if (visibleClusteredNodes.length === 0) {
+          continue;
+        }
+
+        // If cluster has only 1 visible node, show that node directly (uncluster)
+        if (visibleClusteredNodes.length === 1) {
+          filteredNodes.push(visibleClusteredNodes[0]);
+          continue;
+        }
+
+        // If cluster has 2+ visible nodes, keep it as a cluster
+        filteredNodes.push(node);
+      } else {
+        // Regular non-nightly node
+        filteredNodes.push(node);
+      }
+    }
+
+    return filteredNodes;
+  }
+
+  public get visibleLinks(): ReleaseLink[] {
+    if (this.showNightlies) {
+      return this.allLinks;
+    }
+
+    return this.allLinks.filter((link) => {
+      const sourceNode = this.findNodeById(link.source);
+      const targetNode = this.findNodeById(link.target);
+
+      if (!sourceNode || !targetNode) return true;
+
+      const isSourceHidden = this.isNightlyNode(sourceNode);
+      const isTargetHidden = this.isNightlyNode(targetNode);
+
+      return !isSourceHidden && !isTargetHidden;
+    });
+  }
+
   ngOnInit(): void {
     this.isLoading = true;
     this.getAllReleases();
@@ -86,6 +144,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
+  }
+
+  public toggleNightlies(): void {
+    this.showNightlies = !this.showNightlies;
   }
 
   public onMouseDown(event: MouseEvent): void {
@@ -314,17 +376,50 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return minor === 0;
   }
 
+  public shouldShowCollapseButton(clusterNode: ReleaseNode): boolean {
+    if (!clusterNode.isExpanded || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
+      return false;
+    }
+
+    // If nightlies are shown, always show collapse button for expanded clusters
+    if (this.showNightlies) {
+      return true;
+    }
+
+    // If nightlies are hidden, only show collapse button if there are 2+ visible nodes
+    const visibleNodes = clusterNode.clusteredNodes.filter((n) => !this.isNightlyNode(n));
+    return visibleNodes.length >= 2;
+  }
+
   public getLastExpandedNodePosition(clusterNode: ReleaseNode): { x: number; y: number } | null {
     if (!clusterNode.isExpanded || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
       return null;
     }
 
-    const lastNode = clusterNode.clusteredNodes.at(-1);
+    // If nightlies are hidden, find the last visible node
+    let nodesToConsider = clusterNode.clusteredNodes;
+    if (!this.showNightlies) {
+      nodesToConsider = clusterNode.clusteredNodes.filter((n) => !this.isNightlyNode(n));
+    }
+
+    const lastNode = nodesToConsider.at(-1);
     if (!lastNode) {
       return null;
     }
     const lastNodeInArray = this.releaseNodes.find((n) => n.id === lastNode.id);
     return lastNodeInArray ? lastNodeInArray.position : null;
+  }
+
+  private isNightlyNode(node: ReleaseNode): boolean {
+    if (node.isMiniNode || node.isCluster) {
+      return false;
+    }
+
+    if (node.position.y === 0) {
+      return false;
+    }
+    const label = node.label.toLowerCase();
+    return label.includes('snapshot') || /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/.test(node.label);
   }
 
   private findNodeById(id: string): ReleaseNode | undefined {
