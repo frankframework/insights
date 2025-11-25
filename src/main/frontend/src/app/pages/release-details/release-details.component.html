@@ -28,7 +28,7 @@
               </div>
             }
             @if (releaseIssues) {
-              <app-release-important-issues [releaseIssues]="releaseIssues" />
+              <app-release-important-issues [releaseIssues]="releaseIssues" [releaseId]="release.id" />
             }
           }
         </div>

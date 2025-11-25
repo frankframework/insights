@@ -1,7 +1,9 @@
-import { Component, Input, computed, signal, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, computed, signal, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { Issue } from '../../../services/issue.service';
 import { IssueTreeBranchComponent } from './issue-tree-branch/issue-tree-branch.component';
 import { FormsModule } from '@angular/forms';
+import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
+import { catchError, of } from 'rxjs';
 
 export const TypePriority = {
   EPIC: 0,
@@ -26,8 +28,14 @@ interface IssueTypeOption {
 })
 export class ReleaseImportantIssuesComponent implements OnChanges {
   @Input() releaseIssues?: Issue[] = [];
+  @Input() releaseId?: string;
 
   public selectedType = signal<string | null | 'all'>('all');
+  public showBusinessValues = signal<boolean>(false);
+  public businessValues = signal<BusinessValue[]>([]);
+  public isLoadingBusinessValues = signal<boolean>(false);
+
+  private businessValueService = inject(BusinessValueService);
 
   public issueTypeOptions = computed<IssueTypeOption[]>(() => {
     const issues = this.issuesSignal();
@@ -118,5 +126,32 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
     if (name in TypePriority) return TypePriority[name];
     if (!typeName) return TypePriority.NONE;
     return Number.MAX_SAFE_INTEGER;
+  }
+
+  public toggleBusinessValues(): void {
+    const newValue = !this.showBusinessValues();
+    this.showBusinessValues.set(newValue);
+
+    if (newValue && this.releaseId && this.businessValues().length === 0) {
+      this.fetchBusinessValues();
+    }
+  }
+
+  private fetchBusinessValues(): void {
+    if (!this.releaseId) return;
+
+    this.isLoadingBusinessValues.set(true);
+    this.businessValueService
+      .getBusinessValuesByReleaseId(this.releaseId)
+      .pipe(
+        catchError((error) => {
+          console.error('Failed to load business values:', error);
+          return of([]);
+        }),
+      )
+      .subscribe((businessValues) => {
+        this.businessValues.set(businessValues);
+        this.isLoadingBusinessValues.set(false);
+      });
   }
 }
