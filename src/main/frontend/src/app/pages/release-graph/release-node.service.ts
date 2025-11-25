@@ -40,10 +40,13 @@ export interface QuarterMarker {
 }
 
 export const SupportColors = {
-  FULL: '#30A102',
-  SECURITY: '#EF9302',
-  NONE: '#FD230E',
-  NIGHTLY: 'darkblue',
+  LATEST_STABLE: '#30A102',
+  CUTTING_EDGE: '#FFD700',
+  SUPPORTED: '#007BFF',
+  LTS: '#9370DB',
+  EOL: '#DC3545',
+  HISTORICAL: '#F8F8F8',
+  ARCHIVED: '#F0F0F0',
 } as const;
 
 export type SupportColor = (typeof SupportColors)[keyof typeof SupportColors];
@@ -53,6 +56,11 @@ interface VersionInfo {
   minor: number;
   patch: number;
   type: 'major' | 'minor' | 'patch';
+}
+
+interface SupportDates {
+  fullSupportEnd: Date;
+  securitySupportEnd: Date;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -65,49 +73,11 @@ export class ReleaseNodeService {
   public timelineScale: TimelineScale | null = null;
 
   public structureReleaseData(releases: Release[]): Map<string, ReleaseNode[]>[] {
-    const hydratedReleases = releases.map((r) => ({
-      ...r,
-      publishedAt: new Date(r.publishedAt),
-    }));
+    const hydratedReleases = this.hydrateReleases(releases);
+    const groupedByBranch = this.prepareGroupedReleases(hydratedReleases);
 
-    const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
-    this.sortGroupedReleases(groupedByBranch);
-
-    this.removeDuplicateNightlies(groupedByBranch);
-
-    this.pruneUnsupportedMinorBranches(groupedByBranch);
-    this.filterLowVersionNightliesFromBranches(groupedByBranch);
-
-    const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
-    const nodes = this.createReleaseNodes(masterReleases);
-
-    const filteredNodes = this.filterUnsupportedMinorReleases(nodes);
-
-    groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
-
-    const branchMaps: Map<string, ReleaseNode[]>[] = [];
-
-    for (const [branchName, branchReleases] of groupedByBranch.entries()) {
-      if (branchReleases.length === 0) continue;
-
-      const branchNodes = this.createReleaseNodes(branchReleases);
-      const firstBranchNode = branchNodes[0];
-
-      const miniNode: ReleaseNode = {
-        id: `mini-${firstBranchNode.id}`,
-        label: '',
-        branch: ReleaseNodeService.GITHUB_MASTER_BRANCH,
-        publishedAt: firstBranchNode.publishedAt,
-        color: '',
-        position: { x: 0, y: 0 },
-        isMiniNode: true,
-        originalBranch: branchName,
-        linkedBranchNode: firstBranchNode.id,
-      };
-
-      filteredNodes.push(miniNode);
-      branchMaps.push(new Map([[branchName, branchNodes]]));
-    }
+    const filteredNodes = this.processMasterBranch(groupedByBranch);
+    const branchMaps = this.processBranchReleases(groupedByBranch, filteredNodes);
 
     this.sortByNightlyAndDate(filteredNodes, (node) => node.label);
 
@@ -122,13 +92,11 @@ export class ReleaseNodeService {
 
     const nodeMap = this.flattenGroupMaps(structuredGroups);
 
-    // Get all nodes to calculate timeline scale
     const allNodes: ReleaseNode[] = [];
     for (const nodes of nodeMap.values()) {
       allNodes.push(...nodes);
     }
 
-    // Calculate timeline scale based on all publish dates
     this.timelineScale = this.calculateTimelineScale(allNodes);
 
     const masterBranchNodes = nodeMap.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
@@ -145,46 +113,16 @@ export class ReleaseNodeService {
   }
 
   public assignReleaseColors(releaseGroups: Map<string, ReleaseNode[]>): void {
-    const allNodes: ReleaseNode[] = [];
-    for (const nodes of releaseGroups.values()) {
-      allNodes.push(...nodes.filter((n) => !n.isMiniNode));
-    }
+    const allNodes = this.collectAllNonMiniNodes(releaseGroups);
+    const branchGroups = this.groupNodesByBranch(allNodes);
+    this.sortBranchGroupsByDate(branchGroups);
+    this.initializeAllColorsAsHistorical(allNodes);
 
-    const parentVersionMap = this.buildParentVersionMap(allNodes);
-    const versionGroups = new Map<string, ReleaseNode[]>();
-    for (const node of allNodes) {
-      const versionInfo = this.getVersionInfo(node);
-      if (versionInfo && versionInfo.patch > 0) {
-        const key = `${versionInfo.major}.${versionInfo.minor}`;
-        if (!versionGroups.has(key)) {
-          versionGroups.set(key, []);
-        }
-        versionGroups.get(key)!.push(node);
-      }
-    }
-
-    const latestPatches = new Set<string>();
-    for (const nodesInGroup of versionGroups.values()) {
-      const sortedByPatch = [...nodesInGroup].toSorted((a, b) => {
-        const vA = this.getVersionInfo(a)!;
-        const vB = this.getVersionInfo(b)!;
-        return vB.patch - vA.patch;
-      });
-
-      if (sortedByPatch.length > 0) {
-        latestPatches.add(sortedByPatch[0].id);
-      }
-    }
-
-    for (const node of allNodes) {
-      const versionInfo = this.getVersionInfo(node);
-      const isPatchVersion = versionInfo !== null && versionInfo.patch > 0;
-      const isLatestPatch = latestPatches.has(node.id);
-      const parentNode = isPatchVersion
-        ? (parentVersionMap.get(`${versionInfo!.major}.${versionInfo!.minor}`) ?? null)
-        : null;
-      node.color = this.determineColor(node, isPatchVersion, isLatestPatch, parentNode);
-    }
+    this.assignEOLColors(branchGroups);
+    this.assignSupportedColors(branchGroups);
+    this.assignLTSColors(allNodes, branchGroups);
+    this.assignCuttingEdgeColor(branchGroups);
+    this.assignLatestStableColors(allNodes, branchGroups);
   }
 
   public getVersionInfo(release: ReleaseNode): VersionInfo | null {
@@ -211,9 +149,7 @@ export class ReleaseNodeService {
     const miniNodes = nodes.filter((n) => n.isMiniNode);
     const regularNodes = nodes.filter((n) => !n.isMiniNode);
 
-    const CLUSTER_THRESHOLD = 150;
-    const MIN_SPACING_OUTSIDE = 60;
-    const MIN_SPACING_INSIDE = 70;
+    const CLUSTER_THRESHOLD = 25;
 
     const clusterStartDate = new Date(this.timelineScale.latestReleaseDate);
     clusterStartDate.setMonth(clusterStartDate.getMonth() - 4);
@@ -226,50 +162,288 @@ export class ReleaseNodeService {
 
     finalNodes.sort((a, b) => a.position.x - b.position.x);
 
-    return this.applyTimelineSpacing(finalNodes, clusterStartDate, MIN_SPACING_OUTSIDE, MIN_SPACING_INSIDE);
+    return finalNodes;
   }
 
   /**
    * Expands a cluster node into its individual nodes with proper spacing.
-   * The first node starts at the cluster position, and subsequent nodes follow.
+   * The first node starts at the cluster's x position, and subsequent nodes
+   * are placed sequentially to the right with proper spacing.
    * Gives extra spacing to nightly releases due to their longer labels.
    */
   public expandCluster(clusterNode: ReleaseNode): ReleaseNode[] {
-    if (!clusterNode.isCluster || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
+    if (!this.isValidCluster(clusterNode)) {
       return [clusterNode];
     }
 
     const BASE_SPACING = 60;
     const SNAPSHOT_EXTRA_SPACING = 10;
-    const clusteredNodes = clusterNode.clusteredNodes;
-    const centerX = clusterNode.position.x;
+    const clusteredNodes = clusterNode.clusteredNodes!;
+    const startX = clusterNode.position.x;
     const centerY = clusterNode.position.y;
 
+    const positions = this.calculateClusterNodePositions(clusteredNodes, BASE_SPACING, SNAPSHOT_EXTRA_SPACING);
+
+    return this.positionExpandedNodes(clusteredNodes, positions, startX, centerY);
+  }
+
+  private hydrateReleases(releases: Release[]): (Release & { publishedAt: Date })[] {
+    return releases.map((r) => ({
+      ...r,
+      publishedAt: new Date(r.publishedAt),
+    }));
+  }
+
+  private prepareGroupedReleases(
+    hydratedReleases: (Release & { publishedAt: Date })[],
+  ): Map<string, (Release & { publishedAt: Date })[]> {
+    const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
+    this.sortGroupedReleases(groupedByBranch);
+    this.removeDuplicateNightlies(groupedByBranch);
+    this.pruneUnsupportedMinorBranches(groupedByBranch);
+    this.filterLowVersionNightliesFromBranches(groupedByBranch);
+    return groupedByBranch;
+  }
+
+  private processMasterBranch(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): ReleaseNode[] {
+    const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
+    const nodes = this.createReleaseNodes(masterReleases);
+    const filteredNodes = this.filterUnsupportedMinorReleases(nodes);
+    groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
+    return filteredNodes;
+  }
+
+  private processBranchReleases(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+    filteredNodes: ReleaseNode[],
+  ): Map<string, ReleaseNode[]>[] {
+    const branchMaps: Map<string, ReleaseNode[]>[] = [];
+
+    for (const [branchName, branchReleases] of groupedByBranch.entries()) {
+      if (branchReleases.length === 0) continue;
+
+      const branchNodes = this.createReleaseNodes(branchReleases);
+      const miniNode = this.createMiniNode(branchNodes[0], branchName);
+
+      filteredNodes.push(miniNode);
+      branchMaps.push(new Map([[branchName, branchNodes]]));
+    }
+
+    return branchMaps;
+  }
+
+  private createMiniNode(firstBranchNode: ReleaseNode, branchName: string): ReleaseNode {
+    return {
+      id: `mini-${firstBranchNode.id}`,
+      label: '',
+      branch: ReleaseNodeService.GITHUB_MASTER_BRANCH,
+      publishedAt: firstBranchNode.publishedAt,
+      color: '',
+      position: { x: 0, y: 0 },
+      isMiniNode: true,
+      originalBranch: branchName,
+      linkedBranchNode: firstBranchNode.id,
+    };
+  }
+
+  private collectAllNonMiniNodes(releaseGroups: Map<string, ReleaseNode[]>): ReleaseNode[] {
+    const allNodes: ReleaseNode[] = [];
+    for (const nodes of releaseGroups.values()) {
+      allNodes.push(...nodes.filter((n) => !n.isMiniNode));
+    }
+    return allNodes;
+  }
+
+  private groupNodesByBranch(nodes: ReleaseNode[]): Map<string, ReleaseNode[]> {
+    const branchGroups = new Map<string, ReleaseNode[]>();
+    for (const node of nodes) {
+      if (!branchGroups.has(node.branch)) {
+        branchGroups.set(node.branch, []);
+      }
+      branchGroups.get(node.branch)!.push(node);
+    }
+    return branchGroups;
+  }
+
+  private sortBranchGroupsByDate(branchGroups: Map<string, ReleaseNode[]>): void {
+    for (const nodes of branchGroups.values()) {
+      nodes.sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime());
+    }
+  }
+
+  private initializeAllColorsAsHistorical(nodes: ReleaseNode[]): void {
+    for (const node of nodes) {
+      node.color = SupportColors.HISTORICAL;
+    }
+  }
+
+  private assignEOLColors(branchGroups: Map<string, ReleaseNode[]>): void {
+    for (const [branchName, nodes] of branchGroups) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
+
+      if (this.isEOLBranch(nodes)) {
+        this.colorBranchLatestReleases(nodes, SupportColors.EOL);
+      }
+    }
+  }
+
+  private assignSupportedColors(branchGroups: Map<string, ReleaseNode[]>): void {
+    for (const [branchName, nodes] of branchGroups) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
+
+      if (this.isBranchSupported(nodes)) {
+        this.colorBranchLatestReleases(nodes, SupportColors.SUPPORTED);
+      }
+    }
+  }
+
+  private assignLTSColors(allNodes: ReleaseNode[], branchGroups: Map<string, ReleaseNode[]>): void {
+    const latestLTS = this.findLatestLTS(allNodes);
+    if (!latestLTS) return;
+
+    const versionInfo = this.getVersionInfo(latestLTS);
+    if (!versionInfo) return;
+
+    const ltsBranchKey = `${versionInfo.major}.${versionInfo.minor}`;
+    this.colorMatchingLTSBranches(branchGroups, ltsBranchKey, versionInfo);
+  }
+
+  private colorMatchingLTSBranches(
+    branchGroups: Map<string, ReleaseNode[]>,
+    ltsBranchKey: string,
+    versionInfo: VersionInfo,
+  ): void {
+    for (const [branchName, nodes] of branchGroups) {
+      if (!branchName.includes(ltsBranchKey) && branchName !== ReleaseNodeService.GITHUB_MASTER_BRANCH) {
+        continue;
+      }
+
+      this.colorLTSVersionMatches(nodes, versionInfo);
+    }
+  }
+
+  private colorLTSVersionMatches(nodes: ReleaseNode[], targetVersion: VersionInfo): void {
+    const lastRelease = this.findLastNonNightlyRelease(nodes);
+    if (!lastRelease) return;
+
+    const lastReleaseVersion = this.getVersionInfo(lastRelease);
+    if (!this.versionsMatch(lastReleaseVersion, targetVersion)) return;
+
+    lastRelease.color = SupportColors.LTS;
+
+    const lastNightly = this.findLatestNightly(nodes);
+    if (lastNightly) {
+      const nightlyVersion = this.getVersionInfo(lastNightly);
+      if (this.versionsMatch(nightlyVersion, targetVersion)) {
+        lastNightly.color = SupportColors.LTS;
+      }
+    }
+  }
+
+  private versionsMatch(version1: VersionInfo | null, version2: VersionInfo): boolean {
+    return version1 !== null && version1.major === version2.major && version1.minor === version2.minor;
+  }
+
+  private assignCuttingEdgeColor(branchGroups: Map<string, ReleaseNode[]>): void {
+    const masterNodes = branchGroups.get(ReleaseNodeService.GITHUB_MASTER_BRANCH);
+    if (!masterNodes) return;
+
+    const cuttingEdge = this.findLatestNightly(masterNodes);
+    if (cuttingEdge) {
+      cuttingEdge.color = SupportColors.CUTTING_EDGE;
+    }
+  }
+
+  private assignLatestStableColors(allNodes: ReleaseNode[], branchGroups: Map<string, ReleaseNode[]>): void {
+    const latestStable = this.findLatestStable(allNodes);
+    if (!latestStable) return;
+
+    const latestStableVersion = this.getVersionInfo(latestStable);
+    const isLTS = latestStableVersion?.type === 'major';
+
+    if (!isLTS) {
+      this.colorLatestStableBranch(latestStable.branch, branchGroups);
+    }
+  }
+
+  private colorLatestStableBranch(branchName: string, branchGroups: Map<string, ReleaseNode[]>): void {
+    const latestStableBranch = branchGroups.get(branchName);
+    if (!latestStableBranch) return;
+
+    this.colorBranchLatestReleases(latestStableBranch, SupportColors.LATEST_STABLE);
+  }
+
+  private colorBranchLatestReleases(nodes: ReleaseNode[], color: string): void {
+    const lastRelease = this.findLastNonNightlyRelease(nodes);
+    const lastNightly = this.findLatestNightly(nodes);
+
+    if (lastRelease) {
+      lastRelease.color = color;
+    }
+    if (lastNightly) {
+      lastNightly.color = color;
+    }
+  }
+
+  private isValidCluster(clusterNode: ReleaseNode): boolean {
+    return (
+      clusterNode.isCluster === true &&
+      clusterNode.clusteredNodes !== undefined &&
+      clusterNode.clusteredNodes.length > 0
+    );
+  }
+
+  private calculateClusterNodePositions(
+    clusteredNodes: ReleaseNode[],
+    baseSpacing: number,
+    snapshotExtraSpacing: number,
+  ): number[] {
     const positions: number[] = [];
     let currentX = 0;
 
     for (let index = 0; index < clusteredNodes.length; index++) {
-      const node = clusteredNodes[index];
-      const isNightly = this.isNightlyRelease(node.label);
-      const previousNode = index > 0 ? clusteredNodes[index - 1] : null;
-      const previousIsNightly = previousNode ? this.isNightlyRelease(previousNode.label) : false;
-
       if (index === 0) {
         positions.push(0);
       } else {
-        let spacing = BASE_SPACING;
-        if (isNightly || previousIsNightly) {
-          spacing += SNAPSHOT_EXTRA_SPACING;
-        }
+        const spacing = this.calculateNodeSpacing(clusteredNodes, index, baseSpacing, snapshotExtraSpacing);
         currentX += spacing;
         positions.push(currentX);
       }
     }
 
+    return positions;
+  }
+
+  private calculateNodeSpacing(
+    clusteredNodes: ReleaseNode[],
+    index: number,
+    baseSpacing: number,
+    snapshotExtraSpacing: number,
+  ): number {
+    const node = clusteredNodes[index];
+    const previousNode = clusteredNodes[index - 1];
+
+    const isNightly = this.isNightlyRelease(node.label);
+    const previousIsNightly = this.isNightlyRelease(previousNode.label);
+
+    let spacing = baseSpacing;
+    if (isNightly || previousIsNightly) {
+      spacing += snapshotExtraSpacing;
+    }
+
+    return spacing;
+  }
+
+  private positionExpandedNodes(
+    clusteredNodes: ReleaseNode[],
+    positions: number[],
+    startX: number,
+    centerY: number,
+  ): ReleaseNode[] {
     return clusteredNodes.map((node, index) => ({
       ...node,
       position: {
-        x: centerX + positions[index],
+        x: startX + positions[index],
         y: centerY,
       },
     }));
@@ -581,160 +755,22 @@ export class ReleaseNodeService {
   }
 
   /**
-   * Builds a map from version key (e.g., "8.0" or "8.1") to the parent major/minor release node.
-   */
-  private buildParentVersionMap(allNodes: ReleaseNode[]): Map<string, ReleaseNode> {
-    const parentMap = new Map<string, ReleaseNode>();
-
-    for (const node of allNodes) {
-      const versionInfo = this.getVersionInfo(node);
-
-      const isSnapshot = node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY);
-
-      if (versionInfo && versionInfo.patch === 0 && !isSnapshot) {
-        const key = `${versionInfo.major}.${versionInfo.minor}`;
-        parentMap.set(key, node);
-      }
-    }
-
-    return parentMap;
-  }
-
-  private determineColor(
-    release: ReleaseNode,
-    isPatchVersion: boolean,
-    isLatestPatch: boolean,
-    parentNode: ReleaseNode | null,
-  ): SupportColor {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
-      return SupportColors.NIGHTLY;
-    }
-
-    if (isPatchVersion && !isLatestPatch) {
-      return SupportColors.NONE;
-    }
-
-    if (isPatchVersion && parentNode) {
-      return this.getPatchColorBasedOnParent(release, parentNode);
-    }
-
-    const supportDates = this.getSupportEndDates(release);
-    if (!supportDates) return SupportColors.NONE;
-
-    const { fullSupportEnd, securitySupportEnd } = supportDates;
-    const now = new Date();
-
-    if (now <= fullSupportEnd) return SupportColors.FULL;
-    if (now <= securitySupportEnd) return SupportColors.SECURITY;
-    return SupportColors.NONE;
-  }
-
-  /**
-   * Determines patch color based on when it was published relative to parent's support period
-   */
-  private getPatchColorBasedOnParent(patch: ReleaseNode, parent: ReleaseNode): SupportColor {
-    const versionInfo = this.getVersionInfo(patch);
-    if (!versionInfo) return SupportColors.NONE;
-
-    const parentPublishedDate = new Date(parent.publishedAt);
-    const patchPublishedDate = new Date(patch.publishedAt);
-
-    let fullSupportMonths: number;
-    let securitySupportMonths: number;
-
-    if (versionInfo.minor === 0) {
-      fullSupportMonths = 6;
-      securitySupportMonths = 12;
-    } else {
-      fullSupportMonths = 3;
-      securitySupportMonths = 6;
-    }
-
-    const fullSupportEnd = new Date(parentPublishedDate);
-    fullSupportEnd.setMonth(parentPublishedDate.getMonth() + fullSupportMonths);
-    const securitySupportEnd = new Date(parentPublishedDate);
-    securitySupportEnd.setMonth(parentPublishedDate.getMonth() + securitySupportMonths);
-
-    if (patchPublishedDate <= fullSupportEnd) {
-      return SupportColors.FULL;
-    } else if (patchPublishedDate <= securitySupportEnd) {
-      return SupportColors.SECURITY;
-    } else {
-      return SupportColors.NONE;
-    }
-  }
-
-  private isUnsupported(release: ReleaseNode): boolean {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
-      return false;
-    }
-
-    const supportDates = this.getSupportEndDates(release);
-    if (!supportDates) return true;
-
-    return new Date() > supportDates.securitySupportEnd;
-  }
-
-  private getSupportEndDates(release: ReleaseNode): { fullSupportEnd: Date; securitySupportEnd: Date } | null {
-    const versionInfo = this.getVersionInfo(release);
-    if (!versionInfo) return null;
-
-    let fullSupportMonths: number;
-    let securitySupportMonths: number;
-
-    const basePublishedDate = new Date(release.publishedAt);
-
-    if (versionInfo.type === 'major') {
-      fullSupportMonths = 6;
-      securitySupportMonths = 12;
-    } else {
-      fullSupportMonths = 3;
-      securitySupportMonths = 6;
-    }
-
-    const fullSupportEnd = new Date(basePublishedDate);
-    fullSupportEnd.setMonth(basePublishedDate.getMonth() + fullSupportMonths);
-    const securitySupportEnd = new Date(basePublishedDate);
-    securitySupportEnd.setMonth(basePublishedDate.getMonth() + securitySupportMonths);
-
-    return { fullSupportEnd, securitySupportEnd };
-  }
-
-  /**
    * Calculates the timeline scale based on all nodes' publish dates.
    * Uses a fixed width per quarter for consistent, scalable timeline.
    */
   private calculateTimelineScale(allNodes: ReleaseNode[]): TimelineScale {
     if (allNodes.length === 0) {
-      const now = new Date();
-      return {
-        startDate: now,
-        endDate: now,
-        pixelsPerDay: 1,
-        totalDays: 0,
-        quarters: [],
-        latestReleaseDate: now,
-      };
+      return this.createEmptyTimelineScale();
     }
 
-    const dates = allNodes.map((n) => n.publishedAt.getTime());
-    const minTime = Math.min(...dates);
-    const maxTime = Math.max(...dates);
+    const { minTime, maxTime } = this.getTimeRange(allNodes);
     const latestReleaseDate = new Date(maxTime);
 
-    const firstDate = new Date(minTime);
-    const startDate = this.getQuarterStart(firstDate);
-    startDate.setMonth(startDate.getMonth() - 3);
+    const startDate = this.calculateStartDate(minTime);
+    const endDate = this.calculateEndDate(maxTime);
 
-    const lastDate = new Date(maxTime);
-    const endDate = this.getQuarterEnd(lastDate);
-    endDate.setMonth(endDate.getMonth() + 3);
-
-    const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-
-    const AVERAGE_DAYS_PER_QUARTER = 90;
-    const pixelsPerDay = ReleaseNodeService.PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
-
+    const totalDays = this.calculateDaysBetween(startDate, endDate);
+    const pixelsPerDay = this.calculatePixelsPerDay();
     const quarters = this.generateQuarterMarkers(startDate, endDate, pixelsPerDay);
 
     return {
@@ -745,6 +781,49 @@ export class ReleaseNodeService {
       quarters,
       latestReleaseDate,
     };
+  }
+
+  private createEmptyTimelineScale(): TimelineScale {
+    const now = new Date();
+    return {
+      startDate: now,
+      endDate: now,
+      pixelsPerDay: 1,
+      totalDays: 0,
+      quarters: [],
+      latestReleaseDate: now,
+    };
+  }
+
+  private getTimeRange(allNodes: ReleaseNode[]): { minTime: number; maxTime: number } {
+    const dates = allNodes.map((n) => n.publishedAt.getTime());
+    return {
+      minTime: Math.min(...dates),
+      maxTime: Math.max(...dates),
+    };
+  }
+
+  private calculateStartDate(minTime: number): Date {
+    const firstDate = new Date(minTime);
+    const startDate = this.getQuarterStart(firstDate);
+    startDate.setMonth(startDate.getMonth() - 3);
+    return startDate;
+  }
+
+  private calculateEndDate(maxTime: number): Date {
+    const lastDate = new Date(maxTime);
+    const endDate = this.getQuarterEnd(lastDate);
+    endDate.setMonth(endDate.getMonth() + 3);
+    return endDate;
+  }
+
+  private calculateDaysBetween(startDate: Date, endDate: Date): number {
+    return (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  }
+
+  private calculatePixelsPerDay(): number {
+    const AVERAGE_DAYS_PER_QUARTER = 90;
+    return ReleaseNodeService.PIXELS_PER_QUARTER / AVERAGE_DAYS_PER_QUARTER;
   }
 
   private getQuarterStart(date: Date): Date {
@@ -886,36 +965,127 @@ export class ReleaseNodeService {
     return finalNodes;
   }
 
-  private applyTimelineSpacing(
-    nodes: ReleaseNode[],
-    clusterStartDate: Date,
-    minSpacing: number,
-    minSpacingInside: number,
-  ): ReleaseNode[] {
-    const spacedFinalNodes: ReleaseNode[] = [];
+  private findLatestStable(nodes: ReleaseNode[]): ReleaseNode | null {
+    const nonNightly = nodes.filter((n) => !this.isNightlyRelease(n.label));
+    if (nonNightly.length === 0) return null;
 
-    for (const node of nodes) {
-      const previousNode = spacedFinalNodes.at(-1);
+    const nodesWithVersions = nonNightly
+      .map((node) => ({ node, version: this.getVersionInfo(node) }))
+      .filter((item) => item.version !== null);
 
-      // Skip spacing adjustment for mini nodes - they need to maintain their offset from branch nodes
-      if (previousNode && !node.isMiniNode) {
-        const gap = node.position.x - previousNode.position.x;
+    if (nodesWithVersions.length === 0) return null;
 
-        const nodeInZone = node.publishedAt >= clusterStartDate;
-        const previousNodeInZone = previousNode.publishedAt >= clusterStartDate;
+    return nodesWithVersions.reduce((latest, current) =>
+      this.compareVersions(current.version!, latest.version!) > 0 ? current : latest,
+    ).node;
+  }
 
-        let currentMinSpacing = minSpacing;
-        if (nodeInZone || previousNodeInZone || node.isCluster || previousNode.isCluster) {
-          currentMinSpacing = minSpacingInside;
-        }
+  private compareVersions(v1: VersionInfo, v2: VersionInfo): number {
+    if (v1.major !== v2.major) return v1.major - v2.major;
+    if (v1.minor !== v2.minor) return v1.minor - v2.minor;
+    return v1.patch - v2.patch;
+  }
 
-        if (gap < currentMinSpacing) {
-          node.position.x = previousNode.position.x + currentMinSpacing;
-        }
-      }
+  private findLatestNightly(nodes: ReleaseNode[]): ReleaseNode | null {
+    const nightlies = nodes.filter((n) => this.isNightlyRelease(n.label));
+    if (nightlies.length === 0) return null;
 
-      spacedFinalNodes.push(node);
+    return nightlies.reduce((latest, node) => {
+      return node.publishedAt > latest.publishedAt ? node : latest;
+    });
+  }
+
+  private findLastNonNightlyRelease(nodes: ReleaseNode[]): ReleaseNode | null {
+    const nonNightly = nodes.filter((n) => !this.isNightlyRelease(n.label));
+    if (nonNightly.length === 0) return null;
+
+    return nonNightly.reduce((latest, node) => {
+      return node.publishedAt > latest.publishedAt ? node : latest;
+    });
+  }
+
+  private isBranchSupported(nodes: ReleaseNode[]): boolean {
+    const firstRelease = nodes.find((n) => !this.isNightlyRelease(n.label));
+    if (!firstRelease) return false;
+
+    const versionInfo = this.getVersionInfo(firstRelease);
+    if (!versionInfo) return false;
+
+    const supportDates = this.getSupportEndDates(firstRelease);
+    if (!supportDates) return false;
+
+    return new Date() <= supportDates.securitySupportEnd;
+  }
+
+  private isEOLBranch(nodes: ReleaseNode[]): boolean {
+    const hasNightly = nodes.some((n) => this.isNightlyRelease(n.label));
+    if (!hasNightly) return false;
+
+    return this.isBranchUnsupported(nodes);
+  }
+
+  private isBranchUnsupported(nodes: ReleaseNode[]): boolean {
+    const firstRelease = nodes.find((n) => !this.isNightlyRelease(n.label));
+    if (!firstRelease) return true;
+
+    const supportDates = this.getSupportEndDates(firstRelease);
+    if (!supportDates) return true;
+
+    return new Date() > supportDates.securitySupportEnd;
+  }
+
+  private findLatestLTS(nodes: ReleaseNode[]): ReleaseNode | null {
+    const majorVersions = nodes.filter((n) => {
+      const versionInfo = this.getVersionInfo(n);
+      return versionInfo?.type === 'major';
+    });
+
+    if (majorVersions.length === 0) return null;
+
+    return majorVersions.reduce((latest, node) => {
+      const latestVersion = this.getVersionInfo(latest);
+      const nodeVersion = this.getVersionInfo(node);
+
+      if (!latestVersion || !nodeVersion) return latest;
+
+      if (nodeVersion.major > latestVersion.major) return node;
+      return latest;
+    });
+  }
+
+  private isUnsupported(release: ReleaseNode): boolean {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
+      return false;
     }
-    return spacedFinalNodes;
+
+    const supportDates = this.getSupportEndDates(release);
+    if (!supportDates) return true;
+
+    return new Date() > supportDates.securitySupportEnd;
+  }
+
+  private getSupportEndDates(release: ReleaseNode): SupportDates | null {
+    const versionInfo = this.getVersionInfo(release);
+    if (!versionInfo) return null;
+
+    let fullSupportMonths: number;
+    let securitySupportMonths: number;
+
+    const basePublishedDate = new Date(release.publishedAt);
+
+    if (versionInfo.type === 'major') {
+      fullSupportMonths = 6;
+      securitySupportMonths = 12;
+    } else {
+      fullSupportMonths = 3;
+      securitySupportMonths = 6;
+    }
+
+    const fullSupportEnd = new Date(basePublishedDate);
+    fullSupportEnd.setMonth(basePublishedDate.getMonth() + fullSupportMonths);
+    const securitySupportEnd = new Date(basePublishedDate);
+    securitySupportEnd.setMonth(basePublishedDate.getMonth() + securitySupportMonths);
+
+    return { fullSupportEnd, securitySupportEnd };
   }
 }
