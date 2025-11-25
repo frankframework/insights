@@ -168,28 +168,37 @@ describe('Graph Rendering and Interaction', () => {
   });
 
   context('Nightly Toggle Functionality', () => {
+    const getToggleButton = () => {
+      return cy.get('body').then(($body) => {
+        if ($body.find('.nightly-toggle-mobile:visible').length > 0) {
+          return cy.get('.nightly-toggle-mobile');
+        } else {
+          return cy.get('.nightly-toggle');
+        }
+      });
+    };
+
     it('should display the nightly toggle button', () => {
-      cy.get('.nightly-toggle-mobile').should('be.visible');
+      cy.get('.nightly-toggle-mobile, .nightly-toggle').filter(':visible').should('have.length', 1);
     });
 
     it('should toggle nightlies on click', () => {
-      cy.get('.nightly-toggle-mobile').should('not.have.class', 'active');
-
-      cy.get('.nightly-toggle-mobile').click();
-
-      cy.get('.nightly-toggle-mobile').should('have.class', 'active');
+      getToggleButton().should('not.have.class', 'active');
+      getToggleButton().click();
+      getToggleButton().should('have.class', 'active');
     });
 
     it('should change moon icon styling when active', () => {
-      cy.get('.nightly-toggle-mobile').click();
-
-      cy.get('.nightly-toggle-mobile.active .moon-icon').should('have.css', 'background-color', 'rgb(30, 58, 138)');
+      getToggleButton().click();
+      cy.get('.nightly-toggle.active .moon-icon, .nightly-toggle-mobile.active .moon-icon')
+        .filter(':visible')
+        .should('have.css', 'background-color', 'rgb(30, 58, 138)');
     });
 
     it('should show snapshot nodes when toggle is active', () => {
       cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').then(($snapshots) => {
         if ($snapshots.length > 0) {
-          cy.get('.nightly-toggle-mobile').click();
+          getToggleButton().click();
           cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').should('be.visible');
         } else {
           cy.log('No snapshot nodes found - skipping test');
@@ -208,11 +217,11 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     it('should toggle state on multiple clicks', () => {
-      cy.get('.nightly-toggle-mobile').should('not.have.class', 'active');
-      cy.get('.nightly-toggle-mobile').click();
-      cy.get('.nightly-toggle-mobile').should('have.class', 'active');
-      cy.get('.nightly-toggle-mobile').click();
-      cy.get('.nightly-toggle-mobile').should('not.have.class', 'active');
+      getToggleButton().should('not.have.class', 'active');
+      getToggleButton().click();
+      getToggleButton().should('have.class', 'active');
+      getToggleButton().click();
+      getToggleButton().should('not.have.class', 'active');
     });
   });
 
