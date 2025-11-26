@@ -1,20 +1,32 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule, Location } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
+import { ReleaseService } from '../../../services/release.service';
 import { catchError, of, forkJoin } from 'rxjs';
 import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
+import { BusinessValueEditComponent } from './business-value-edit/business-value-edit.component';
+import { BusinessValueDeleteComponent } from './business-value-delete/business-value-delete.component';
 
 interface IssueWithSelection extends Issue {
   isSelected: boolean;
   isConnected: boolean;
+  assignedToOther?: boolean;
+  assignedBusinessValueTitle?: string;
 }
 
 @Component({
   selector: 'app-business-value-manage',
   standalone: true,
-  imports: [CommonModule, BusinessValueAddComponent],
+  imports: [
+    CommonModule,
+    BusinessValueAddComponent,
+    BusinessValueEditComponent,
+    BusinessValueDeleteComponent,
+    FormsModule,
+  ],
   templateUrl: './business-value-manage.component.html',
   styleUrl: './business-value-manage.component.scss',
 })
@@ -26,51 +38,84 @@ export class BusinessValueManageComponent implements OnInit {
   public isLoading = signal<boolean>(true);
   public isSaving = signal<boolean>(false);
   public releaseId = signal<string>('');
+  public releaseTitle = signal<string>('');
+
   public showCreateForm = signal<boolean>(false);
+  public showEditForm = signal<boolean>(false);
+  public showDeleteForm = signal<boolean>(false);
+
+  public businessValueToDelete = signal<BusinessValue | null>(null);
+
+  public issueSearchQuery = signal<string>('');
+  public businessValueSearchQuery = signal<string>('');
 
   private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private location = inject(Location);
   private businessValueService = inject(BusinessValueService);
   private issueService = inject(IssueService);
+  private releaseService = inject(ReleaseService);
 
-  private originalSelectedIssueIds = new Set<string>();
+  private originalSelectedIssueIds = signal<Set<string>>(new Set());
+
+  // UPDATED: Sorts by issue count descending
+  public filteredBusinessValues = computed(() => {
+    const query = this.businessValueSearchQuery().toLowerCase().trim();
+    let values = this.businessValues();
+
+    // 1. Filter
+    if (query) {
+      values = values.filter((bv) => bv.title.toLowerCase().includes(query));
+    }
+
+    // 2. Sort by issue count descending
+    return values.sort((a, b) => {
+      const countA = a.issues?.length || 0;
+      const countB = b.issues?.length || 0;
+      return countB - countA;
+    });
+  });
 
   public hasChanges = computed(() => {
+    const originalIds = this.originalSelectedIssueIds();
     const currentSelectedIds = new Set(
       this.issuesWithSelection()
         .filter((issue) => issue.isSelected)
-        .map((issue) => issue.id)
+        .map((issue) => issue.id),
     );
 
-    if (currentSelectedIds.size !== this.originalSelectedIssueIds.size) {
-      return true;
-    }
-
+    if (currentSelectedIds.size !== originalIds.size) return true;
     for (const id of currentSelectedIds) {
-      if (!this.originalSelectedIssueIds.has(id)) {
-        return true;
-      }
+      if (!originalIds.has(id)) return true;
     }
-
     return false;
   });
 
   public sortedIssues = computed(() => {
     const issues = [...this.issuesWithSelection()];
     const selectedBV = this.selectedBusinessValue();
+    const searchQuery = this.issueSearchQuery().toLowerCase().trim();
 
-    if (!selectedBV) return issues;
+    let filteredIssues = issues;
+    if (searchQuery) {
+      filteredIssues = issues.filter(
+        (issue) => issue.title.toLowerCase().includes(searchQuery) || issue.number.toString().includes(searchQuery),
+      );
+    }
 
-    return issues.sort((a, b) => {
-      // Connected issues first
+    if (!selectedBV) return filteredIssues;
+
+    return filteredIssues.sort((a, b) => {
+      // 1. Connected to CURRENT BV
       if (a.isConnected && !b.isConnected) return -1;
       if (!a.isConnected && b.isConnected) return 1;
 
-      // Then by selection
-      if (a.isSelected && !b.isSelected) return -1;
-      if (!a.isSelected && b.isSelected) return 1;
+      // 2. Unassigned (Free)
+      const aFree = !a.isConnected && !a.assignedToOther;
+      const bFree = !b.isConnected && !b.assignedToOther;
+      if (aFree && !bFree) return -1;
+      if (!aFree && bFree) return 1;
 
-      // Then by number
+      // 3. By number
       return a.number - b.number;
     });
   });
@@ -84,38 +129,111 @@ export class BusinessValueManageComponent implements OnInit {
   }
 
   public goBack(): void {
-    this.router.navigate(['/graph']);
+    this.location.back();
   }
 
   public toggleCreateForm(): void {
     this.showCreateForm.update((value) => !value);
   }
 
+  public toggleEditForm(): void {
+    this.showEditForm.update((value) => !value);
+  }
+
+  public updateIssueSearchQuery(query: string): void {
+    this.issueSearchQuery.set(query);
+  }
+
+  public updateBusinessValueSearchQuery(query: string): void {
+    this.businessValueSearchQuery.set(query);
+  }
+
+  // --- DELETE LOGIC ---
+  public openDeleteModal(businessValue: BusinessValue, event: Event): void {
+    event.stopPropagation();
+    this.businessValueToDelete.set(businessValue);
+    this.showDeleteForm.set(true);
+  }
+
+  public closeDeleteModal(): void {
+    this.showDeleteForm.set(false);
+    this.businessValueToDelete.set(null);
+  }
+
+  public onBusinessValueDeleted(deletedId: string): void {
+    this.businessValues.update((list) => list.filter((item) => item.id !== deletedId));
+
+    if (this.selectedBusinessValue()?.id === deletedId) {
+      this.selectedBusinessValue.set(null);
+      this.resetIssueSelection();
+    } else {
+      if (this.selectedBusinessValue()) {
+        this.updateIssueSelection(this.selectedBusinessValue()!);
+      }
+    }
+
+    this.closeDeleteModal();
+  }
+  // --------------------
+
+  public onBusinessValueUpdated(updatedBusinessValue: BusinessValue): void {
+    const updatedList = this.businessValues().map((bv) =>
+      bv.id === updatedBusinessValue.id ? updatedBusinessValue : bv,
+    );
+    this.businessValues.set(updatedList);
+    this.selectedBusinessValue.set(updatedBusinessValue);
+  }
+
   public onBusinessValueCreated(businessValue: BusinessValue): void {
-    // Add the new business value to the list
     const updatedList = [...this.businessValues(), businessValue];
     this.businessValues.set(updatedList);
-
-    // Optionally select it
-    this.selectBusinessValue(businessValue);
   }
 
   public selectBusinessValue(businessValue: BusinessValue): void {
-    this.selectedBusinessValue.set(businessValue);
-    this.updateIssueSelection(businessValue);
+    if (this.selectedBusinessValue()?.id === businessValue.id) {
+      this.selectedBusinessValue.set(null);
+      this.resetIssueSelection();
+    } else {
+      this.selectedBusinessValue.set(businessValue);
+      this.businessValueService.getBusinessValueById(businessValue.id).subscribe({
+        next: (detailedBV) => {
+          const updatedList = this.businessValues().map((bv) => (bv.id === detailedBV.id ? detailedBV : bv));
+          this.businessValues.set(updatedList);
+          this.selectedBusinessValue.set(detailedBV);
+          this.updateIssueSelection(detailedBV);
+        },
+        error: (error) => {
+          console.error('Failed to fetch business value details', error);
+        },
+      });
+    }
+  }
+
+  private resetIssueSelection(): void {
+    const updatedIssues = this.issuesWithSelection().map((issue) => ({
+      ...issue,
+      isSelected: false,
+      isConnected: false,
+      assignedToOther: false,
+      assignedBusinessValueTitle: undefined,
+    }));
+    this.issuesWithSelection.set(updatedIssues);
+    this.originalSelectedIssueIds.set(new Set());
   }
 
   public toggleIssue(issue: IssueWithSelection): void {
+    if (issue.assignedToOther) return;
+
     const issues = this.issuesWithSelection();
-    const updatedIssues = issues.map((i) =>
-      i.id === issue.id ? { ...i, isSelected: !i.isSelected } : i
+    const updatedIssues = issues.map((index) =>
+      index.id === issue.id ? { ...index, isSelected: !index.isSelected } : index,
     );
     this.issuesWithSelection.set(updatedIssues);
   }
 
   public saveChanges(): void {
     const selectedBV = this.selectedBusinessValue();
-    if (!selectedBV || !this.hasChanges()) return;
+    if (!selectedBV) return;
 
     this.isSaving.set(true);
 
@@ -125,19 +243,10 @@ export class BusinessValueManageComponent implements OnInit {
 
     this.businessValueService.updateIssueConnections(selectedBV.id, selectedIssueIds).subscribe({
       next: (updatedBV) => {
-        // Update the original selection to match current
-        this.originalSelectedIssueIds = new Set(selectedIssueIds);
-
-        // Update in the list
-        const updatedBusinessValues = this.businessValues().map((bv) =>
-          bv.id === selectedBV.id ? updatedBV : bv
-        );
+        const updatedBusinessValues = this.businessValues().map((bv) => (bv.id === selectedBV.id ? updatedBV : bv));
         this.businessValues.set(updatedBusinessValues);
         this.selectedBusinessValue.set(updatedBV);
-
-        // Update connected status
         this.updateIssueSelection(updatedBV);
-
         this.isSaving.set(false);
       },
       error: (error) => {
@@ -149,20 +258,21 @@ export class BusinessValueManageComponent implements OnInit {
 
   private fetchData(releaseId: string): void {
     this.isLoading.set(true);
-
     forkJoin({
-      businessValues: this.businessValueService
-        .getBusinessValuesByReleaseId(releaseId)
-        .pipe(catchError(() => of([]))),
-      issues: this.issueService
-        .getIssuesByReleaseId(releaseId)
-        .pipe(catchError(() => of([]))),
+      businessValues: this.businessValueService.getAllBusinessValues().pipe(catchError(() => of([]))),
+      issues: this.issueService.getIssuesByReleaseId(releaseId).pipe(catchError(() => of([]))),
+      release: this.releaseService.getReleaseById(releaseId).pipe(catchError(() => of(null))),
     }).subscribe({
-      next: ({ businessValues, issues }) => {
+      next: ({ businessValues, issues, release }) => {
         this.businessValues.set(businessValues);
         this.allIssues.set(issues ?? []);
 
-        // Initialize issues with selection
+        if (release) {
+          this.releaseTitle.set((release as any).name || (release as any).title || releaseId);
+        } else {
+          this.releaseTitle.set(releaseId);
+        }
+
         const issuesWithSelection: IssueWithSelection[] = (issues ?? []).map((issue) => ({
           ...issue,
           isSelected: false,
@@ -178,16 +288,33 @@ export class BusinessValueManageComponent implements OnInit {
     });
   }
 
-  private updateIssueSelection(businessValue: BusinessValue): void {
-    const connectedIssueIds = new Set(businessValue.issues?.map((issue) => issue.id) ?? []);
+  private updateIssueSelection(currentBusinessValue: BusinessValue): void {
+    const currentConnectedIds = new Set(currentBusinessValue.issues?.map((issue) => issue.id));
 
-    const updatedIssues = this.issuesWithSelection().map((issue) => ({
-      ...issue,
-      isSelected: connectedIssueIds.has(issue.id),
-      isConnected: connectedIssueIds.has(issue.id),
-    }));
+    const assignedToOthersMap = new Map<string, string>();
+    for (const bv of this.businessValues()) {
+      if (bv.id === currentBusinessValue.id) continue;
+      if (bv.issues)
+        for (const issue of bv.issues) {
+          assignedToOthersMap.set(issue.id, bv.title);
+        }
+    }
+
+    const updatedIssues = this.allIssues().map((issue) => {
+      const isConnectedToCurrent = currentConnectedIds.has(issue.id);
+      const otherBvTitle = assignedToOthersMap.get(issue.id);
+      const isAssignedToOther = !!otherBvTitle;
+
+      return {
+        ...issue,
+        isSelected: isConnectedToCurrent,
+        isConnected: isConnectedToCurrent,
+        assignedToOther: isAssignedToOther,
+        assignedBusinessValueTitle: otherBvTitle,
+      } as IssueWithSelection;
+    });
 
     this.issuesWithSelection.set(updatedIssues);
-    this.originalSelectedIssueIds = new Set(connectedIssueIds);
+    this.originalSelectedIssueIds.set(currentConnectedIds);
   }
 }

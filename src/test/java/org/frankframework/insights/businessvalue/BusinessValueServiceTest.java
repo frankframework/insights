@@ -49,13 +49,13 @@ public class BusinessValueServiceTest {
 
         businessValue1 = new BusinessValue();
         businessValue1.setId(businessValueId);
-        businessValue1.setName("Performance");
+        businessValue1.setTitle("Performance");
         businessValue1.setDescription("Performance improvements");
         businessValue1.setIssues(new HashSet<>());
 
         businessValue2 = new BusinessValue();
         businessValue2.setId(UUID.randomUUID());
-        businessValue2.setName("Security");
+        businessValue2.setTitle("Security");
         businessValue2.setDescription("Security enhancements");
         businessValue2.setIssues(new HashSet<>());
 
@@ -85,14 +85,14 @@ public class BusinessValueServiceTest {
         Set<Issue> rootIssues = Set.of(issue1);
 
         when(issueService.getRootIssuesByReleaseId(releaseId)).thenReturn(rootIssues);
-        when(businessValueRepository.findByName("Performance")).thenReturn(Optional.of(businessValue1));
+        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.of(businessValue1));
 
         Set<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId(releaseId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         verify(issueService).getRootIssuesByReleaseId(releaseId);
-        verify(businessValueRepository).findByName("Performance");
+        verify(businessValueRepository).findByTitle("Performance");
     }
 
     @Test
@@ -115,14 +115,14 @@ public class BusinessValueServiceTest {
     public void createBusinessValue_createsSuccessfully() throws BusinessValueAlreadyExistsException {
         BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements");
 
-        when(businessValueRepository.findByName("Performance")).thenReturn(Optional.empty());
+        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.empty());
         when(mapper.toEntity(request, BusinessValue.class)).thenReturn(businessValue1);
         when(businessValueRepository.save(businessValue1)).thenReturn(businessValue1);
 
         BusinessValueResponse result = businessValueService.createBusinessValue(request);
 
         assertNotNull(result);
-        verify(businessValueRepository).findByName("Performance");
+        verify(businessValueRepository).findByTitle("Performance");
         verify(businessValueRepository).save(businessValue1);
     }
 
@@ -130,12 +130,12 @@ public class BusinessValueServiceTest {
     public void createBusinessValue_throwsExceptionWhenAlreadyExists() {
         BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements");
 
-        when(businessValueRepository.findByName("Performance")).thenReturn(Optional.of(businessValue1));
+        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.of(businessValue1));
 
         assertThrows(
                 BusinessValueAlreadyExistsException.class, () -> businessValueService.createBusinessValue(request));
 
-        verify(businessValueRepository).findByName("Performance");
+        verify(businessValueRepository).findByTitle("Performance");
         verify(businessValueRepository, never()).save(any());
     }
 
@@ -151,7 +151,7 @@ public class BusinessValueServiceTest {
 
         assertNotNull(result);
         assertEquals(businessValueId, result.id());
-        assertEquals("Performance", result.name());
+        assertEquals("Performance", result.title());
         assertEquals(1, result.issues().size());
         verify(businessValueRepository).findById(businessValueId);
     }
@@ -299,7 +299,7 @@ public class BusinessValueServiceTest {
         BusinessValueRequest request = new BusinessValueRequest("Security", "Updated description");
 
         when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(businessValueRepository.findByName("Security")).thenReturn(Optional.of(businessValue2));
+        when(businessValueRepository.findByTitle("Security")).thenReturn(Optional.of(businessValue2));
 
         assertThrows(
                 BusinessValueAlreadyExistsException.class,

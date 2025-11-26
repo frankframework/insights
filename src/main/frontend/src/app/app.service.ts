@@ -87,6 +87,16 @@ export class AppService {
     return this.http.put<T>(url, body ?? null, httpOptions);
   }
 
+  public delete<T>(url: string, options?: Record<string, string>): Observable<T> {
+    const httpOptions: { headers?: Record<string, string> } = {};
+
+    if (options && Object.keys(options).length > 0) {
+      httpOptions.headers = options;
+    }
+
+    return this.http.delete<T>(url, httpOptions);
+  }
+
   /**
    * Constructs a qualified API URL by appending a given endpoint to the base URL.
    *

@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BusinessValueRepository extends JpaRepository<BusinessValue, UUID> {
-    Optional<BusinessValue> findByName(String name);
+    Optional<BusinessValue> findByTitle(String title);
 }

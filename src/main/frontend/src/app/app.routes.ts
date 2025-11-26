@@ -13,7 +13,11 @@ export const routes: Routes = [
   { path: 'graph/:id', component: ReleaseDetailsComponent },
   { path: 'roadmap', component: ReleaseRoadmapComponent },
   { path: 'release-manage/:id', component: ReleaseManageComponent, canActivate: [FrankFrameworkMemberGuard] },
-  { path: 'release-manage/:id/business-values', component: BusinessValueManageComponent, canActivate: [FrankFrameworkMemberGuard] },
+  {
+    path: 'release-manage/:id/business-values',
+    component: BusinessValueManageComponent,
+    canActivate: [FrankFrameworkMemberGuard],
+  },
   { path: 'not-found', component: NotFoundComponent },
   { path: '**', redirectTo: 'not-found' },
 ];

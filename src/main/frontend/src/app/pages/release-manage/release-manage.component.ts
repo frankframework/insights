@@ -13,12 +13,7 @@ import { catchError, of } from 'rxjs';
 @Component({
   selector: 'app-release-manage',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReleaseBusinessValueComponent,
-    ReleaseImportantIssuesComponent,
-    ReleaseVulnerabilities,
-  ],
+  imports: [CommonModule, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
   templateUrl: './release-manage.component.html',
   styleUrl: './release-manage.component.scss',
 })

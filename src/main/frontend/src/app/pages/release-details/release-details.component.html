@@ -7,9 +7,7 @@
           Back
         </button>
         @if (authService.currentUser()?.isFrankFrameworkMember) {
-          <button class="manage-button" [routerLink]="['/release-manage', release.id]">
-            Manage
-          </button>
+          <button class="manage-button" [routerLink]="['/release-manage', release.id]">Manage</button>
         }
       </div>
       <div class="header-details">

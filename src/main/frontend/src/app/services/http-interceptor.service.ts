@@ -1,5 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HttpResponse, HttpErrorResponse } from '@angular/common/http';
+import {
+  HttpEvent,
+  HttpInterceptor,
+  HttpHandler,
+  HttpRequest,
+  HttpResponse,
+  HttpErrorResponse,
+} from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
@@ -18,7 +25,7 @@ export class HttpInterceptorService implements HttpInterceptor {
       method: request.method,
       url: request.url,
       csrfTokenFound: !!csrfToken,
-      csrfToken: csrfToken ? `${csrfToken.substring(0, 10)}...` : 'none',
+      csrfToken: csrfToken ? `${csrfToken.slice(0, 10)}...` : 'none',
       allCookies: document.cookie,
       withCredentials: true,
     });
@@ -64,7 +71,7 @@ export class HttpInterceptorService implements HttpInterceptor {
             error: error.error,
           });
         },
-      })
+      }),
     );
   }
 
@@ -76,7 +83,7 @@ export class HttpInterceptorService implements HttpInterceptor {
     for (const cookie of cookies) {
       const trimmedCookie = cookie.trim();
       if (trimmedCookie.startsWith(name)) {
-        return trimmedCookie.substring(name.length);
+        return trimmedCookie.slice(name.length);
       }
     }
 
