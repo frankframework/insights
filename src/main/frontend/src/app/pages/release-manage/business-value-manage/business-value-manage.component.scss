@@ -105,6 +105,40 @@
       margin: 0;
     }
 
+    .panel-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .add-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: #ffffff;
+      color: #6b7280;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f9fafb;
+        color: #3b82f6;
+        border-color: #3b82f6;
+      }
+
+      &:active {
+        background: #f3f4f6;
+      }
+
+      svg {
+        flex-shrink: 0;
+      }
+    }
+
     .count {
       background: #e5e7eb;
       color: #4b5563;

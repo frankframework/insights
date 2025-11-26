@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { Location, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Release, ReleaseService } from '../../services/release.service';
 import { Label, LabelService } from '../../services/label.service';
@@ -11,7 +11,7 @@ import { ReleaseHighlightsComponent } from './release-highlights/release-highlig
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -39,7 +39,7 @@ export class ReleaseDetailsComponent implements OnInit {
   public showBusinessValue = signal<boolean>(true);
   public showImportantIssues = signal<boolean>(false);
 
-  private location = inject(Location);
+  private router = inject(Router);
   private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
@@ -74,7 +74,7 @@ export class ReleaseDetailsComponent implements OnInit {
   }
 
   public goBack(): void {
-    this.location.back();
+    this.router.navigate(['/graph']);
   }
 
   public toggleBusinessValue(): void {

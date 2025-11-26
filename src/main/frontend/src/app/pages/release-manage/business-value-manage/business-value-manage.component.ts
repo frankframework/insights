@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
 import { catchError, of, forkJoin } from 'rxjs';
+import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
 
 interface IssueWithSelection extends Issue {
   isSelected: boolean;
@@ -13,7 +14,7 @@ interface IssueWithSelection extends Issue {
 @Component({
   selector: 'app-business-value-manage',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BusinessValueAddComponent],
   templateUrl: './business-value-manage.component.html',
   styleUrl: './business-value-manage.component.scss',
 })
@@ -25,6 +26,7 @@ export class BusinessValueManageComponent implements OnInit {
   public isLoading = signal<boolean>(true);
   public isSaving = signal<boolean>(false);
   public releaseId = signal<string>('');
+  public showCreateForm = signal<boolean>(false);
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -82,10 +84,20 @@ export class BusinessValueManageComponent implements OnInit {
   }
 
   public goBack(): void {
-    const releaseId = this.releaseId();
-    if (releaseId) {
-      this.router.navigate(['/release-manage', releaseId]);
-    }
+    this.router.navigate(['/graph']);
+  }
+
+  public toggleCreateForm(): void {
+    this.showCreateForm.update((value) => !value);
+  }
+
+  public onBusinessValueCreated(businessValue: BusinessValue): void {
+    // Add the new business value to the list
+    const updatedList = [...this.businessValues(), businessValue];
+    this.businessValues.set(updatedList);
+
+    // Optionally select it
+    this.selectBusinessValue(businessValue);
   }
 
   public selectBusinessValue(businessValue: BusinessValue): void {
