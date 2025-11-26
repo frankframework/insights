@@ -188,6 +188,10 @@
 
 .section-content {
   animation: slideIn 0.3s ease-out;
+
+  &.last-section {
+    margin-bottom: 2rem;
+  }
 }
 
 @keyframes slideIn {

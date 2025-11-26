@@ -40,13 +40,13 @@
             </div>
 
             @if (showBusinessValue()) {
-              <div class="section-content">
+              <div class="section-content" [class.last-section]="!showImportantIssues()">
                 <app-release-business-value [releaseId]="release.id" />
               </div>
             }
 
             @if (releaseIssues && showImportantIssues()) {
-              <div class="section-content">
+              <div class="section-content last-section">
                 <app-release-important-issues [releaseIssues]="releaseIssues" [releaseId]="release.id" />
               </div>
             }
