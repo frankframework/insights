@@ -60,6 +60,26 @@ export class AppService {
   }
 
   /**
+   * Performs a PUT request to the given URL with optional body and options.
+   *
+   * @template T - The expected response type.
+   * @template B - The request body type.
+   * @param url - The API endpoint URL.
+   * @param body - Optional request body.
+   * @param options - Optional HTTP headers as key-value pairs.
+   * @returns An Observable of type `T` containing the response data.
+   */
+  public put<T, B = unknown>(url: string, body?: B, options?: Record<string, string>): Observable<T> {
+    const httpOptions: { headers?: Record<string, string> } = {};
+
+    if (options && Object.keys(options).length > 0) {
+      httpOptions.headers = options;
+    }
+
+    return this.http.put<T>(url, body ?? null, httpOptions);
+  }
+
+  /**
    * Constructs a qualified API URL by appending a given endpoint to the base URL.
    *
    * @param endpoint The string that extends the base url to reach a specific endpoint

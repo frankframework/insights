@@ -25,8 +25,8 @@ import { catchError, of } from 'rxjs';
 export class ReleaseManageComponent implements OnInit {
   public authService = inject(AuthService);
   public release = signal<Release | null>(null);
-  public releaseIssues = signal<Issue[] | undefined>(undefined);
-  public vulnerabilities = signal<Vulnerability[] | undefined>(undefined);
+  public releaseIssues = signal<Issue[] | undefined>([]);
+  public vulnerabilities = signal<Vulnerability[] | undefined>([]);
   public isLoading = signal<boolean>(true);
   public activeSection = signal<'business-value' | 'vulnerabilities' | null>(null);
 
@@ -53,7 +53,14 @@ export class ReleaseManageComponent implements OnInit {
   }
 
   public openSection(section: 'business-value' | 'vulnerabilities'): void {
-    this.activeSection.set(section);
+    const releaseId = this.release()?.id;
+    if (!releaseId) return;
+
+    if (section === 'business-value') {
+      this.router.navigate(['/release-manage', releaseId, 'business-values']);
+    } else {
+      this.activeSection.set(section);
+    }
   }
 
   public closeSection(): void {
@@ -83,7 +90,7 @@ export class ReleaseManageComponent implements OnInit {
       .pipe(
         catchError(() => {
           this.releaseIssues.set(undefined);
-          return of(undefined);
+          return of();
         }),
       )
       .subscribe((issues) => {
@@ -97,7 +104,7 @@ export class ReleaseManageComponent implements OnInit {
       .pipe(
         catchError(() => {
           this.vulnerabilities.set(undefined);
-          return of(undefined);
+          return of();
         }),
       )
       .subscribe((vulnerabilities) => {

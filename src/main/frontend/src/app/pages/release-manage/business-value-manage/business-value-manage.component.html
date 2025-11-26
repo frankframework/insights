@@ -1,0 +1,115 @@
+<div class="business-value-manage-container">
+  @if (!isLoading()) {
+    <div class="header">
+      <button class="back-button" (click)="goBack()">
+        <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
+        Back to Overview
+      </button>
+      <h1>Manage Business Values</h1>
+    </div>
+
+    <div class="content">
+      <div class="left-panel">
+        <div class="panel-header">
+          <h2>Business Values</h2>
+          <span class="count">{{ businessValues().length }}</span>
+        </div>
+        <div class="business-values-list">
+          @if (businessValues().length === 0) {
+            <div class="empty-state">
+              <p>No business values found for this release.</p>
+            </div>
+          } @else {
+            @for (businessValue of businessValues(); track businessValue.id) {
+              <div
+                class="business-value-item"
+                [class.selected]="selectedBusinessValue()?.id === businessValue.id"
+                (click)="selectBusinessValue(businessValue)"
+              >
+                <div class="item-content">
+                  <h3>{{ businessValue.name }}</h3>
+                  @if (businessValue.description) {
+                    <p class="description">{{ businessValue.description }}</p>
+                  }
+                  <div class="item-meta">
+                    <span class="issue-count">
+                      {{ businessValue.issues?.length || 0 }} issue{{ businessValue.issues?.length === 1 ? '' : 's' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <div class="right-panel">
+        @if (selectedBusinessValue()) {
+          <div class="panel-header">
+            <h2>Issues</h2>
+            <span class="count">{{ sortedIssues().length }}</span>
+          </div>
+          <div class="save-section">
+            <button
+              class="save-button"
+              [disabled]="!hasChanges() || isSaving()"
+              (click)="saveChanges()"
+            >
+              @if (isSaving()) {
+                <span>Saving...</span>
+              } @else {
+                <span>Save Changes</span>
+              }
+            </button>
+          </div>
+          <div class="issues-list">
+            @if (sortedIssues().length === 0) {
+              <div class="empty-state">
+                <p>No issues available for this release.</p>
+              </div>
+            } @else {
+              @for (issue of sortedIssues(); track issue.id) {
+                <div
+                  class="issue-item"
+                  [class.selected]="issue.isSelected"
+                  [class.connected]="issue.isConnected"
+                  (click)="toggleIssue(issue)"
+                >
+                  <input
+                    type="checkbox"
+                    [checked]="issue.isSelected"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleIssue(issue)"
+                  />
+                  <div class="issue-content">
+                    <div class="issue-header">
+                      <span class="issue-number">#{{ issue.number }}</span>
+                      @if (issue.issueType?.name) {
+                        <span class="issue-type">{{ issue.issueType?.name }}</span>
+                      }
+                    </div>
+                    <h4>{{ issue.title }}</h4>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        } @else {
+          <div class="no-selection">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            <h3>Select a Business Value</h3>
+            <p>Choose a business value from the left panel to manage its connected issues.</p>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="loading">
+      <p>Loading...</p>
+    </div>
+  }
+</div>
