@@ -253,8 +253,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
     const isSkipLink = link.isGap || link.isFadeIn;
     const isMiniNode = source.isMiniNode || false;
-    const miniNodeRadius = 8;
-    const nodeRadius = 20;
+    const miniNodeRadius = 0;
+    const nodeRadius = 0;
 
     let margin: number;
     if (isSkipLink) {
@@ -812,8 +812,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
         type: 'supported',
         startX: midpointX,
         endX: supportEndX,
-        color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(251, 146, 60, 0.15)',
-        stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(251, 146, 60, 0.25)',
+        color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(117,132,255,0.15)',
+        stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(131,162,255,0.25)',
       },
     );
 

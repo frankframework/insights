@@ -26,18 +26,6 @@
     cursor: pointer;
   }
 
-  circle {
-    transition: transform 0.15s ease-out;
-    stroke: #efefef;
-    stroke-width: 5;
-  }
-
-  text {
-    font-size: 12px;
-    font-weight: bold;
-    text-anchor: middle;
-  }
-
   .branch-labels-sticky {
     display: none;
   }
@@ -281,7 +269,20 @@
   }
 
   .release-node {
+    text {
+      font-size: 12px;
+      font-weight: 500;
+      fill: #1e1e1e;
+    }
+
+    circle {
+      transition: transform 0.15s ease-out;
+      stroke: #999;
+      stroke-width: 2;
+    }
+
     circle, text {
+      transform: rotate(-45deg);
       transition: transform 0.15s ease-out;
     }
 
@@ -292,7 +293,7 @@
 
     &:hover {
       circle, text {
-        transform: scale(1.05);
+        transform: scale(1.2) rotate(-45deg);
         cursor: pointer;
       }
     }
@@ -301,8 +302,7 @@
       pointer-events: none;
 
       circle {
-        stroke: #999;
-        stroke-width: 2;
+        fill: #999;
       }
 
       &:hover circle {
