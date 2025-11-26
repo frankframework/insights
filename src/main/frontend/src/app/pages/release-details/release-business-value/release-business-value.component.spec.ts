@@ -1,41 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { signal } from '@angular/core';
 import { ReleaseBusinessValueComponent } from './release-business-value.component';
 import { BusinessValueService } from '../../../services/business-value.service';
-import { AuthService, User } from '../../../services/auth.service';
 import { of, throwError } from 'rxjs';
 
 describe('ReleaseBusinessValueComponent', () => {
   let component: ReleaseBusinessValueComponent;
   let fixture: ComponentFixture<ReleaseBusinessValueComponent>;
   let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
-  let mockAuthService: jasmine.SpyObj<AuthService>;
-  let mockRouter: jasmine.SpyObj<Router>;
   let consoleErrorSpy: jasmine.Spy;
-
-  const mockUser: User = {
-    githubId: 123,
-    username: 'testuser',
-    avatarUrl: 'https://example.com/avatar.jpg',
-    isFrankFrameworkMember: true,
-  };
 
   beforeEach(async () => {
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
-    mockAuthService = jasmine.createSpyObj('AuthService', [], {
-      currentUser: signal<User | null>(null),
-    });
-    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
     consoleErrorSpy = spyOn(globalThis.console, 'error');
 
     await TestBed.configureTestingModule({
       imports: [ReleaseBusinessValueComponent],
-      providers: [
-        { provide: BusinessValueService, useValue: mockBusinessValueService },
-        { provide: AuthService, useValue: mockAuthService },
-        { provide: Router, useValue: mockRouter },
-      ],
+      providers: [{ provide: BusinessValueService, useValue: mockBusinessValueService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseBusinessValueComponent);
@@ -203,49 +183,6 @@ describe('ReleaseBusinessValueComponent', () => {
       });
 
       expect(component.businessValues()).toEqual([]);
-    });
-  });
-
-  describe('FrankFramework member button', () => {
-    it('should show the manage button when user is a FrankFramework member', () => {
-      mockAuthService.currentUser = signal<User | null>(mockUser);
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      const button = compiled.querySelector('.ff-member-button');
-
-      expect(button).toBeTruthy();
-      expect(button?.textContent?.trim()).toBe('Manage Business Values');
-    });
-
-    it('should not show the manage button when user is not a FrankFramework member', () => {
-      const nonMemberUser: User = { ...mockUser, isFrankFrameworkMember: false };
-      mockAuthService.currentUser = signal<User | null>(nonMemberUser);
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      const button = compiled.querySelector('.ff-member-button');
-
-      expect(button).toBeNull();
-    });
-
-    it('should not show the manage button when user is not logged in', () => {
-      mockAuthService.currentUser = signal<User | null>(null);
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement as HTMLElement;
-      const button = compiled.querySelector('.ff-member-button');
-
-      expect(button).toBeNull();
-    });
-
-    it('should navigate to ff-members page when button is clicked', () => {
-      mockAuthService.currentUser = signal<User | null>(mockUser);
-      fixture.detectChanges();
-
-      component.navigateToMembersArea();
-
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/ff-members']);
     });
   });
 });

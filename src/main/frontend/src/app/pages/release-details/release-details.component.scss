@@ -27,6 +27,12 @@
   padding-bottom: 1.5rem;
   border-bottom: 2px solid #e5e7eb;
 
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
   .header-details {
     display: flex;
     flex-direction: column;
@@ -49,7 +55,8 @@
     }
   }
 
-  .back-button {
+  .back-button,
+  .manage-button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -62,25 +69,43 @@
     color: #374151;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-decoration: none;
 
     &:hover {
       background: #f9fafb;
       border-color: #9ca3af;
       color: #1f2937;
+    }
+
+    &:active {
+      background: #f3f4f6;
+    }
+  }
+
+  .back-button {
+    &:hover {
       transform: translateX(-2px);
     }
 
     &:active {
       transform: translateX(-1px);
-      background: #f3f4f6;
     }
 
-    svg {
+    img {
       transition: transform 0.2s ease;
     }
 
-    &:hover svg {
+    &:hover img {
       transform: translateX(-2px);
+    }
+  }
+
+  .manage-button {
+    padding-block: .725rem;
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
   }
 }

@@ -5,12 +5,13 @@ import { Release, ReleaseService } from '../../services/release.service';
 import { Label, LabelService } from '../../services/label.service';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
+import { AuthService } from '../../services/auth.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -19,6 +20,7 @@ import { FormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     LoaderComponent,
     ReleaseHighlightsComponent,
     ReleaseImportantIssuesComponent,
@@ -43,6 +45,7 @@ export class ReleaseDetailsComponent implements OnInit {
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
   private route = inject(ActivatedRoute);
+  public authService = inject(AuthService);
 
   ngOnInit(): void {
     this.route.paramMap

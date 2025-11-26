@@ -37,13 +37,13 @@
     li {
       position: relative;
       cursor: pointer;
-      padding: 8px 4px 12px 4px;
+      padding: 8px 3px 8px 3px;
 
       &:not(.active) {
         opacity: 0.6;
       }
       &.active {
-        border-bottom: 2px solid #1e1e1e;
+        border-bottom: 2px solid #1e1e1e;;
       }
       &:hover {
         opacity: 1;
