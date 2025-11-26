@@ -4,12 +4,46 @@
   padding: 1.5rem;
   border: 1px solid #e5e7eb;
 
-  h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 1rem 0;
-    color: #111827;
-    letter-spacing: -0.01em;
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+      color: #111827;
+      letter-spacing: -0.01em;
+    }
+
+    .ff-member-button {
+      background: #ffffff;
+      color: #111827;
+      border: 1.5px solid #d1d5db;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+      }
+
+      &:active {
+        background: #f3f4f6;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: #6b7280;
+        box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+      }
+    }
   }
 
   .loading-message,

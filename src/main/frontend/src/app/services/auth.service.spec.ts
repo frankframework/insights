@@ -16,7 +16,7 @@ describe('AuthService', () => {
     githubId: 123,
     username: 'testuser',
     avatarUrl: 'https://avatars.githubusercontent.com/u/123',
-    frankFrameworkMember: true,
+    isFrankFrameworkMember: true,
   };
 
   beforeEach(() => {

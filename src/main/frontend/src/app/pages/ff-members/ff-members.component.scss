@@ -1,0 +1,60 @@
+.ff-members-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+
+  .header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+
+    h1 {
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .welcome-message {
+      color: #666;
+      font-size: 1.1rem;
+
+      strong {
+        color: #0066cc;
+      }
+    }
+  }
+
+  .content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+
+    .info-card {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1.5rem;
+
+      h2 {
+        color: #333;
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+      }
+
+      p {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 0.5rem;
+      }
+
+      ul {
+        margin-top: 0.5rem;
+        padding-left: 1.5rem;
+
+        li {
+          color: #555;
+          line-height: 1.8;
+        }
+      }
+    }
+  }
+}

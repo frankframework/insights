@@ -1,5 +1,12 @@
 <div class="business-values-container">
-  <h3>Business Values</h3>
+  <div class="header">
+    <h3>Business Values</h3>
+    @if (authService.currentUser()?.isFrankFrameworkMember) {
+      <button class="ff-member-button" (click)="navigateToMembersArea()">
+        Manage Business Values
+      </button>
+    }
+  </div>
   @if (isLoadingBusinessValues()) {
     <p class="loading-message">Loading business values...</p>
   } @else if (businessValues().length > 0) {

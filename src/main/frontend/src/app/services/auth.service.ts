@@ -8,7 +8,7 @@ export interface User {
   githubId: number;
   username: string;
   avatarUrl: string;
-  frankFrameworkMember: boolean;
+  isFrankFrameworkMember: boolean;
 }
 
 export interface ErrorResponse {
