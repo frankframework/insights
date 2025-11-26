@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
  * except /by-release/{releaseId} which is public.
  */
 @RestController
-@RequestMapping("/api/business-value")
+@RequestMapping("/business-value")
 @Slf4j
 public class BusinessValueController {
 
@@ -56,11 +56,9 @@ public class BusinessValueController {
      *
      * @param releaseId the ID of the release
      * @return set of business values associated with the release's issues
-     * @throws ApiException if the release is not found
      */
     @GetMapping("/release/{releaseId}")
-    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId)
-            throws ApiException {
+    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId) {
         log.info("Fetching business values for release with id: {}", releaseId);
 
         Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);

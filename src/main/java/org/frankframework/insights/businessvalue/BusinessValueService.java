@@ -36,17 +36,16 @@ public class BusinessValueService {
     /**
      * Retrieves all unique business values associated with issues in a specific release.
      * This is a public endpoint that doesn't require authentication.
-     * Uses IssueService to get issues by release, then collects their business values.
+     * Uses IssueRepository to get issues by release, then collects their business values.
      * @param releaseId the ID of the release
      * @return set of business value responses associated with the release's issues
-     * @throws ReleaseNotFoundException if the release is not found
      */
     @Transactional(readOnly = true)
-    public Set<BusinessValueResponse> getBusinessValuesByReleaseId(String releaseId) throws ReleaseNotFoundException {
+    public Set<BusinessValueResponse> getBusinessValuesByReleaseId(String releaseId) {
         log.info("Fetching business values for release with id: {}", releaseId);
 
-        Set<Issue> rootIssues = issueService.getRootIssuesByReleaseId(releaseId);
-        Set<String> businessValueNames = extractBusinessValueNames(rootIssues);
+        Set<Issue> allIssues = issueRepository.findIssuesByReleaseId(releaseId);
+        Set<String> businessValueNames = extractBusinessValueNames(allIssues);
         Set<BusinessValue> businessValues = fetchBusinessValuesByNames(businessValueNames);
 
         log.info("Retrieved {} business values for release {}", businessValues.size(), releaseId);
