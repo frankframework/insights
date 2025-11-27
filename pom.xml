@@ -59,6 +59,7 @@
 		<jacoco.version>0.8.14</jacoco.version>
 		<maven.model.version>4.0.0-rc-4</maven.model.version>
 		<maven.resolver.supplier.version>1.9.24</maven.resolver.supplier.version>
+		<bucket4j.version>8.10.1</bucket4j.version>
 
 		<sonar.organization>frank-framework</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -163,6 +164,11 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-core</artifactId>
+			<version>${bucket4j.version}</version>
 		</dependency>
 
 		<dependency>

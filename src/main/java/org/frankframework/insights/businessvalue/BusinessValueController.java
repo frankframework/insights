@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
  * except /by-release/{releaseId} which is public.
  */
 @RestController
-@RequestMapping("/api/business-value")
+@RequestMapping("/business-value")
 @Slf4j
 public class BusinessValueController {
 
@@ -26,45 +26,6 @@ public class BusinessValueController {
 
     public BusinessValueController(BusinessValueService businessValueService) {
         this.businessValueService = businessValueService;
-    }
-
-    /**
-     * Creates a new business value.
-     * Requires authentication.
-     *
-     * @param request the business value request
-     * @param principal the authenticated user (ensures FrankFramework member access)
-     * @return the created business value response
-     * @throws ApiException if creation fails
-     */
-    @PostMapping
-    public ResponseEntity<BusinessValueResponse> createBusinessValue(
-            @Valid @RequestBody BusinessValueRequest request, @AuthenticationPrincipal OAuth2User principal)
-            throws ApiException {
-        log.info(
-                "User {} is creating a new business value with name: {}",
-                principal.getAttribute("login"),
-                request.name());
-
-        BusinessValueResponse response = businessValueService.createBusinessValue(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    /**
-     * Retrieves all business values associated with issues in a specific release.
-     * This is a public endpoint that does not require authentication.
-     *
-     * @param releaseId the ID of the release
-     * @return set of business values associated with the release's issues
-     * @throws ApiException if the release is not found
-     */
-    @GetMapping("/release/{releaseId}")
-    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId)
-            throws ApiException {
-        log.info("Fetching business values for release with id: {}", releaseId);
-
-        Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
-        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -90,15 +51,50 @@ public class BusinessValueController {
      * @param id the UUID of the business value
      * @param principal the authenticated user
      * @return the business value response with connected issues
-     * @throws ApiException if the business value is not found
+     * @throws BusinessValueNotFoundException if the business value is not found
      */
     @GetMapping("/{id}")
     public ResponseEntity<BusinessValueResponse> getBusinessValueById(
-            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) throws ApiException {
+            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal)
+            throws BusinessValueNotFoundException {
         log.info("User {} is fetching business value with id: {}", principal.getAttribute("login"), id);
 
         BusinessValueResponse response = businessValueService.getBusinessValueById(id);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Retrieves business values associated with a specific release ID.
+     * @param releaseId the release ID
+     * @return set of business values for the release
+     */
+    @GetMapping("/release/{releaseId}")
+    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId) {
+        log.info("Fetching business values for release with id: {}", releaseId);
+        Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Creates a new business value.
+     * Requires authentication.
+     *
+     * @param request the business value request
+     * @param principal the authenticated user (ensures FrankFramework member access)
+     * @return the created business value response
+     * @throws ApiException if creation fails
+     */
+    @PostMapping
+    public ResponseEntity<BusinessValueResponse> createBusinessValue(
+            @Valid @RequestBody BusinessValueRequest request, @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info(
+                "User {} is creating a new business value with name: {}",
+                principal.getAttribute("login"),
+                request.title());
+
+        BusinessValueResponse response = businessValueService.createBusinessValue(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
@@ -123,58 +119,13 @@ public class BusinessValueController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Connects issues to a business value.
-     * If an issue has sub-issues, all sub-issues are also connected automatically.
-     * Requires authentication.
-     *
-     * @param id the UUID of the business value
-     * @param request the request containing issue IDs to connect
-     * @param principal the authenticated user
-     * @return the updated business value response with connected issues
-     * @throws ApiException if connection fails
-     */
-    @PostMapping("/{id}/connect-issues")
-    public ResponseEntity<BusinessValueResponse> connectIssues(
-            @PathVariable UUID id,
-            @Valid @RequestBody ConnectIssuesRequest request,
-            @AuthenticationPrincipal OAuth2User principal)
-            throws ApiException {
-        log.info(
-                "User {} is connecting {} issues to business value with id: {}",
-                principal.getAttribute("login"),
-                request.issueIds().size(),
-                id);
-
-        BusinessValueResponse response = businessValueService.connectIssuesToBusinessValue(id, request);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Disconnects issues from a business value.
-     * If an issue has sub-issues, all sub-issues are also disconnected automatically.
-     * Requires authentication.
-     *
-     * @param id the UUID of the business value
-     * @param request the request containing issue IDs to disconnect
-     * @param principal the authenticated user
-     * @return the updated business value response
-     * @throws ApiException if disconnection fails
-     */
-    @PostMapping("/{id}/disconnect-issues")
-    public ResponseEntity<BusinessValueResponse> disconnectIssues(
-            @PathVariable UUID id,
-            @Valid @RequestBody ConnectIssuesRequest request,
-            @AuthenticationPrincipal OAuth2User principal)
-            throws ApiException {
-        log.info(
-                "User {} is disconnecting {} issues from business value with id: {}",
-                principal.getAttribute("login"),
-                request.issueIds().size(),
-                id);
-
-        BusinessValueResponse response = businessValueService.disconnectIssuesFromBusinessValue(id, request.issueIds());
-        return ResponseEntity.ok(response);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBusinessValue(
+            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal)
+            throws BusinessValueNotFoundException {
+        log.info("User {} is deleting business value with id: {}", principal.getAttribute("login"), id);
+        businessValueService.deleteBusinessValue(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

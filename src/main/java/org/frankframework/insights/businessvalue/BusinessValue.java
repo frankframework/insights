@@ -18,7 +18,7 @@ public class BusinessValue {
     private UUID id;
 
     @Column(nullable = false, unique = true)
-    private String name;
+    private String title;
 
     @Column(columnDefinition = "TEXT")
     private String description;

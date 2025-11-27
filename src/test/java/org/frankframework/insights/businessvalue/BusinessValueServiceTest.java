@@ -9,8 +9,6 @@ import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueNotFoundException;
 import org.frankframework.insights.issue.IssueRepository;
 import org.frankframework.insights.issue.IssueResponse;
-import org.frankframework.insights.issue.IssueService;
-import org.frankframework.insights.release.ReleaseNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,9 +26,6 @@ public class BusinessValueServiceTest {
     private IssueRepository issueRepository;
 
     @Mock
-    private IssueService issueService;
-
-    @Mock
     private Mapper mapper;
 
     @InjectMocks
@@ -40,7 +35,6 @@ public class BusinessValueServiceTest {
     private BusinessValue businessValue2;
     private Issue issue1;
     private Issue issue2;
-    private Issue subIssue1;
     private UUID businessValueId;
 
     @BeforeEach
@@ -49,13 +43,13 @@ public class BusinessValueServiceTest {
 
         businessValue1 = new BusinessValue();
         businessValue1.setId(businessValueId);
-        businessValue1.setName("Performance");
+        businessValue1.setTitle("Performance");
         businessValue1.setDescription("Performance improvements");
         businessValue1.setIssues(new HashSet<>());
 
         businessValue2 = new BusinessValue();
         businessValue2.setId(UUID.randomUUID());
-        businessValue2.setName("Security");
+        businessValue2.setTitle("Security");
         businessValue2.setDescription("Security enhancements");
         businessValue2.setIssues(new HashSet<>());
 
@@ -66,7 +60,7 @@ public class BusinessValueServiceTest {
         issue1.setBusinessValue(businessValue1);
         issue1.setSubIssues(new HashSet<>());
 
-        subIssue1 = new Issue();
+        Issue subIssue1 = new Issue();
         subIssue1.setId("subIssue1");
         subIssue1.setNumber(2);
         subIssue1.setTitle("Sub Issue 1");
@@ -80,30 +74,30 @@ public class BusinessValueServiceTest {
     }
 
     @Test
-    public void getBusinessValuesByReleaseId_returnsBusinessValues() throws ReleaseNotFoundException {
+    public void getBusinessValuesByReleaseId_returnsBusinessValues() {
         String releaseId = "rel123";
-        Set<Issue> rootIssues = Set.of(issue1);
+        Set<Issue> allIssues = Set.of(issue1);
 
-        when(issueService.getRootIssuesByReleaseId(releaseId)).thenReturn(rootIssues);
-        when(businessValueRepository.findByName("Performance")).thenReturn(Optional.of(businessValue1));
+        when(issueRepository.findIssuesByReleaseId(releaseId)).thenReturn(allIssues);
+        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.of(businessValue1));
 
         Set<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId(releaseId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(issueService).getRootIssuesByReleaseId(releaseId);
-        verify(businessValueRepository).findByName("Performance");
+        verify(issueRepository).findIssuesByReleaseId(releaseId);
+        verify(businessValueRepository).findByTitle("Performance");
     }
 
     @Test
-    public void getBusinessValuesByReleaseId_handlesNullBusinessValues() throws ReleaseNotFoundException {
+    public void getBusinessValuesByReleaseId_handlesNullBusinessValues() {
         String releaseId = "rel123";
         Issue issueWithoutBV = new Issue();
         issueWithoutBV.setId("issue3");
         issueWithoutBV.setBusinessValue(null);
-        Set<Issue> rootIssues = Set.of(issueWithoutBV);
+        Set<Issue> allIssues = Set.of(issueWithoutBV);
 
-        when(issueService.getRootIssuesByReleaseId(releaseId)).thenReturn(rootIssues);
+        when(issueRepository.findIssuesByReleaseId(releaseId)).thenReturn(allIssues);
 
         Set<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId(releaseId);
 
@@ -115,14 +109,14 @@ public class BusinessValueServiceTest {
     public void createBusinessValue_createsSuccessfully() throws BusinessValueAlreadyExistsException {
         BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements");
 
-        when(businessValueRepository.findByName("Performance")).thenReturn(Optional.empty());
+        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.empty());
         when(mapper.toEntity(request, BusinessValue.class)).thenReturn(businessValue1);
         when(businessValueRepository.save(businessValue1)).thenReturn(businessValue1);
 
         BusinessValueResponse result = businessValueService.createBusinessValue(request);
 
         assertNotNull(result);
-        verify(businessValueRepository).findByName("Performance");
+        verify(businessValueRepository).findByTitle("Performance");
         verify(businessValueRepository).save(businessValue1);
     }
 
@@ -130,12 +124,12 @@ public class BusinessValueServiceTest {
     public void createBusinessValue_throwsExceptionWhenAlreadyExists() {
         BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements");
 
-        when(businessValueRepository.findByName("Performance")).thenReturn(Optional.of(businessValue1));
+        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.of(businessValue1));
 
         assertThrows(
                 BusinessValueAlreadyExistsException.class, () -> businessValueService.createBusinessValue(request));
 
-        verify(businessValueRepository).findByName("Performance");
+        verify(businessValueRepository).findByTitle("Performance");
         verify(businessValueRepository, never()).save(any());
     }
 
@@ -151,7 +145,7 @@ public class BusinessValueServiceTest {
 
         assertNotNull(result);
         assertEquals(businessValueId, result.id());
-        assertEquals("Performance", result.name());
+        assertEquals("Performance", result.title());
         assertEquals(1, result.issues().size());
         verify(businessValueRepository).findById(businessValueId);
     }
@@ -191,80 +185,6 @@ public class BusinessValueServiceTest {
     }
 
     @Test
-    public void connectIssuesToBusinessValue_connectsIssuesSuccessfully()
-            throws BusinessValueNotFoundException, IssueNotFoundException {
-        Set<String> issueIds = Set.of("issue1");
-        ConnectIssuesRequest request = new ConnectIssuesRequest(issueIds);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue1")).thenReturn(Optional.of(issue1));
-        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> {
-            Set<Issue> issues = inv.getArgument(0);
-            return List.copyOf(issues);
-        });
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-
-        BusinessValueResponse result = businessValueService.connectIssuesToBusinessValue(businessValueId, request);
-
-        assertNotNull(result);
-        verify(businessValueRepository, atLeast(2)).findById(businessValueId);
-        verify(issueRepository).saveAll(anySet());
-    }
-
-    @Test
-    public void connectIssuesToBusinessValue_connectsSubIssuesAutomatically()
-            throws BusinessValueNotFoundException, IssueNotFoundException {
-        Set<String> issueIds = Set.of("issue2");
-        ConnectIssuesRequest request = new ConnectIssuesRequest(issueIds);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue2")).thenReturn(Optional.of(issue2));
-        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> {
-            Set<Issue> savedIssues = inv.getArgument(0);
-            assertEquals(2, savedIssues.size());
-            return List.copyOf(savedIssues);
-        });
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-
-        BusinessValueResponse result = businessValueService.connectIssuesToBusinessValue(businessValueId, request);
-
-        assertNotNull(result);
-        verify(issueRepository).saveAll(anySet());
-    }
-
-    @Test
-    public void connectIssuesToBusinessValue_throwsExceptionWhenBusinessValueNotFound() {
-        Set<String> issueIds = Set.of("issue1");
-        ConnectIssuesRequest request = new ConnectIssuesRequest(issueIds);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.empty());
-
-        assertThrows(
-                BusinessValueNotFoundException.class,
-                () -> businessValueService.connectIssuesToBusinessValue(businessValueId, request));
-
-        verify(businessValueRepository).findById(businessValueId);
-        verify(issueRepository, never()).saveAll(anySet());
-    }
-
-    @Test
-    public void connectIssuesToBusinessValue_throwsExceptionWhenIssueNotFound() {
-        Set<String> issueIds = Set.of("issue1", "nonexistent");
-        ConnectIssuesRequest request = new ConnectIssuesRequest(issueIds);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue1")).thenReturn(Optional.of(issue1));
-        when(issueRepository.findById("nonexistent")).thenReturn(Optional.empty());
-
-        assertThrows(
-                IssueNotFoundException.class,
-                () -> businessValueService.connectIssuesToBusinessValue(businessValueId, request));
-
-        verify(businessValueRepository).findById(businessValueId);
-        verify(issueRepository, never()).saveAll(anySet());
-    }
-
-    @Test
     public void updateBusinessValue_updatesSuccessfully()
             throws BusinessValueNotFoundException, BusinessValueAlreadyExistsException {
         BusinessValueRequest request = new BusinessValueRequest("Performance", "Updated description");
@@ -299,7 +219,7 @@ public class BusinessValueServiceTest {
         BusinessValueRequest request = new BusinessValueRequest("Security", "Updated description");
 
         when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(businessValueRepository.findByName("Security")).thenReturn(Optional.of(businessValue2));
+        when(businessValueRepository.findByTitle("Security")).thenReturn(Optional.of(businessValue2));
 
         assertThrows(
                 BusinessValueAlreadyExistsException.class,
@@ -310,56 +230,14 @@ public class BusinessValueServiceTest {
     }
 
     @Test
-    public void disconnectIssuesFromBusinessValue_disconnectsSuccessfully() throws BusinessValueNotFoundException {
-        Set<String> issueIds = Set.of("issue1");
-        issue1.setBusinessValue(businessValue1);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue1")).thenReturn(Optional.of(issue1));
-        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> {
-            Set<Issue> issues = inv.getArgument(0);
-            return List.copyOf(issues);
-        });
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-
-        BusinessValueResponse result =
-                businessValueService.disconnectIssuesFromBusinessValue(businessValueId, issueIds);
-
-        assertNotNull(result);
-        assertNull(issue1.getBusinessValue());
-        verify(issueRepository).saveAll(anySet());
-    }
-
-    @Test
-    public void disconnectIssuesFromBusinessValue_disconnectsSubIssuesAutomatically()
-            throws BusinessValueNotFoundException {
-        Set<String> issueIds = Set.of("issue2");
-        issue2.setBusinessValue(businessValue1);
-        subIssue1.setBusinessValue(businessValue1);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue2")).thenReturn(Optional.of(issue2));
-        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> {
-            Set<Issue> savedIssues = inv.getArgument(0);
-            assertEquals(2, savedIssues.size());
-            return List.copyOf(savedIssues);
-        });
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-
-        BusinessValueResponse result =
-                businessValueService.disconnectIssuesFromBusinessValue(businessValueId, issueIds);
-
-        assertNotNull(result);
-        verify(issueRepository).saveAll(anySet());
-    }
-
-    @Test
     public void replaceIssueConnections_replacesSuccessfully()
             throws BusinessValueNotFoundException, IssueNotFoundException {
         Set<String> newIssueIds = Set.of("issue2");
         ConnectIssuesRequest request = new ConnectIssuesRequest(newIssueIds);
 
-        businessValue1.setIssues(Set.of(issue1));
+        Set<Issue> mutableIssues = new HashSet<>();
+        mutableIssues.add(issue1);
+        businessValue1.setIssues(mutableIssues);
         issue1.setBusinessValue(businessValue1);
 
         when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
@@ -395,5 +273,59 @@ public class BusinessValueServiceTest {
 
         assertNotNull(result);
         verify(issueRepository).saveAll(anySet());
+    }
+
+    @Test
+    public void deleteBusinessValue_deletesSuccessfully() throws BusinessValueNotFoundException {
+        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
+
+        businessValueService.deleteBusinessValue(businessValueId);
+
+        verify(businessValueRepository).findById(businessValueId);
+        verify(businessValueRepository).delete(businessValue1);
+    }
+
+    @Test
+    public void deleteBusinessValue_throwsExceptionWhenNotFound() {
+        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.empty());
+
+        assertThrows(
+                BusinessValueNotFoundException.class, () -> businessValueService.deleteBusinessValue(businessValueId));
+
+        verify(businessValueRepository).findById(businessValueId);
+        verify(businessValueRepository, never()).delete(any());
+    }
+
+    @Test
+    public void deleteBusinessValue_disconnectsIssuesBeforeDeleting() throws BusinessValueNotFoundException {
+        Set<Issue> issues = new HashSet<>();
+        issues.add(issue1);
+        businessValue1.setIssues(issues);
+        issue1.setBusinessValue(businessValue1);
+
+        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
+
+        businessValueService.deleteBusinessValue(businessValueId);
+
+        verify(issueRepository).saveAll(anySet());
+        verify(businessValueRepository).delete(businessValue1);
+        assertNull(issue1.getBusinessValue());
+    }
+
+    @Test
+    public void replaceIssueConnections_throwsExceptionWhenIssueNotFound() {
+        Set<String> newIssueIds = Set.of("nonexistent");
+        ConnectIssuesRequest request = new ConnectIssuesRequest(newIssueIds);
+
+        businessValue1.setIssues(new HashSet<>());
+
+        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
+        when(issueRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThrows(
+                IssueNotFoundException.class,
+                () -> businessValueService.replaceIssueConnections(businessValueId, request));
+
+        verify(businessValueRepository, atLeastOnce()).findById(businessValueId);
     }
 }
