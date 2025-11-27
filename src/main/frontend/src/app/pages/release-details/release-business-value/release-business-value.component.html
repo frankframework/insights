@@ -1,6 +1,6 @@
 <div class="business-values-container">
-  @if (selectedBusinessValueId()) {
-    <app-release-business-value-modal [businessValueId]="selectedBusinessValueId()!" (closed)="closeModal()" />
+  @if (selectedBusinessValue()) {
+    <app-release-business-value-modal [businessValue]="selectedBusinessValue()" (closed)="closeModal()" />
   }
 
   <h3>Business Values</h3>

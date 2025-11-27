@@ -16,7 +16,7 @@ export class ReleaseBusinessValueComponent implements OnChanges {
 
   public businessValues = signal<BusinessValue[]>([]);
   public isLoadingBusinessValues = signal<boolean>(false);
-  public selectedBusinessValueId = signal<string | null>(null);
+  public selectedBusinessValue = signal<BusinessValue | null>(null);
 
   private businessValueService = inject(BusinessValueService);
 
@@ -27,11 +27,11 @@ export class ReleaseBusinessValueComponent implements OnChanges {
   }
 
   public openBusinessValueModal(businessValue: BusinessValue): void {
-    this.selectedBusinessValueId.set(businessValue.id);
+    this.selectedBusinessValue.set(businessValue);
   }
 
   public closeModal(): void {
-    this.selectedBusinessValueId.set(null);
+    this.selectedBusinessValue.set(null);
   }
 
   private fetchBusinessValues(): void {

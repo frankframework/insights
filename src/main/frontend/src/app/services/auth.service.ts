@@ -44,7 +44,6 @@ export class AuthService {
         this.authError.set(null);
         this.isLoading.set(false);
         this.setSessionFlag(true);
-        console.log('AuthService: User authenticated successfully:', user.username);
       }),
       catchError((error: HttpErrorResponse) => {
         this.currentUser.set(null);

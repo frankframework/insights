@@ -1,7 +1,7 @@
-import { Component, EventEmitter, Input, Output, OnInit, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
-import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
+import { BusinessValue } from '../../../services/business-value.service';
 import { Issue } from '../../../services/issue.service';
 import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree-branch/issue-tree-branch.component';
 
@@ -12,18 +12,17 @@ import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree
   templateUrl: './release-business-value-modal.component.html',
   styleUrl: './release-business-value-modal.component.scss',
 })
-export class ReleaseBusinessValueModalComponent implements OnInit {
-  @Input() businessValueId!: string;
+export class ReleaseBusinessValueModalComponent {
   @Output() closed = new EventEmitter<void>();
 
-  public businessValue = signal<BusinessValue | null>(null);
-  public isLoading = signal<boolean>(false);
-  public errorMessage = signal<string>('');
+  public businessValueSignal: WritableSignal<BusinessValue | null> = signal(null);
 
-  private businessValueService = inject(BusinessValueService);
+  public get businessValue(): WritableSignal<BusinessValue | null> {
+    return this.businessValueSignal;
+  }
 
-  ngOnInit(): void {
-    this.loadBusinessValue();
+  @Input({ required: true }) set businessValue(value: BusinessValue | null) {
+    this.businessValueSignal.set(value);
   }
 
   public close(): void {
@@ -34,24 +33,5 @@ export class ReleaseBusinessValueModalComponent implements OnInit {
     if (issue.url) {
       window.open(issue.url, '_blank');
     }
-  }
-
-  private loadBusinessValue(): void {
-    if (!this.businessValueId) return;
-
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-
-    this.businessValueService.getBusinessValueById(this.businessValueId).subscribe({
-      next: (businessValue) => {
-        this.businessValue.set(businessValue);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        this.isLoading.set(false);
-        this.errorMessage.set(error.error?.message || 'Failed to load business value details');
-        console.error('Failed to load business value:', error);
-      },
-    });
   }
 }

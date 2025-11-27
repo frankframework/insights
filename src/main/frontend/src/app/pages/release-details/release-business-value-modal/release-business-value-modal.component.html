@@ -1,14 +1,6 @@
 <app-modal [title]="businessValue()?.title || 'Business Value Details'" (closed)="close()">
   <div class="business-value-modal-content">
-    @if (isLoading()) {
-      <div class="loading-state">
-        <p>Loading business value details...</p>
-      </div>
-    } @else if (errorMessage()) {
-      <div class="error-state">
-        <p>{{ errorMessage() }}</p>
-      </div>
-    } @else if (businessValue()) {
+    @if (businessValue()) {
       <div class="business-value-details">
         <div class="description-section">
           <h3>Description</h3>

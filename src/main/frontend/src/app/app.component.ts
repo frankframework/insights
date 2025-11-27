@@ -39,7 +39,6 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Initialize CSRF token on app startup
     this.appService.initializeCsrfToken().subscribe({
       error: (error) => console.error('Failed to initialize CSRF token:', error),
     });
