@@ -18,6 +18,8 @@ describe('Release Details Page Journey', () => {
 
     cy.get('app-release-highlights').should('be.visible');
 
+    cy.get('.section-toggle').contains('Important Issues').click();
+
     cy.get('app-release-important-issues')
       .find('app-issue-tree-branch', { timeout: 10000 })
       .should('have.length.greaterThan', 0);
@@ -48,6 +50,8 @@ describe('Release Details Page Journey', () => {
     cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
+
+    cy.get('.section-toggle').contains('Important Issues').click();
 
     cy.get('app-release-important-issues').as('importantIssues');
     cy.get('@importantIssues')

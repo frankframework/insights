@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { Location, CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Release, ReleaseService } from '../../services/release.service';
@@ -8,17 +8,21 @@ import { Vulnerability, VulnerabilityService } from '../../services/vulnerabilit
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
+import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
 import { ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-release-details',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     LoaderComponent,
     ReleaseHighlightsComponent,
     ReleaseImportantIssuesComponent,
+    ReleaseBusinessValueComponent,
     ReleaseVulnerabilities,
   ],
   templateUrl: './release-details.component.html',
@@ -30,6 +34,8 @@ export class ReleaseDetailsComponent implements OnInit {
   public releaseIssues?: Issue[];
   public vulnerabilities?: Vulnerability[];
   public isLoading = true;
+  public showBusinessValue = signal<boolean>(true);
+  public showImportantIssues = signal<boolean>(false);
 
   private location = inject(Location);
   private releaseService = inject(ReleaseService);
@@ -66,6 +72,14 @@ export class ReleaseDetailsComponent implements OnInit {
 
   public goBack(): void {
     this.location.back();
+  }
+
+  public toggleBusinessValue(): void {
+    this.showBusinessValue.set(!this.showBusinessValue());
+  }
+
+  public toggleImportantIssues(): void {
+    this.showImportantIssues.set(!this.showImportantIssues());
   }
 
   private fetchData(releaseId: string): void {

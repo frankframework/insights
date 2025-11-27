@@ -1,0 +1,17 @@
+<div class="business-values-container">
+  <h3>Business Values</h3>
+  @if (isLoadingBusinessValues()) {
+    <p class="loading-message">Loading business values...</p>
+  } @else if (businessValues().length > 0) {
+    <ul class="business-values-list">
+      @for (businessValue of businessValues(); track businessValue.id) {
+        <li class="business-value-item">
+          <div class="business-value-title">{{ businessValue.title }}</div>
+          <div class="business-value-description">{{ businessValue.description }}</div>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="no-business-values">No business values found for this release.</p>
+  }
+</div>
