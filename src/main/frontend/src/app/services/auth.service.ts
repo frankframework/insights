@@ -100,7 +100,7 @@ export class AuthService {
         console.error('AuthService: Logout failed, clearing state anyway:', error);
         this.isLoading.set(false);
         this.clearAuthState();
-        return of(void 0);
+        return of();
       }),
     );
   }
