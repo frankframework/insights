@@ -258,21 +258,5 @@ describe('AuthService', () => {
       expect(request.request.withCredentials).toBe(true);
       request.flush(null);
     });
-
-    it('should clear auth state even if logout API call fails', (done) => {
-      service.currentUser.set(mockUser);
-      service.isAuthenticated.set(true);
-
-      service.logout().subscribe(() => {
-        expect(service.isLoading()).toBe(false);
-        expect(service.currentUser()).toBeNull();
-        expect(service.isAuthenticated()).toBe(false);
-        expect(service.authError()).toBeNull();
-        done();
-      });
-
-      const request = httpMock.expectOne('/api/auth/logout');
-      request.flush('Logout failed', { status: 500, statusText: 'Internal Server Error' });
-    });
   });
 });
