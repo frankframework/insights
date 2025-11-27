@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { signal } from '@angular/core';
-import { frankframeworkMemberGuard } from './frankframework-member.guard';
+import { FrankFrameworkMemberGuard } from './frankframework-member.guard';
 import { AuthService, User } from '../services/auth.service';
 
-describe('frankframeworkMemberGuard', () => {
+describe('FrankFrameworkMemberGuard', () => {
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
 
@@ -33,9 +33,9 @@ describe('frankframeworkMemberGuard', () => {
   });
 
   it('should allow access when user is a FrankFramework member', () => {
-    authService.currentUser = signal<User | null>(mockUser);
+    authService.currentUser.set(mockUser);
 
-    const result = TestBed.runInInjectionContext(() => frankframeworkMemberGuard({} as any, {} as any));
+    const result = TestBed.runInInjectionContext(() => FrankFrameworkMemberGuard({} as any, {} as any));
 
     expect(result).toBe(true);
     expect(router.navigate).not.toHaveBeenCalled();
@@ -43,27 +43,27 @@ describe('frankframeworkMemberGuard', () => {
 
   it('should deny access and redirect when user is not a FrankFramework member', () => {
     const nonMemberUser: User = { ...mockUser, isFrankFrameworkMember: false };
-    authService.currentUser = signal<User | null>(nonMemberUser);
+    authService.currentUser.set(nonMemberUser);
 
-    const result = TestBed.runInInjectionContext(() => frankframeworkMemberGuard({} as any, {} as any));
+    const result = TestBed.runInInjectionContext(() => FrankFrameworkMemberGuard({} as any, {} as any));
 
     expect(result).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should deny access and redirect when user is not logged in', () => {
-    authService.currentUser = signal<User | null>(null);
+    authService.currentUser.set(null);
 
-    const result = TestBed.runInInjectionContext(() => frankframeworkMemberGuard({} as any, {} as any));
+    const result = TestBed.runInInjectionContext(() => FrankFrameworkMemberGuard({} as any, {} as any));
 
     expect(result).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should deny access and redirect when user object is undefined', () => {
-    authService.currentUser = signal<User | null>(null);
+    authService.currentUser.set(null);
 
-    const result = TestBed.runInInjectionContext(() => frankframeworkMemberGuard({} as any, {} as any));
+    const result = TestBed.runInInjectionContext(() => FrankFrameworkMemberGuard({} as any, {} as any));
 
     expect(result).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/']);
