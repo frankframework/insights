@@ -20,7 +20,6 @@ export class HeaderComponent {
     const target = event.target as HTMLElement;
     const userProfile = target.closest('.user-profile');
 
-    // If click is outside user profile and menu is open, close it
     if (!userProfile && this.showUserMenu) {
       this.showUserMenu = false;
     }
