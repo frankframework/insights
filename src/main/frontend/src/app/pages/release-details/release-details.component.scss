@@ -1,12 +1,17 @@
 .release-details-container {
   display: flex;
   flex-direction: column;
-  padding-top: 12vh;
+  padding-top: 8rem;
   padding-inline: 10vw;
+  padding-bottom: 2rem;
 
   @media (max-width: 992px) {
-    padding-top: 9vh;
+    padding-top: 6rem;
     padding-inline: 5vw;
+  }
+
+  @media (max-width: 640px) {
+    padding-inline: 1rem;
   }
 
   .release-details-body {
@@ -27,10 +32,22 @@
   padding-bottom: 1.5rem;
   border-bottom: 2px solid #e5e7eb;
 
+  @media (max-width: 768px) {
+    align-items: center;
+
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
   .header-actions {
     display: flex;
     gap: 0.75rem;
     align-items: center;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: flex-start;
+    }
   }
 
   .header-details {
@@ -39,12 +56,25 @@
     gap: 0.25rem;
     align-items: end;
 
+    @media (max-width: 768px) {
+      align-items: flex-end;
+      width: 100%;
+    }
+
     h2 {
       margin: 0;
       font-size: 1.875rem;
       font-weight: 700;
       color: #1f2937;
       letter-spacing: -0.025em;
+
+      @media (max-width: 768px) {
+        font-size: 1.5rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 1.25rem;
+      }
     }
 
     span {
@@ -52,6 +82,15 @@
       color: #5c626e;
       margin-top: 0.5rem;
       display: block;
+
+      @media (max-width: 768px) {
+        font-size: 1rem;
+        margin-top: 0.25rem;
+      }
+
+      @media (max-width: 480px) {
+        font-size: 0.9rem;
+      }
     }
   }
 
@@ -70,6 +109,11 @@
     cursor: pointer;
     transition: all 0.2s ease;
     text-decoration: none;
+
+    @media (max-width: 480px) {
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+    }
 
     &:hover {
       background: #f9fafb;
@@ -157,6 +201,7 @@
 
   @media (max-width: 640px) {
     flex-direction: column;
+    gap: 0.5rem;
   }
 }
 
@@ -172,6 +217,10 @@
   cursor: pointer;
   user-select: none;
   transition: all 0.18s ease;
+
+  @media (max-width: 640px) {
+    padding: 0.75rem 1rem;
+  }
 
   &:hover {
     border-color: #9ca3af;
@@ -208,6 +257,10 @@
     color: #4b5563;
     transition: all 0.18s ease;
     letter-spacing: -0.01em;
+
+    @media (max-width: 480px) {
+      font-size: 0.875rem;
+    }
   }
 }
 

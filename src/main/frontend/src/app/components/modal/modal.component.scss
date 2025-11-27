@@ -8,28 +8,50 @@
   outline: none;
   z-index: 30;
   padding: 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+  }
 }
 
 .modal-title {
   position: absolute;
   top: 0;
   left: 1.3rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+
+  @media (max-width: 640px) {
+    font-size: 1.125rem;
+    left: 1rem;
+  }
 }
 
 .modal-content {
-  max-width: 30vw;
-  max-height: 90vh;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 85vh;
   background: white;
   border-radius: .7rem;
-  padding: 4rem 2rem 1rem 2rem;
+  padding: 4rem 2.5rem 2rem 2.5rem;
   position: relative;
   box-shadow: 0 2px 18px #0002;
   outline: none;
   overflow-y: auto;
 
   @media (max-width: 768px) {
-    max-width: 100%;
-    margin: 0;
+    width: 500px;
+    padding: 3.5rem 1.5rem 1.5rem 1.5rem;
+    border-radius: .5rem;
+  }
+
+  @media (max-width: 540px) {
+    width: 350px;
     padding: 3rem 1rem 1rem 1rem;
     border-radius: .5rem;
   }
@@ -41,12 +63,29 @@
   right: 0.75rem;
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  color: #aaa;
-  transition: color 0.2s;
-}
+  color: #9ca3af;
+  transition: all 0.2s;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 
-.close-btn:hover {
-  color: #222;
+  &:hover {
+    color: #1f2937;
+    background: #f3f4f6;
+  }
+
+  &:active {
+    background: #e5e7eb;
+  }
+
+  @media (max-width: 640px) {
+    font-size: 1.375rem;
+    width: 1.75rem;
+    height: 1.75rem;
+  }
 }
