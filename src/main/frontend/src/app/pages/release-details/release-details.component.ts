@@ -1,16 +1,17 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { Location, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Release, ReleaseService } from '../../services/release.service';
 import { Label, LabelService } from '../../services/label.service';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
+import { AuthService } from '../../services/auth.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -19,6 +20,7 @@ import { FormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     FormsModule,
+    RouterModule,
     LoaderComponent,
     ReleaseHighlightsComponent,
     ReleaseImportantIssuesComponent,
@@ -36,8 +38,9 @@ export class ReleaseDetailsComponent implements OnInit {
   public isLoading = true;
   public showBusinessValue = signal<boolean>(true);
   public showImportantIssues = signal<boolean>(false);
+  public authService = inject(AuthService);
 
-  private location = inject(Location);
+  private router = inject(Router);
   private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
@@ -71,7 +74,7 @@ export class ReleaseDetailsComponent implements OnInit {
   }
 
   public goBack(): void {
-    this.location.back();
+    this.router.navigate(['/graph']);
   }
 
   public toggleBusinessValue(): void {

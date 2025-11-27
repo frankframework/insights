@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { of, throwError, Subject } from 'rxjs';
 import { delay } from 'rxjs/operators';
@@ -40,6 +40,7 @@ describe('ReleaseDetailsComponent', () => {
   let mockIssueService: jasmine.SpyObj<IssueService>;
   let mockVulnerabilityService: jasmine.SpyObj<VulnerabilityService>;
   let mockLocation: jasmine.SpyObj<Location>;
+  let mockRouter: jasmine.SpyObj<Router>;
   let parameterMapSubject: Subject<any>;
 
   beforeEach(async () => {
@@ -48,6 +49,7 @@ describe('ReleaseDetailsComponent', () => {
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
     parameterMapSubject = new Subject();
 
@@ -63,6 +65,7 @@ describe('ReleaseDetailsComponent', () => {
         { provide: IssueService, useValue: mockIssueService },
         { provide: VulnerabilityService, useValue: mockVulnerabilityService },
         { provide: Location, useValue: mockLocation },
+        { provide: Router, useValue: mockRouter },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -250,10 +253,10 @@ describe('ReleaseDetailsComponent', () => {
   });
 
   describe('goBack', () => {
-    it('should call location.back() when goBack is called', () => {
+    it('should navigate to /graph when goBack is called', () => {
       component.goBack();
 
-      expect(mockLocation.back).toHaveBeenCalledWith();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph']);
     });
   });
 

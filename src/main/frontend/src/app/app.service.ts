@@ -16,6 +16,14 @@ export class AppService {
   private http = inject(HttpClient);
 
   /**
+   * Fetches the CSRF token from the backend to ensure the XSRF-TOKEN cookie is set.
+   * This should be called on app initialization.
+   */
+  public initializeCsrfToken(): Observable<void> {
+    return this.http.get<void>(this.createAPIUrl('csrf'));
+  }
+
+  /**
    * Performs a GET request to the given URL with optional query parameters.
    *
    * @template T - The expected response type.
@@ -57,6 +65,36 @@ export class AppService {
     }
 
     return this.http.post<T>(url, body ?? null, httpOptions);
+  }
+
+  /**
+   * Performs a PUT request to the given URL with optional body and options.
+   *
+   * @template T - The expected response type.
+   * @template B - The request body type.
+   * @param url - The API endpoint URL.
+   * @param body - Optional request body.
+   * @param options - Optional HTTP headers as key-value pairs.
+   * @returns An Observable of type `T` containing the response data.
+   */
+  public put<T, B = unknown>(url: string, body?: B, options?: Record<string, string>): Observable<T> {
+    const httpOptions: { headers?: Record<string, string> } = {};
+
+    if (options && Object.keys(options).length > 0) {
+      httpOptions.headers = options;
+    }
+
+    return this.http.put<T>(url, body ?? null, httpOptions);
+  }
+
+  public delete<T>(url: string, options?: Record<string, string>): Observable<T> {
+    const httpOptions: { headers?: Record<string, string> } = {};
+
+    if (options && Object.keys(options).length > 0) {
+      httpOptions.headers = options;
+    }
+
+    return this.http.delete<T>(url, httpOptions);
   }
 
   /**
