@@ -4,5 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record BusinessValueRequest(
-        @NotBlank @Size(min = 1, max = 255) String title,
-        @NotBlank @Size(min = 1, max = 2000) String description) {}
+        @NotBlank @Size(min = 1, max = MAX_TITLE_LENGTH) String title,
+        @NotBlank @Size(min = 1, max = MAX_DESCRIPTION_LENGTH) String description) {
+
+    private static final int MAX_TITLE_LENGTH = 255;
+    private static final int MAX_DESCRIPTION_LENGTH = 2000;
+}

@@ -49,47 +49,22 @@ export class BusinessValueManageComponent implements OnInit {
   public issueSearchQuery = signal<string>('');
   public businessValueSearchQuery = signal<string>('');
 
-  private route = inject(ActivatedRoute);
-  private location = inject(Location);
-  private businessValueService = inject(BusinessValueService);
-  private issueService = inject(IssueService);
-  private releaseService = inject(ReleaseService);
-
-  private originalSelectedIssueIds = signal<Set<string>>(new Set());
-
-  // UPDATED: Sorts by issue count descending
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public filteredBusinessValues = computed(() => {
     const query = this.businessValueSearchQuery().toLowerCase().trim();
     let values = this.businessValues();
 
-    // 1. Filter
     if (query) {
-      values = values.filter((bv) => bv.title.toLowerCase().includes(query));
+      values = values.filter((bv) => this.filterBusinessValuesByQuery(bv, query));
     }
 
-    // 2. Sort by issue count descending
-    return values.sort((a, b) => {
-      const countA = a.issues?.length || 0;
-      const countB = b.issues?.length || 0;
-      return countB - countA;
-    });
+    return [...values].toSorted(this.sortBusinessValuesByIssueCount);
   });
 
-  public hasChanges = computed(() => {
-    const originalIds = this.originalSelectedIssueIds();
-    const currentSelectedIds = new Set(
-      this.issuesWithSelection()
-        .filter((issue) => issue.isSelected)
-        .map((issue) => issue.id),
-    );
+  // eslint-disable-next-line unicorn/consistent-function-scoping
+  public hasChanges = computed(() => this.hasIssueChanges());
 
-    if (currentSelectedIds.size !== originalIds.size) return true;
-    for (const id of currentSelectedIds) {
-      if (!originalIds.has(id)) return true;
-    }
-    return false;
-  });
-
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public sortedIssues = computed(() => {
     const issues = [...this.issuesWithSelection()];
     const selectedBV = this.selectedBusinessValue();
@@ -102,23 +77,16 @@ export class BusinessValueManageComponent implements OnInit {
       );
     }
 
-    if (!selectedBV) return filteredIssues;
-
-    return filteredIssues.sort((a, b) => {
-      // 1. Connected to CURRENT BV
-      if (a.isConnected && !b.isConnected) return -1;
-      if (!a.isConnected && b.isConnected) return 1;
-
-      // 2. Unassigned (Free)
-      const aFree = !a.isConnected && !a.assignedToOther;
-      const bFree = !b.isConnected && !b.assignedToOther;
-      if (aFree && !bFree) return -1;
-      if (!aFree && bFree) return 1;
-
-      // 3. By number
-      return a.number - b.number;
-    });
+    return [...filteredIssues].toSorted((a, b) => this.sortIssuesByPriority(a, b, selectedBV));
   });
+
+  private route = inject(ActivatedRoute);
+  private location = inject(Location);
+  private businessValueService = inject(BusinessValueService);
+  private issueService = inject(IssueService);
+  private releaseService = inject(ReleaseService);
+
+  private originalSelectedIssueIds = signal<Set<string>>(new Set());
 
   ngOnInit(): void {
     const releaseId = this.route.snapshot.paramMap.get('id');
@@ -148,7 +116,6 @@ export class BusinessValueManageComponent implements OnInit {
     this.businessValueSearchQuery.set(query);
   }
 
-  // --- DELETE LOGIC ---
   public openDeleteModal(businessValue: BusinessValue, event: Event): void {
     event.stopPropagation();
     this.businessValueToDelete.set(businessValue);
@@ -174,7 +141,6 @@ export class BusinessValueManageComponent implements OnInit {
 
     this.closeDeleteModal();
   }
-  // --------------------
 
   public onBusinessValueUpdated(updatedBusinessValue: BusinessValue): void {
     const updatedList = this.businessValues().map((bv) =>
@@ -209,6 +175,59 @@ export class BusinessValueManageComponent implements OnInit {
     }
   }
 
+  public toggleIssue(issue: IssueWithSelection): void {
+    this.handleToggleIssue(issue);
+  }
+
+  public saveChanges(): void {
+    const selectedBV = this.selectedBusinessValue();
+    if (!selectedBV) return;
+    this.performSaveChanges(selectedBV);
+  }
+
+  private sortIssuesByPriority = (
+    a: IssueWithSelection,
+    b: IssueWithSelection,
+    selectedBV: BusinessValue | null,
+  ): number => {
+    if (!selectedBV) return a.number - b.number;
+
+    if (a.isConnected && !b.isConnected) return -1;
+    if (!a.isConnected && b.isConnected) return 1;
+
+    const aFree = !a.isConnected && !a.assignedToOther;
+    const bFree = !b.isConnected && !b.assignedToOther;
+    if (aFree && !bFree) return -1;
+    if (!aFree && bFree) return 1;
+
+    return a.number - b.number;
+  };
+
+  private hasIssueChanges = (): boolean => {
+    const originalIds = this.originalSelectedIssueIds();
+    const currentSelectedIds = new Set(
+      this.issuesWithSelection()
+        .filter((issue) => issue.isSelected)
+        .map((issue) => issue.id),
+    );
+
+    if (currentSelectedIds.size !== originalIds.size) return true;
+    for (const id of currentSelectedIds) {
+      if (!originalIds.has(id)) return true;
+    }
+    return false;
+  };
+
+  private filterBusinessValuesByQuery = (bv: BusinessValue, query: string): boolean => {
+    return bv.title.toLowerCase().includes(query);
+  };
+
+  private sortBusinessValuesByIssueCount = (a: BusinessValue, b: BusinessValue): number => {
+    const countA = a.issues?.length || 0;
+    const countB = b.issues?.length || 0;
+    return countB - countA;
+  };
+
   private resetIssueSelection(): void {
     const updatedIssues = this.issuesWithSelection().map((issue) => ({
       ...issue,
@@ -221,7 +240,7 @@ export class BusinessValueManageComponent implements OnInit {
     this.originalSelectedIssueIds.set(new Set());
   }
 
-  public toggleIssue(issue: IssueWithSelection): void {
+  private handleToggleIssue(issue: IssueWithSelection): void {
     if (issue.assignedToOther) return;
 
     const issues = this.issuesWithSelection();
@@ -231,10 +250,7 @@ export class BusinessValueManageComponent implements OnInit {
     this.issuesWithSelection.set(updatedIssues);
   }
 
-  public saveChanges(): void {
-    const selectedBV = this.selectedBusinessValue();
-    if (!selectedBV) return;
-
+  private performSaveChanges(selectedBV: BusinessValue): void {
     this.isSaving.set(true);
 
     const selectedIssueIds = this.issuesWithSelection()
@@ -268,7 +284,8 @@ export class BusinessValueManageComponent implements OnInit {
         this.allIssues.set(issues ?? []);
 
         if (release) {
-          this.releaseTitle.set((release as any).name || (release as any).title || releaseId);
+          const releaseData = release as { name?: string; title?: string };
+          this.releaseTitle.set(releaseData.name || releaseData.title || releaseId);
         } else {
           this.releaseTitle.set(releaseId);
         }

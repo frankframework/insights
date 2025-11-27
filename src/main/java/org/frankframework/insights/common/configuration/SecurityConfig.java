@@ -73,22 +73,21 @@ public class SecurityConfig {
                             .csrfTokenRequestHandler(requestHandler)
                             .ignoringRequestMatchers("/api/auth/logout", "/oauth2/**", "/login/**");
                 })
-                .headers(headers -> headers
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; " +
-                                        "script-src 'self' 'unsafe-inline'; " +
-                                        "style-src 'self' 'unsafe-inline'; " +
-                                        "img-src 'self' data: https:; " +
-                                        "font-src 'self' data:; " +
-                                        "connect-src 'self' https://api.github.com; " +
-                                        "frame-ancestors 'none'; " +
-                                        "base-uri 'self'; " +
-                                        "form-action 'self'"))
+                .headers(headers -> headers.contentSecurityPolicy(csp ->
+                                csp.policyDirectives("default-src 'self'; " + "script-src 'self' 'unsafe-inline'; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data: https:; "
+                                        + "font-src 'self' data:; "
+                                        + "connect-src 'self' https://api.github.com; "
+                                        + "frame-ancestors 'none'; "
+                                        + "base-uri 'self'; "
+                                        + "form-action 'self'"))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                        .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                        .xssProtection(
+                                xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
                         .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
-                        .referrerPolicy(referrer -> referrer
-                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation()
                         .changeSessionId()

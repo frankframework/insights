@@ -38,6 +38,7 @@ export class ReleaseDetailsComponent implements OnInit {
   public isLoading = true;
   public showBusinessValue = signal<boolean>(true);
   public showImportantIssues = signal<boolean>(false);
+  public authService = inject(AuthService);
 
   private router = inject(Router);
   private releaseService = inject(ReleaseService);
@@ -45,7 +46,6 @@ export class ReleaseDetailsComponent implements OnInit {
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
   private route = inject(ActivatedRoute);
-  public authService = inject(AuthService);
 
   ngOnInit(): void {
     this.route.paramMap

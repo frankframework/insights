@@ -2,15 +2,18 @@ package org.frankframework.insights.common.configuration;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RateLimitConfig {
+
+    private static final int MAX_FAILED_REQUESTS = 10;
+    private static final int REFILL_TOKENS = 10;
+    private static final int REFILL_DURATION_MINUTES = 5;
 
     /**
      * Rate limiter for failed business value requests - 10 failed requests per 5 minutes per user
@@ -27,8 +30,8 @@ public class RateLimitConfig {
      */
     public Bucket createBusinessValueFailureBucket() {
         Bandwidth limit = Bandwidth.builder()
-                .capacity(10)
-                .refillIntervally(10, Duration.ofMinutes(5))
+                .capacity(MAX_FAILED_REQUESTS)
+                .refillIntervally(REFILL_TOKENS, Duration.ofMinutes(REFILL_DURATION_MINUTES))
                 .build();
         return Bucket.builder().addLimit(limit).build();
     }

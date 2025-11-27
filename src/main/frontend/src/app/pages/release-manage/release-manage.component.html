@@ -24,7 +24,14 @@
         </div>
 
         <div class="management-sections">
-          <div class="section-card business-value-card" (click)="openSection('business-value')">
+          <div
+            class="section-card business-value-card"
+            role="button"
+            tabindex="0"
+            (click)="openSection('business-value')"
+            (keydown.enter)="openSection('business-value')"
+            (keydown.space)="openSection('business-value')"
+          >
             <div class="card-icon-wrapper">
               <svg
                 class="card-icon"
@@ -56,7 +63,14 @@
             </div>
           </div>
 
-          <div class="section-card vulnerabilities-card" (click)="openSection('vulnerabilities')">
+          <div
+            class="section-card vulnerabilities-card"
+            role="button"
+            tabindex="0"
+            (click)="openSection('vulnerabilities')"
+            (keydown.enter)="openSection('vulnerabilities')"
+            (keydown.space)="openSection('vulnerabilities')"
+          >
             <div class="card-icon-wrapper">
               <svg
                 class="card-icon"

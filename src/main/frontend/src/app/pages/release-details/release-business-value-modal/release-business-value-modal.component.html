@@ -18,13 +18,24 @@
         <div class="issues-section">
           <div class="issues-header">
             <h3>Connected Issues</h3>
-            <span class="issue-count">{{ businessValue()!.issues?.length || 0 }} issue{{ businessValue()!.issues?.length === 1 ? '' : 's' }}</span>
+            <span class="issue-count"
+              >{{ businessValue()!.issues?.length || 0 }} issue{{
+                businessValue()!.issues?.length === 1 ? '' : 's'
+              }}</span
+            >
           </div>
 
           @if (businessValue()!.issues && businessValue()!.issues!.length > 0) {
             <div class="issues-tree">
               @for (issue of businessValue()!.issues; track issue.id) {
-                <div class="issue-tree-item" (click)="openIssue(issue)">
+                <div
+                  class="issue-tree-item"
+                  role="button"
+                  tabindex="0"
+                  (click)="openIssue(issue)"
+                  (keydown.enter)="openIssue(issue)"
+                  (keydown.space)="openIssue(issue)"
+                >
                   <app-issue-tree-branch [issue]="issue" [depth]="0" />
                 </div>
               }

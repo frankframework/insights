@@ -28,51 +28,52 @@ public class BusinessValueController {
         this.businessValueService = businessValueService;
     }
 
-	/**
-	 * Retrieves all business values.
-	 * Requires authentication.
-	 *
-	 * @param principal the authenticated user
-	 * @return set of all business values
-	 */
-	@GetMapping
-	public ResponseEntity<Set<BusinessValueResponse>> getAllBusinessValues(
-			@AuthenticationPrincipal OAuth2User principal) {
-		log.info("User {} is fetching all business values", Optional.ofNullable(principal.getAttribute("login")));
+    /**
+     * Retrieves all business values.
+     * Requires authentication.
+     *
+     * @param principal the authenticated user
+     * @return set of all business values
+     */
+    @GetMapping
+    public ResponseEntity<Set<BusinessValueResponse>> getAllBusinessValues(
+            @AuthenticationPrincipal OAuth2User principal) {
+        log.info("User {} is fetching all business values", Optional.ofNullable(principal.getAttribute("login")));
 
-		Set<BusinessValueResponse> responses = businessValueService.getAllBusinessValues();
-		return ResponseEntity.ok(responses);
-	}
+        Set<BusinessValueResponse> responses = businessValueService.getAllBusinessValues();
+        return ResponseEntity.ok(responses);
+    }
 
-	/**
-	 * Retrieves a specific business value by ID with all connected issues.
-	 * Requires authentication.
-	 *
-	 * @param id the UUID of the business value
-	 * @param principal the authenticated user
-	 * @return the business value response with connected issues
-	 * @throws BusinessValueNotFoundException if the business value is not found
-	 */
-	@GetMapping("/{id}")
-	public ResponseEntity<BusinessValueResponse> getBusinessValueById(
-			@PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal) throws BusinessValueNotFoundException {
-		log.info("User {} is fetching business value with id: {}", principal.getAttribute("login"), id);
+    /**
+     * Retrieves a specific business value by ID with all connected issues.
+     * Requires authentication.
+     *
+     * @param id the UUID of the business value
+     * @param principal the authenticated user
+     * @return the business value response with connected issues
+     * @throws BusinessValueNotFoundException if the business value is not found
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<BusinessValueResponse> getBusinessValueById(
+            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal)
+            throws BusinessValueNotFoundException {
+        log.info("User {} is fetching business value with id: {}", principal.getAttribute("login"), id);
 
-		BusinessValueResponse response = businessValueService.getBusinessValueById(id);
-		return ResponseEntity.ok(response);
-	}
+        BusinessValueResponse response = businessValueService.getBusinessValueById(id);
+        return ResponseEntity.ok(response);
+    }
 
-	/**
-	 * Retrieves business values associated with a specific release ID.
-	 * @param releaseId the release ID
-	 * @return set of business values for the release
-	 */
-	@GetMapping("/release/{releaseId}")
-	public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId) {
-		log.info("Fetching business values for release with id: {}", releaseId);
-		Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
-		return ResponseEntity.ok(responses);
-	}
+    /**
+     * Retrieves business values associated with a specific release ID.
+     * @param releaseId the release ID
+     * @return set of business values for the release
+     */
+    @GetMapping("/release/{releaseId}")
+    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId) {
+        log.info("Fetching business values for release with id: {}", releaseId);
+        Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
+        return ResponseEntity.ok(responses);
+    }
 
     /**
      * Creates a new business value.
@@ -118,14 +119,14 @@ public class BusinessValueController {
         return ResponseEntity.ok(response);
     }
 
-	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteBusinessValue(
-			@PathVariable UUID id,
-			@AuthenticationPrincipal OAuth2User principal) throws BusinessValueNotFoundException {
-		log.info("User {} is deleting business value with id: {}", principal.getAttribute("login"), id);
-		businessValueService.deleteBusinessValue(id);
-		return ResponseEntity.noContent().build();
-	}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBusinessValue(
+            @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal)
+            throws BusinessValueNotFoundException {
+        log.info("User {} is deleting business value with id: {}", principal.getAttribute("login"), id);
+        businessValueService.deleteBusinessValue(id);
+        return ResponseEntity.noContent().build();
+    }
 
     /**
      * Updates the issue connections for a business value by replacing them.

@@ -48,8 +48,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException exception, HttpServletRequest request) {
-        log.warn("401 Unauthorized: {} - Method: {} URL: {}", exception.getMessage(), request.getMethod(), request.getRequestURI());
+    public ResponseEntity<ErrorResponse> handleUnauthorized(
+            UnauthorizedException exception, HttpServletRequest request) {
+        log.warn(
+                "401 Unauthorized: {} - Method: {} URL: {}",
+                exception.getMessage(),
+                request.getMethod(),
+                request.getRequestURI());
 
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.UNAUTHORIZED.value(),
@@ -61,7 +66,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})
     public ResponseEntity<ErrorResponse> handleForbidden(Exception exception, HttpServletRequest request) {
-        log.warn("403 Forbidden: {} - Method: {} URL: {} - User: {}",
+        log.warn(
+                "403 Forbidden: {} - Method: {} URL: {} - User: {}",
                 exception.getMessage(),
                 request.getMethod(),
                 request.getRequestURI(),
@@ -76,8 +82,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException exception, HttpServletRequest request) {
-        log.warn("Authentication failed: {} - Method: {} URL: {}", exception.getMessage(), request.getMethod(), request.getRequestURI());
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(
+            AuthenticationException exception, HttpServletRequest request) {
+        log.warn(
+                "Authentication failed: {} - Method: {} URL: {}",
+                exception.getMessage(),
+                request.getMethod(),
+                request.getRequestURI());
 
         ErrorResponse response = new ErrorResponse(
                 HttpStatus.UNAUTHORIZED.value(),
