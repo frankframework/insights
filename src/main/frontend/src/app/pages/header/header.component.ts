@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -14,6 +14,17 @@ export class HeaderComponent {
   public authService = inject(AuthService);
   public showUserMenu = false;
   private locationService = inject(LocationService);
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const userProfile = target.closest('.user-profile');
+
+    // If click is outside user profile and menu is open, close it
+    if (!userProfile && this.showUserMenu) {
+      this.showUserMenu = false;
+    }
+  }
 
   onLoginWithGitHub(): void {
     this.authService.setLoading(true);
