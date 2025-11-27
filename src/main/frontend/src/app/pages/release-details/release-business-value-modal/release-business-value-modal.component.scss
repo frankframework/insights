@@ -4,26 +4,10 @@
   overflow-y: auto;
   width: 100%;
   box-sizing: border-box;
+  scrollbar-width: none;
 
   @media (max-width: 640px) {
     max-height: 75vh;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
-
-    &:hover {
-      background: #94a3b8;
-    }
   }
 }
 
