@@ -8,5 +8,5 @@ public record BusinessValueRequest(
         @NotBlank @Size(min = 1, max = MAX_DESCRIPTION_LENGTH) String description) {
 
     private static final int MAX_TITLE_LENGTH = 255;
-    private static final int MAX_DESCRIPTION_LENGTH = 2000;
+    private static final int MAX_DESCRIPTION_LENGTH = 1000;
 }

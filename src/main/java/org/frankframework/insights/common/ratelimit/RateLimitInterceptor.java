@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.configuration.RateLimitConfig;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -17,7 +19,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class RateLimitInterceptor implements HandlerInterceptor {
 
     private static final String API_BUSINESS_VALUE_PATH = "/api/business-value";
-    private static final int HTTP_BAD_REQUEST = 400;
 
     private final Map<String, Bucket> businessValueFailureRateLimiters;
     private final RateLimitConfig rateLimitConfig;
@@ -56,7 +57,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
 
         int statusCode = response.getStatus();
-        if (statusCode >= HTTP_BAD_REQUEST) {
+        if (statusCode >= HttpStatus.BAD_REQUEST.value()) {
             Bucket bucket = businessValueFailureRateLimiters.get(userKey);
             if (bucket == null) {
                 return;
