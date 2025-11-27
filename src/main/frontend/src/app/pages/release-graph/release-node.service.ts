@@ -49,8 +49,6 @@ export const SupportColors = {
   ARCHIVED: '#F8F8F8',
 } as const;
 
-export type SupportColor = (typeof SupportColors)[keyof typeof SupportColors];
-
 interface VersionInfo {
   major: number;
   minor: number;
@@ -542,9 +540,7 @@ export class ReleaseNodeService {
   private pruneHistoricalBranchesWithoutNightly(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
   ): void {
-    const entries = [...groupedByBranch.entries()];
-
-    for (const [branchName, releases] of entries) {
+    for (const [branchName, releases] of groupedByBranch.entries()) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) {
         continue;
       }
