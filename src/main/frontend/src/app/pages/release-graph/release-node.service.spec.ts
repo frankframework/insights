@@ -30,11 +30,11 @@ const createMockData = (): Release[] => {
       tagName: 'v7.0',
     },
     {
-      id: 'master-snapshot',
+      id: 'master-nightly',
       name: 'v9.4.0-20251108.042330 (nightly)',
       publishedAt: new Date('2025-06-10T10:00:00Z'),
       branch: branches['master'],
-      tagName: 'master-snapshot',
+      tagName: 'release/9.4-nightly',
     },
 
     {
@@ -147,9 +147,9 @@ describe('ReleaseNodeService', () => {
 
       const nightlyReleases: Release[] = [
         { id: 'R1-ANCHOR', name: 'v1.0.0', publishedAt: new Date('2024-10-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.0' },
-        { id: 'N1-OLD', name: 'v1.0.1-snapshot', publishedAt: new Date('2024-11-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.1-snapshot' },
-        { id: 'N2-OLDER', name: 'v1.0.2-snapshot', publishedAt: new Date('2024-11-15T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.2-snapshot' },
-        { id: 'N3-LATEST', name: 'v1.0.3-snapshot', publishedAt: new Date('2024-11-20T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.3-snapshot' },
+        { id: 'N1-OLD', name: 'v1.0.1 (nightly)', publishedAt: new Date('2024-11-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.1-nightly' },
+        { id: 'N2-OLDER', name: 'v1.0.2 (nightly)', publishedAt: new Date('2024-11-15T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.2-nightly' },
+        { id: 'N3-LATEST', name: 'v1.0.3 (nightly)', publishedAt: new Date('2024-11-20T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.3-nightly' },
       ];
 
       const allReleases = [...mockReleases, ...nightlyReleases];
@@ -226,53 +226,53 @@ describe('ReleaseNodeService', () => {
   });
 
   describe('transformNodeLabel', () => {
-    it('should strip "release/" prefix and replace "nightly" with "snapshot"', () => {
+    it('should strip "release/" prefix and format nightly releases as vX.Y.Z-nightly', () => {
       const mockRelease: Release = {
         id: '1', name: 'v1.2.3 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
         tagName: 'release/v1.2.3-nightly'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
 
-      expect(label).toBe('v1.2.3-snapshot');
+      expect(label).toBe('v1.2.3-nightly');
     });
 
-    it('should replace "nightly" with "snapshot" on standard tags without prefix', () => {
+    it('should format nightly releases with version from release.name', () => {
       const mockRelease: Release = {
-        id: '1', name: 'v1.2.3 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
+        id: '1', name: 'v1.2.3-20251108.042330 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
         tagName: 'v1.2.3-nightly-2025'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
 
-      expect(label).toBe('v1.2.3-snapshot-2025');
+      expect(label).toBe('v1.2.3-nightly');
     });
 
-    it('should convert "master-nightly" to X.Y-snapshot and strip the "v" prefix', () => {
+    it('should format master nightly releases as vX.Y.Z-nightly', () => {
       const mockRelease: Release = {
         id: '1',
         name: 'v9.4.0-20251108.042330 (nightly)',
         publishedAt: new Date(),
         branch: { id: 'b', name: 'master' },
-        tagName: 'master-nightly'
+        tagName: 'release/9.4-nightly'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
 
-      expect(label).toBe('9.4-snapshot');
+      expect(label).toBe('v9.4.0-nightly');
     });
 
-    it('should handle master-nightly when release.name lacks "v" prefix', () => {
+    it('should handle nightly when release.name lacks "v" prefix', () => {
       const mockRelease: Release = {
         id: '1',
         name: '9.4.0-20251108.042330 (nightly)',
         publishedAt: new Date(),
         branch: { id: 'b', name: 'master' },
-        tagName: 'master-nightly'
+        tagName: 'release/9.4-nightly'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
 
-      expect(label).toBe('9.4-snapshot');
+      expect(label).toBe('v9.4.0-nightly');
     });
 
-    it('should handle releases without nightly or master tags and strip prefix', () => {
+    it('should handle releases without nightly tags and strip prefix', () => {
       const mockRelease: Release = {
         id: '1', name: 'v10.0.0', publishedAt: new Date(), branch: { id: 'b', name: '10.0' },
         tagName: 'release/v10.0.0'
@@ -291,7 +291,7 @@ describe('ReleaseNodeService', () => {
     it('should assign CUTTING_EDGE color to master nightly', () => {
       const masterNightly: ReleaseNode = {
         id: 'master-nightly',
-        label: '9.4-snapshot',
+        label: 'v9.4.0-nightly',
         publishedAt: NOW,
         color: '',
         position: { x: 0, y: 0 },
@@ -316,7 +316,7 @@ describe('ReleaseNodeService', () => {
 
       const majorNightly: ReleaseNode = {
         id: 'major-nightly',
-        label: 'v9.0.1-snapshot',
+        label: 'v9.0.1-nightly',
         publishedAt: NOW,
         color: '',
         position: { x: 0, y: 0 },
@@ -351,7 +351,7 @@ describe('ReleaseNodeService', () => {
 
       const latestMinorNightly: ReleaseNode = {
         id: 'minor-nightly',
-        label: 'v8.4.1-snapshot',
+        label: 'v8.4.1-nightly',
         publishedAt: NOW,
         color: '',
         position: { x: 0, y: 0 },
@@ -424,7 +424,7 @@ describe('ReleaseNodeService', () => {
     it('should handle branches with only nightly releases', () => {
       const nightlyOnly: ReleaseNode = {
         id: 'nightly',
-        label: 'v8.0.1-snapshot',
+        label: 'v8.0.1-nightly',
         publishedAt: NOW,
         color: '',
         position: { x: 0, y: 0 },
@@ -627,10 +627,10 @@ describe('ReleaseNodeService', () => {
       expect(result.length).toBe(3);
     });
 
-    it('should give extra spacing to nightly/snapshot releases', () => {
+    it('should give extra spacing to nightly releases', () => {
       const clusteredNodes: ReleaseNode[] = [
         { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        { id: '2', label: 'v9.0.2-snapshot', position: { x: 0, y: 0 }, branch: 'master', color: 'blue', publishedAt: new Date() },
+        { id: '2', label: 'v9.0.2-nightly', position: { x: 0, y: 0 }, branch: 'master', color: 'blue', publishedAt: new Date() },
         { id: '3', label: 'v9.0.3', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
       ];
       const clusterNode: ReleaseNode = {

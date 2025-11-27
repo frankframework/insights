@@ -82,30 +82,24 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const filteredNodes: ReleaseNode[] = [];
 
     for (const node of this.releaseNodes) {
-      // Skip nightly nodes that are not clusters
       if (!node.isCluster && this.isNightlyNode(node)) {
         continue;
       }
 
-      // Handle cluster nodes
       if (node.isCluster && node.clusteredNodes) {
         const visibleClusteredNodes = node.clusteredNodes.filter((n) => !this.isNightlyNode(n));
 
-        // If cluster has 0 visible nodes, skip it entirely
         if (visibleClusteredNodes.length === 0) {
           continue;
         }
 
-        // If cluster has only 1 visible node, show that node directly (uncluster)
         if (visibleClusteredNodes.length === 1) {
           filteredNodes.push(visibleClusteredNodes[0]);
           continue;
         }
 
-        // If cluster has 2+ visible nodes, keep it as a cluster
         filteredNodes.push(node);
       } else {
-        // Regular non-nightly node
         filteredNodes.push(node);
       }
     }
@@ -419,7 +413,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       return false;
     }
     const label = node.label.toLowerCase();
-    return label.includes('snapshot') || /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/.test(node.label);
+    return label.includes('nightly') || /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/.test(node.label);
   }
 
   private findNodeById(id: string): ReleaseNode | undefined {

@@ -67,7 +67,6 @@ interface SupportDates {
 export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
-  private static readonly GITHUB_SNAPSHOT_DISPLAY: string = 'snapshot';
   private static readonly PIXELS_PER_QUARTER: number = 200;
 
   public timelineScale: TimelineScale | null = null;
@@ -177,12 +176,12 @@ export class ReleaseNodeService {
     }
 
     const BASE_SPACING = 60;
-    const SNAPSHOT_EXTRA_SPACING = 10;
+    const NIGHTLY_EXTRA_SPACING = 10;
     const clusteredNodes = clusterNode.clusteredNodes!;
     const startX = clusterNode.position.x;
     const centerY = clusterNode.position.y;
 
-    const positions = this.calculateClusterNodePositions(clusteredNodes, BASE_SPACING, SNAPSHOT_EXTRA_SPACING);
+    const positions = this.calculateClusterNodePositions(clusteredNodes, BASE_SPACING, NIGHTLY_EXTRA_SPACING);
 
     return this.positionExpandedNodes(clusteredNodes, positions, startX, centerY);
   }
@@ -396,7 +395,7 @@ export class ReleaseNodeService {
   private calculateClusterNodePositions(
     clusteredNodes: ReleaseNode[],
     baseSpacing: number,
-    snapshotExtraSpacing: number,
+    nightlyExtraSpacing: number,
   ): number[] {
     const positions: number[] = [];
     let currentX = 0;
@@ -405,7 +404,7 @@ export class ReleaseNodeService {
       if (index === 0) {
         positions.push(0);
       } else {
-        const spacing = this.calculateNodeSpacing(clusteredNodes, index, baseSpacing, snapshotExtraSpacing);
+        const spacing = this.calculateNodeSpacing(clusteredNodes, index, baseSpacing, nightlyExtraSpacing);
         currentX += spacing;
         positions.push(currentX);
       }
@@ -418,7 +417,7 @@ export class ReleaseNodeService {
     clusteredNodes: ReleaseNode[],
     index: number,
     baseSpacing: number,
-    snapshotExtraSpacing: number,
+    nightlyExtraSpacing: number,
   ): number {
     const node = clusteredNodes[index];
     const previousNode = clusteredNodes[index - 1];
@@ -428,7 +427,7 @@ export class ReleaseNodeService {
 
     let spacing = baseSpacing;
     if (isNightly || previousIsNightly) {
-      spacing += snapshotExtraSpacing;
+      spacing += nightlyExtraSpacing;
     }
 
     return spacing;
@@ -586,7 +585,7 @@ export class ReleaseNodeService {
    * 2. Matches pattern vX.Y.Z-YYYYMMDD.HHMMSS (nightly)
    */
   private isNightlyRelease(label: string): boolean {
-    if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
+    if (label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
       return true;
     }
 
@@ -651,31 +650,20 @@ export class ReleaseNodeService {
   /**
    * Transforms the release tagName into the final display label based on a set of rules:
    * 1. Strips "release/" prefix.
-   * 2. Handles 'master' nightly releases by extracting version from release.name and converting 'nightly' to 'snapshot'.
-   * 3. Converts all other 'nightly' references to 'snapshot'.
+   * 2. Formats nightly releases as vX.Y.X-nightly using the version from release.name.
    */
   private transformNodeLabel(release: Release): string {
     let label = release.tagName;
 
     label = label.replace(/^release\//, '');
 
-    const isMasterNightly =
-      label.toLowerCase().includes(ReleaseNodeService.GITHUB_MASTER_BRANCH.toLowerCase()) &&
-      this.isNightlyRelease(release.name);
+    const isNightly = this.isNightlyRelease(release.name);
 
-    if (isMasterNightly) {
-      const match = release.name.match(/^v?(\d+\.\d+)/i);
-      label = match
-        ? `${match[1]}-${ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY}`
-        : label.replace(
-            new RegExp(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE, 'i'),
-            ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY,
-          );
-    } else {
-      label = label.replace(
-        new RegExp(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE, 'i'),
-        ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY,
-      );
+    if (isNightly) {
+      const match = release.name.match(/^v?(\d+\.\d+\.\d+)/i);
+      if (match) {
+        label = `v${match[1]}-${ReleaseNodeService.GITHUB_NIGHTLY_RELEASE}`;
+      }
     }
 
     return label;
@@ -1054,7 +1042,7 @@ export class ReleaseNodeService {
   }
 
   private isUnsupported(release: ReleaseNode): boolean {
-    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_SNAPSHOT_DISPLAY)) {
+    if (release.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
       return false;
     }
 

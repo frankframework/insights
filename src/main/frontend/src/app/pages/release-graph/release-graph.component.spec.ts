@@ -457,9 +457,9 @@ describe('ReleaseGraphComponent', () => {
     });
 
     it('should return all nodes when showNightlies is true', () => {
-      const snapshotNode: ReleaseNode = {
-        id: 'snapshot-1',
-        label: 'v1.0.0-snapshot',
+      const nightlyNode: ReleaseNode = {
+        id: 'nightly-1',
+        label: 'v1.0.0-nightly',
         position: { x: 100, y: 100 },
         branch: 'release',
         color: 'darkblue',
@@ -473,16 +473,16 @@ describe('ReleaseGraphComponent', () => {
         color: 'green',
         publishedAt: new Date(),
       };
-      component.releaseNodes = [regularNode, snapshotNode];
+      component.releaseNodes = [regularNode, nightlyNode];
       component.showNightlies = true;
 
-      expect(component.visibleReleaseNodes).toEqual([regularNode, snapshotNode]);
+      expect(component.visibleReleaseNodes).toEqual([regularNode, nightlyNode]);
     });
 
     it('should filter out nightly nodes when showNightlies is false', () => {
-      const snapshotNode: ReleaseNode = {
-        id: 'snapshot-1',
-        label: 'v1.0.0-snapshot',
+      const nightlyNode: ReleaseNode = {
+        id: 'nightly-1',
+        label: 'v1.0.0-nightly',
         position: { x: 100, y: 100 },
         branch: 'release',
         color: 'darkblue',
@@ -496,7 +496,7 @@ describe('ReleaseGraphComponent', () => {
         color: 'green',
         publishedAt: new Date(),
       };
-      component.releaseNodes = [regularNode, snapshotNode];
+      component.releaseNodes = [regularNode, nightlyNode];
       component.showNightlies = false;
 
       const visible = component.visibleReleaseNodes;
@@ -508,7 +508,7 @@ describe('ReleaseGraphComponent', () => {
     it('should skip clusters with 0 visible nodes when showNightlies is false', () => {
       const nightlyNode1: ReleaseNode = {
         id: 'nightly-1',
-        label: 'v1.0.0-snapshot',
+        label: 'v1.0.0-nightly',
         position: { x: 100, y: 100 },
         branch: 'release',
         color: 'darkblue',
@@ -552,7 +552,7 @@ describe('ReleaseGraphComponent', () => {
     it('should uncluster and show single node when cluster has only 1 visible node', () => {
       const nightlyNode: ReleaseNode = {
         id: 'nightly-1',
-        label: 'v1.0.0-snapshot',
+        label: 'v1.0.0-nightly',
         position: { x: 100, y: 100 },
         branch: 'release',
         color: 'darkblue',
@@ -589,7 +589,7 @@ describe('ReleaseGraphComponent', () => {
     it('should keep cluster when it has 2+ visible nodes', () => {
       const nightlyNode: ReleaseNode = {
         id: 'nightly-1',
-        label: 'v1.0.0-snapshot',
+        label: 'v1.0.0-nightly',
         position: { x: 100, y: 100 },
         branch: 'release',
         color: 'darkblue',
@@ -632,16 +632,16 @@ describe('ReleaseGraphComponent', () => {
     });
 
     describe('isNightlyNode detection', () => {
-      it('should identify snapshot nodes as nightly', () => {
-        const snapshotNode: ReleaseNode = {
-          id: 'snapshot-1',
-          label: 'v1.0.0-SNAPSHOT',
+      it('should identify nightly nodes with nightly keyword', () => {
+        const nightlyNode: ReleaseNode = {
+          id: 'nightly-1',
+          label: 'v1.0.0-NIGHTLY',
           position: { x: 100, y: 100 },
           branch: 'release',
           color: 'darkblue',
           publishedAt: new Date(),
         };
-        component.releaseNodes = [snapshotNode];
+        component.releaseNodes = [nightlyNode];
         component.showNightlies = false;
 
         const visible = component.visibleReleaseNodes;
@@ -669,7 +669,7 @@ describe('ReleaseGraphComponent', () => {
       it('should not consider mini nodes as nightly', () => {
         const miniNode: ReleaseNode = {
           id: 'mini-1',
-          label: 'v1.0.0-snapshot',
+          label: 'v1.0.0-nightly',
           position: { x: 100, y: 100 },
           branch: 'release',
           color: 'white',
@@ -688,7 +688,7 @@ describe('ReleaseGraphComponent', () => {
       it('should not consider cluster nodes as nightly', () => {
         const clusterNode: ReleaseNode = {
           id: 'cluster-1',
-          label: 'v1.0.0-snapshot',
+          label: 'v1.0.0-nightly',
           position: { x: 100, y: 100 },
           branch: 'release',
           color: '#dee2e6',
@@ -707,7 +707,7 @@ describe('ReleaseGraphComponent', () => {
       it('should not consider nodes at y=0 (master branch) as nightly', () => {
         const masterNode: ReleaseNode = {
           id: 'master-1',
-          label: 'v1.0.0-snapshot',
+          label: 'v1.0.0-nightly',
           position: { x: 100, y: 0 },
           branch: 'master',
           color: 'green',
@@ -736,7 +736,7 @@ describe('ReleaseGraphComponent', () => {
       it('should filter out links where source is nightly', () => {
         const nightlyNode: ReleaseNode = {
           id: 'nightly-1',
-          label: 'v1.0.0-snapshot',
+          label: 'v1.0.0-nightly',
           position: { x: 100, y: 100 },
           branch: 'release',
           color: 'darkblue',
@@ -762,7 +762,7 @@ describe('ReleaseGraphComponent', () => {
       it('should filter out links where target is nightly', () => {
         const nightlyNode: ReleaseNode = {
           id: 'nightly-1',
-          label: 'v1.0.0-snapshot',
+          label: 'v1.0.0-nightly',
           position: { x: 100, y: 100 },
           branch: 'release',
           color: 'darkblue',
@@ -827,7 +827,7 @@ describe('ReleaseGraphComponent', () => {
           clusteredNodes: [
             {
               id: 'nightly-1',
-              label: 'v1.0.0-snapshot',
+              label: 'v1.0.0-nightly',
               position: { x: 100, y: 100 },
               branch: 'release',
               color: 'darkblue',
@@ -861,7 +861,7 @@ describe('ReleaseGraphComponent', () => {
           clusteredNodes: [
             {
               id: 'nightly-1',
-              label: 'v1.0.0-snapshot',
+              label: 'v1.0.0-nightly',
               position: { x: 100, y: 100 },
               branch: 'release',
               color: 'darkblue',
@@ -895,7 +895,7 @@ describe('ReleaseGraphComponent', () => {
           clusteredNodes: [
             {
               id: 'nightly-1',
-              label: 'v1.0.0-snapshot',
+              label: 'v1.0.0-nightly',
               position: { x: 100, y: 100 },
               branch: 'release',
               color: 'darkblue',
@@ -937,7 +937,7 @@ describe('ReleaseGraphComponent', () => {
         };
         const node2: ReleaseNode = {
           id: 'node-2',
-          label: 'v1.0.1-snapshot',
+          label: 'v1.0.1-nightly',
           position: { x: 110, y: 100 },
           branch: 'release',
           color: 'darkblue',
@@ -973,7 +973,7 @@ describe('ReleaseGraphComponent', () => {
         };
         const node2: ReleaseNode = {
           id: 'node-2',
-          label: 'v1.0.1-snapshot',
+          label: 'v1.0.1-nightly',
           position: { x: 110, y: 100 },
           branch: 'release',
           color: 'darkblue',
@@ -1001,7 +1001,7 @@ describe('ReleaseGraphComponent', () => {
       it('should return null when no visible nodes exist', () => {
         const node1: ReleaseNode = {
           id: 'node-1',
-          label: 'v1.0.0-snapshot',
+          label: 'v1.0.0-nightly',
           position: { x: 100, y: 100 },
           branch: 'release',
           color: 'darkblue',

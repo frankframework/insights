@@ -71,9 +71,9 @@ describe('Graph Rendering and Interaction', () => {
         .should('have.length.greaterThan', 0);
     });
 
-    it('should display snapshot releases with appropriate colors', () => {
+    it('should display nightly releases with appropriate colors', () => {
       cy.get('@graphSvg')
-        .find('g[data-cy*="-snapshot"]')
+        .find('g[data-cy*="-nightly"]')
         .should('have.length.greaterThan', 0)
         .first()
         .find('circle')
@@ -198,23 +198,23 @@ describe('Graph Rendering and Interaction', () => {
         .should('have.css', 'background-color', 'rgb(30, 58, 138)');
     });
 
-    it('should show snapshot nodes when toggle is active', () => {
-      cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').then(($snapshots) => {
-        if ($snapshots.length > 0) {
+    it('should show nightlies nodes when toggle is active', () => {
+      cy.get('@graphSvg').find('g[data-cy*="-nightly"]').then(($nightlies) => {
+        if ($nightlies.length > 0) {
           getToggleButton().click();
-          cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').should('be.visible');
+          cy.get('@graphSvg').find('g[data-cy*="-nightly"]').should('be.visible');
         } else {
-          cy.log('No snapshot nodes found - skipping test');
+          cy.log('No nightlies nodes found - skipping test');
         }
       });
     });
 
-    it('should display snapshot labels always', () => {
-      cy.get('@graphSvg').find('g[data-cy*="-snapshot"]').first().then(($snapshot) => {
-        if ($snapshot.length > 0) {
-          cy.wrap($snapshot).find('text').should('exist');
+    it('should display nightly labels always', () => {
+      cy.get('@graphSvg').find('g[data-cy*="-nightly"]').first().then(($nightlies) => {
+        if ($nightlies.length > 0) {
+          cy.wrap($nightlies).find('text').should('exist');
         } else {
-          cy.log('No snapshot nodes found - skipping test');
+          cy.log('No nightlies nodes found - skipping test');
         }
       });
     });
@@ -267,19 +267,19 @@ describe('Graph Rendering and Interaction', () => {
       });
     });
 
-    it('should hide snapshot nodes when toggle is inactive', () => {
+    it('should hide nightly nodes when toggle is inactive', () => {
       getToggleButton().should('not.have.class', 'active');
 
       cy.get('@graphSvg').then(($svg) => {
-        const snapshotNodes = $svg.find('g[data-cy*="-snapshot"]');
-        if (snapshotNodes.length > 0) {
-          snapshotNodes.each((idx, node) => {
+        const nightlyNodes = $svg.find('g[data-cy*="-nightly"]');
+        if (nightlyNodes.length > 0) {
+          nightlyNodes.each((idx, node) => {
             const transform = Cypress.$(node).attr('transform');
             const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
             const isOnMasterBranch = yPos === '0';
 
             if (!isOnMasterBranch) {
-              cy.log('Found snapshot node not on master branch - it should be hidden');
+              cy.log('Found nightly node not on master branch - it should be hidden');
             }
           });
         }
