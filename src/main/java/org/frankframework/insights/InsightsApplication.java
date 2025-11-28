@@ -21,7 +21,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 @EnableSchedulerLock(defaultLockAtMostFor = "PT2H")
 @ConfigurationPropertiesScan
 @EnableWebSecurity
-public class InsightsApplication {
+public class 	InsightsApplication {
     public static void main(String[] args) {
         SpringApplication app = configureApplication();
         app.run(args);

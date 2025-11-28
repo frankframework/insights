@@ -44,7 +44,7 @@ export const SupportColors = {
   CUTTING_EDGE: '#FFD700',
   SUPPORTED: '#007BFF',
   LTS: '#9370DB',
-  EOL: '#DC3545',
+  EOL: '#ff6b2d',
   HISTORICAL: '#F8F8F8',
   ARCHIVED: '#F8F8F8',
 } as const;
@@ -65,7 +65,7 @@ interface SupportDates {
 export class ReleaseNodeService {
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
-  private static readonly GITHUB_SNAPSHOT_DISPLAY: string = 'snapshot';
+  private static readonly GITHUB_SNAPSHOT_DISPLAY: string = 'nightly';
   private static readonly PIXELS_PER_QUARTER: number = 200;
 
   public timelineScale: TimelineScale | null = null;
@@ -683,7 +683,7 @@ export class ReleaseNodeService {
   private transformNodeLabel(release: Release): string {
     let label = release.tagName;
 
-    label = label.replace(/^release\//, '');
+    label = label.replace(/^release\/|release-/, '');
 
     const isMasterNightly =
       label.toLowerCase().includes(ReleaseNodeService.GITHUB_MASTER_BRANCH.toLowerCase()) &&
