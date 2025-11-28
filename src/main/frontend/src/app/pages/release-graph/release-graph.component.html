@@ -22,7 +22,7 @@
         @for (quarter of quarterMarkers; track quarter.label) {
           <g class="quarter-marker">
             <line class="quarter-line" [attr.x1]="quarter.x" [attr.y1]="-90" [attr.x2]="quarter.x" [attr.y2]="1000" />
-            <text y="-100" class="quarter-label" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
+            <text y="-105" class="quarter-label" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
           </g>
         }
 

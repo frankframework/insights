@@ -60,8 +60,19 @@ export class ReleaseSkippedVersions implements OnChanges {
   private getSkippedReleases(): Release[] {
     return this.releases.filter((release) => {
       const versionName = release.name.startsWith('v') ? release.name : `v${release.name}`;
-      return this.skipNode!.skippedVersions.includes(versionName);
+      const isIncluded = this.skipNode!.skippedVersions.includes(versionName);
+      const isNightly = this.isNightlyRelease(release.name);
+      return isIncluded && !isNightly;
     });
+  }
+
+  private isNightlyRelease(label: string): boolean {
+    if (label.toLowerCase().includes('snapshot')) {
+      return true;
+    }
+
+    const timestampPattern = /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/;
+    return timestampPattern.test(label);
   }
 
   private buildReleaseMap(skippedReleases: Release[]): Map<string, ReleaseTreeNode> {

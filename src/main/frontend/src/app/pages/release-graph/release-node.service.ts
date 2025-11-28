@@ -46,10 +46,8 @@ export const SupportColors = {
   LTS: '#9370DB',
   EOL: '#DC3545',
   HISTORICAL: '#F8F8F8',
-  ARCHIVED: '#F0F0F0',
+  ARCHIVED: '#F8F8F8',
 } as const;
-
-export type SupportColor = (typeof SupportColors)[keyof typeof SupportColors];
 
 interface VersionInfo {
   major: number;
@@ -177,7 +175,7 @@ export class ReleaseNodeService {
     }
 
     const BASE_SPACING = 60;
-    const SNAPSHOT_EXTRA_SPACING = 10;
+    const SNAPSHOT_EXTRA_SPACING = 30;
     const clusteredNodes = clusterNode.clusteredNodes!;
     const startX = clusterNode.position.x;
     const centerY = clusterNode.position.y;
@@ -200,7 +198,7 @@ export class ReleaseNodeService {
     const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
     this.sortGroupedReleases(groupedByBranch);
     this.removeDuplicateNightlies(groupedByBranch);
-    this.pruneUnsupportedMinorBranches(groupedByBranch);
+    this.pruneHistoricalBranchesWithoutNightly(groupedByBranch);
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
     return groupedByBranch;
   }
@@ -532,22 +530,50 @@ export class ReleaseNodeService {
   }
 
   /**
-   * Removes minor release branches entirely if all their nodes are unsupported.
+   * Removes branches that are historically dead.
+   * Logic:
+   * 1. If it has an active Nightly -> KEEP (Active development).
+   * 2. If NO Nightly -> Check the SUPPORT status of the BRANCH ROOT (the .0 release).
+   * If the .0 release is unsupported, the whole branch is considered historical/skipped,
+   * even if a recent patch was released.
    */
-  private pruneUnsupportedMinorBranches(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): void {
+  private pruneHistoricalBranchesWithoutNightly(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+  ): void {
     for (const [branchName, releases] of groupedByBranch.entries()) {
-      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH || releases.length === 0) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) {
         continue;
       }
 
-      const firstReleaseNode = this.createReleaseNodes([releases[0]])[0];
-      const versionInfo = this.getVersionInfo(firstReleaseNode);
+      if (releases.length === 0) continue;
 
-      if (versionInfo?.type === 'minor') {
-        const allUnsupported = this.createReleaseNodes(releases).every((node) => this.isUnsupported(node));
-        if (allUnsupported) {
-          groupedByBranch.delete(branchName);
-        }
+      const latestByDate = releases.reduce((previous, current) =>
+        previous.publishedAt > current.publishedAt ? previous : current,
+      );
+
+      if (this.isNightlyRelease(latestByDate.name)) {
+        continue;
+      }
+
+      let rootRelease = releases.find((r) => r.name.endsWith('.0') || r.tagName.endsWith('.0'));
+
+      if (!rootRelease) {
+        rootRelease = releases.reduce((previous, current) =>
+          previous.publishedAt < current.publishedAt ? previous : current,
+        );
+      }
+
+      const rootNode: ReleaseNode = {
+        id: rootRelease.id,
+        label: this.transformNodeLabel(rootRelease),
+        branch: rootRelease.branch.name,
+        publishedAt: rootRelease.publishedAt,
+        position: { x: 0, y: 0 },
+        color: '',
+      };
+
+      if (this.isUnsupported(rootNode)) {
+        groupedByBranch.delete(branchName);
       }
     }
   }
@@ -724,7 +750,7 @@ export class ReleaseNodeService {
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
   ): void {
-    const Y_SPACING = 85;
+    const Y_SPACING = 90;
     let yLevel = 1;
 
     for (const [branchName, nodes] of branches) {
