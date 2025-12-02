@@ -1,12 +1,12 @@
 package org.frankframework.insights.common.ratelimit;
 
-import io.github.bucket4j.Bucket;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.frankframework.insights.common.configuration.RateLimitConfig;
 
+import org.frankframework.insights.ratelimit.RateLimitExceededException;
+import org.frankframework.insights.ratelimit.RateLimitService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,38 +16,46 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RateLimitInterceptor implements HandlerInterceptor {
 
+    private static final String API_AUTH_PATH = "/api/auth";
     private static final String API_BUSINESS_VALUE_PATH = "/api/business-value";
+    private static final String API_BUSINESS_VALUE_RELEASE_PATH = "/api/business-value/release";
 
-    private final Map<String, Bucket> businessValueFailureRateLimiters;
-    private final RateLimitConfig rateLimitConfig;
-
-    public RateLimitInterceptor(Map<String, Bucket> businessValueFailureRateLimiters, RateLimitConfig rateLimitConfig) {
-        this.businessValueFailureRateLimiters = businessValueFailureRateLimiters;
-        this.rateLimitConfig = rateLimitConfig;
-    }
+    private final RateLimitService rateLimitService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        if (shouldSkipRateLimiting(request)) {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws RateLimitExceededException {
+        String requestURI = request.getRequestURI();
+
+        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)) {
+            return true;
+        }
+
+        if (shouldSkipRateLimiting(requestURI)) {
             return true;
         }
 
         String userKey = getUserKey();
         if (userKey == null) {
+            log.debug("No authenticated user found, skipping rate limit");
             return true;
         }
 
-        businessValueFailureRateLimiters.computeIfAbsent(
-                userKey, k -> rateLimitConfig.createBusinessValueFailureBucket());
-
+        rateLimitService.checkIfBlocked(userKey);
         return true;
     }
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-        if (shouldSkipRateLimiting(request)) {
+        String requestURI = request.getRequestURI();
+
+        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)) {
+            return;
+        }
+
+        if (shouldSkipRateLimiting(requestURI)) {
             return;
         }
 
@@ -57,29 +65,28 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
 
         int statusCode = response.getStatus();
+
         if (statusCode >= HttpStatus.BAD_REQUEST.value()) {
-            Bucket bucket = businessValueFailureRateLimiters.get(userKey);
-            if (bucket == null) {
-                return;
-            }
-
-            if (bucket.tryConsume(1)) {
-                log.debug("Failed request tracked for user {}: {} {}", userKey, request.getMethod(), request.getRequestURI());
-            } else {
-                log.warn("User {} has exceeded rate limit for failed business value requests. Status: {}", userKey, statusCode);
-            }
+            rateLimitService.trackFailedRequest(userKey);
+            log.debug("Tracked failed request for user {}: {} {} (status {})",
+                    userKey, request.getMethod(), requestURI, statusCode);
+        } else {
+            rateLimitService.resetRateLimit(userKey);
+            log.debug("Reset rate limit for user {} after successful request: {} {} (status {})",
+                    userKey, request.getMethod(), requestURI, statusCode);
         }
     }
 
-    private boolean shouldSkipRateLimiting(HttpServletRequest request) {
-        if (!request.getRequestURI().startsWith(API_BUSINESS_VALUE_PATH)) {
-            return true;
-        }
-
-        String method = request.getMethod();
-        return !"POST".equals(method) && !"PUT".equals(method) && !"DELETE".equals(method);
+    /**
+     * Checks if rate limiting should be skipped for this request URI.
+     */
+    private boolean shouldSkipRateLimiting(String requestURI) {
+        return !requestURI.startsWith(API_AUTH_PATH) && !requestURI.startsWith(API_BUSINESS_VALUE_PATH);
     }
 
+    /**
+     * Extracts the GitHub login from the authenticated OAuth2User.
+     */
     private String getUserKey() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof OAuth2User oauth2User) {

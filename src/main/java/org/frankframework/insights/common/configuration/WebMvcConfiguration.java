@@ -6,16 +6,17 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-public class WebMvcConfig implements WebMvcConfigurer {
+public class WebMvcConfiguration implements WebMvcConfigurer {
 
     private final RateLimitInterceptor rateLimitInterceptor;
 
-    public WebMvcConfig(RateLimitInterceptor rateLimitInterceptor) {
+    public WebMvcConfiguration(RateLimitInterceptor rateLimitInterceptor) {
         this.rateLimitInterceptor = rateLimitInterceptor;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(rateLimitInterceptor).addPathPatterns("/api/business-value/**");
+        registry.addInterceptor(rateLimitInterceptor)
+                .addPathPatterns("/api/auth/**", "/api/business-value/**");
     }
 }
