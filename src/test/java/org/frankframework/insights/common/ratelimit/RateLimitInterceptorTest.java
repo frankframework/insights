@@ -44,20 +44,17 @@ public class RateLimitInterceptorTest {
     private OAuth2User oauth2User;
 
     @BeforeEach
-	public void setUp() {
+    public void setUp() {
         interceptor = new RateLimitInterceptor(rateLimitService);
 
         oauth2User = new DefaultOAuth2User(
-                Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
-                Map.of("login", "testuser"),
-                "login"
-        );
+                Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")), Map.of("login", "testuser"), "login");
 
         SecurityContextHolder.setContext(securityContext);
     }
 
     @Test
-	public void preHandle_shouldSkipRateLimiting_forBusinessValueReleaseEndpoint() throws RateLimitExceededException {
+    public void preHandle_shouldSkipRateLimiting_forBusinessValueReleaseEndpoint() throws RateLimitExceededException {
         when(request.getRequestURI()).thenReturn("/api/business-value/release/123");
 
         boolean result = interceptor.preHandle(request, response, null);
@@ -67,7 +64,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void preHandle_shouldSkipRateLimiting_forNonProtectedEndpoints() throws RateLimitExceededException {
+    public void preHandle_shouldSkipRateLimiting_forNonProtectedEndpoints() throws RateLimitExceededException {
         when(request.getRequestURI()).thenReturn("/api/releases");
 
         boolean result = interceptor.preHandle(request, response, null);
@@ -77,7 +74,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void preHandle_shouldSkipRateLimiting_whenUserIsNotAuthenticated() throws RateLimitExceededException {
+    public void preHandle_shouldSkipRateLimiting_whenUserIsNotAuthenticated() throws RateLimitExceededException {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn(null);
@@ -89,7 +86,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void preHandle_shouldCheckIfBlocked_forAuthEndpoint() throws RateLimitExceededException {
+    public void preHandle_shouldCheckIfBlocked_forAuthEndpoint() throws RateLimitExceededException {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/auth/user");
         when(authentication.getPrincipal()).thenReturn(oauth2User);
@@ -101,7 +98,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void preHandle_shouldCheckIfBlocked_forBusinessValueEndpoint() throws RateLimitExceededException {
+    public void preHandle_shouldCheckIfBlocked_forBusinessValueEndpoint() throws RateLimitExceededException {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn(oauth2User);
@@ -113,12 +110,13 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void preHandle_shouldThrowException_whenUserIsBlocked() throws RateLimitExceededException {
+    public void preHandle_shouldThrowException_whenUserIsBlocked() throws RateLimitExceededException {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn(oauth2User);
         doThrow(new RateLimitExceededException("Too many failed requests"))
-                .when(rateLimitService).checkIfBlocked("testuser");
+                .when(rateLimitService)
+                .checkIfBlocked("testuser");
 
         assertThatThrownBy(() -> interceptor.preHandle(request, response, null))
                 .isInstanceOf(RateLimitExceededException.class)
@@ -126,7 +124,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldTrackFailedRequest_when400Status() {
+    public void afterCompletion_shouldTrackFailedRequest_when400Status() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(request.getMethod()).thenReturn("POST");
@@ -140,7 +138,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldTrackFailedRequest_when404Status() {
+    public void afterCompletion_shouldTrackFailedRequest_when404Status() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value/123");
         when(request.getMethod()).thenReturn("GET");
@@ -154,7 +152,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldTrackFailedRequest_when500Status() {
+    public void afterCompletion_shouldTrackFailedRequest_when500Status() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/auth/user");
         when(request.getMethod()).thenReturn("GET");
@@ -168,7 +166,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldResetRateLimit_when200Status() {
+    public void afterCompletion_shouldResetRateLimit_when200Status() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(request.getMethod()).thenReturn("POST");
@@ -182,7 +180,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldResetRateLimit_when201Status() {
+    public void afterCompletion_shouldResetRateLimit_when201Status() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(request.getMethod()).thenReturn("POST");
@@ -196,7 +194,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldResetRateLimit_when204Status() {
+    public void afterCompletion_shouldResetRateLimit_when204Status() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value/123");
         when(request.getMethod()).thenReturn("DELETE");
@@ -210,7 +208,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldSkipTracking_forBusinessValueReleaseEndpoint() {
+    public void afterCompletion_shouldSkipTracking_forBusinessValueReleaseEndpoint() {
         when(request.getRequestURI()).thenReturn("/api/business-value/release/123");
 
         interceptor.afterCompletion(request, response, null, null);
@@ -219,7 +217,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldSkipTracking_forNonProtectedEndpoints() {
+    public void afterCompletion_shouldSkipTracking_forNonProtectedEndpoints() {
         when(request.getRequestURI()).thenReturn("/api/releases");
 
         interceptor.afterCompletion(request, response, null, null);
@@ -228,7 +226,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldSkipTracking_whenUserIsNotAuthenticated() {
+    public void afterCompletion_shouldSkipTracking_whenUserIsNotAuthenticated() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn(null);
@@ -239,7 +237,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void preHandle_shouldHandleNonOAuth2UserPrincipal() throws RateLimitExceededException {
+    public void preHandle_shouldHandleNonOAuth2UserPrincipal() throws RateLimitExceededException {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn("string-principal");
@@ -251,7 +249,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldHandleNullAuthentication() {
+    public void afterCompletion_shouldHandleNullAuthentication() {
         when(securityContext.getAuthentication()).thenReturn(null);
         when(request.getRequestURI()).thenReturn("/api/business-value");
 
@@ -261,7 +259,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldHandleException() {
+    public void afterCompletion_shouldHandleException() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(request.getMethod()).thenReturn("POST");
@@ -275,7 +273,7 @@ public class RateLimitInterceptorTest {
     }
 
     @Test
-	public void afterCompletion_shouldHandleBoundaryStatus_399() {
+    public void afterCompletion_shouldHandleBoundaryStatus_399() {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn(oauth2User);

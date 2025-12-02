@@ -30,7 +30,10 @@ public class RateLimitCleanupConfiguration {
         rateLimitService.cleanupOldBuckets();
 
         int bucketCountAfter = rateLimitService.getBucketCount();
-        log.debug("Rate limit cleanup completed. Buckets before: {}, after: {}, removed: {}",
-                bucketCountBefore, bucketCountAfter, bucketCountBefore - bucketCountAfter);
+        log.debug(
+                "Rate limit cleanup completed. Buckets before: {}, after: {}, removed: {}",
+                bucketCountBefore,
+                bucketCountAfter,
+                bucketCountBefore - bucketCountAfter);
     }
 }

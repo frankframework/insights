@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.frankframework.insights.ratelimit.RateLimitExceededException;
 import org.frankframework.insights.ratelimit.RateLimitService;
 import org.springframework.http.HttpStatus;
@@ -26,7 +25,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private final RateLimitService rateLimitService;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws RateLimitExceededException {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws RateLimitExceededException {
         String requestURI = request.getRequestURI();
 
         if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)) {
@@ -48,7 +48,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+    public void afterCompletion(
+            HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         String requestURI = request.getRequestURI();
 
         if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)) {
@@ -68,12 +69,20 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         if (statusCode >= HttpStatus.BAD_REQUEST.value()) {
             rateLimitService.trackFailedRequest(userKey);
-            log.debug("Tracked failed request for user {}: {} {} (status {})",
-                    userKey, request.getMethod(), requestURI, statusCode);
+            log.debug(
+                    "Tracked failed request for user {}: {} {} (status {})",
+                    userKey,
+                    request.getMethod(),
+                    requestURI,
+                    statusCode);
         } else {
             rateLimitService.resetRateLimit(userKey);
-            log.debug("Reset rate limit for user {} after successful request: {} {} (status {})",
-                    userKey, request.getMethod(), requestURI, statusCode);
+            log.debug(
+                    "Reset rate limit for user {} after successful request: {} {} (status {})",
+                    userKey,
+                    request.getMethod(),
+                    requestURI,
+                    statusCode);
         }
     }
 

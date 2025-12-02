@@ -11,18 +11,17 @@ public class RateLimitServiceTest {
     private RateLimitService rateLimitService;
 
     @BeforeEach
-	public void setUp() {
+    public void setUp() {
         rateLimitService = new RateLimitService();
     }
 
-
     @Test
-	public void checkIfBlocked_shouldNotThrow_whenUserHasNoFailures() throws RateLimitExceededException {
+    public void checkIfBlocked_shouldNotThrow_whenUserHasNoFailures() throws RateLimitExceededException {
         rateLimitService.checkIfBlocked("user1");
     }
 
     @Test
-	public void checkIfBlocked_shouldNotThrow_whenUserHasFailuresRemaining() throws RateLimitExceededException {
+    public void checkIfBlocked_shouldNotThrow_whenUserHasFailuresRemaining() throws RateLimitExceededException {
         String userKey = "user1";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -33,7 +32,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void checkIfBlocked_shouldThrowException_whenUserExceededLimit() {
+    public void checkIfBlocked_shouldThrowException_whenUserExceededLimit() {
         String userKey = "user1";
 
         for (int i = 0; i < 5; i++) {
@@ -47,7 +46,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void checkIfBlocked_shouldNotThrow_afterReset() throws RateLimitExceededException {
+    public void checkIfBlocked_shouldNotThrow_afterReset() throws RateLimitExceededException {
         String userKey = "user1";
 
         for (int i = 0; i < 5; i++) {
@@ -60,7 +59,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void trackFailedRequest_shouldCreateBucketForNewUser() {
+    public void trackFailedRequest_shouldCreateBucketForNewUser() {
         String userKey = "user1";
 
         assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
@@ -71,7 +70,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void trackFailedRequest_shouldConsumeTokens() throws RateLimitExceededException {
+    public void trackFailedRequest_shouldConsumeTokens() throws RateLimitExceededException {
         String userKey = "user1";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -88,7 +87,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void trackFailedRequest_shouldAllowExactly5Failures() throws RateLimitExceededException {
+    public void trackFailedRequest_shouldAllowExactly5Failures() throws RateLimitExceededException {
         String userKey = "user1";
 
         for (int i = 0; i < 5; i++) {
@@ -103,7 +102,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void trackFailedRequest_shouldHandleMultipleUsers() throws RateLimitExceededException {
+    public void trackFailedRequest_shouldHandleMultipleUsers() throws RateLimitExceededException {
         String user1 = "user1";
         String user2 = "user2";
 
@@ -120,7 +119,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void trackFailedRequest_shouldContinueTrackingAfterLimit() {
+    public void trackFailedRequest_shouldContinueTrackingAfterLimit() {
         String userKey = "user1";
 
         for (int i = 0; i < 7; i++) {
@@ -132,7 +131,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void resetRateLimit_shouldRemoveBucket() {
+    public void resetRateLimit_shouldRemoveBucket() {
         String userKey = "user1";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -146,7 +145,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void resetRateLimit_shouldAllowNewFailures() throws RateLimitExceededException {
+    public void resetRateLimit_shouldAllowNewFailures() throws RateLimitExceededException {
         String userKey = "user1";
 
         for (int i = 0; i < 4; i++) {
@@ -167,7 +166,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void resetRateLimit_shouldHandleNonExistentUser() {
+    public void resetRateLimit_shouldHandleNonExistentUser() {
         String userKey = "nonexistent";
 
         assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
@@ -178,7 +177,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void resetRateLimit_shouldUnblockUser() throws RateLimitExceededException {
+    public void resetRateLimit_shouldUnblockUser() throws RateLimitExceededException {
         String userKey = "user1";
 
         for (int i = 0; i < 5; i++) {
@@ -194,7 +193,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void resetRateLimit_shouldOnlyAffectSpecificUser() throws RateLimitExceededException {
+    public void resetRateLimit_shouldOnlyAffectSpecificUser() throws RateLimitExceededException {
         String user1 = "user1";
         String user2 = "user2";
 
@@ -212,7 +211,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void cleanupOldBuckets_shouldNotRemoveActiveBuckets() {
+    public void cleanupOldBuckets_shouldNotRemoveActiveBuckets() {
         String user1 = "user1";
         String user2 = "user2";
 
@@ -242,7 +241,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void cleanupOldBuckets_shouldHandleEmptyBuckets() {
+    public void cleanupOldBuckets_shouldHandleEmptyBuckets() {
         assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
 
         rateLimitService.cleanupOldBuckets();
@@ -251,12 +250,12 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void getBucketCount_shouldReturnZero_initially() {
+    public void getBucketCount_shouldReturnZero_initially() {
         assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
     }
 
     @Test
-	public void getBucketCount_shouldReturnCorrectCount() {
+    public void getBucketCount_shouldReturnCorrectCount() {
         rateLimitService.trackFailedRequest("user1");
         rateLimitService.trackFailedRequest("user2");
         rateLimitService.trackFailedRequest("user3");
@@ -265,7 +264,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void getBucketCount_shouldNotIncrement_forSameUser() {
+    public void getBucketCount_shouldNotIncrement_forSameUser() {
         rateLimitService.trackFailedRequest("user1");
         rateLimitService.trackFailedRequest("user1");
         rateLimitService.trackFailedRequest("user1");
@@ -274,7 +273,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void getBucketCount_shouldDecrement_afterReset() {
+    public void getBucketCount_shouldDecrement_afterReset() {
         rateLimitService.trackFailedRequest("user1");
         rateLimitService.trackFailedRequest("user2");
         assertThat(rateLimitService.getBucketCount()).isEqualTo(2);
@@ -287,7 +286,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void shouldHandleCompleteUserJourney() throws RateLimitExceededException {
+    public void shouldHandleCompleteUserJourney() throws RateLimitExceededException {
         String userKey = "user1";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -311,7 +310,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void shouldIsolateUsersFromEachOther() throws RateLimitExceededException {
+    public void shouldIsolateUsersFromEachOther() throws RateLimitExceededException {
         String user1 = "user1";
         String user2 = "user2";
 
@@ -319,8 +318,7 @@ public class RateLimitServiceTest {
             rateLimitService.trackFailedRequest(user1);
         }
 
-        assertThatThrownBy(() -> rateLimitService.checkIfBlocked(user1))
-                .isInstanceOf(RateLimitExceededException.class);
+        assertThatThrownBy(() -> rateLimitService.checkIfBlocked(user1)).isInstanceOf(RateLimitExceededException.class);
 
         rateLimitService.checkIfBlocked(user2);
 
@@ -329,7 +327,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void shouldHandleConcurrentUsers() throws RateLimitExceededException {
+    public void shouldHandleConcurrentUsers() throws RateLimitExceededException {
         for (int i = 0; i < 10; i++) {
             rateLimitService.trackFailedRequest("user" + i);
         }
@@ -342,7 +340,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void shouldHandleRepeatedResetAndFailureCycles() throws RateLimitExceededException {
+    public void shouldHandleRepeatedResetAndFailureCycles() throws RateLimitExceededException {
         String userKey = "user1";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -360,14 +358,13 @@ public class RateLimitServiceTest {
         rateLimitService.checkIfBlocked(userKey);
     }
 
-
     @Test
-	public void shouldHandleNullUserKey_checkIfBlocked() throws RateLimitExceededException {
+    public void shouldHandleNullUserKey_checkIfBlocked() throws RateLimitExceededException {
         rateLimitService.checkIfBlocked(null);
     }
 
     @Test
-	public void shouldHandleEmptyUserKey() throws RateLimitExceededException {
+    public void shouldHandleEmptyUserKey() throws RateLimitExceededException {
         String userKey = "";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -376,7 +373,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void shouldHandleSpecialCharactersInUserKey() throws RateLimitExceededException {
+    public void shouldHandleSpecialCharactersInUserKey() throws RateLimitExceededException {
         String userKey = "user@example.com";
 
         rateLimitService.trackFailedRequest(userKey);
@@ -385,7 +382,7 @@ public class RateLimitServiceTest {
     }
 
     @Test
-	public void shouldHandleVeryLongUserKey() throws RateLimitExceededException {
+    public void shouldHandleVeryLongUserKey() throws RateLimitExceededException {
         String userKey = "a".repeat(1000);
 
         rateLimitService.trackFailedRequest(userKey);

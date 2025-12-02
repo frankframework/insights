@@ -8,6 +8,7 @@ import java.io.IOException;
 import org.frankframework.insights.authentication.OAuth2LoginFailureHandler;
 import org.frankframework.insights.authentication.OAuth2LoginSuccessHandler;
 import org.frankframework.insights.user.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,6 +20,7 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -38,6 +40,9 @@ public class SecurityConfig {
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
         this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
     }
+
+    @Value("${frankframework.security.csrf.secure}")
+    private boolean csrfCookieSecure;
 
     @Bean
     public SessionRegistry sessionRegistry() {
@@ -59,28 +64,22 @@ public class SecurityConfig {
                         .authenticated()
                         .anyRequest()
                         .permitAll())
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.userService(userService))
+                .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(userService))
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler))
-                .logout(logout -> logout
-                        .logoutUrl("/api/auth/logout")
+                .logout(logout -> logout.logoutUrl("/api/auth/logout")
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "XSRF-TOKEN")
                         .permitAll())
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository())
-                        .ignoringRequestMatchers("/oauth2/**", "/login/**"))
+                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()))
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
-                .headers(headers -> headers
-                        .contentSecurityPolicy(csp -> csp.policyDirectives(buildCspDirectives()))
+                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(buildCspDirectives()))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                        .referrerPolicy(referrer ->
-                                referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::changeSessionId)
                         .maximumSessions(MAX_ALLOWED_SESSIONS)
                         .maxSessionsPreventsLogin(false)
@@ -89,13 +88,17 @@ public class SecurityConfig {
     }
 
     private CookieCsrfTokenRepository csrfTokenRepository() {
-        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-        repository.setCookiePath("/");
+        CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
+
+        repository.setCookieCustomizer(
+                cookie -> cookie.path("/").secure(csrfCookieSecure).httpOnly(true));
+
         return repository;
     }
 
     private String buildCspDirectives() {
-        return String.join("; ",
+        return String.join(
+                "; ",
                 "default-src 'self'",
                 "script-src 'self' 'unsafe-inline'",
                 "style-src 'self' 'unsafe-inline'",
@@ -108,15 +111,22 @@ public class SecurityConfig {
     }
 
     /**
-     * Filter that ensures CSRF token is loaded and sent to Angular on every request.
-     * This is required for Spring Security 6.x with SPAs to avoid lazy token loading.
+     * Filter that exposes the CSRF token in a Response Header.
+     * Since the Cookie is now HttpOnly (secure), JS cannot read it.
+     * We must manually explicitly send the token value to the frontend in a header.
      */
     private static class CsrfCookieFilter extends OncePerRequestFilter {
         @Override
         protected void doFilterInternal(
                 HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
                 throws ServletException, IOException {
-            request.getAttribute("_csrf");
+
+            CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+
+            if (csrfToken != null) {
+                response.setHeader("X-XSRF-TOKEN", csrfToken.getToken());
+            }
+
             filterChain.doFilter(request, response);
         }
     }
