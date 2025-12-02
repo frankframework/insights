@@ -8,6 +8,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
+import { AuthService } from '../../services/auth.service';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -68,6 +69,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private nodeService = inject(ReleaseNodeService);
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
+  protected authService = inject(AuthService);
 
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
