@@ -64,7 +64,7 @@ public class SecurityConfig {
         requestHandler.setCsrfRequestAttributeName(null);
 
         return http.authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/business-value/release/**")
+                        .requestMatchers("/api/business-value/release/**", "/api/vulnerabilities/release/**")
                         .permitAll()
                         .requestMatchers("/api/auth/user", "/api/business-value/**", "/api/vulnerabilities/**")
                         .authenticated()
