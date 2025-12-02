@@ -2,6 +2,7 @@ package org.frankframework.insights.common.configuration;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -76,10 +77,10 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID", "XSRF-TOKEN")
+                        .deleteCookies("JSESSIONID", "SECURE-XSRF-TOKEN", "XSRF-TOKEN")
                         .permitAll())
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()).csrfTokenRequestHandler(requestHandler))
-                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+                .addFilterAfter(new CsrfCookieFilter(csrfCookieSecure), CsrfFilter.class)
                 .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(buildCspDirectives()))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .referrerPolicy(referrer -> referrer.policy(
@@ -95,7 +96,10 @@ public class SecurityConfig {
     private CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
 
-        repository.setCookieCustomizer(cookie -> cookie.path("/").secure(csrfCookieSecure).httpOnly(false).sameSite("Lax"));
+        repository.setCookieName("SECURE-XSRF-TOKEN");
+
+        repository.setCookieCustomizer(cookie ->
+                cookie.path("/").secure(csrfCookieSecure).httpOnly(true).sameSite("Lax"));
 
         return repository;
     }
@@ -114,10 +118,13 @@ public class SecurityConfig {
                 "form-action 'self'");
     }
 
-    /**
-     * Filter that forces the CSRF token to be generated and exposed.
-     */
     private static class CsrfCookieFilter extends OncePerRequestFilter {
+        private final boolean isSecure;
+
+        public CsrfCookieFilter(boolean isSecure) {
+            this.isSecure = isSecure;
+        }
+
         @Override
         protected void doFilterInternal(
                 HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -127,6 +134,12 @@ public class SecurityConfig {
 
             if (csrfToken != null) {
                 response.setHeader("X-XSRF-TOKEN", csrfToken.getToken());
+
+                Cookie cookie = new Cookie("XSRF-TOKEN", csrfToken.getToken());
+                cookie.setPath("/");
+                cookie.setSecure(isSecure);
+                cookie.setHttpOnly(false);
+                response.addCookie(cookie);
             }
 
             filterChain.doFilter(request, response);
