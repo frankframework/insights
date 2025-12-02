@@ -102,6 +102,7 @@ describe('Graph Rendering and Interaction', () => {
                   .and('match', /^#[0-9A-Fa-f]{6}$/);
         }
       });
+
       it('should display nightly releases with appropriate colors', () => {
         cy.get('@graphSvg')
                 .find('g[data-cy*="-nightly"]')
