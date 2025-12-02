@@ -545,7 +545,7 @@ describe('ReleaseNodeService', () => {
     });
   });
 
-  describe('createClusters', () => {
+  describe('applyMinimumSpacing', () => {
     beforeEach(() => {
       const structuredData = service.structureReleaseData(mockReleases);
       service.calculateReleaseCoordinates(structuredData);
@@ -558,144 +558,51 @@ describe('ReleaseNodeService', () => {
         { id: '2', label: 'v1.1', position: { x: 120, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
       ];
 
-      const result = service.createClusters(nodes);
+      const result = service.applyMinimumSpacing(nodes);
 
       expect(result).toEqual(nodes);
     });
 
     it('should return original nodes if array is empty', () => {
-      const result = service.createClusters([]);
+      const result = service.applyMinimumSpacing([]);
 
       expect(result).toEqual([]);
     });
 
-    it('should create clusters for closely positioned nodes', () => {
+    it('should apply minimum spacing to closely positioned nodes in last year', () => {
       const now = new Date();
       const nodes: ReleaseNode[] = [
         { id: '1', label: 'v9.0.1', position: { x: 1000, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
-        { id: '2', label: 'v9.0.2', position: { x: 1050, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
-        { id: '3', label: 'v9.0.3', position: { x: 1090, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
+        { id: '2', label: 'v9.0.2', position: { x: 1010, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
+        { id: '3', label: 'v9.0.3', position: { x: 1020, y: 0 }, branch: 'master', color: 'green', publishedAt: now },
       ];
 
       if (service.timelineScale) {
         service.timelineScale.latestReleaseDate = now;
       }
 
-      const result = service.createClusters(nodes);
+      const result = service.applyMinimumSpacing(nodes);
 
-      const clusterNode = result.find(n => n.isCluster);
-      if (clusterNode) {
-        expect(clusterNode.clusteredNodes).toBeDefined();
-        expect(clusterNode.clusteredNodes!.length).toBeGreaterThan(1);
-      }
+      expect(result.length).toBe(3);
+      const spacing1 = result[1].position.x - result[0].position.x;
+      const spacing2 = result[2].position.x - result[1].position.x;
+
+      expect(spacing1).toBeGreaterThanOrEqual(60);
+      expect(spacing2).toBeGreaterThanOrEqual(60);
     });
 
-    it('should not cluster nodes that are far apart', () => {
+    it('should not modify nodes that are far apart', () => {
       const oldDate = new Date('2023-01-01');
       const nodes: ReleaseNode[] = [
         { id: '1', label: 'v7.0', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: oldDate },
         { id: '2', label: 'v8.0', position: { x: 1000, y: 0 }, branch: 'master', color: 'green', publishedAt: oldDate },
       ];
 
-      const result = service.createClusters(nodes);
+      const result = service.applyMinimumSpacing(nodes);
 
       expect(result.length).toBe(2);
-      expect(result.every(n => !n.isCluster)).toBe(true);
-    });
-  });
-
-  describe('expandCluster', () => {
-    const EXPECTED_SPACING_NORMAL = 60;
-    const EXPECTED_SPACING_NIGHTLY = 90;
-
-    it('should expand cluster into individual nodes with spacing', () => {
-      const clusteredNodes: ReleaseNode[] = [
-        { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        { id: '2', label: 'v9.0.2', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        { id: '3', label: 'v9.0.3', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-      ];
-      const clusterNode: ReleaseNode = {
-        id: 'cluster-1',
-        label: '3',
-        position: { x: 500, y: 0 },
-        branch: 'master',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        clusteredNodes,
-      };
-
-      const result = service.expandCluster(clusterNode);
-
-      expect(result.length).toBe(3);
-
-      const spacing1 = result[1].position.x - result[0].position.x;
-      const spacing2 = result[2].position.x - result[1].position.x;
-
-      expect(spacing1).toBe(EXPECTED_SPACING_NORMAL);
-      expect(spacing2).toBe(EXPECTED_SPACING_NORMAL);
-
-      // First node should start at the cluster position
-      expect(result[0].position.x).toBe(500);
-    });
-
-    it('should give extra spacing to nightly releases', () => {
-      const clusteredNodes: ReleaseNode[] = [
-        { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        { id: '2', label: 'v9.0.2-nightly', position: { x: 0, y: 0 }, branch: 'master', color: 'blue', publishedAt: new Date() },
-        { id: '3', label: 'v9.0.3', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-      ];
-      const clusterNode: ReleaseNode = {
-        id: 'cluster-1',
-        label: '3',
-        position: { x: 500, y: 0 },
-        branch: 'master',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        clusteredNodes,
-      };
-
-      const result = service.expandCluster(clusterNode);
-
-      expect(result.length).toBe(3);
-      const spacing1 = result[1].position.x - result[0].position.x;
-      const spacing2 = result[2].position.x - result[1].position.x;
-
-      expect(spacing1).toBe(EXPECTED_SPACING_NIGHTLY);
-      expect(spacing2).toBe(EXPECTED_SPACING_NIGHTLY);
-    });
-
-    it('should return original node if not a cluster', () => {
-      const regularNode: ReleaseNode = {
-        id: '1',
-        label: 'v9.0.1',
-        position: { x: 500, y: 0 },
-        branch: 'master',
-        color: 'green',
-        publishedAt: new Date(),
-      };
-
-      const result = service.expandCluster(regularNode);
-
-      expect(result).toEqual([regularNode]);
-    });
-
-    it('should handle empty clustered nodes', () => {
-      const clusterNode: ReleaseNode = {
-        id: 'cluster-1',
-        label: '0',
-        position: { x: 500, y: 0 },
-        branch: 'master',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        clusteredNodes: [],
-      };
-
-      const result = service.expandCluster(clusterNode);
-
-      expect(result).toEqual([clusterNode]);
+      expect(result[0].position.x).toBe(100);
+      expect(result[1].position.x).toBe(1000);
     });
   });
 });

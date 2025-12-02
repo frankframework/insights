@@ -42,80 +42,81 @@
     display: none;
   }
 
-  .nightly-toggle,
-  .nightly-toggle-mobile {
+  .nightly-toggle-header {
+    position: fixed;
+    right: 10.5rem;
+    top: 1.5rem;
+    z-index: 25;
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    width: 54px;
-    height: 28px;
-    border-radius: 14px;
-    background-color: #e9ecef;
+    gap: 8px;
+    height: 36px;
+    border-radius: 18px;
+    background-color: #ffffff;
     border: 1px solid #dee2e6;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-    pointer-events: all;
-    padding: 3px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    padding: 6px 14px 6px 10px;
+
+    @media (max-width: 991px) {
+      top: auto;
+      bottom: 1.5rem;
+      right: 1.5rem;
+    }
 
     .moon-icon {
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       fill: #6c757d;
       transition: all 0.2s ease-in-out;
-      background-color: #ffffff;
-      border-radius: 50%;
-      padding: 4px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-      transform: translateX(-5px);
+      flex-shrink: 0;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+      white-space: nowrap;
+      transition: color 0.2s ease-in-out;
     }
 
     &:hover {
-      background-color: #dee2e6;
+      background-color: #f8f9fa;
       border-color: #ced4da;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
     }
 
     &:active {
-      .moon-icon {
-        transform: translateX(-5px) scale(0.96);
-      }
+      transform: scale(0.98);
     }
 
     &.active {
+      background-color: #1e3a8a;
+      border-color: #1e3a8a;
+      box-shadow: 0 3px 6px rgba(30, 58, 138, 0.3);
+
       .moon-icon {
-        background-color: #1e3a8a;
-        transform: translateX(20px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        fill: #ffffff;
 
         path {
           stroke: #ffffff;
         }
       }
 
-      &:active {
-        .moon-icon {
-          transform: translateX(20px) scale(0.96);
-        }
+      .toggle-label {
+        color: #ffffff;
+      }
+
+      &:hover {
+        background-color: #1d3680;
+        border-color: #1d3680;
       }
     }
   }
 
-  .nightly-toggle {
-    display: none;
-  }
-
-  .nightly-toggle-mobile {
-    position: fixed;
-    top: 87px;
-    right: 20px;
-    z-index: 100;
-  }
-
   @media (min-width: 992px) {
-    .nightly-toggle-mobile {
-      display: none;
-    }
-
     .branch-labels-sticky {
       display: flex;
       flex-direction: column;
@@ -130,21 +131,25 @@
       top: 75px;
       pointer-events: none;
 
-      .nightly-toggle {
-        display: flex;
-        margin-top: 1.75rem;
-      }
-
       .sticky-branch-label-container {
         position: absolute;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         transform: translateY(-50%);
 
-        .branch-shield-icon {
+        .lts-badge {
           flex-shrink: 0;
-          display: block;
+          display: inline-block;
+          padding: 2px 6px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          color: #ffffff;
+          background: linear-gradient(135deg, #9370DB 0%, #7B68BD 100%);
+          border-radius: 4px;
+          box-shadow: 0 1px 3px rgba(147, 112, 219, 0.3);
+          text-transform: uppercase;
         }
 
         .sticky-branch-label {
@@ -156,6 +161,17 @@
           text-anchor: start;
           dominant-baseline: central;
           opacity: 0.9;
+
+          p {
+            font-size: 14px;
+            color: #818080;
+            background: white;
+            white-space: nowrap;
+            font-weight: bold;
+            text-anchor: start;
+            dominant-baseline: central;
+            opacity: 0.9;
+          }
         }
       }
     }
@@ -253,30 +269,6 @@
     .lifecycle-phase {
       transition: opacity 0.2s;
       stroke-width: 1;
-    }
-  }
-
-  .cluster-node {
-    cursor: pointer;
-
-    .cluster-count {
-      font-size: 14px;
-      font-weight: 600;
-      text-anchor: middle;
-      dominant-baseline: middle;
-    }
-
-    .cluster-icon {
-      stroke: #495057;
-      stroke-width: 2;
-      stroke-linecap: butt;
-      fill: none;
-    }
-
-    .cluster-label {
-      font-size: 10px;
-      font-weight: 500;
-      fill: grey;
     }
   }
 

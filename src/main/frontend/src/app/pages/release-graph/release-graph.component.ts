@@ -43,7 +43,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public skipNodes: SkipNode[] = [];
   public dataForSkipModal: SkipNode | null = null;
   public quarterMarkers: QuarterMarker[] = [];
-  public expandedClusters = new Map<string, ReleaseNode>();
   public branchLifecycles: BranchLifecycle[] = [];
   public currentTimeX = 0;
   public showNotFoundError = false;
@@ -70,41 +69,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
 
-  public get expandedClustersArray(): { key: string; value: ReleaseNode }[] {
-    return [...this.expandedClusters.entries()].map(([key, value]) => ({ key, value }));
-  }
-
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
       return this.releaseNodes;
     }
 
-    const filteredNodes: ReleaseNode[] = [];
-
-    for (const node of this.releaseNodes) {
-      if (!node.isCluster && this.isNightlyNode(node)) {
-        continue;
-      }
-
-      if (node.isCluster && node.clusteredNodes) {
-        const visibleClusteredNodes = node.clusteredNodes.filter((n) => !this.isNightlyNode(n));
-
-        if (visibleClusteredNodes.length === 0) {
-          continue;
-        }
-
-        if (visibleClusteredNodes.length === 1) {
-          filteredNodes.push(visibleClusteredNodes[0]);
-          continue;
-        }
-
-        filteredNodes.push(node);
-      } else {
-        filteredNodes.push(node);
-      }
-    }
-
-    return filteredNodes;
+    // Filter out nightly nodes when showNightlies is false
+    return this.releaseNodes.filter((node) => !this.isNightlyNode(node));
   }
 
   public get visibleLinks(): ReleaseLink[] {
@@ -207,13 +178,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
   }
 
-  public onClusterTouchEnd(event: TouchEvent, clusterNode: ReleaseNode): void {
-    event.stopPropagation();
-    if (!this.isTouchDragging) {
-      this.toggleCluster(clusterNode);
-    }
-  }
-
   public onSkipNodeTouchEnd(event: TouchEvent, skipNodeId: string): void {
     event.stopPropagation();
     if (!this.isTouchDragging) {
@@ -225,11 +189,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     if (releaseNode.isMiniNode) {
       return;
     }
-    if (releaseNode.isCluster) {
-      this.onClusterTouchEnd(event, releaseNode);
-    } else {
-      this.onNodeTouchEnd(event, releaseNode.id);
-    }
+    this.onNodeTouchEnd(event, releaseNode.id);
   }
 
   public onWheel(event: WheelEvent): void {
@@ -302,48 +262,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.router.navigate(['/graph', releaseNodeId]);
   }
 
-  public toggleCluster(clusterNode: ReleaseNode): void {
-    if (!clusterNode.isCluster) return;
-
-    const nodeIndex = this.releaseNodes.findIndex((n) => n.id === clusterNode.id);
-    if (nodeIndex === -1) return;
-
-    if (clusterNode.isExpanded) {
-      clusterNode.isExpanded = false;
-      const expandedCount = clusterNode.clusteredNodes?.length ?? 0;
-      this.releaseNodes.splice(nodeIndex, expandedCount, clusterNode);
-      this.expandedClusters.delete(clusterNode.id);
-    } else {
-      clusterNode.isExpanded = true;
-      const expandedNodes = this.nodeService.expandCluster(clusterNode);
-      this.releaseNodes.splice(nodeIndex, 1, ...expandedNodes);
-      this.expandedClusters.set(clusterNode.id, clusterNode);
-    }
-  }
-
-  public collapseCluster(clusterId: string): void {
-    const clusterNode = this.expandedClusters.get(clusterId);
-    if (!clusterNode) return;
-
-    const firstExpandedIndex = this.releaseNodes.findIndex((n) =>
-      clusterNode.clusteredNodes?.some((cn) => cn.id === n.id),
-    );
-
-    if (firstExpandedIndex !== -1) {
-      const expandedCount = clusterNode.clusteredNodes?.length ?? 0;
-      clusterNode.isExpanded = false;
-      this.releaseNodes.splice(firstExpandedIndex, expandedCount, clusterNode);
-      this.expandedClusters.delete(clusterId);
-    }
-  }
-
-  public onCollapseButtonTouchEnd(event: TouchEvent, clusterId: string): void {
-    event.stopPropagation();
-    if (!this.isTouchDragging) {
-      this.collapseCluster(clusterId);
-    }
-  }
-
   public openSkipNodeModal(skipNodeId: string): void {
     const skipNode = this.skipNodes.find((s) => s.id === skipNodeId);
     if (skipNode) {
@@ -370,42 +288,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return minor === 0;
   }
 
-  public shouldShowCollapseButton(clusterNode: ReleaseNode): boolean {
-    if (!clusterNode.isExpanded || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
-      return false;
-    }
-
-    // If nightlies are shown, always show collapse button for expanded clusters
-    if (this.showNightlies) {
-      return true;
-    }
-
-    // If nightlies are hidden, only show collapse button if there are 2+ visible nodes
-    const visibleNodes = clusterNode.clusteredNodes.filter((n) => !this.isNightlyNode(n));
-    return visibleNodes.length >= 2;
-  }
-
-  public getLastExpandedNodePosition(clusterNode: ReleaseNode): { x: number; y: number } | null {
-    if (!clusterNode.isExpanded || !clusterNode.clusteredNodes || clusterNode.clusteredNodes.length === 0) {
-      return null;
-    }
-
-    // If nightlies are hidden, find the last visible node
-    let nodesToConsider = clusterNode.clusteredNodes;
-    if (!this.showNightlies) {
-      nodesToConsider = clusterNode.clusteredNodes.filter((n) => !this.isNightlyNode(n));
-    }
-
-    const lastNode = nodesToConsider.at(-1);
-    if (!lastNode) {
-      return null;
-    }
-    const lastNodeInArray = this.releaseNodes.find((n) => n.id === lastNode.id);
-    return lastNodeInArray ? lastNodeInArray.position : null;
-  }
-
   private isNightlyNode(node: ReleaseNode): boolean {
-    if (node.isMiniNode || node.isCluster) {
+    if (node.isMiniNode) {
       return false;
     }
 
@@ -459,11 +343,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
       return node;
     }
 
-    const clusterNode = this.releaseNodes.find((n) => n.isCluster && n.clusteredNodes?.some((cn) => cn.id === id));
-    if (clusterNode) {
-      return clusterNode;
-    }
-
     return undefined;
   }
 
@@ -496,21 +375,17 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const releaseNodeMap = this.nodeService.calculateReleaseCoordinates(sortedGroups);
     this.nodeService.assignReleaseColors(releaseNodeMap);
 
-    const clusteredNodeMap = new Map<string, ReleaseNode[]>();
-    for (const [branch, nodes] of releaseNodeMap.entries()) {
-      clusteredNodeMap.set(branch, this.nodeService.createClusters(nodes));
-    }
-
     this.releaseNodes = [];
-    for (const nodes of clusteredNodeMap.values()) {
-      this.releaseNodes.push(...nodes);
+    for (const [, nodes] of releaseNodeMap.entries()) {
+      const spacedNodes = this.nodeService.applyMinimumSpacing(nodes);
+      this.releaseNodes.push(...spacedNodes);
     }
 
     this.skipNodes = this.linkService.createSkipNodes(sortedGroups, this.releases);
 
-    this.updateSkipNodesForClusters();
+    this.updateSkipNodePositions();
 
-    const masterNodes = clusteredNodeMap.get('master') ?? [];
+    const masterNodes = releaseNodeMap.get('master') ?? [];
     const skipNodeLinks = this.linkService.createSkipNodeLinks(this.skipNodes, masterNodes);
 
     this.allLinks = [...this.linkService.createLinks(sortedGroups, this.skipNodes), ...skipNodeLinks];
@@ -526,7 +401,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.checkReleaseGraphLoading();
   }
 
-  private updateSkipNodesForClusters(): void {
+  private updateSkipNodePositions(): void {
     for (const skipNode of this.skipNodes) {
       const isInitial = skipNode.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN);
 
@@ -727,31 +602,11 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   private getAllNodesInBranch(nodes: ReleaseNode[]): ReleaseNode[] {
-    const allNodes: ReleaseNode[] = [];
-
-    for (const node of nodes) {
-      if (node.isCluster && node.clusteredNodes) {
-        allNodes.push(...node.clusteredNodes);
-      } else {
-        allNodes.push(node);
-      }
-    }
-
-    return allNodes;
+    return nodes;
   }
 
   private identifyAnyNodeById(nodeId: string): ReleaseNode | undefined {
-    const node = this.releaseNodes.find((n) => n.id === nodeId);
-    if (node) return node;
-
-    for (const n of this.releaseNodes) {
-      if (n.isCluster && n.clusteredNodes) {
-        const clusteredNode = n.clusteredNodes.find((cn) => cn.id === nodeId);
-        if (clusteredNode) return clusteredNode;
-      }
-    }
-
-    return undefined;
+    return this.releaseNodes.find((n) => n.id === nodeId);
   }
 
   private calculateLifecyclePhasesForBranch(sortedNodes: ReleaseNode[]): LifecyclePhase[] {

@@ -52,8 +52,7 @@ describe('ReleaseGraphComponent', () => {
       'structureReleaseData',
       'calculateReleaseCoordinates',
       'assignReleaseColors',
-      'createClusters',
-      'expandCluster',
+      'applyMinimumSpacing',
       'getVersionInfo',
     ]);
     mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
@@ -85,7 +84,7 @@ describe('ReleaseGraphComponent', () => {
     });
     mockNodeService.assignReleaseColors.and.returnValue();
     mockNodeService.timelineScale = mockTimelineScale;
-    mockNodeService.createClusters.and.returnValue(mockNodes);
+    mockNodeService.applyMinimumSpacing.and.returnValue(mockNodes);
     mockNodeService.getVersionInfo.and.returnValue({ major: 1, minor: 0, patch: 0, type: 'major' });
     mockLinkService.createLinks.and.returnValue(mockLinks);
     mockLinkService.createSkipNodes.and.returnValue([]);
@@ -388,61 +387,6 @@ describe('ReleaseGraphComponent', () => {
     });
   });
 
-  describe('Cluster Functionality', () => {
-    it('should toggle cluster expansion', () => {
-      const clusterNode: ReleaseNode = {
-        id: 'cluster-1',
-        label: '3',
-        position: { x: 100, y: 0 },
-        branch: 'master',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        isExpanded: false,
-        clusteredNodes: [
-          { id: '1', label: 'v1.0', position: { x: 90, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-          { id: '2', label: 'v1.1', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-          { id: '3', label: 'v1.2', position: { x: 110, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        ],
-      };
-      component.releaseNodes = [clusterNode];
-      const expandedNodes = clusterNode.clusteredNodes!;
-      mockNodeService.expandCluster.and.returnValue(expandedNodes);
-
-      component.toggleCluster(clusterNode);
-
-      expect(clusterNode.isExpanded).toBe(true);
-      expect(component.releaseNodes.length).toBe(3);
-      expect(mockNodeService.expandCluster).toHaveBeenCalledWith(clusterNode);
-    });
-
-    it('should collapse an expanded cluster', () => {
-      const clusterNode: ReleaseNode = {
-        id: 'cluster-1',
-        label: '3',
-        position: { x: 100, y: 0 },
-        branch: 'master',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        isExpanded: true,
-        clusteredNodes: [
-          { id: '1', label: 'v1.0', position: { x: 90, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-          { id: '2', label: 'v1.1', position: { x: 100, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-          { id: '3', label: 'v1.2', position: { x: 110, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
-        ],
-      };
-      component.releaseNodes = clusterNode.clusteredNodes!;
-      component.expandedClusters.set(clusterNode.id, clusterNode);
-      component.collapseCluster(clusterNode.id);
-
-      expect(clusterNode.isExpanded).toBe(false);
-      expect(component.releaseNodes.length).toBe(1);
-      expect(component.releaseNodes[0]).toBe(clusterNode);
-      expect(component.expandedClusters.has(clusterNode.id)).toBe(false);
-    });
-  });
-
   describe('Nightly Toggle Functionality', () => {
     it('should toggle showNightlies state', () => {
       expect(component.showNightlies).toBe(false);
@@ -505,132 +449,6 @@ describe('ReleaseGraphComponent', () => {
       expect(visible[0]).toBe(regularNode);
     });
 
-    it('should skip clusters with 0 visible nodes when showNightlies is false', () => {
-      const nightlyNode1: ReleaseNode = {
-        id: 'nightly-1',
-        label: 'v1.0.0-nightly',
-        position: { x: 100, y: 100 },
-        branch: 'release',
-        color: 'darkblue',
-        publishedAt: new Date(),
-      };
-      const nightlyNode2: ReleaseNode = {
-        id: 'nightly-2',
-        label: 'v1.0.0-20241201.120000',
-        position: { x: 110, y: 100 },
-        branch: 'release',
-        color: 'darkblue',
-        publishedAt: new Date(),
-      };
-      const clusterWithOnlyNightlies: ReleaseNode = {
-        id: 'cluster-1',
-        label: '2',
-        position: { x: 105, y: 100 },
-        branch: 'release',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        clusteredNodes: [nightlyNode1, nightlyNode2],
-      };
-      const regularNode: ReleaseNode = {
-        id: 'regular-1',
-        label: 'v1.0.0',
-        position: { x: 200, y: 0 },
-        branch: 'master',
-        color: 'green',
-        publishedAt: new Date(),
-      };
-      component.releaseNodes = [regularNode, clusterWithOnlyNightlies];
-      component.showNightlies = false;
-
-      const visible = component.visibleReleaseNodes;
-
-      expect(visible.length).toBe(1);
-      expect(visible[0]).toBe(regularNode);
-    });
-
-    it('should uncluster and show single node when cluster has only 1 visible node', () => {
-      const nightlyNode: ReleaseNode = {
-        id: 'nightly-1',
-        label: 'v1.0.0-nightly',
-        position: { x: 100, y: 100 },
-        branch: 'release',
-        color: 'darkblue',
-        publishedAt: new Date(),
-      };
-      const regularNode: ReleaseNode = {
-        id: 'regular-2',
-        label: 'v1.0.1',
-        position: { x: 110, y: 100 },
-        branch: 'release',
-        color: 'green',
-        publishedAt: new Date(),
-      };
-      const clusterWith1Visible: ReleaseNode = {
-        id: 'cluster-1',
-        label: '2',
-        position: { x: 105, y: 100 },
-        branch: 'release',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        clusteredNodes: [nightlyNode, regularNode],
-      };
-      component.releaseNodes = [clusterWith1Visible];
-      component.showNightlies = false;
-
-      const visible = component.visibleReleaseNodes;
-
-      expect(visible.length).toBe(1);
-      expect(visible[0]).toBe(regularNode);
-      expect(visible[0].isCluster).toBeFalsy();
-    });
-
-    it('should keep cluster when it has 2+ visible nodes', () => {
-      const nightlyNode: ReleaseNode = {
-        id: 'nightly-1',
-        label: 'v1.0.0-nightly',
-        position: { x: 100, y: 100 },
-        branch: 'release',
-        color: 'darkblue',
-        publishedAt: new Date(),
-      };
-      const regularNode1: ReleaseNode = {
-        id: 'regular-1',
-        label: 'v1.0.1',
-        position: { x: 110, y: 100 },
-        branch: 'release',
-        color: 'green',
-        publishedAt: new Date(),
-      };
-      const regularNode2: ReleaseNode = {
-        id: 'regular-2',
-        label: 'v1.0.2',
-        position: { x: 120, y: 100 },
-        branch: 'release',
-        color: 'green',
-        publishedAt: new Date(),
-      };
-      const clusterWith2Visible: ReleaseNode = {
-        id: 'cluster-1',
-        label: '3',
-        position: { x: 110, y: 100 },
-        branch: 'release',
-        color: '#dee2e6',
-        publishedAt: new Date(),
-        isCluster: true,
-        clusteredNodes: [nightlyNode, regularNode1, regularNode2],
-      };
-      component.releaseNodes = [clusterWith2Visible];
-      component.showNightlies = false;
-
-      const visible = component.visibleReleaseNodes;
-
-      expect(visible.length).toBe(1);
-      expect(visible[0]).toBe(clusterWith2Visible);
-      expect(visible[0].isCluster).toBe(true);
-    });
-
     describe('isNightlyNode detection', () => {
       it('should identify nightly nodes with nightly keyword', () => {
         const nightlyNode: ReleaseNode = {
@@ -683,25 +501,6 @@ describe('ReleaseGraphComponent', () => {
 
         expect(visible.length).toBe(1);
         expect(visible[0]).toBe(miniNode);
-      });
-
-      it('should not consider cluster nodes as nightly', () => {
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: 'v1.0.0-nightly',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          clusteredNodes: [],
-        };
-        component.releaseNodes = [clusterNode];
-        component.showNightlies = false;
-
-        const visible = component.visibleReleaseNodes;
-
-        expect(visible.length).toBe(0);
       });
 
       it('should not consider nodes at y=0 (master branch) as nightly', () => {
@@ -812,221 +611,6 @@ describe('ReleaseGraphComponent', () => {
         expect(visible[0].id).toBe('regular-1-regular-2');
       });
     });
-
-    describe('shouldShowCollapseButton with nightly context', () => {
-      it('should show collapse button for expanded cluster when nightlies are shown', () => {
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: '2',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          isExpanded: true,
-          clusteredNodes: [
-            {
-              id: 'nightly-1',
-              label: 'v1.0.0-nightly',
-              position: { x: 100, y: 100 },
-              branch: 'release',
-              color: 'darkblue',
-              publishedAt: new Date(),
-            },
-            {
-              id: 'nightly-2',
-              label: 'v1.0.0-20241201.120000',
-              position: { x: 110, y: 100 },
-              branch: 'release',
-              color: 'darkblue',
-              publishedAt: new Date(),
-            },
-          ],
-        };
-        component.showNightlies = true;
-
-        expect(component.shouldShowCollapseButton(clusterNode)).toBe(true);
-      });
-
-      it('should not show collapse button when cluster has fewer than 2 visible non-nightly nodes', () => {
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: '2',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          isExpanded: true,
-          clusteredNodes: [
-            {
-              id: 'nightly-1',
-              label: 'v1.0.0-nightly',
-              position: { x: 100, y: 100 },
-              branch: 'release',
-              color: 'darkblue',
-              publishedAt: new Date(),
-            },
-            {
-              id: 'regular-1',
-              label: 'v1.0.1',
-              position: { x: 110, y: 100 },
-              branch: 'release',
-              color: 'green',
-              publishedAt: new Date(),
-            },
-          ],
-        };
-        component.showNightlies = false;
-
-        expect(component.shouldShowCollapseButton(clusterNode)).toBe(false);
-      });
-
-      it('should show collapse button when cluster has 2+ visible non-nightly nodes', () => {
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: '3',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          isExpanded: true,
-          clusteredNodes: [
-            {
-              id: 'nightly-1',
-              label: 'v1.0.0-nightly',
-              position: { x: 100, y: 100 },
-              branch: 'release',
-              color: 'darkblue',
-              publishedAt: new Date(),
-            },
-            {
-              id: 'regular-1',
-              label: 'v1.0.1',
-              position: { x: 110, y: 100 },
-              branch: 'release',
-              color: 'green',
-              publishedAt: new Date(),
-            },
-            {
-              id: 'regular-2',
-              label: 'v1.0.2',
-              position: { x: 120, y: 100 },
-              branch: 'release',
-              color: 'green',
-              publishedAt: new Date(),
-            },
-          ],
-        };
-        component.showNightlies = false;
-
-        expect(component.shouldShowCollapseButton(clusterNode)).toBe(true);
-      });
-    });
-
-    describe('getLastExpandedNodePosition with nightly visibility', () => {
-      it('should return last node position when nightlies are shown', () => {
-        const node1: ReleaseNode = {
-          id: 'node-1',
-          label: 'v1.0.0',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: 'green',
-          publishedAt: new Date(),
-        };
-        const node2: ReleaseNode = {
-          id: 'node-2',
-          label: 'v1.0.1-nightly',
-          position: { x: 110, y: 100 },
-          branch: 'release',
-          color: 'darkblue',
-          publishedAt: new Date(),
-        };
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: '2',
-          position: { x: 105, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          isExpanded: true,
-          clusteredNodes: [node1, node2],
-        };
-        component.releaseNodes = [node1, node2];
-        component.showNightlies = true;
-
-        const position = component.getLastExpandedNodePosition(clusterNode);
-
-        expect(position).toEqual({ x: 110, y: 100 });
-      });
-
-      it('should return last visible non-nightly node position when nightlies are hidden', () => {
-        const node1: ReleaseNode = {
-          id: 'node-1',
-          label: 'v1.0.0',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: 'green',
-          publishedAt: new Date(),
-        };
-        const node2: ReleaseNode = {
-          id: 'node-2',
-          label: 'v1.0.1-nightly',
-          position: { x: 110, y: 100 },
-          branch: 'release',
-          color: 'darkblue',
-          publishedAt: new Date(),
-        };
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: '2',
-          position: { x: 105, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          isExpanded: true,
-          clusteredNodes: [node1, node2],
-        };
-        component.releaseNodes = [node1, node2];
-        component.showNightlies = false;
-
-        const position = component.getLastExpandedNodePosition(clusterNode);
-
-        expect(position).toEqual({ x: 100, y: 100 });
-      });
-
-      it('should return null when no visible nodes exist', () => {
-        const node1: ReleaseNode = {
-          id: 'node-1',
-          label: 'v1.0.0-nightly',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: 'darkblue',
-          publishedAt: new Date(),
-        };
-        const clusterNode: ReleaseNode = {
-          id: 'cluster-1',
-          label: '1',
-          position: { x: 100, y: 100 },
-          branch: 'release',
-          color: '#dee2e6',
-          publishedAt: new Date(),
-          isCluster: true,
-          isExpanded: true,
-          clusteredNodes: [node1],
-        };
-        component.releaseNodes = [];
-        component.showNightlies = false;
-
-        const position = component.getLastExpandedNodePosition(clusterNode);
-
-        expect(position).toBeNull();
-      });
-    });
-
   });
 
   describe('(private) findNodeById', () => {
@@ -1090,21 +674,6 @@ describe('ReleaseGraphComponent', () => {
       expect(result).toBeDefined();
       expect(result?.id).toBe('start-node-node-1');
       expect(result?.position).toEqual({ x: 100, y: 0 });
-    });
-
-    it('should find a node that is inside a cluster', () => {
-      const clusteredNode = { id: 'node-in-cluster' } as ReleaseNode;
-      const cluster = {
-        id: 'cluster-1',
-        isCluster: true,
-        clusteredNodes: [ clusteredNode ]
-      } as ReleaseNode;
-
-      component.releaseNodes = [ cluster ];
-
-      const result = findNodeById('node-in-cluster');
-
-      expect(result).toBe(cluster);
     });
   });
 });

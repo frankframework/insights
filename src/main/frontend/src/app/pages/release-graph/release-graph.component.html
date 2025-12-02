@@ -67,42 +67,17 @@
           />
         }
 
-        @for (entry of expandedClustersArray; track entry.key) {
-          @if (shouldShowCollapseButton(entry.value)) {
-            @let lastNodePos = getLastExpandedNodePosition(entry.value);
-            @if (lastNodePos) {
-              <g
-                class="collapse-button visible"
-                [attr.transform]="'translate(' + (lastNodePos.x + 45) + ',' + lastNodePos.y + ')'"
-                (click)="collapseCluster(entry.key)"
-                (touchend)="onCollapseButtonTouchEnd($event, entry.key)"
-                (touchcancel)="onCollapseButtonTouchEnd($event, entry.key)"
-              >
-                <rect class="collapse-bg" x="0" y="-10" width="50" height="20" rx="4" />
-                <text class="collapse-icon" x="25" y="0">Collapse</text>
-              </g>
-            }
-          }
-        }
-
         @for (releaseNode of visibleReleaseNodes; track releaseNode.id) {
           <g
             class="release-node"
-            [class.cluster-node]="releaseNode.isCluster"
             [class.mini-node]="releaseNode.isMiniNode"
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
-            (click)="releaseNode.isCluster ? toggleCluster(releaseNode) : openReleaseNodeDetails(releaseNode.id)"
+            (click)="openReleaseNodeDetails(releaseNode.id)"
             (touchend)="handleNodeTouchEnd($event, releaseNode)"
             (touchcancel)="handleNodeTouchEnd($event, releaseNode)"
           >
-            @if (releaseNode.isCluster) {
-              <circle r="20" fill="#e9ecef" class="cluster-circle-back" cx="2" cy="2" opacity="0.3" />
-              <circle r="20" fill="#f1f3f5" class="cluster-circle-mid" cx="1" cy="1" opacity="0.5" />
-              <circle r="20" fill="#ffffff" stroke="#ced4da" stroke-width="5" />
-              <path d="M -6 -6 L -1 0 L -6 6 M 1 -6 L 6 0 L 1 6" class="cluster-icon" />
-              <text y="-30" class="cluster-label">{{ releaseNode.clusteredNodes!.length }} releases</text>
-            } @else if (releaseNode.isMiniNode) {
+            @if (releaseNode.isMiniNode) {
               <circle r="6" fill="white" />
             } @else {
               <circle r="20" [attr.fill]="releaseNode.color" />
@@ -139,38 +114,8 @@
       </g>
     </svg>
 
-    <div class="branch-labels-sticky">
-      <button
-        class="nightly-toggle"
-        title="Toggle Nightly Releases"
-        [class.active]="showNightlies"
-        (click)="toggleNightlies()"
-      >
-        <svg viewBox="0 0 24 24" class="moon-icon">
-          <path
-            d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-            [attr.stroke]="showNightlies ? '#ffffff' : 'none'"
-          />
-        </svg>
-      </button>
-      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
-        <div class="sticky-branch-label-container" [style.top.px]="stickyLabel.screenY - 75">
-          <span class="sticky-branch-label">{{ stickyLabel.label }}</span>
-          @if (isMajorVersionBranch(stickyLabel.label)) {
-            <img
-              class="branch-shield-icon"
-              src="assets/icons/shield-lts-version.svg"
-              alt="LTS version"
-              width="17.5"
-              height="17.5"
-            />
-          }
-        </div>
-      }
-    </div>
-
     <button
-      class="nightly-toggle-mobile"
+      class="nightly-toggle-header"
       title="Toggle Nightly Releases"
       [class.active]="showNightlies"
       (click)="toggleNightlies()"
@@ -178,7 +123,19 @@
       <svg viewBox="0 0 24 24" class="moon-icon">
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
       </svg>
+      <span class="toggle-label">Show nightly</span>
     </button>
+
+    <div class="branch-labels-sticky">
+      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
+        <div class="sticky-branch-label-container" [style.top.px]="stickyLabel.screenY - 75">
+          <span class="sticky-branch-label">{{ stickyLabel.label }}</span>
+          @if (isMajorVersionBranch(stickyLabel.label)) {
+            <span class="lts-badge">LTS</span>
+          }
+        </div>
+      }
+    </div>
 
     <app-release-catalogus />
 

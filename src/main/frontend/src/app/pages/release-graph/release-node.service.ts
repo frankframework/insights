@@ -14,9 +14,6 @@ export interface ReleaseNode {
   branch: string;
   originalBranch?: string;
   publishedAt: Date;
-  isCluster?: boolean;
-  clusteredNodes?: ReleaseNode[];
-  isExpanded?: boolean;
   isMiniNode?: boolean;
   linkedBranchNode?: string;
 }
@@ -140,48 +137,59 @@ export class ReleaseNodeService {
     return { major, minor, patch, type };
   }
 
-  public createClusters(nodes: ReleaseNode[]): ReleaseNode[] {
+  public applyMinimumSpacing(nodes: ReleaseNode[]): ReleaseNode[] {
     if (!this.timelineScale || nodes.length === 0) return nodes;
 
     const miniNodes = nodes.filter((n) => n.isMiniNode);
     const regularNodes = nodes.filter((n) => !n.isMiniNode);
 
-    const CLUSTER_THRESHOLD = 25;
+    const oneYearAgoDate = new Date(this.timelineScale.latestReleaseDate);
+    oneYearAgoDate.setFullYear(oneYearAgoDate.getFullYear() - 1);
 
-    const clusterStartDate = new Date(this.timelineScale.latestReleaseDate);
-    clusterStartDate.setMonth(clusterStartDate.getMonth() - 4);
+    const nodesByBranch = this.groupNodesByBranch(regularNodes);
+    this.applyMinimumSpacingToLastYear(nodesByBranch, oneYearAgoDate);
 
-    const { clusters, consumedNodeIds } = this.findClusterComponents(regularNodes, clusterStartDate, CLUSTER_THRESHOLD);
-
-    const finalNodes = this.buildClusteredNodeList(regularNodes, clusters, consumedNodeIds);
-
-    finalNodes.push(...miniNodes);
-
+    const finalNodes = [...regularNodes, ...miniNodes];
     finalNodes.sort((a, b) => a.position.x - b.position.x);
 
     return finalNodes;
   }
 
-  /**
-   * Expands a cluster node into its individual nodes with proper spacing.
-   * The first node starts at the cluster's x position, and subsequent nodes
-   * are placed sequentially to the right with proper spacing.
-   * Gives extra spacing to nightly releases due to their longer labels.
-   */
-  public expandCluster(clusterNode: ReleaseNode): ReleaseNode[] {
-    if (!this.isValidCluster(clusterNode)) {
-      return [clusterNode];
+  private applyMinimumSpacingToLastYear(nodesByBranch: Map<string, ReleaseNode[]>, oneYearAgoDate: Date): void {
+    const MIN_SPACING = 70;
+
+    for (const branchNodes of nodesByBranch.values()) {
+      branchNodes.sort((a, b) => a.position.x - b.position.x);
+
+      const startIndex = this.findFirstLastYearIndex(branchNodes, oneYearAgoDate);
+      if (startIndex === -1) continue;
+
+      this.adjustNodeSpacing(branchNodes, startIndex, MIN_SPACING);
     }
+  }
 
-    const BASE_SPACING = 60;
-    const NIGHTLY_EXTRA_SPACING = 10;
-    const clusteredNodes = clusterNode.clusteredNodes!;
-    const startX = clusterNode.position.x;
-    const centerY = clusterNode.position.y;
+  private findFirstLastYearIndex(nodes: ReleaseNode[], oneYearAgoDate: Date): number {
+    for (const [index, node] of nodes.entries()) {
+      if (node.publishedAt >= oneYearAgoDate) {
+        return index;
+      }
+    }
+    return -1;
+  }
 
-    const positions = this.calculateClusterNodePositions(clusteredNodes, BASE_SPACING, NIGHTLY_EXTRA_SPACING);
+  private adjustNodeSpacing(nodes: ReleaseNode[], startIndex: number, minSpacing: number): void {
+    for (let index = startIndex + 1; index < nodes.length; index++) {
+      const previousNode = nodes[index - 1];
+      const currentNode = nodes[index];
 
-    return this.positionExpandedNodes(clusteredNodes, positions, startX, centerY);
+      const gap = currentNode.position.x - previousNode.position.x;
+      if (gap < minSpacing) {
+        const adjustment = minSpacing - gap;
+        for (let index_ = index; index_ < nodes.length; index_++) {
+          nodes[index_].position.x += adjustment;
+        }
+      }
+    }
   }
 
   private hydrateReleases(releases: Release[]): (Release & { publishedAt: Date })[] {
@@ -380,70 +388,6 @@ export class ReleaseNodeService {
     if (lastNightly) {
       lastNightly.color = color;
     }
-  }
-
-  private isValidCluster(clusterNode: ReleaseNode): boolean {
-    return (
-      clusterNode.isCluster === true &&
-      clusterNode.clusteredNodes !== undefined &&
-      clusterNode.clusteredNodes.length > 0
-    );
-  }
-
-  private calculateClusterNodePositions(
-    clusteredNodes: ReleaseNode[],
-    baseSpacing: number,
-    nightlyExtraSpacing: number,
-  ): number[] {
-    const positions: number[] = [];
-    let currentX = 0;
-
-    for (let index = 0; index < clusteredNodes.length; index++) {
-      if (index === 0) {
-        positions.push(0);
-      } else {
-        const spacing = this.calculateNodeSpacing(clusteredNodes, index, baseSpacing, nightlyExtraSpacing);
-        currentX += spacing;
-        positions.push(currentX);
-      }
-    }
-
-    return positions;
-  }
-
-  private calculateNodeSpacing(
-    clusteredNodes: ReleaseNode[],
-    index: number,
-    baseSpacing: number,
-    nightlyExtraSpacing: number,
-  ): number {
-    const node = clusteredNodes[index];
-    const previousNode = clusteredNodes[index - 1];
-
-    const isNightly = this.isNightlyRelease(node.label);
-    const previousIsNightly = this.isNightlyRelease(previousNode.label);
-
-    let spacing = baseSpacing;
-    if (isNightly || previousIsNightly) {
-      spacing += nightlyExtraSpacing;
-    }
-
-    return spacing;
-  }
-
-  private positionExpandedNodes(
-    clusteredNodes: ReleaseNode[],
-    positions: number[],
-    startX: number,
-    centerY: number,
-  ): ReleaseNode[] {
-    return clusteredNodes.map((node, index) => ({
-      ...node,
-      position: {
-        x: startX + positions[index],
-        y: centerY,
-      },
-    }));
   }
 
   /**
@@ -888,95 +832,6 @@ export class ReleaseNodeService {
   private calculateXPositionFromDate(publishedAt: Date, scale: TimelineScale): number {
     const daysSinceStart = (publishedAt.getTime() - scale.startDate.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceStart * scale.pixelsPerDay;
-  }
-
-  private findClusterComponents(
-    nodes: ReleaseNode[],
-    clusterStartDate: Date,
-    threshold: number,
-  ): { clusters: ReleaseNode[]; consumedNodeIds: Set<string> } {
-    const consumedNodeIds = new Set<string>();
-    const clusters: ReleaseNode[] = [];
-
-    for (const currentNode of nodes) {
-      const inClusterZone = currentNode.publishedAt >= clusterStartDate;
-
-      if (consumedNodeIds.has(currentNode.id) || !inClusterZone) {
-        continue;
-      }
-
-      consumedNodeIds.add(currentNode.id);
-
-      const currentCluster = this.performBFS(currentNode, nodes, threshold, consumedNodeIds);
-
-      const clusterNode = this.createClusterNode(currentCluster);
-
-      if (clusterNode) {
-        clusters.push(clusterNode);
-      } else {
-        consumedNodeIds.delete(currentNode.id);
-      }
-    }
-    return { clusters, consumedNodeIds };
-  }
-
-  private performBFS(
-    startNode: ReleaseNode,
-    allNodes: ReleaseNode[],
-    threshold: number,
-    consumedNodeIds: Set<string>,
-  ): ReleaseNode[] {
-    const clusterNodes: ReleaseNode[] = [];
-    const queue: ReleaseNode[] = [startNode];
-
-    while (queue.length > 0) {
-      const nodeToSearchFrom = queue.shift()!;
-      clusterNodes.push(nodeToSearchFrom);
-
-      for (const potentialNeighbor of allNodes) {
-        if (consumedNodeIds.has(potentialNeighbor.id)) continue;
-
-        const gap = Math.abs(potentialNeighbor.position.x - nodeToSearchFrom.position.x);
-        if (gap < threshold) {
-          consumedNodeIds.add(potentialNeighbor.id);
-          queue.push(potentialNeighbor);
-        }
-      }
-    }
-    return clusterNodes;
-  }
-
-  private createClusterNode(clusterNodes: ReleaseNode[]): ReleaseNode | null {
-    if (clusterNodes.length <= 1) {
-      return null;
-    }
-
-    clusterNodes.sort((a, b) => a.position.x - b.position.x);
-    const firstNodeInCluster = clusterNodes[0];
-
-    return {
-      id: `cluster-${clusterNodes.map((n) => n.id).join('-')}`,
-      label: `${clusterNodes.length}`,
-      position: { x: firstNodeInCluster.position.x, y: firstNodeInCluster.position.y },
-      color: '#dee2e6',
-      branch: firstNodeInCluster.branch,
-      publishedAt: firstNodeInCluster.publishedAt,
-      isCluster: true,
-      clusteredNodes: clusterNodes,
-      isExpanded: false,
-    };
-  }
-
-  private buildClusteredNodeList(
-    allNodes: ReleaseNode[],
-    clusters: ReleaseNode[],
-    consumedNodeIds: Set<string>,
-  ): ReleaseNode[] {
-    const finalNodes = allNodes.filter((node) => !consumedNodeIds.has(node.id));
-
-    finalNodes.push(...clusters);
-
-    return finalNodes;
   }
 
   private findLatestStable(nodes: ReleaseNode[]): ReleaseNode | null {
