@@ -587,8 +587,8 @@ describe('ReleaseNodeService', () => {
       const spacing1 = result[1].position.x - result[0].position.x;
       const spacing2 = result[2].position.x - result[1].position.x;
 
-      expect(spacing1).toBeGreaterThanOrEqual(60);
-      expect(spacing2).toBeGreaterThanOrEqual(60);
+      expect(spacing1).toBeGreaterThanOrEqual(70);
+      expect(spacing2).toBeGreaterThanOrEqual(70);
     });
 
     it('should not modify nodes that are far apart', () => {
