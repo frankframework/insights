@@ -1,5 +1,10 @@
 package org.frankframework.insights.common.configuration;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.frankframework.insights.authentication.OAuth2LoginFailureHandler;
 import org.frankframework.insights.authentication.OAuth2LoginSuccessHandler;
 import org.frankframework.insights.user.UserService;
@@ -7,15 +12,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
-import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -46,54 +52,72 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, SessionRegistry sessionRegistry)
             throws Exception {
-        http.authorizeHttpRequests(authorize -> authorize
+        return http.authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/business-value/release/**")
                         .permitAll()
                         .requestMatchers("/api/auth/user", "/api/business-value/**")
                         .authenticated()
                         .anyRequest()
                         .permitAll())
-                .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(userService))
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(userService))
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler))
-                .logout(logout -> logout.logoutUrl("/api/auth/logout")
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "XSRF-TOKEN")
                         .permitAll())
-                .csrf(csrf -> {
-                    CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-                    tokenRepository.setCookiePath("/");
-
-                    CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
-                    requestHandler.setCsrfRequestAttributeName("_csrf");
-
-                    csrf.csrfTokenRepository(tokenRepository)
-                            .csrfTokenRequestHandler(requestHandler)
-                            .ignoringRequestMatchers("/api/auth/logout", "/oauth2/**", "/login/**");
-                })
-                .headers(headers -> headers.contentSecurityPolicy(csp ->
-                                csp.policyDirectives("default-src 'self'; " + "script-src 'self' 'unsafe-inline'; "
-                                        + "style-src 'self' 'unsafe-inline'; "
-                                        + "img-src 'self' data: https:; "
-                                        + "font-src 'self' data:; "
-                                        + "connect-src 'self' https://api.github.com; "
-                                        + "frame-ancestors 'none'; "
-                                        + "base-uri 'self'; "
-                                        + "form-action 'self'"))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository())
+                        .ignoringRequestMatchers("/oauth2/**", "/login/**"))
+                .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(buildCspDirectives()))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                        .xssProtection(
-                                xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
-                        .contentTypeOptions(HeadersConfigurer.ContentTypeOptionsConfig::disable)
-                        .referrerPolicy(referrer -> referrer.policy(
-                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .sessionFixation()
-                        .changeSessionId()
+                        .referrerPolicy(referrer ->
+                                referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::changeSessionId)
                         .maximumSessions(MAX_ALLOWED_SESSIONS)
                         .maxSessionsPreventsLogin(false)
-                        .sessionRegistry(sessionRegistry));
-        return http.build();
+                        .sessionRegistry(sessionRegistry))
+                .build();
+    }
+
+    private CookieCsrfTokenRepository csrfTokenRepository() {
+        CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        repository.setCookiePath("/");
+        return repository;
+    }
+
+    private String buildCspDirectives() {
+        return String.join("; ",
+                "default-src 'self'",
+                "script-src 'self' 'unsafe-inline'",
+                "style-src 'self' 'unsafe-inline'",
+                "img-src 'self' data: https:",
+                "font-src 'self' data:",
+                "connect-src 'self' https://api.github.com",
+                "frame-ancestors 'none'",
+                "base-uri 'self'",
+                "form-action 'self'");
+    }
+
+    /**
+     * Filter that ensures CSRF token is loaded and sent to Angular on every request.
+     * This is required for Spring Security 6.x with SPAs to avoid lazy token loading.
+     */
+    private static class CsrfCookieFilter extends OncePerRequestFilter {
+        @Override
+        protected void doFilterInternal(
+                HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+                throws ServletException, IOException {
+            request.getAttribute("_csrf");
+            filterChain.doFilter(request, response);
+        }
     }
 }
