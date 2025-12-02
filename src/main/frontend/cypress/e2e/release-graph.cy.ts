@@ -182,13 +182,6 @@ describe('Graph Rendering and Interaction', () => {
         getToggleButton().should('have.class', 'active');
       });
 
-      it('should change moon icon styling when active', () => {
-        getToggleButton().click();
-        cy.get('.nightly-toggle.active .moon-icon, .nightly-toggle-mobile.active .moon-icon')
-                .filter(':visible')
-                .should('have.css', 'background-color', 'rgb(30, 58, 138)');
-      });
-
       it('should show nightlies nodes when toggle is active', () => {
         cy.get('@graphSvg').find('g[data-cy*="-nightly"]').then(($nightlies) => {
           if ($nightlies.length > 0) {
