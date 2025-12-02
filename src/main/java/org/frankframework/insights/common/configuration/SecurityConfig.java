@@ -66,7 +66,7 @@ public class SecurityConfig {
         return http.authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/business-value/release/**")
                         .permitAll()
-                        .requestMatchers("/api/auth/user", "/api/business-value/**")
+                        .requestMatchers("/api/auth/user", "/api/business-value/**", "/api/vulnerabilities/**")
                         .authenticated()
                         .anyRequest()
                         .permitAll())

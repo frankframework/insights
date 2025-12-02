@@ -21,6 +21,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private static final String API_AUTH_PATH = "/api/auth";
     private static final String API_BUSINESS_VALUE_PATH = "/api/business-value";
     private static final String API_BUSINESS_VALUE_RELEASE_PATH = "/api/business-value/release";
+    private static final String API_VULNERABILITIES_PATH = "/api/vulnerabilities";
+    private static final String API_VULNERABILITIES_RELEASE_PATH = "/api/vulnerabilities/release";
 
     private final RateLimitService rateLimitService;
 
@@ -29,7 +31,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             throws RateLimitExceededException {
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)) {
+        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)
+                || requestURI.startsWith(API_VULNERABILITIES_RELEASE_PATH)) {
             return true;
         }
 
@@ -52,7 +55,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)) {
+        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)
+                || requestURI.startsWith(API_VULNERABILITIES_RELEASE_PATH)) {
             return;
         }
 
@@ -90,7 +94,9 @@ public class RateLimitInterceptor implements HandlerInterceptor {
      * Checks if rate limiting should be skipped for this request URI.
      */
     private boolean shouldSkipRateLimiting(String requestURI) {
-        return !requestURI.startsWith(API_AUTH_PATH) && !requestURI.startsWith(API_BUSINESS_VALUE_PATH);
+        return !requestURI.startsWith(API_AUTH_PATH)
+                && !requestURI.startsWith(API_BUSINESS_VALUE_PATH)
+                && !requestURI.startsWith(API_VULNERABILITIES_PATH);
     }
 
     /**
