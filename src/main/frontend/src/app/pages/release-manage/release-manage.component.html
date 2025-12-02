@@ -1,0 +1,159 @@
+<div class="release-manage-container">
+  @if (!isLoading() && release()) {
+    <div class="header">
+      <button class="back-button" (click)="goBack()">
+        <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
+        Back
+      </button>
+      <div class="header-details">
+        <h1>{{ release()?.name }}</h1>
+        <p class="subtitle">Release Management</p>
+      </div>
+    </div>
+
+    @if (activeSection() === null) {
+      <div class="overview-content">
+        <div class="intro-section">
+          <div class="intro-header">
+            <h2>Manage Release Content</h2>
+          </div>
+          <p class="intro-description">
+            As a FrankFramework member, you have permission to manage and edit content for this release. Select one of
+            the sections below to view and modify business values, important issues, or vulnerability information.
+          </p>
+        </div>
+
+        <div class="management-sections">
+          <div
+            class="section-card business-value-card"
+            role="button"
+            tabindex="0"
+            (click)="openSection('business-value')"
+            (keydown.enter)="openSection('business-value')"
+            (keydown.space)="openSection('business-value')"
+          >
+            <div class="card-icon-wrapper">
+              <svg
+                class="card-icon"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <div class="card-content">
+              <h2>Business Values</h2>
+              <p>View and manage business values and the issues associated with these business values.</p>
+              <div class="card-footer">
+                <span class="action-link">
+                  Manage
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="section-card vulnerabilities-card"
+            role="button"
+            tabindex="0"
+            (click)="openSection('vulnerabilities')"
+            (keydown.enter)="openSection('vulnerabilities')"
+            (keydown.space)="openSection('vulnerabilities')"
+          >
+            <div class="card-icon-wrapper">
+              <svg
+                class="card-icon"
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+            <div class="card-content">
+              <h2>Vulnerabilities</h2>
+              <p>Review and manage vulnerability information and CVE details for this release.</p>
+              <div class="card-footer">
+                <span class="action-link">
+                  Manage
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (activeSection() === 'business-value') {
+      <div class="section-view">
+        <div class="section-header">
+          <button class="close-button" (click)="closeSection()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Overview
+          </button>
+          <h2>Business Values & Important Issues</h2>
+        </div>
+        <div class="section-content">
+          <div class="subsection">
+            <h3>Business Values</h3>
+            <app-release-business-value [releaseId]="release()?.id" />
+          </div>
+          @if (releaseIssues()) {
+            <div class="subsection">
+              <h3>Important Issues</h3>
+              <app-release-important-issues [releaseIssues]="releaseIssues()!" [releaseId]="release()?.id" />
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    @if (activeSection() === 'vulnerabilities') {
+      <div class="section-view">
+        <div class="section-header">
+          <button class="close-button" (click)="closeSection()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Overview
+          </button>
+          <h2>CVE & Vulnerabilities</h2>
+        </div>
+        <div class="section-content">
+          @if (vulnerabilities()) {
+            <app-release-vulnerabilities [vulnerabilities]="vulnerabilities()!" />
+          } @else {
+            <div class="no-data">
+              <p>No vulnerability data available for this release.</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  } @else {
+    <div class="loading">
+      <p>Loading release data...</p>
+    </div>
+  }
+</div>

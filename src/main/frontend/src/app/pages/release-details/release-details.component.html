@@ -1,10 +1,15 @@
 <div class="release-details-container">
   @if (!isLoading && release) {
     <div class="release-details-header">
-      <button class="back-button" (click)="goBack()">
-        <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
-        Back
-      </button>
+      <div class="header-actions">
+        <button class="back-button" (click)="goBack()">
+          <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
+          Back
+        </button>
+        @if (authService.currentUser()?.isFrankFrameworkMember) {
+          <button class="manage-button" [routerLink]="['/release-manage', release.id]">Manage</button>
+        }
+      </div>
       <div class="header-details">
         <h2>{{ release.name }}</h2>
         <span>{{ release.publishedAt | date: 'longDate' }}</span>

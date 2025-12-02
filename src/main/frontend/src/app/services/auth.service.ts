@@ -8,7 +8,7 @@ export interface User {
   githubId: number;
   username: string;
   avatarUrl: string;
-  frankFrameworkMember: boolean;
+  isFrankFrameworkMember: boolean;
 }
 
 export interface ErrorResponse {
@@ -44,7 +44,6 @@ export class AuthService {
         this.authError.set(null);
         this.isLoading.set(false);
         this.setSessionFlag(true);
-        console.log('AuthService: User authenticated successfully:', user.username);
       }),
       catchError((error: HttpErrorResponse) => {
         this.currentUser.set(null);
@@ -101,7 +100,7 @@ export class AuthService {
         console.error('AuthService: Logout failed, clearing state anyway:', error);
         this.isLoading.set(false);
         this.clearAuthState();
-        return of(void 0);
+        return of();
       }),
     );
   }
