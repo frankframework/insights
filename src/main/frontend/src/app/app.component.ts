@@ -12,7 +12,6 @@ import { LoaderComponent } from './components/loader/loader.component';
 import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './pages/release-roadmap/issue-bar/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
-import { AppService } from './app.service';
 
 @Component({
   selector: 'app-root',
@@ -28,7 +27,6 @@ export class AppComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
-  private appService = inject(AppService);
 
   constructor() {
     this.router.events.subscribe((event) => {
@@ -39,10 +37,6 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.appService.initializeCsrfToken().subscribe({
-      error: (error) => console.error('Failed to initialize CSRF token:', error),
-    });
-
     if (this.authService.hasSessionFlag()) {
       this.authService.checkAuthStatus().subscribe();
     }

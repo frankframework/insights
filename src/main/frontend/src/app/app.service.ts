@@ -16,14 +16,6 @@ export class AppService {
   private http = inject(HttpClient);
 
   /**
-   * Fetches the CSRF token from the backend to ensure the XSRF-TOKEN cookie is set.
-   * This should be called on app initialization.
-   */
-  public initializeCsrfToken(): Observable<void> {
-    return this.http.get<void>(this.createAPIUrl('csrf'));
-  }
-
-  /**
    * Performs a GET request to the given URL with optional query parameters.
    *
    * @template T - The expected response type.

@@ -11,19 +11,10 @@ export type HttpBody = object | null | void;
 @Injectable()
 export class HttpInterceptorService implements HttpInterceptor {
   intercept(request: HttpRequest<HttpBody>, next: HttpHandler): Observable<HttpEvent<HttpBody>> {
-    const csrfToken = this.getCsrfToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (csrfToken && ['POST', 'PUT', 'DELETE'].includes(request.method)) {
-      headers['X-XSRF-TOKEN'] = csrfToken;
-    } else if (['POST', 'PUT', 'DELETE'].includes(request.method)) {
-      console.warn('Warning: No CSRF token found for', request.method, 'request!');
-    }
-
     const requestWithHeaders = request.clone({
-      setHeaders: headers,
+      setHeaders: {
+        'Content-Type': 'application/json',
+      },
       withCredentials: true,
     });
 
@@ -41,20 +32,5 @@ export class HttpInterceptorService implements HttpInterceptor {
         },
       }),
     );
-  }
-
-  private getCsrfToken(): string | null {
-    const name = 'XSRF-TOKEN=';
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookies = decodedCookie.split(';');
-
-    for (const cookie of cookies) {
-      const trimmedCookie = cookie.trim();
-      if (trimmedCookie.startsWith(name)) {
-        return trimmedCookie.slice(name.length);
-      }
-    }
-
-    return null;
   }
 }
