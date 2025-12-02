@@ -310,9 +310,11 @@ export class ReleaseLinkService {
     const vTarget = this.nodeService.getVersionInfo(targetNode);
 
     if (vSource && vTarget) {
-      const majorGap = vTarget.major > vSource.major + 1;
+      const majorTransition = vTarget.major > vSource.major;
+
       const minorGap = vSource.major === vTarget.major && vTarget.minor > vSource.minor + 1;
-      return majorGap || minorGap;
+
+      return majorTransition || minorGap;
     }
     return false;
   }

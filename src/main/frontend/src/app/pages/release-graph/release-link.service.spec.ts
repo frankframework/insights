@@ -262,16 +262,15 @@ describe('ReleaseLinkService', () => {
       expect(links).toEqual([]);
     });
 
-    it('should only create intra-branch links for master if no sub-branches are provided', () => {
+    it('should only create special links for master if no sub-branches are provided and nodes have version gaps', () => {
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, [masterNode1, masterNode3]]])];
       const links = service.createLinks(structuredGroups, []);
 
-      expect(links.length).toBe(2);
-      const intraBranchLinks = links.filter(link => !link.source.startsWith('start-node-'));
+      expect(links.length).toBe(1);
+      const specialLinks = links.filter(link => link.source.startsWith('start-node-'));
 
-      expect(intraBranchLinks.length).toBe(1);
-      expect(intraBranchLinks[0].source).toBe('master-1');
-      expect(intraBranchLinks[0].target).toBe('master-3');
+      expect(specialLinks.length).toBe(1);
+      expect(specialLinks[0].source).toBe('start-node-master-1');
     });
 
     it('should not crash and return an empty array if master branch is missing or empty', () => {
@@ -354,11 +353,11 @@ describe('ReleaseLinkService', () => {
       expect((service as any).isVersionGap(source, target)).toBe(false);
     });
 
-    it('should return false for consecutive major versions', () => {
+    it('should return true for consecutive major versions', () => {
       const source = createMockNode('v1.0.0', undefined, 'v1.0.0');
       const target = createMockNode('v2.0.0', undefined, 'v2.0.0')
 
-      expect((service as any).isVersionGap(source, target)).toBe(false);
+      expect((service as any).isVersionGap(source, target)).toBe(true);
     });
 
     it('should return false for patch versions', () => {

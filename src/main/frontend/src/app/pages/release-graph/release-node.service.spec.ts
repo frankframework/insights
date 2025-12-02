@@ -605,6 +605,9 @@ describe('ReleaseNodeService', () => {
   });
 
   describe('expandCluster', () => {
+    const EXPECTED_SPACING_NORMAL = 60;
+    const EXPECTED_SPACING_NIGHTLY = 90;
+
     it('should expand cluster into individual nodes with spacing', () => {
       const clusteredNodes: ReleaseNode[] = [
         { id: '1', label: 'v9.0.1', position: { x: 0, y: 0 }, branch: 'master', color: 'green', publishedAt: new Date() },
@@ -625,6 +628,15 @@ describe('ReleaseNodeService', () => {
       const result = service.expandCluster(clusterNode);
 
       expect(result.length).toBe(3);
+
+      const spacing1 = result[1].position.x - result[0].position.x;
+      const spacing2 = result[2].position.x - result[1].position.x;
+
+      expect(spacing1).toBe(EXPECTED_SPACING_NORMAL);
+      expect(spacing2).toBe(EXPECTED_SPACING_NORMAL);
+
+      // First node should start at the cluster position
+      expect(result[0].position.x).toBe(500);
     });
 
     it('should give extra spacing to nightly releases', () => {
@@ -647,6 +659,11 @@ describe('ReleaseNodeService', () => {
       const result = service.expandCluster(clusterNode);
 
       expect(result.length).toBe(3);
+      const spacing1 = result[1].position.x - result[0].position.x;
+      const spacing2 = result[2].position.x - result[1].position.x;
+
+      expect(spacing1).toBe(EXPECTED_SPACING_NIGHTLY);
+      expect(spacing2).toBe(EXPECTED_SPACING_NIGHTLY);
     });
 
     it('should return original node if not a cluster', () => {
