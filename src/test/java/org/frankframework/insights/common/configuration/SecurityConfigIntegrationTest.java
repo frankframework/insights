@@ -71,8 +71,8 @@ public class SecurityConfigIntegrationTest {
 
     @Test
     public void sessionIsCreated_whenAccessingPublicEndpoint_dueToCSRFToken() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/business-value/release/test"))
-                .andReturn();
+        MvcResult result =
+                mockMvc.perform(get("/api/business-value/release/test")).andReturn();
 
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
         assertThat(session).isNotNull();

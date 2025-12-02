@@ -21,6 +21,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -32,6 +33,9 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
+    @Value("${frankframework.security.csrf.secure:true}")
+    private boolean csrfCookieSecure;
+
     public SecurityConfig(
             UserService userService,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
@@ -40,9 +44,6 @@ public class SecurityConfig {
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
         this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
     }
-
-    @Value("${frankframework.security.csrf.secure}")
-    private boolean csrfCookieSecure;
 
     @Bean
     public SessionRegistry sessionRegistry() {
@@ -57,6 +58,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, SessionRegistry sessionRegistry)
             throws Exception {
+
+        CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+        requestHandler.setCsrfRequestAttributeName(null);
+
         return http.authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/business-value/release/**")
                         .permitAll()
@@ -73,7 +78,7 @@ public class SecurityConfig {
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "XSRF-TOKEN")
                         .permitAll())
-                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()))
+                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()).csrfTokenRequestHandler(requestHandler))
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(buildCspDirectives()))
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
@@ -90,8 +95,7 @@ public class SecurityConfig {
     private CookieCsrfTokenRepository csrfTokenRepository() {
         CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
 
-        repository.setCookieCustomizer(
-                cookie -> cookie.path("/").secure(csrfCookieSecure).httpOnly(true));
+        repository.setCookieCustomizer(cookie -> cookie.path("/").secure(csrfCookieSecure).httpOnly(false).sameSite("Lax"));
 
         return repository;
     }
@@ -111,9 +115,7 @@ public class SecurityConfig {
     }
 
     /**
-     * Filter that exposes the CSRF token in a Response Header.
-     * Since the Cookie is now HttpOnly (secure), JS cannot read it.
-     * We must manually explicitly send the token value to the frontend in a header.
+     * Filter that forces the CSRF token to be generated and exposed.
      */
     private static class CsrfCookieFilter extends OncePerRequestFilter {
         @Override

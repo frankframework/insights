@@ -44,7 +44,6 @@
 
   .nightly-toggle {
     position: fixed;
-    right: 16rem;
     top: 1.5rem;
     z-index: 25;
     display: flex;
@@ -63,7 +62,7 @@
     @media (max-width: 991px) {
       top: auto;
       bottom: 1.5rem;
-      right: 1.5rem;
+      right: 1.5rem !important;
     }
 
     .moon-icon {

@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 import { AuthService } from '../../services/auth.service';
+import { NgStyle } from '@angular/common';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -29,7 +30,7 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions],
+  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, NgStyle],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
@@ -55,8 +56,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public translateX = 0;
   public translateY = 0;
   public viewBox = '0 0 0 0';
-
   public isDragging = false;
+
+  protected authService = inject(AuthService);
+
   private lastPositionX = 0;
   private minTranslateX = 0;
   private maxTranslateX = 0;
@@ -69,7 +72,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private nodeService = inject(ReleaseNodeService);
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
-  protected authService = inject(AuthService);
 
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
