@@ -70,11 +70,13 @@ public class SecurityConfigIntegrationTest {
     }
 
     @Test
-    public void sessionIsNotCreated_whenAccessingPublicEndpoint() throws Exception {
-        MvcResult result = mockMvc.perform(get("/")).andExpect(status().isOk()).andReturn();
+    public void sessionIsCreated_whenAccessingPublicEndpoint_dueToCSRFToken() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/business-value/release/test"))
+                .andReturn();
 
         MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
-        assertThat(session).isNull();
+        assertThat(session).isNotNull();
+        assertThat(result.getResponse().getHeader("X-XSRF-TOKEN")).isNotNull();
     }
 
     @Test
