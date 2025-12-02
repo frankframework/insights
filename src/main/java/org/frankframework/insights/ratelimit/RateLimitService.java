@@ -26,6 +26,9 @@ public class RateLimitService {
      * @throws RateLimitExceededException if the user is blocked
      */
     public void checkIfBlocked(String userKey) throws RateLimitExceededException {
+        if (userKey == null) {
+            return;
+        }
         Bucket bucket = buckets.get(userKey);
         if (bucket != null && bucket.getAvailableTokens() == 0) {
             log.warn("User {} is blocked due to too many failed requests", userKey);
@@ -41,6 +44,9 @@ public class RateLimitService {
      * @param userKey The user identifier
      */
     public void trackFailedRequest(String userKey) {
+        if (userKey == null) {
+            return;
+        }
         Bucket bucket = resolveBucket(userKey);
         boolean consumed = bucket.tryConsume(1);
 
@@ -62,6 +68,10 @@ public class RateLimitService {
      * @param userKey The user identifier
      */
     public void resetRateLimit(String userKey) {
+        if (userKey == null) {
+            return;
+        }
+
         if (buckets.remove(userKey) != null) {
             log.info("Rate limit reset for user: {} after successful request", userKey);
         }

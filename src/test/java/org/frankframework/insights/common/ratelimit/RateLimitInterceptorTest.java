@@ -212,7 +212,6 @@ public class RateLimitInterceptorTest {
     @Test
 	public void afterCompletion_shouldSkipTracking_forBusinessValueReleaseEndpoint() {
         when(request.getRequestURI()).thenReturn("/api/business-value/release/123");
-        when(response.getStatus()).thenReturn(400);
 
         interceptor.afterCompletion(request, response, null, null);
 
@@ -222,7 +221,6 @@ public class RateLimitInterceptorTest {
     @Test
 	public void afterCompletion_shouldSkipTracking_forNonProtectedEndpoints() {
         when(request.getRequestURI()).thenReturn("/api/releases");
-        when(response.getStatus()).thenReturn(400);
 
         interceptor.afterCompletion(request, response, null, null);
 
@@ -234,7 +232,6 @@ public class RateLimitInterceptorTest {
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(request.getRequestURI()).thenReturn("/api/business-value");
         when(authentication.getPrincipal()).thenReturn(null);
-        when(response.getStatus()).thenReturn(400);
 
         interceptor.afterCompletion(request, response, null, null);
 
@@ -257,7 +254,6 @@ public class RateLimitInterceptorTest {
 	public void afterCompletion_shouldHandleNullAuthentication() {
         when(securityContext.getAuthentication()).thenReturn(null);
         when(request.getRequestURI()).thenReturn("/api/business-value");
-        when(response.getStatus()).thenReturn(400);
 
         interceptor.afterCompletion(request, response, null, null);
 
