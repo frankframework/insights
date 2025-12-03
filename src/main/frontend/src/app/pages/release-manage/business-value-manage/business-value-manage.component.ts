@@ -9,6 +9,7 @@ import { catchError, of, forkJoin } from 'rxjs';
 import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
 import { BusinessValueEditComponent } from './business-value-edit/business-value-edit.component';
 import { BusinessValueDeleteComponent } from './business-value-delete/business-value-delete.component';
+import { LoaderComponent } from '../../../components/loader/loader.component';
 
 interface IssueWithSelection extends Issue {
   isSelected: boolean;
@@ -26,6 +27,7 @@ interface IssueWithSelection extends Issue {
     BusinessValueEditComponent,
     BusinessValueDeleteComponent,
     FormsModule,
+    LoaderComponent,
   ],
   templateUrl: './business-value-manage.component.html',
   styleUrl: './business-value-manage.component.scss',
