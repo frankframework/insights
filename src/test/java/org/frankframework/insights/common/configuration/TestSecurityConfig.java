@@ -1,5 +1,9 @@
 package org.frankframework.insights.common.configuration;
 
+import static org.mockito.Mockito.mock;
+
+import org.frankframework.insights.common.ratelimit.RateLimitInterceptor;
+import org.frankframework.insights.ratelimit.RateLimitService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,5 +22,15 @@ public class TestSecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
         return http.build();
+    }
+
+    @Bean
+    public RateLimitService rateLimitService() {
+        return mock(RateLimitService.class);
+    }
+
+    @Bean
+    public RateLimitInterceptor rateLimitInterceptor(RateLimitService rateLimitService) {
+        return new RateLimitInterceptor(rateLimitService);
     }
 }

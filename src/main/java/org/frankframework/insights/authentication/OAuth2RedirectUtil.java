@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.web.RedirectStrategy;
 
@@ -12,11 +13,8 @@ import org.springframework.security.web.RedirectStrategy;
  * Extracts the origin from the Referer header to redirect to the correct port.
  */
 @Slf4j
-public final class OAuth2RedirectUtil {
-
-    private OAuth2RedirectUtil() {
-        // Utility class
-    }
+@UtilityClass
+public class OAuth2RedirectUtil {
 
     /**
      * Redirects to the origin of the initial request based on the Referer header.

@@ -118,6 +118,9 @@
       class="nightly-toggle"
       title="Toggle Nightly Releases"
       [class.active]="showNightlies"
+      [ngStyle]="{
+        right: authService.isAuthenticated() && authService.currentUser()?.isFrankFrameworkMember ? '16rem' : '10.5rem',
+      }"
       (click)="toggleNightlies()"
     >
       <svg viewBox="0 0 24 24" class="moon-icon">
