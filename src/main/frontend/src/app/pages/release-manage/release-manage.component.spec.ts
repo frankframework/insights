@@ -153,18 +153,14 @@ describe('ReleaseManageComponent', () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/release-manage', '123', 'business-values']);
   });
 
-  it('should set active section to vulnerabilities when vulnerabilities card is clicked', () => {
+  it('should navigate to vulnerabilities when vulnerabilities card is clicked', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const card = compiled.querySelector('.vulnerabilities-card') as HTMLElement;
 
     card.click();
     fixture.detectChanges();
 
-    expect(component.activeSection()).toBe('vulnerabilities');
-
-    const sectionHeader = compiled.querySelector('.section-header h2');
-
-    expect(sectionHeader?.textContent).toContain('CVE & Vulnerabilities');
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/release-manage', '123', 'vulnerabilities']);
   });
 
   it('should close section and return to overview when close button is clicked', () => {
