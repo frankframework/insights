@@ -74,14 +74,16 @@ export class BusinessValueEditComponent implements OnInit {
     });
   }
 
-  public updateName(value: string): void {
+  public updateName(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
     this.name.set(value);
     if (this.errorMessage()) {
       this.errorMessage.set('');
     }
   }
 
-  public updateDescription(value: string): void {
+  public updateDescription(event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
     this.description.set(value);
   }
 }

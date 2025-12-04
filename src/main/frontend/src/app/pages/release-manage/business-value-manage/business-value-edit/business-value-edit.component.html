@@ -15,7 +15,7 @@
         placeholder="Enter business value title"
         [value]="name()"
         [disabled]="isSaving()"
-        (input)="updateName($any($event.target).value)"
+        (input)="updateName($event)"
         (click)="$event.stopPropagation()"
         (keydown)="$event.stopPropagation()"
       />
@@ -30,7 +30,7 @@
         rows="4"
         [value]="description()"
         [disabled]="isSaving()"
-        (input)="updateDescription($any($event.target).value)"
+        (input)="updateDescription($event)"
         (click)="$event.stopPropagation()"
         (keydown)="$event.stopPropagation()"
       ></textarea>
