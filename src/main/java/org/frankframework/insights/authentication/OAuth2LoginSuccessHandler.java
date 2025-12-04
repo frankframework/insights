@@ -41,13 +41,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             if (user == null || !user.isFrankFrameworkMember()) {
                 log.warn("User '{}' is not a FrankFramework member - denying access", attributes.username());
                 request.getSession().invalidate();
-                getRedirectStrategy().sendRedirect(request, response, "/?login=forbidden");
+                getRedirectStrategy().sendRedirect(request, response, "/");
                 return;
             }
 
             log.info("User '{}' is a verified FrankFramework member - granting access", attributes.username());
         }
 
-        OAuth2RedirectUtil.redirectToOrigin(request, response, getRedirectStrategy(), "login=success");
+        getRedirectStrategy().sendRedirect(request, response, "/");
     }
 }

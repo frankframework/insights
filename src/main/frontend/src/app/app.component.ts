@@ -6,7 +6,6 @@ import {
   NavigationCancel,
   NavigationError,
   NavigationStart,
-  ActivatedRoute,
 } from '@angular/router';
 import { LoaderComponent } from './components/loader/loader.component';
 import { HeaderComponent } from './pages/header/header.component';
@@ -26,7 +25,6 @@ export class AppComponent implements OnInit {
   public loading = false;
 
   private router = inject(Router);
-  private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
   private graphStateService = inject(GraphStateService);
 
@@ -39,9 +37,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.authService.hasSessionFlag()) {
-      this.authService.checkAuthStatus().subscribe();
-    }
+    this.authService.checkAuthStatus().subscribe();
 
     this.route.queryParams.subscribe((parameters) => {
       const loginParameter = parameters['login'];

@@ -14,6 +14,7 @@ export type HttpBody = object | null | void;
 export class HttpInterceptorService implements HttpInterceptor {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private isLoggingOut = false;
 
   intercept(request: HttpRequest<HttpBody>, next: HttpHandler): Observable<HttpEvent<HttpBody>> {
     const requestWithHeaders = request.clone({
@@ -35,17 +36,13 @@ export class HttpInterceptorService implements HttpInterceptor {
             error: error.error,
           });
 
+          if (this.isLoggingOut || request.url.includes('/auth/logout')) {
+            return;
+          }
+
           if (this.shouldLogout(error)) {
             console.warn(`Encountered ${error.status} error. Logging out...`);
-            this.authService.logout().subscribe({
-              next: () => {
-                this.router.navigate(['/graph']);
-              },
-              error: (logoutError) => {
-                console.error('Error during logout:', logoutError);
-                this.router.navigate(['/graph']);
-              },
-            });
+            this.performLogout();
           }
         },
       }),
@@ -53,6 +50,21 @@ export class HttpInterceptorService implements HttpInterceptor {
   }
 
   private shouldLogout(error: HttpErrorResponse): boolean {
-    return error.status === 401 || error.status === 403 || error.status === 429 || error.status === 500;
+    return error.status === 401 || error.status === 403;
+  }
+
+  private performLogout(): void {
+    this.isLoggingOut = true;
+    this.authService.logout().subscribe({
+      next: () => {
+        this.isLoggingOut = false;
+        this.router.navigate(['/graph']);
+      },
+      error: (logoutError) => {
+        console.error('Error during logout:', logoutError);
+        this.isLoggingOut = false;
+        this.router.navigate(['/graph']);
+      },
+    });
   }
 }

@@ -35,63 +35,11 @@ public class OAuth2LoginFailureHandlerTest {
     }
 
     @Test
-    public void onAuthenticationFailure_withRefererHeader_redirectsToOriginWithErrorParam() throws IOException {
-        when(request.getHeader("Referer")).thenReturn("http://localhost:4200/dashboard");
+    public void onAuthenticationFailure_redirectsToRoot() throws IOException {
         when(exception.getMessage()).thenReturn("Authentication failed");
 
         handler.onAuthenticationFailure(request, response, exception);
 
-        verify(response).sendRedirect("http://localhost:4200/?login=error");
-        verify(request).getHeader("Referer");
-    }
-
-    @Test
-    public void onAuthenticationFailure_withDifferentPort_redirectsToCorrectOrigin() throws IOException {
-        when(request.getHeader("Referer")).thenReturn("http://localhost:8080/");
-        when(exception.getMessage()).thenReturn("Authentication failed");
-
-        handler.onAuthenticationFailure(request, response, exception);
-
-        verify(response).sendRedirect("http://localhost:8080/?login=error");
-    }
-
-    @Test
-    public void onAuthenticationFailure_withProductionUrl_redirectsToProduction() throws IOException {
-        when(request.getHeader("Referer")).thenReturn("https://insights.frankframework.org/");
-        when(exception.getMessage()).thenReturn("Authentication failed");
-
-        handler.onAuthenticationFailure(request, response, exception);
-
-        verify(response).sendRedirect("https://insights.frankframework.org/?login=error");
-    }
-
-    @Test
-    public void onAuthenticationFailure_withoutRefererHeader_redirectsToRootWithErrorParam() throws IOException {
-        when(request.getHeader("Referer")).thenReturn(null);
-        when(exception.getMessage()).thenReturn("Authentication failed");
-
-        handler.onAuthenticationFailure(request, response, exception);
-
-        verify(response).sendRedirect("/?login=error");
-    }
-
-    @Test
-    public void onAuthenticationFailure_withEmptyRefererHeader_redirectsToRootWithErrorParam() throws IOException {
-        when(request.getHeader("Referer")).thenReturn("");
-        when(exception.getMessage()).thenReturn("Authentication failed");
-
-        handler.onAuthenticationFailure(request, response, exception);
-
-        verify(response).sendRedirect("/?login=error");
-    }
-
-    @Test
-    public void onAuthenticationFailure_withInvalidReferer_redirectsToRootWithErrorParam() throws IOException {
-        when(request.getHeader("Referer")).thenReturn("not-a-valid-url");
-        when(exception.getMessage()).thenReturn("Authentication failed");
-
-        handler.onAuthenticationFailure(request, response, exception);
-
-        verify(response).sendRedirect("/?login=error");
+        verify(response).sendRedirect("/");
     }
 }

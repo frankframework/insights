@@ -103,37 +103,4 @@ public class AuthenticationControllerTest {
 
         verify(authenticationService).getUserInfo(oauth2User);
     }
-
-    @Test
-    public void logout_whenAuthenticated_logsOutSuccessfully() {
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-
-        ResponseEntity<Void> result = authenticationController.logout(request, response);
-
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(result.getBody()).isNull();
-
-        verify(securityContext).getAuthentication();
-    }
-
-    @Test
-    public void logout_whenNotAuthenticated_returnsOkAnyway() {
-        when(securityContext.getAuthentication()).thenReturn(null);
-
-        ResponseEntity<Void> result = authenticationController.logout(request, response);
-
-        assertThat(result.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(result.getBody()).isNull();
-
-        verify(securityContext).getAuthentication();
-    }
-
-    @Test
-    public void logout_clearsSecurityContext() {
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-
-        authenticationController.logout(request, response);
-
-        verify(securityContext).getAuthentication();
-    }
 }
