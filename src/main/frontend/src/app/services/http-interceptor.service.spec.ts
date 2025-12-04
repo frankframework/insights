@@ -84,7 +84,7 @@ describe('HttpInterceptorService', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/graph']);
   }));
 
-  it('should logout on any 500 Internal Server Error', fakeAsync(() => {
+  it('should NOT logout on 500 Internal Server Error', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
       error: () => {}
     });
@@ -94,8 +94,8 @@ describe('HttpInterceptorService', () => {
 
     tick();
 
-    expect(authService.logout).toHaveBeenCalledWith();
-    expect(router.navigate).toHaveBeenCalledWith(['/graph']);
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   }));
 
   it('should NOT logout on 400 error (even with "invalid token" message)', fakeAsync(() => {
@@ -119,6 +119,34 @@ describe('HttpInterceptorService', () => {
 
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
+
+    tick();
+
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
+  it('should NOT logout on 429 rate limiting error', fakeAsync(() => {
+    httpClient.get('/api/data').subscribe({
+      error: () => {}
+    });
+
+    const request = httpTestingController.expectOne('/api/data');
+    request.flush({ message: 'Too many requests' }, { status: 429, statusText: 'Too Many Requests' });
+
+    tick();
+
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
+  it('should NOT logout if request is to /auth/logout endpoint', fakeAsync(() => {
+    httpClient.post('/api/auth/logout', {}).subscribe({
+      error: () => {}
+    });
+
+    const request = httpTestingController.expectOne('/api/auth/logout');
+    request.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
     tick();
 

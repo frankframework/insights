@@ -152,9 +152,27 @@ public class SecurityConfigIntegrationTest {
         assertThat(session).isNotNull();
         assertThat(session.isInvalid()).isFalse();
 
-        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf())).andExpect(status().is3xxRedirection());
+        mockMvc.perform(post("/api/auth/logout").session(session).with(csrf())).andExpect(status().is2xxSuccessful());
 
         assertThat(session.isInvalid()).isTrue();
+    }
+
+    @Test
+    public void vulnerabilityReleaseEndpoint_isPublic_noAuthenticationRequired() throws Exception {
+        mockMvc.perform(get("/api/vulnerabilities/release/test-release")).andExpect(status().isOk());
+    }
+
+    @Test
+    public void vulnerabilitiesEndpoint_requiresAuthentication() throws Exception {
+        mockMvc.perform(get("/api/vulnerabilities")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    public void vulnerabilitiesEndpoint_withAuthentication_returnsOk() throws Exception {
+        mockMvc.perform(get("/api/vulnerabilities")
+                        .with(oauth2Login().oauth2User(oauth2User))
+                        .with(csrf()))
+                .andExpect(status().isOk());
     }
 
     private MockHttpSession createAuthenticatedSession() throws Exception {

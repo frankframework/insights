@@ -20,7 +20,12 @@
               {{ vulnerability.severity }}
             </span>
           </div>
-          <div class="cve-score">CVSS Score: {{ formatCvssScore(vulnerability.cvssScore) }}</div>
+          <div class="cve-scores">
+            <div class="cve-score">CVSS Score: {{ formatCvssScore(vulnerability.cvssScore) }}</div>
+            @if (vulnerability.impactScore !== null && vulnerability.impactScore !== undefined) {
+              <div class="impact-score">Impact Score: {{ formatCvssScore(vulnerability.impactScore) }}</div>
+            }
+          </div>
         </div>
       }
     }
