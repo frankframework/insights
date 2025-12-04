@@ -50,6 +50,10 @@ const mockRelease: Release = {
   branch: { id: 'b1', name: 'main' },
 };
 
+function createInputEvent(value: string): Event {
+  return { target: { value } } as any;
+}
+
 describe('BusinessValueManageComponent', () => {
   let component: BusinessValueManageComponent;
   let fixture: ComponentFixture<BusinessValueManageComponent>;
@@ -134,7 +138,7 @@ describe('BusinessValueManageComponent', () => {
 
   describe('Computed Properties & Filtering', () => {
     it('should filter business values by search query', () => {
-      component.updateBusinessValueSearchQuery('Security');
+      component.updateBusinessValueSearchQuery(createInputEvent('Security'));
 
       const filtered = component.filteredBusinessValues();
 
@@ -153,7 +157,7 @@ describe('BusinessValueManageComponent', () => {
       mockBusinessValueService.getBusinessValueById.and.returnValue(of(mockBusinessValues[0]));
       component.selectBusinessValue(mockBusinessValues[0]);
 
-      component.updateIssueSearchQuery('login');
+      component.updateIssueSearchQuery(createInputEvent('login'));
 
       const issues = component.sortedIssues();
 
