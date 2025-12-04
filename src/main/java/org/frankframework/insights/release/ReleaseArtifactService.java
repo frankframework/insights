@@ -6,14 +6,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -24,8 +21,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.release.releasecleanup.CleanupFileVisitor;
+import org.frankframework.insights.release.releasecleanup.FileTreeDeleter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -117,6 +115,7 @@ public class ReleaseArtifactService {
 
     private final String releaseArchiveDirectory;
     private final ReleaseRepository releaseRepository;
+    private final FileTreeDeleter fileTreeDeleter;
     private List<PathMatcher> skipMatchers;
 
     public ReleaseArtifactService(
@@ -124,6 +123,7 @@ public class ReleaseArtifactService {
             ReleaseRepository releaseRepository) {
         this.releaseArchiveDirectory = releaseArchiveDirectory;
         this.releaseRepository = releaseRepository;
+        this.fileTreeDeleter = new FileTreeDeleter();
     }
 
     @PostConstruct
@@ -263,31 +263,9 @@ public class ReleaseArtifactService {
         AtomicLong freedSpace = new AtomicLong(0);
 
         try {
-            Files.walkFileTree(directory, new SimpleFileVisitor<>() {
-                @Override
-                @NonNull
-                public FileVisitResult preVisitDirectory(Path dir, @NonNull BasicFileAttributes attrs)
-                        throws IOException {
-                    Path relativePath = directory.relativize(dir);
-                    if (shouldSkipFile(relativePath)) {
-                        deleteSubtree(dir, deletedCount, freedSpace);
-                        return FileVisitResult.SKIP_SUBTREE;
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                @NonNull
-                public FileVisitResult visitFile(Path file, @NonNull BasicFileAttributes attrs) throws IOException {
-                    Path relativePath = directory.relativize(file);
-                    if (shouldSkipFile(relativePath)) {
-                        freedSpace.addAndGet(attrs.size());
-                        Files.delete(file);
-                        deletedCount.incrementAndGet();
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+            CleanupFileVisitor visitor =
+                    new CleanupFileVisitor(directory, deletedCount, freedSpace, this::shouldSkipFile, fileTreeDeleter);
+            Files.walkFileTree(directory, visitor);
 
             if (deletedCount.get() > 0) {
                 log.info(
@@ -299,27 +277,6 @@ public class ReleaseArtifactService {
         } catch (IOException e) {
             log.error("Error during cleanup of ignored files in {}", directory, e);
         }
-    }
-
-    private void deleteSubtree(Path root, AtomicInteger deletedCount, AtomicLong freedSpace) throws IOException {
-        Files.walkFileTree(root, new SimpleFileVisitor<>() {
-            @Override
-            @NonNull
-            public FileVisitResult visitFile(Path file, @NonNull BasicFileAttributes attrs) throws IOException {
-                if (freedSpace != null) freedSpace.addAndGet(attrs.size());
-                Files.delete(file);
-                if (deletedCount != null) deletedCount.incrementAndGet();
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            @NonNull
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                if (deletedCount != null) deletedCount.incrementAndGet();
-                return FileVisitResult.CONTINUE;
-            }
-        });
     }
 
     @Transactional
@@ -350,7 +307,7 @@ public class ReleaseArtifactService {
     }
 
     private void deleteRecursively(Path path) throws IOException {
-        deleteSubtree(path, null, null);
+        fileTreeDeleter.deleteTreeRecursively(path);
     }
 
     private boolean releaseDirectoryExists(Path releaseDir) {
