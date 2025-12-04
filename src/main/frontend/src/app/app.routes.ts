@@ -5,6 +5,7 @@ import { ReleaseRoadmapComponent } from './pages/release-roadmap/release-roadmap
 import { ReleaseDetailsComponent } from './pages/release-details/release-details.component';
 import { ReleaseManageComponent } from './pages/release-manage/release-manage.component';
 import { BusinessValueManageComponent } from './pages/release-manage/business-value-manage/business-value-manage.component';
+import { VulnerabilityImpactManageComponent } from './pages/release-manage/vulnerability-impact-manage/vulnerability-impact-manage.component';
 import { FrankFrameworkMemberGuard } from './guards/frankframework-member.guard';
 
 export const routes: Routes = [
@@ -16,6 +17,11 @@ export const routes: Routes = [
   {
     path: 'release-manage/:id/business-values',
     component: BusinessValueManageComponent,
+    canActivate: [FrankFrameworkMemberGuard],
+  },
+  {
+    path: 'release-manage/:id/vulnerabilities',
+    component: VulnerabilityImpactManageComponent,
     canActivate: [FrankFrameworkMemberGuard],
   },
   { path: 'not-found', component: NotFoundComponent },

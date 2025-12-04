@@ -9,6 +9,7 @@ import { catchError, of, forkJoin } from 'rxjs';
 import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
 import { BusinessValueEditComponent } from './business-value-edit/business-value-edit.component';
 import { BusinessValueDeleteComponent } from './business-value-delete/business-value-delete.component';
+import { LoaderComponent } from '../../../components/loader/loader.component';
 
 interface IssueWithSelection extends Issue {
   isSelected: boolean;
@@ -26,6 +27,7 @@ interface IssueWithSelection extends Issue {
     BusinessValueEditComponent,
     BusinessValueDeleteComponent,
     FormsModule,
+    LoaderComponent,
   ],
   templateUrl: './business-value-manage.component.html',
   styleUrl: './business-value-manage.component.scss',
@@ -108,11 +110,13 @@ export class BusinessValueManageComponent implements OnInit {
     this.showEditForm.update((value) => !value);
   }
 
-  public updateIssueSearchQuery(query: string): void {
+  public updateIssueSearchQuery(event: Event): void {
+    const query = (event.target as HTMLInputElement).value;
     this.issueSearchQuery.set(query);
   }
 
-  public updateBusinessValueSearchQuery(query: string): void {
+  public updateBusinessValueSearchQuery(event: Event): void {
+    const query = (event.target as HTMLInputElement).value;
     this.businessValueSearchQuery.set(query);
   }
 

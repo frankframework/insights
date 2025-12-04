@@ -1,11 +1,23 @@
-
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi, HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { AuthService, User, ErrorResponse } from './auth.service';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
-import { HttpInterceptorService } from './http-interceptor.service';
+
+// to prevent logout and redirection use this test interceptor
+class MockHttpInterceptor implements HttpInterceptor {
+  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    const requestWithHeaders = request.clone({
+      setHeaders: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true,
+    });
+    return next.handle(requestWithHeaders);
+  }
+}
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -31,7 +43,7 @@ describe('AuthService', () => {
         provideHttpClientTesting(),
         {
           provide: HTTP_INTERCEPTORS,
-          useClass: HttpInterceptorService,
+          useClass: MockHttpInterceptor,
           multi: true,
         },
       ],

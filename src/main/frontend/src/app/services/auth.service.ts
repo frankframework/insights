@@ -73,14 +73,6 @@ export class AuthService {
     );
   }
 
-  /**
-   * Check if there's a session flag in localStorage
-   * This is used to avoid unnecessary API calls on page refresh
-   */
-  public hasSessionFlag(): boolean {
-    return localStorage.getItem(this.SESSION_KEY) === 'true';
-  }
-
   public clearError(): void {
     this.authError.set(null);
   }
@@ -110,7 +102,25 @@ export class AuthService {
     this.isAuthenticated.set(false);
     this.authError.set(null);
     this.setSessionFlag(false);
+    this.clearAllCookies();
     this.locationService.navigateTo('/');
+  }
+
+  /**
+   * Clear all cookies to ensure clean state after logout
+   * Note: HttpOnly cookies (like JSESSIONID) can only be cleared by the server
+   */
+  private clearAllCookies(): void {
+    const cookies = document.cookie.split(';');
+
+    for (const cookie of cookies) {
+      const eqPos = cookie.indexOf('=');
+      const name = eqPos === -1 ? cookie.trim() : cookie.slice(0, Math.max(0, eqPos)).trim();
+
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${globalThis.location.hostname}`;
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.${globalThis.location.hostname}`;
+    }
   }
 
   /**
