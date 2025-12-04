@@ -87,14 +87,19 @@ public class ReleaseService {
                     .map(dto -> mapToRelease(dto, allBranches))
                     .collect(Collectors.toSet());
 
-            if (releases.isEmpty()) {
+            // Only save if we have releases, otherwise logging and skipping save
+            if (!releases.isEmpty()) {
+                saveAllReleases(releases);
+            } else {
                 log.info("No valid releases found.");
-                return;
             }
 
-            saveAllReleases(releases);
-
+            // Always check for obsolete releases, even if the current list is empty (which implies deleting all)
             deleteObsoleteReleases(releases);
+
+            if (releases.isEmpty()) {
+                return;
+            }
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
                     .filter(r -> r.getBranch() != null)
@@ -274,6 +279,7 @@ public class ReleaseService {
             // It serves as the starting point for the next releases time window.
             if (i > FIRST_RELEASE_INDEX) {
                 OffsetDateTime from = releases.get(i - 1).getPublishedAt();
+                // Use the earliest beta/RC date if available, otherwise use the final release date
                 OffsetDateTime to = earliestBetaRCDates.getOrDefault(current.getTagName(), current.getPublishedAt());
                 assignPullRequests(current, prs, from, to);
             }
@@ -357,7 +363,10 @@ public class ReleaseService {
                 .toList();
 
         if (!releasesToDelete.isEmpty()) {
+            // Delete all associated release-pull request connections first to avoid foreign key constraint violations
             releasesToDelete.forEach(release -> releasePullRequestRepository.deleteAllByReleaseId(release.getId()));
+
+            // Delete all associated release-vulnerability connections to avoid foreign key constraint violations
             releasesToDelete.forEach(release -> releaseVulnerabilityRepository.deleteAllByReleaseId(release.getId()));
 
             releaseRepository.deleteAll(releasesToDelete);
