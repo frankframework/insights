@@ -44,6 +44,7 @@ public class ReleaseArtifactServiceIntegrationTest {
     @BeforeEach
     public void setUp() {
         releaseArtifactService = new ReleaseArtifactService(tempDir.toString(), releaseRepository);
+        releaseArtifactService.init(); // Initialize skipMatchers
         mockedUri = mockStatic(URI.class);
     }
 

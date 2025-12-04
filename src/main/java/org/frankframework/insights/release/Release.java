@@ -23,6 +23,8 @@ public class Release {
 
     private OffsetDateTime publishedAt;
 
+    private OffsetDateTime lastScanned;
+
     @ManyToOne
     private Branch branch;
 }

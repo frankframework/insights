@@ -45,6 +45,7 @@ public class ReleaseArtifactServiceTest {
     @BeforeEach
     public void setUp() throws Exception {
         releaseArtifactService = new ReleaseArtifactService("/release-archive", releaseRepository);
+        releaseArtifactService.init();
 
         mockedFiles = Mockito.mockStatic(Files.class);
         mockedUri = Mockito.mockStatic(URI.class);
@@ -69,7 +70,7 @@ public class ReleaseArtifactServiceTest {
         Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
 
         mockedFiles.when(() -> Files.isDirectory(releaseDir)).thenReturn(true);
-        mockedFiles.when(() -> Files.list(releaseDir)).thenReturn(Stream.of(releaseDir.resolve("somefile.txt")));
+        mockedFiles.when(() -> Files.exists(releaseDir)).thenReturn(true);
 
         Path result = releaseArtifactService.prepareReleaseArtifacts(release);
 
@@ -110,7 +111,7 @@ public class ReleaseArtifactServiceTest {
         Path releaseDir = ARCHIVE_DIR.resolve(release.getName());
 
         mockedFiles.when(() -> Files.isDirectory(eq(releaseDir))).thenReturn(true);
-        mockedFiles.when(() -> Files.list(eq(releaseDir))).thenReturn(Stream.of(releaseDir.resolve("somefile.txt")));
+        mockedFiles.when(() -> Files.exists(eq(releaseDir))).thenReturn(true);
 
         Path result = releaseArtifactService.prepareReleaseArtifacts(release);
 
@@ -177,7 +178,7 @@ public class ReleaseArtifactServiceTest {
 
         releaseArtifactService.deleteObsoleteReleaseArtifacts();
 
-        mockedFiles.verify(() -> Files.walk(any()), never());
+        mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
         mockedFiles.verify(() -> Files.delete(any()), never());
     }
 
@@ -189,8 +190,6 @@ public class ReleaseArtifactServiceTest {
         Path validDir = ARCHIVE_DIR.resolve("8.0.0");
         Path obsoleteDir1 = ARCHIVE_DIR.resolve("7.8.0");
         Path obsoleteDir2 = ARCHIVE_DIR.resolve("7.7.0");
-        Path obsoleteFile1 = obsoleteDir1.resolve("file1.txt");
-        Path obsoleteFile2 = obsoleteDir2.resolve("file2.txt");
 
         mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
         when(releaseRepository.findAll()).thenReturn(releases);
@@ -199,16 +198,11 @@ public class ReleaseArtifactServiceTest {
         mockedFiles.when(() -> Files.isDirectory(obsoleteDir1)).thenReturn(true);
         mockedFiles.when(() -> Files.isDirectory(obsoleteDir2)).thenReturn(true);
 
-        mockedFiles.when(() -> Files.exists(obsoleteDir1)).thenReturn(true);
-        mockedFiles.when(() -> Files.exists(obsoleteDir2)).thenReturn(true);
-        mockedFiles.when(() -> Files.walk(obsoleteDir1)).thenReturn(Stream.of(obsoleteDir1, obsoleteFile1));
-        mockedFiles.when(() -> Files.walk(obsoleteDir2)).thenReturn(Stream.of(obsoleteDir2, obsoleteFile2));
-
         releaseArtifactService.deleteObsoleteReleaseArtifacts();
 
-        mockedFiles.verify(() -> Files.walk(obsoleteDir1));
-        mockedFiles.verify(() -> Files.walk(obsoleteDir2));
-        mockedFiles.verify(() -> Files.walk(validDir), never());
+        mockedFiles.verify(() -> Files.walkFileTree(eq(obsoleteDir1), any()));
+        mockedFiles.verify(() -> Files.walkFileTree(eq(obsoleteDir2), any()));
+        mockedFiles.verify(() -> Files.walkFileTree(eq(validDir), any()), never());
     }
 
     @Test
@@ -220,7 +214,6 @@ public class ReleaseArtifactServiceTest {
         Path validDir1 = ARCHIVE_DIR.resolve("8.0.0");
         Path validDir2 = ARCHIVE_DIR.resolve("7.9.0");
         Path obsoleteDir = ARCHIVE_DIR.resolve("7.8.0");
-        Path obsoleteFile = obsoleteDir.resolve("file.txt");
 
         mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
         when(releaseRepository.findAll()).thenReturn(releases);
@@ -229,14 +222,11 @@ public class ReleaseArtifactServiceTest {
         mockedFiles.when(() -> Files.isDirectory(validDir2)).thenReturn(true);
         mockedFiles.when(() -> Files.isDirectory(obsoleteDir)).thenReturn(true);
 
-        mockedFiles.when(() -> Files.exists(obsoleteDir)).thenReturn(true);
-        mockedFiles.when(() -> Files.walk(obsoleteDir)).thenReturn(Stream.of(obsoleteDir, obsoleteFile));
-
         releaseArtifactService.deleteObsoleteReleaseArtifacts();
 
-        mockedFiles.verify(() -> Files.walk(obsoleteDir));
-        mockedFiles.verify(() -> Files.walk(validDir1), never());
-        mockedFiles.verify(() -> Files.walk(validDir2), never());
+        mockedFiles.verify(() -> Files.walkFileTree(eq(obsoleteDir), any()));
+        mockedFiles.verify(() -> Files.walkFileTree(eq(validDir1), any()), never());
+        mockedFiles.verify(() -> Files.walkFileTree(eq(validDir2), any()), never());
     }
 
     @Test
@@ -247,6 +237,6 @@ public class ReleaseArtifactServiceTest {
 
         releaseArtifactService.deleteObsoleteReleaseArtifacts();
 
-        mockedFiles.verify(() -> Files.walk(any()), never());
+        mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
     }
 }
