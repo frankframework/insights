@@ -36,7 +36,9 @@ export class HttpInterceptorService implements HttpInterceptor {
             error: error.error,
           });
 
-          if (this.isLoggingOut || request.url.includes('/auth/logout')) {
+          // Skip logout if already logging out, if it's the logout endpoint,
+          // or if it's the auth/user check (which is just checking login status)
+          if (this.isLoggingOut || request.url.includes('/auth/logout') || request.url.includes('/auth/user')) {
             return;
           }
 
