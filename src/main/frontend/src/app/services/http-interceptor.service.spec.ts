@@ -154,6 +154,20 @@ describe('HttpInterceptorService', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   }));
 
+  it('should NOT logout if request is to /auth/user endpoint', fakeAsync(() => {
+    httpClient.get('/api/auth/user').subscribe({
+      error: () => {}
+    });
+
+    const request = httpTestingController.expectOne('/api/auth/user');
+    request.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+
+    tick();
+
+    expect(authService.logout).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+  }));
+
   it('should navigate to login even if logout fails', fakeAsync(() => {
     authService.logout.and.returnValue(throwError(() => new Error('Logout failed')));
 
