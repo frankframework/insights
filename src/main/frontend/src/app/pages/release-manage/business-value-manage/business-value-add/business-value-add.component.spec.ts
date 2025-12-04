@@ -5,6 +5,10 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BusinessValueAddComponent } from './business-value-add.component';
 import { BusinessValueService, BusinessValue } from '../../../../services/business-value.service';
 
+function createInputEvent(value: string): Event {
+  return { target: { value } } as any;
+}
+
 describe('BusinessValueAddComponent', () => {
   let component: BusinessValueAddComponent;
   let fixture: ComponentFixture<BusinessValueAddComponent>;
@@ -49,13 +53,13 @@ describe('BusinessValueAddComponent', () => {
 
   describe('Form Updates', () => {
     it('should update name when updateName is called', () => {
-      component.updateName('New Title');
+      component.updateName(createInputEvent('New Title'));
 
       expect(component.name()).toBe('New Title');
     });
 
     it('should update description when updateDescription is called', () => {
-      component.updateDescription('New Description');
+      component.updateDescription(createInputEvent('New Description'));
 
       expect(component.description()).toBe('New Description');
     });
@@ -63,7 +67,7 @@ describe('BusinessValueAddComponent', () => {
     it('should clear error message when updating name if error exists', () => {
       component.errorMessage.set('Some error');
 
-      component.updateName('Valid Name');
+      component.updateName(createInputEvent('Valid Name'));
 
       expect(component.errorMessage()).toBe('');
     });
@@ -71,7 +75,7 @@ describe('BusinessValueAddComponent', () => {
     it('should not affect error message when updating description', () => {
       component.errorMessage.set('Some error');
 
-      component.updateDescription('Valid Description');
+      component.updateDescription(createInputEvent('Valid Description'));
 
       expect(component.errorMessage()).toBe('Some error');
     });
@@ -79,8 +83,8 @@ describe('BusinessValueAddComponent', () => {
 
   describe('Validation', () => {
     it('should show error when title is empty', () => {
-      component.updateName('');
-      component.updateDescription('Valid Description');
+      component.updateName(createInputEvent(''));
+      component.updateDescription(createInputEvent('Valid Description'));
 
       component.save();
 
@@ -89,8 +93,8 @@ describe('BusinessValueAddComponent', () => {
     });
 
     it('should show error when description is empty', () => {
-      component.updateName('Valid Title');
-      component.updateDescription('');
+      component.updateName(createInputEvent('Valid Title'));
+      component.updateDescription(createInputEvent(''));
 
       component.save();
 
@@ -99,8 +103,8 @@ describe('BusinessValueAddComponent', () => {
     });
 
     it('should show error when title is only whitespace', () => {
-      component.updateName('   ');
-      component.updateDescription('Valid Description');
+      component.updateName(createInputEvent('   '));
+      component.updateDescription(createInputEvent('Valid Description'));
 
       component.save();
 
@@ -109,8 +113,8 @@ describe('BusinessValueAddComponent', () => {
     });
 
     it('should show error when description is only whitespace', () => {
-      component.updateName('Valid Title');
-      component.updateDescription('   ');
+      component.updateName(createInputEvent('Valid Title'));
+      component.updateDescription(createInputEvent('   '));
 
       component.save();
 
@@ -120,8 +124,8 @@ describe('BusinessValueAddComponent', () => {
 
     it('should show error when title exceeds 255 characters', () => {
       const longTitle = 'a'.repeat(256);
-      component.updateName(longTitle);
-      component.updateDescription('Valid Description');
+      component.updateName(createInputEvent(longTitle));
+      component.updateDescription(createInputEvent('Valid Description'));
 
       component.save();
 
@@ -132,8 +136,8 @@ describe('BusinessValueAddComponent', () => {
 
     it('should show error when description exceeds 1000 characters', () => {
       const longDescription = 'a'.repeat(1001);
-      component.updateName('Valid Title');
-      component.updateDescription(longDescription);
+      component.updateName(createInputEvent('Valid Title'));
+      component.updateDescription(createInputEvent(longDescription));
 
       component.save();
 
@@ -144,8 +148,8 @@ describe('BusinessValueAddComponent', () => {
 
     it('should accept title with exactly 255 characters', () => {
       const maxTitle = 'a'.repeat(255);
-      component.updateName(maxTitle);
-      component.updateDescription('Valid Description');
+      component.updateName(createInputEvent(maxTitle));
+      component.updateDescription(createInputEvent('Valid Description'));
       mockBusinessValueService.createBusinessValue.and.returnValue(of(mockBusinessValue));
 
       component.save();
@@ -155,8 +159,8 @@ describe('BusinessValueAddComponent', () => {
 
     it('should accept description with exactly 1000 characters', () => {
       const maxDescription = 'a'.repeat(1000);
-      component.updateName('Valid Title');
-      component.updateDescription(maxDescription);
+      component.updateName(createInputEvent('Valid Title'));
+      component.updateDescription(createInputEvent(maxDescription));
       mockBusinessValueService.createBusinessValue.and.returnValue(of(mockBusinessValue));
 
       component.save();
@@ -167,13 +171,13 @@ describe('BusinessValueAddComponent', () => {
 
   describe('Save Operation', () => {
     beforeEach(() => {
-      component.updateName('Test Title');
-      component.updateDescription('Test Description');
+      component.updateName(createInputEvent('Test Title'));
+      component.updateDescription(createInputEvent('Test Description'));
     });
 
     it('should call createBusinessValue with trimmed values on successful save', () => {
-      component.updateName('  Test Title  ');
-      component.updateDescription('  Test Description  ');
+      component.updateName(createInputEvent('  Test Title  '));
+      component.updateDescription(createInputEvent('  Test Description  '));
       mockBusinessValueService.createBusinessValue.and.returnValue(of(mockBusinessValue));
 
       component.save();
