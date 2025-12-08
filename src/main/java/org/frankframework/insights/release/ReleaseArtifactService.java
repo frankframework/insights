@@ -1,5 +1,6 @@
 package org.frankframework.insights.release;
 
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -7,9 +8,11 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +22,8 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.release.releasecleanup.CleanupFileVisitor;
+import org.frankframework.insights.release.releasecleanup.FileTreeDeleter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,126 +31,136 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 public class ReleaseArtifactService {
+
     private static final String GITHUB_ZIP_URL_FORMAT =
             "https://github.com/frankframework/frankframework/archive/refs/tags/%s.zip";
-    private static final int MAX_ENTRIES = 50000;
-    private static final long MAX_UNCOMPRESSED_SIZE = 1024L * 1024 * 1024 * 4;
+    private static final String TRIVY_CACHE_DIR_NAME = ".trivy-cache";
+
+    private static final int MAX_ENTRIES = 50_000;
+    private static final long MAX_UNCOMPRESSED_SIZE = 4L * 1024 * 1024 * 1024; // 4GB
     private static final double COMPRESSION_RATIO_LIMIT = 1000.0;
     private static final int BUFFER_SIZE = 4096;
 
+    private static final String SKIP_FILES_PATTERN = String.join(
+            ",",
+            "**/*.properties",
+            "**/*.sh",
+            "**/*.bat",
+            "**/*.java",
+            "**/*.ts",
+            "**/*.js",
+            "**/*.html",
+            "**/*.css",
+            "**/*.scss",
+            "**/*.xslt",
+            "**/*.rtf",
+            "**/*.md",
+            "src/test/**",
+            ".mvn/**",
+            "*.iml",
+            ".idea/**",
+            ".vscode/**",
+            ".git/**",
+            ".gitignore",
+            "node_modules/**",
+            "dist/**",
+            "e2e/**",
+            "angular.json",
+            "browserslist",
+            "karma.conf.js",
+            "tsconfig.app.json",
+            "tsconfig.json",
+            "tsconfig.spec.json",
+            "tslint.json",
+            "**/*.txt",
+            "**/*.log",
+            "**/docs/**",
+            "**/documentation/**",
+            "**/*.gif",
+            "**/*.png",
+            "**/*.jpg",
+            "**/*.jpeg",
+            "**/*.svg",
+            "**/*.tiff",
+            "**/*.tif",
+            "**/*.bmp",
+            "**/*.ico",
+            "**/*.woff",
+            "**/*.woff2",
+            "**/*.eot",
+            "**/*.ttf",
+            "**/*.pdf",
+            "**/*.ppt",
+            "**/*.doc",
+            "**/*.docm",
+            "**/*.xls",
+            "**/*.xlsx",
+            "**/*.eml",
+            "**/*.msg",
+            "**/*.zip",
+            "**/*.map",
+            "**/*.drawio",
+            "**/*.xsd",
+            "**/*.wsdl",
+            "**/*.sql",
+            "**/*.jks",
+            "**/*.p12",
+            "**/*.pfx",
+            "**/*.cer",
+            "**/*.key",
+            "**/*.crt",
+            "**/*.crl",
+            "**/*.asc",
+            "**/*.mjs");
+
     private final String releaseArchiveDirectory;
     private final ReleaseRepository releaseRepository;
+    private final FileTreeDeleter fileTreeDeleter;
+    private List<PathMatcher> skipMatchers;
 
     public ReleaseArtifactService(
             @Value("${release.archive.directory:/release-archive}") String releaseArchiveDirectory,
             ReleaseRepository releaseRepository) {
         this.releaseArchiveDirectory = releaseArchiveDirectory;
         this.releaseRepository = releaseRepository;
+        this.fileTreeDeleter = new FileTreeDeleter();
+    }
+
+    @PostConstruct
+    public void init() {
+        this.skipMatchers = initializePathMatchers();
     }
 
     @Transactional
     public Path prepareReleaseArtifacts(Release release) throws IOException {
         Path releaseDir = Paths.get(releaseArchiveDirectory).resolve(release.getName());
 
-        if (releaseDirectoryExists(releaseDir, release)) {
+        if (releaseDirectoryExists(releaseDir)) {
+            log.info("Source code for release {} already exists.", release.getName());
+            optimizeDirectoryStorage(releaseDir);
             return releaseDir;
         }
 
-        String zipUrl = buildZipUrl(release);
-        Path zipFile = downloadReleaseZip(releaseDir, zipUrl, release);
+        Path zipFile = downloadReleaseZip(release);
         unpackAndCleanup(zipFile, releaseDir, release);
+        optimizeDirectoryStorage(releaseDir);
 
         return releaseDir;
     }
 
-    /**
-     * Deletes release artifact directories that no longer correspond to any release in the database.
-     * This cleanup ensures that the file system stays in sync with the database after releases are deleted.
-     */
-    @Transactional
-    public void deleteObsoleteReleaseArtifacts() {
-        Path archiveDir = Paths.get(releaseArchiveDirectory);
-
-        if (!Files.exists(archiveDir)) {
-            log.debug("Release archive directory {} does not exist, skipping cleanup.", releaseArchiveDirectory);
-            return;
-        }
-
-        try {
-            Set<String> validReleaseNames =
-                    releaseRepository.findAll().stream().map(Release::getName).collect(Collectors.toSet());
-
-            List<Path> obsoleteDirectories;
-            try (Stream<Path> stream = Files.list(archiveDir)) {
-                obsoleteDirectories = stream.filter(Files::isDirectory)
-                        .filter(dir ->
-                                !validReleaseNames.contains(dir.getFileName().toString()))
-                        .toList();
-            }
-
-            for (Path obsoleteDir : obsoleteDirectories) {
-                try {
-                    deleteDirectoryRecursively(obsoleteDir);
-                    log.info("Deleted obsolete release artifact directory: {}", obsoleteDir.getFileName());
-                } catch (IOException e) {
-                    log.error("Failed to delete obsolete release artifact directory: {}", obsoleteDir, e);
-                }
-            }
-
-            if (!obsoleteDirectories.isEmpty()) {
-                log.info("Cleaned up {} obsolete release artifact directories.", obsoleteDirectories.size());
-            } else {
-                log.debug("No obsolete release artifact directories found.");
-            }
-        } catch (IOException e) {
-            log.error("Error while cleaning up obsolete release artifacts in {}", releaseArchiveDirectory, e);
-        }
-    }
-
-    /**
-     * Recursively deletes a directory and all its contents.
-     */
-    private void deleteDirectoryRecursively(Path directory) throws IOException {
-        if (!Files.exists(directory)) {
-            return;
-        }
-
-        try (Stream<Path> walk = Files.walk(directory)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(path -> {
-                try {
-                    Files.delete(path);
-                } catch (IOException e) {
-                    log.error("Failed to delete {}", path, e);
-                }
-            });
-        }
-    }
-
-    private boolean releaseDirectoryExists(Path releaseDir, Release release) throws IOException {
-        if (Files.isDirectory(releaseDir)) {
-            try (Stream<Path> stream = Files.list(releaseDir)) {
-                if (stream.findFirst().isPresent()) {
-                    log.info("Source code for release {} already exists, skipping download.", release.getName());
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private String buildZipUrl(Release release) throws IOException {
+    private Path downloadReleaseZip(Release release) throws IOException {
         String tagName = release.getTagName();
         if (tagName == null || tagName.isBlank()) {
             throw new IOException("Release " + release.getName() + " is missing a tagName.");
         }
-        return String.format(GITHUB_ZIP_URL_FORMAT, tagName);
-    }
 
-    private Path downloadReleaseZip(Path releaseDir, String zipUrl, Release release) throws IOException {
+        String zipUrl = String.format(GITHUB_ZIP_URL_FORMAT, tagName);
         log.info("Downloading source for {} from {}", release.getName(), zipUrl);
-        Files.createDirectories(releaseDir);
-        Path zipFile = releaseDir.resolve(release.getName() + ".zip");
 
+        Path releaseDir = Paths.get(releaseArchiveDirectory).resolve(release.getName());
+        Files.createDirectories(releaseDir);
+
+        Path zipFile = releaseDir.resolve(release.getName() + ".zip");
         try (InputStream in = URI.create(zipUrl).toURL().openStream()) {
             Files.copy(in, zipFile, StandardCopyOption.REPLACE_EXISTING);
         }
@@ -159,105 +174,160 @@ public class ReleaseArtifactService {
         log.debug("Successfully downloaded and unpacked source for {}", release.getName());
     }
 
-    /**
-     * Securely unzips a file using the java.nio.file.FileSystem API for robust and safe traversal.
-     */
     private void unzip(Path zipFile, Path destDir) throws IOException {
         Path normalizedDestDir = destDir.toAbsolutePath().normalize();
-        AtomicInteger entryCount = new AtomicInteger(0);
-        AtomicLong totalUncompressedSize = new AtomicLong(0);
+        int entryCount = 0;
+        long totalUncompressedSize = 0;
+        int skippedCount = 0;
 
         try (FileSystem zipFs = FileSystems.newFileSystem(zipFile, (ClassLoader) null);
                 ZipFile zf = new ZipFile(zipFile.toFile())) {
 
-            Path root = zipFs.getPath("/");
-            try (Stream<Path> stream = Files.walk(root)) {
-                // Use a standard for-loop to handle exceptions cleanly from the stream
-                for (Path path : (Iterable<Path>) stream::iterator) {
-                    if (entryCount.incrementAndGet() > MAX_ENTRIES) {
+            try (Stream<Path> stream = Files.walk(zipFs.getPath("/"))) {
+                for (Path pathInZip : (Iterable<Path>) stream::iterator) {
+
+                    if (pathInZip.getNameCount() <= 1) continue;
+                    Path relativePath = Paths.get(
+                            pathInZip.subpath(1, pathInZip.getNameCount()).toString());
+
+                    if (shouldSkipFile(relativePath)) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    if (++entryCount > MAX_ENTRIES) {
                         throw new IOException("Archive contains too many entries.");
                     }
-                    processPath(path, normalizedDestDir, totalUncompressedSize, zf);
+
+                    totalUncompressedSize =
+                            processZipEntry(zf, pathInZip, relativePath, normalizedDestDir, totalUncompressedSize);
                 }
             }
         }
+        log.info("Unzip complete. Skipped {} irrelevant files.", skippedCount);
     }
 
-    /**
-     * Processes a single path from the zip file system, handling directories and files.
-     */
-    private void processPath(Path pathInZip, Path destDir, AtomicLong totalUncompressedSize, ZipFile zf)
+    private long processZipEntry(ZipFile zf, Path pathInZip, Path relativePath, Path destDir, long currentTotalSize)
             throws IOException {
-        Path validatedPath = validateAndStripPath(pathInZip, destDir);
-        if (validatedPath == null) {
-            return; // Skip top-level directory
+        Path destPath = destDir.resolve(relativePath).normalize();
+        if (!destPath.startsWith(destDir)) {
+            throw new IOException("Bad zip entry (Zip Slip attempt): " + pathInZip);
         }
 
         if (Files.isDirectory(pathInZip)) {
-            Files.createDirectories(validatedPath);
+            Files.createDirectories(destPath);
+            return currentTotalSize;
         } else {
-            extractAndValidateFile(pathInZip, validatedPath, totalUncompressedSize, zf);
+            return extractFile(zf, pathInZip.toString(), destPath, currentTotalSize);
         }
     }
 
-    /**
-     * Validates and prepares the destination path, preventing path traversal (Zip Slip).
-     */
-    private Path validateAndStripPath(Path pathInZip, Path destDir) throws IOException {
-        if (pathInZip.getNameCount() <= 1) {
-            return null; // Ignore the root and GitHub's top-level directory
-        }
-        Path strippedPath = pathInZip.subpath(1, pathInZip.getNameCount());
-        Path resolvedPath = destDir.resolve(strippedPath.toString()).normalize();
-        if (!resolvedPath.startsWith(destDir)) {
-            throw new IOException("Bad zip entry: " + pathInZip + " (Path Traversal attempt)");
-        }
-        return resolvedPath;
-    }
-
-    /**
-     * Extracts a file while validating its size and compression ratio.
-     */
-    private void extractAndValidateFile(Path pathInZip, Path destFile, AtomicLong totalUncompressedSize, ZipFile zf)
+    private long extractFile(ZipFile zf, String zipPathString, Path destFile, long currentTotalSize)
             throws IOException {
-        Files.createDirectories(destFile.getParent());
-        // ZipFile needs the entry name without the leading '/' from the zip file system path
-        String entryName =
-                pathInZip.toString().startsWith("/") ? pathInZip.toString().substring(1) : pathInZip.toString();
+        String entryName = zipPathString.startsWith("/") ? zipPathString.substring(1) : zipPathString;
         ZipEntry entry = zf.getEntry(entryName);
-        if (entry == null) {
-            throw new IOException("Could not find ZipEntry for path: " + pathInZip);
-        }
+        if (entry == null) throw new IOException("Could not find ZipEntry: " + entryName);
 
-        long totalEntrySize = 0;
-        byte[] buffer = new byte[BUFFER_SIZE];
+        Files.createDirectories(destFile.getParent());
+
         try (InputStream in = zf.getInputStream(entry);
                 var out = Files.newOutputStream(destFile)) {
+
+            byte[] buffer = new byte[BUFFER_SIZE];
             int nBytes;
+            long entrySize = 0;
+
             while ((nBytes = in.read(buffer)) > 0) {
                 out.write(buffer, 0, nBytes);
-                totalEntrySize += nBytes;
+                entrySize += nBytes;
+                currentTotalSize += nBytes;
 
-                if (totalUncompressedSize.addAndGet(nBytes) > MAX_UNCOMPRESSED_SIZE) {
+                if (currentTotalSize > MAX_UNCOMPRESSED_SIZE) {
                     throw new IOException("Archive is too large when uncompressed.");
                 }
 
-                validateCompressionRatio(entry, totalEntrySize);
+                long compressedSize = entry.getCompressedSize();
+                if (compressedSize > 0 && (double) entrySize / compressedSize > COMPRESSION_RATIO_LIMIT) {
+                    throw new IOException("Compression ratio too high.");
+                }
             }
+        }
+        return currentTotalSize;
+    }
+
+    private void optimizeDirectoryStorage(Path directory) {
+        if (!Files.exists(directory)) return;
+
+        log.debug("Optimizing storage: Scanning {} for files to remove...", directory);
+        AtomicInteger deletedCount = new AtomicInteger(0);
+        AtomicLong freedSpace = new AtomicLong(0);
+
+        try {
+            CleanupFileVisitor visitor =
+                    new CleanupFileVisitor(directory, deletedCount, freedSpace, this::shouldSkipFile, fileTreeDeleter);
+            Files.walkFileTree(directory, visitor);
+
+            if (deletedCount.get() > 0) {
+                log.info(
+                        "Cleanup finished for {}: Removed {} items, freed {} bytes.",
+                        directory.getFileName(),
+                        deletedCount.get(),
+                        freedSpace.get());
+            }
+        } catch (IOException e) {
+            log.error("Error during cleanup of ignored files in {}", directory, e);
         }
     }
 
-    /**
-     * Checks if the compression ratio of an entry exceeds the defined limit.
-     */
-    private void validateCompressionRatio(ZipEntry zipEntry, long totalEntrySize) throws IOException {
-        long compressedSize = zipEntry.getCompressedSize();
-        if (compressedSize > 0) {
-            double compressionRatio = (double) totalEntrySize / compressedSize;
-            if (compressionRatio > COMPRESSION_RATIO_LIMIT) {
-                throw new IOException(
-                        "Compression ratio for entry " + zipEntry.getName() + " is too high (Zip Bomb suspected).");
+    @Transactional
+    public void deleteObsoleteReleaseArtifacts() {
+        Path archiveDir = Paths.get(releaseArchiveDirectory);
+        if (!Files.exists(archiveDir)) return;
+
+        try {
+            Set<String> validReleaseNames =
+                    releaseRepository.findAll().stream().map(Release::getName).collect(Collectors.toSet());
+
+            try (Stream<Path> stream = Files.list(archiveDir)) {
+                List<Path> obsoleteDirectories = stream.filter(Files::isDirectory)
+                        .filter(dir ->
+                                !validReleaseNames.contains(dir.getFileName().toString()))
+                        .filter(dir ->
+                                !TRIVY_CACHE_DIR_NAME.equals(dir.getFileName().toString()))
+                        .toList();
+
+                for (Path obsoleteDir : obsoleteDirectories) {
+                    deleteRecursively(obsoleteDir);
+                    log.info("Deleted obsolete release artifact directory: {}", obsoleteDir.getFileName());
+                }
             }
+        } catch (IOException e) {
+            log.error("Error while cleaning up obsolete release artifacts in {}", releaseArchiveDirectory, e);
         }
+    }
+
+    private void deleteRecursively(Path path) throws IOException {
+        fileTreeDeleter.deleteTreeRecursively(path);
+    }
+
+    private boolean releaseDirectoryExists(Path releaseDir) {
+        return Files.isDirectory(releaseDir) && Files.exists(releaseDir);
+    }
+
+    private List<PathMatcher> initializePathMatchers() {
+        if (SKIP_FILES_PATTERN.isBlank()) return Collections.emptyList();
+        FileSystem fs = FileSystems.getDefault();
+        return Arrays.stream(SKIP_FILES_PATTERN.split(","))
+                .filter(s -> !s.isBlank())
+                .map(String::trim)
+                .map(p -> fs.getPathMatcher("glob:" + p))
+                .collect(Collectors.toList());
+    }
+
+    private boolean shouldSkipFile(Path relativePath) {
+        for (PathMatcher matcher : skipMatchers) {
+            if (matcher.matches(relativePath)) return true;
+        }
+        return false;
     }
 }
