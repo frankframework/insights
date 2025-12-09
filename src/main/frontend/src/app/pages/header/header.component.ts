@@ -1,8 +1,9 @@
 import { Component, inject, HostListener } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
+import { GraphStateService } from '../../services/graph-state.service';
 
 @Component({
   selector: 'app-header',
@@ -14,6 +15,8 @@ export class HeaderComponent {
   public authService = inject(AuthService);
   public showUserMenu = false;
   private locationService = inject(LocationService);
+  private graphStateService = inject(GraphStateService);
+  private router = inject(Router);
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -27,6 +30,8 @@ export class HeaderComponent {
 
   onLoginWithGitHub(): void {
     this.authService.setLoading(true);
+    // Save current extended state temporarily for OAuth flow
+    this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }
 
@@ -45,5 +50,19 @@ export class HeaderComponent {
 
   onDismissError(): void {
     this.authService.clearError();
+  }
+
+  navigateToGraph(): void {
+    const queryParams = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph'], { queryParams });
+  }
+
+  navigateToRoadmap(): void {
+    this.router.navigate(['/roadmap']);
+  }
+
+  navigateToHome(): void {
+    const queryParams = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/'], { queryParams });
   }
 }

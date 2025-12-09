@@ -12,6 +12,7 @@ import { LoaderComponent } from './components/loader/loader.component';
 import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './pages/release-roadmap/issue-bar/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
+import { GraphStateService } from './services/graph-state.service';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
+  private graphStateService = inject(GraphStateService);
 
   constructor() {
     this.router.events.subscribe((event) => {
@@ -43,32 +45,50 @@ export class AppComponent implements OnInit {
 
     this.route.queryParams.subscribe((parameters) => {
       const loginParameter = parameters['login'];
+      const isGraphRoute = this.router.url.startsWith('/graph') || this.router.url === '/';
 
-      if (loginParameter === 'success') {
-        this.authService.checkAuthStatus().subscribe({
-          next: () => {
-            this.router.navigate([], {
-              queryParams: {},
-              replaceUrl: true,
-            });
-          },
-          error: (error) => {
-            console.error('Failed to fetch user info after OAuth success:', error);
-            this.authService.setLoading(false);
-            this.router.navigate([], {
-              queryParams: {},
-              replaceUrl: true,
-            });
-          },
-        });
-      } else if (loginParameter === 'error') {
-        console.error('OAuth2 login failed');
-        this.authService.setLoading(false);
-        this.authService.clearError();
-        this.router.navigate([], {
-          queryParams: {},
-          replaceUrl: true,
-        });
+      if (loginParameter === 'success' || loginParameter === 'error') {
+        const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
+
+        if (loginParameter === 'success') {
+          this.authService.checkAuthStatus().subscribe({
+            next: () => {
+              const queryParams = wasExtended ? { extended: '' } : {};
+              this.router.navigate([], {
+                queryParams,
+                replaceUrl: true,
+              });
+            },
+            error: (error) => {
+              console.error('Failed to fetch user info after OAuth success:', error);
+              this.authService.setLoading(false);
+              const queryParams = wasExtended ? { extended: '' } : {};
+              this.router.navigate([], {
+                queryParams,
+                replaceUrl: true,
+              });
+            },
+          });
+        } else {
+          console.error('OAuth2 login failed');
+          this.authService.setLoading(false);
+          this.authService.clearError();
+          const queryParams = wasExtended ? { extended: '' } : {};
+          this.router.navigate([], {
+            queryParams,
+            replaceUrl: true,
+          });
+        }
+
+        return;
+      }
+
+      if (isGraphRoute) {
+        if (parameters['extended'] !== undefined) {
+          this.graphStateService.setShowExtendedSupport(true);
+        } else {
+          this.graphStateService.setShowExtendedSupport(false);
+        }
       }
     });
   }

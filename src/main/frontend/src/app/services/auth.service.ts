@@ -3,6 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
+import { GraphStateService } from './graph-state.service';
 
 export interface User {
   githubId: number;
@@ -29,6 +30,7 @@ export class AuthService {
   private readonly SESSION_KEY = 'auth_session';
   private appService = inject(AppService);
   private locationService = inject(LocationService);
+  private graphStateService = inject(GraphStateService);
 
   /**
    * Check authentication status by calling the backend
@@ -110,7 +112,12 @@ export class AuthService {
     this.isAuthenticated.set(false);
     this.authError.set(null);
     this.setSessionFlag(false);
-    this.locationService.navigateTo('/');
+
+    const queryParams = this.graphStateService.getGraphQueryParams();
+    const queryString = Object.keys(queryParams).length > 0
+      ? '?' + new URLSearchParams(queryParams).toString()
+      : '';
+    this.locationService.navigateTo('/' + queryString);
   }
 
   /**

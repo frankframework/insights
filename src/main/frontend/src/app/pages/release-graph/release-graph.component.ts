@@ -9,6 +9,7 @@ import { Subscription } from 'rxjs';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 import { AuthService } from '../../services/auth.service';
+import { GraphStateService } from '../../services/graph-state.service';
 import { NgStyle } from '@angular/common';
 
 export interface LifecyclePhase {
@@ -74,6 +75,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private graphStateService = inject(GraphStateService);
 
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
@@ -110,6 +112,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.route.queryParams.subscribe((parameters) => {
       const wasExtended = this.showExtendedSupport;
       this.showExtendedSupport = parameters['extended'] !== undefined;
+
+      // Sync with global state service
+      this.graphStateService.setShowExtendedSupport(this.showExtendedSupport);
 
       // Rebuild graph if extended mode changed and we have releases
       if (wasExtended !== this.showExtendedSupport && this.releases.length > 0) {
@@ -261,7 +266,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
-    this.router.navigate(['/graph', releaseNodeId]);
+    const queryParams = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph', releaseNodeId], { queryParams });
   }
 
   public openSkipNodeModal(skipNodeId: string): void {
@@ -279,7 +285,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.closeSkipNodeModal();
     const release = this.releases.find((r) => r.name === version || `v${r.name}` === version);
     if (release) {
-      this.router.navigate(['/graph', release.id]);
+      const queryParams = this.graphStateService.getGraphQueryParams();
+      this.router.navigate(['/graph', release.id], { queryParams });
     }
   }
 
