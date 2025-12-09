@@ -53,18 +53,18 @@ export class AppComponent implements OnInit {
         if (loginParameter === 'success') {
           this.authService.checkAuthStatus().subscribe({
             next: () => {
-              const queryParams = wasExtended ? { extended: '' } : {};
+              const queryParameters = wasExtended ? { extended: '' } : {};
               this.router.navigate([], {
-                queryParams,
+                queryParams: queryParameters,
                 replaceUrl: true,
               });
             },
             error: (error) => {
               console.error('Failed to fetch user info after OAuth success:', error);
               this.authService.setLoading(false);
-              const queryParams = wasExtended ? { extended: '' } : {};
+              const queryParameters = wasExtended ? { extended: '' } : {};
               this.router.navigate([], {
-                queryParams,
+                queryParams: queryParameters,
                 replaceUrl: true,
               });
             },
@@ -73,9 +73,9 @@ export class AppComponent implements OnInit {
           console.error('OAuth2 login failed');
           this.authService.setLoading(false);
           this.authService.clearError();
-          const queryParams = wasExtended ? { extended: '' } : {};
+          const queryParameters = wasExtended ? { extended: '' } : {};
           this.router.navigate([], {
-            queryParams,
+            queryParams: queryParameters,
             replaceUrl: true,
           });
         }
@@ -84,10 +84,10 @@ export class AppComponent implements OnInit {
       }
 
       if (isGraphRoute) {
-        if (parameters['extended'] !== undefined) {
-          this.graphStateService.setShowExtendedSupport(true);
-        } else {
+        if (parameters['extended'] === undefined) {
           this.graphStateService.setShowExtendedSupport(false);
+        } else {
+          this.graphStateService.setShowExtendedSupport(true);
         }
       }
     });

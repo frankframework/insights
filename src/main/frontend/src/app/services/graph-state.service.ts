@@ -15,7 +15,7 @@ export class GraphStateService {
     this.showExtendedSupport.set(value);
   }
 
-  public getGraphQueryParams(): { [key: string]: string } {
+  public getGraphQueryParams(): Record<string, string> {
     return this.showExtendedSupport() ? { extended: '' } : {};
   }
 

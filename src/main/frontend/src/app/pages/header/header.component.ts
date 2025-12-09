@@ -53,8 +53,8 @@ export class HeaderComponent {
   }
 
   navigateToGraph(): void {
-    const queryParams = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph'], { queryParams });
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph'], { queryParams: queryParameters });
   }
 
   navigateToRoadmap(): void {
@@ -62,7 +62,7 @@ export class HeaderComponent {
   }
 
   navigateToHome(): void {
-    const queryParams = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/'], { queryParams });
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/'], { queryParams: queryParameters });
   }
 }

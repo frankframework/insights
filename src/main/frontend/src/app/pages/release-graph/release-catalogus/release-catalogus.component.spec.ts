@@ -80,7 +80,7 @@ describe('ReleaseCatalogusComponent', () => {
 
       const compiled = fixture.nativeElement;
 
-      expect(compiled.textContent).toContain('Extended Support');
+      expect(compiled.textContent).toContain('Extended support');
       expect(compiled.textContent).toContain('Branch receives extended active development and bug fixes');
     });
 

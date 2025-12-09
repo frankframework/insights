@@ -266,8 +266,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
-    const queryParams = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph', releaseNodeId], { queryParams });
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph', releaseNodeId], { queryParams: queryParameters });
   }
 
   public openSkipNodeModal(skipNodeId: string): void {
@@ -285,8 +285,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.closeSkipNodeModal();
     const release = this.releases.find((r) => r.name === version || `v${r.name}` === version);
     if (release) {
-      const queryParams = this.graphStateService.getGraphQueryParams();
-      this.router.navigate(['/graph', release.id], { queryParams });
+      const queryParameters = this.graphStateService.getGraphQueryParams();
+      this.router.navigate(['/graph', release.id], { queryParams: queryParameters });
     }
   }
 
@@ -414,12 +414,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const baseMarkers = this.nodeService.timelineScale?.quarters ?? [];
     if (baseMarkers.length === 0) return baseMarkers;
 
+    const lastMarker = baseMarkers.at(-1);
     const maxLifecycleEndX = this.getMaxLifecycleEndX();
-    if (maxLifecycleEndX === 0 || baseMarkers[baseMarkers.length - 1].x >= maxLifecycleEndX) {
+    if (maxLifecycleEndX === 0 || lastMarker!.x >= maxLifecycleEndX) {
       return baseMarkers;
     }
 
-    const additionalMarkers = this.generateAdditionalQuarters(baseMarkers[baseMarkers.length - 1], maxLifecycleEndX);
+    const additionalMarkers = this.generateAdditionalQuarters(lastMarker!, maxLifecycleEndX);
     return [...baseMarkers, ...additionalMarkers];
   }
 
@@ -471,7 +472,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
 
   private calculateXFromDate(date: Date): number {
     if (!this.nodeService.timelineScale) return 0;
-    const daysSinceStart = (date.getTime() - this.nodeService.timelineScale.startDate.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceStart =
+      (date.getTime() - this.nodeService.timelineScale.startDate.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceStart * this.nodeService.timelineScale.pixelsPerDay;
   }
 

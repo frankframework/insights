@@ -4,11 +4,11 @@
     <h2>Insights</h2>
   </li>
   <ul>
-    <li (click)="navigateToGraph()" routerLinkActive="active" [routerLink]="['/graph']">
+    <li routerLinkActive="active" [routerLink]="['/graph']" (click)="navigateToGraph()">
       <h3>Release graph</h3>
       <span class="tab-underline"></span>
     </li>
-    <li (click)="navigateToRoadmap()" routerLinkActive="active" [routerLink]="['/roadmap']">
+    <li routerLinkActive="active" [routerLink]="['/roadmap']" (click)="navigateToRoadmap()">
       <h3>Roadmap</h3>
       <span class="tab-underline"></span>
     </li>

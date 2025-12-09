@@ -113,11 +113,10 @@ export class AuthService {
     this.authError.set(null);
     this.setSessionFlag(false);
 
-    const queryParams = this.graphStateService.getGraphQueryParams();
-    const queryString = Object.keys(queryParams).length > 0
-      ? '?' + new URLSearchParams(queryParams).toString()
-      : '';
-    this.locationService.navigateTo('/' + queryString);
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    const queryString =
+      Object.keys(queryParameters).length > 0 ? `?${new URLSearchParams(queryParameters).toString()}` : '';
+    this.locationService.navigateTo(`/${queryString}`);
   }
 
   /**

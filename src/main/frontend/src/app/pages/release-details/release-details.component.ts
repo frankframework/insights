@@ -76,8 +76,8 @@ export class ReleaseDetailsComponent implements OnInit {
   }
 
   public goBack(): void {
-    const queryParams = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph'], { queryParams });
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph'], { queryParams: queryParameters });
   }
 
   public toggleBusinessValue(): void {
