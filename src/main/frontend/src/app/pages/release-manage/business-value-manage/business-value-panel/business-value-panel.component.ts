@@ -10,16 +10,16 @@ import { BusinessValue } from '../../../../services/business-value.service';
   styleUrl: './business-value-panel.component.scss',
 })
 export class BusinessValuePanelComponent {
-  public businessValues = input.required<BusinessValue[]>();
-  public selectedBusinessValue = input<BusinessValue | null>(null);
-
   @Output() businessValueSelected = new EventEmitter<BusinessValue>();
   @Output() createClicked = new EventEmitter<void>();
   @Output() editClicked = new EventEmitter<void>();
   @Output() deleteClicked = new EventEmitter<{ businessValue: BusinessValue; event: Event }>();
 
+  public businessValues = input.required<BusinessValue[]>();
+  public selectedBusinessValue = input<BusinessValue | null>(null);
   public businessValueSearchQuery = signal<string>('');
 
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public filteredBusinessValues = computed(() => {
     const query = this.businessValueSearchQuery().toLowerCase().trim();
     let values = this.businessValues();

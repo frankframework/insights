@@ -18,16 +18,17 @@ export interface IssueWithSelection extends Issue {
   styleUrl: './business-value-issue-panel.component.scss',
 })
 export class BusinessValueIssuePanelComponent {
+  @Output() issueToggled = new EventEmitter<IssueWithSelection>();
+  @Output() saveClicked = new EventEmitter<void>();
+
   public selectedBusinessValue = input.required<BusinessValue | null>();
   public issuesWithSelection = input.required<IssueWithSelection[]>();
   public hasChanges = input.required<boolean>();
   public isSaving = input<boolean>(false);
 
-  @Output() issueToggled = new EventEmitter<IssueWithSelection>();
-  @Output() saveClicked = new EventEmitter<void>();
-
   public issueSearchQuery = signal<string>('');
 
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public sortedIssues = computed(() => {
     const issues = [...this.issuesWithSelection()];
     const selectedBV = this.selectedBusinessValue();

@@ -12,34 +12,16 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
   styleUrl: './business-value-edit.component.scss',
 })
 export class BusinessValueEditComponent {
-  private _businessValue!: BusinessValue;
-
-  @Input({ required: true })
-  set businessValue(bv: BusinessValue) {
-    this._businessValue = bv;
-    this.name.set(bv.title);
-    this.description.set(bv.description);
-    this.originalName.set(bv.title);
-    this.originalDescription.set(bv.description);
-  }
-
-  get businessValue(): BusinessValue {
-    return this._businessValue;
-  }
-
   @Output() closed = new EventEmitter<void>();
   @Output() businessValueUpdated = new EventEmitter<BusinessValue>();
 
-  private originalName = signal<string>('');
-  private originalDescription = signal<string>('');
-
+  public _businessValue!: BusinessValue;
   public name = signal<string>('');
   public description = signal<string>('');
   public isSaving = signal<boolean>(false);
   public errorMessage = signal<string>('');
 
-  private businessValueService = inject(BusinessValueService);
-
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public isFormValidAndChanged = computed<boolean>(() => {
     const currentName = this.name().trim();
     const currentDescription = this.description().trim();
@@ -50,6 +32,24 @@ export class BusinessValueEditComponent {
 
     return isRequiredFilled && hasChanged;
   });
+
+  private originalName = signal<string>('');
+  private originalDescription = signal<string>('');
+
+  private businessValueService = inject(BusinessValueService);
+
+  get businessValue(): BusinessValue {
+    return this._businessValue;
+  }
+
+  @Input({ required: true })
+  set businessValue(bv: BusinessValue) {
+    this._businessValue = bv;
+    this.name.set(bv.title);
+    this.description.set(bv.description);
+    this.originalName.set(bv.title);
+    this.originalDescription.set(bv.description);
+  }
 
   public close(): void {
     this.closed.emit();

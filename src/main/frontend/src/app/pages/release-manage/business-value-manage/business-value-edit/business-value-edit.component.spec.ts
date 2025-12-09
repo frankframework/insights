@@ -58,14 +58,12 @@ describe('BusinessValueEditComponent', () => {
     });
 
     it('should handle input change when businessValue is updated', () => {
-      const newBV: BusinessValue = {
+      component.businessValue = {
         id: 'custom-id',
         title: 'Custom Title',
         description: 'Custom Description',
         issues: [],
       };
-
-      component.businessValue = newBV;
       fixture.detectChanges();
 
       expect(component.name()).toBe('Custom Title');
@@ -145,11 +143,6 @@ describe('BusinessValueEditComponent', () => {
   });
 
   describe('Validation', () => {
-    const makeValidAndChanged = () => {
-      component.updateName(createInputEvent('New Title'));
-      component.updateDescription(createInputEvent('New Description'));
-    }
-
     it('should not call save when title is empty (isFormValidAndChanged is false)', () => {
       component.updateName(createInputEvent(''));
       component.updateDescription(createInputEvent('Valid Description'));
