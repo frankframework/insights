@@ -26,18 +26,6 @@
     cursor: pointer;
   }
 
-  circle {
-    transition: transform 0.15s ease-out;
-    stroke: #efefef;
-    stroke-width: 5;
-  }
-
-  text {
-    font-size: 12px;
-    font-weight: bold;
-    text-anchor: middle;
-  }
-
   .branch-labels-sticky {
     display: none;
   }
@@ -272,16 +260,22 @@
   }
 
   .release-node {
-    circle, text {
+    text {
+      font-size: 11px;
+      font-weight: 600;
+      fill: #1e1e1e;
       transition: transform 0.15s ease-out;
     }
 
-    .sleeping-icon {
-      pointer-events: none;
-      opacity: 0.85;
+    circle {
+      transition: transform 0.15s ease-out;
+      stroke: #999;
+      stroke-width: 2;
     }
 
     &:hover {
+      transition: transform 0.15s ease-out;
+
       circle, text {
         transform: scale(1.05);
         cursor: pointer;

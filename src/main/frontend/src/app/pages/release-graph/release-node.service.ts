@@ -156,7 +156,7 @@ export class ReleaseNodeService {
   }
 
   private applyMinimumSpacingToLastYear(nodesByBranch: Map<string, ReleaseNode[]>, oneYearAgoDate: Date): void {
-    const MIN_SPACING = 70;
+    const MIN_SPACING = 65;
 
     for (const branchNodes of nodesByBranch.values()) {
       branchNodes.sort((a, b) => a.position.x - b.position.x);

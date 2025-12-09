@@ -209,41 +209,28 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const target = this.findNodeById(link.target);
     if (!source || !target) return '';
 
-    const isSkipLink = link.isGap || link.isFadeIn;
     const isMiniNode = source.isMiniNode || false;
-    const miniNodeRadius = 8;
-    const nodeRadius = 20;
-
-    let margin: number;
-    if (isSkipLink) {
-      margin = 10;
-    } else if (isMiniNode) {
-      margin = miniNodeRadius;
-    } else {
-      margin = nodeRadius + 2;
-    }
 
     if (link.isGap || link.isFadeIn) {
       const [x1, y1] = [source.position.x, source.position.y];
       const [x2, y2] = [target.position.x, target.position.y];
-      const startMargin = link.isFadeIn ? 0 : margin;
-      return `M ${x1 + startMargin},${y1} L ${x2 - margin},${y2}`;
+      return `M ${x1},${y1} L ${x2},${y2}`;
     }
 
     const [x1, y1] = [source.position.x, source.position.y];
     const [x2, y2] = [target.position.x, target.position.y];
 
     if (y1 === y2) {
-      return `M ${x1 + margin},${y1} L ${x2 - margin},${y2}`;
+      return `M ${x1},${y1} L ${x2},${y2}`;
     }
 
     if (isMiniNode && y2 > y1) {
       const curveRadius = 20;
-      const targetLeftSide = x2 - nodeRadius - 2;
+      const targetLeftSide = x2 - 2;
       const cornerY = y2 - curveRadius;
 
       return [
-        `M ${x1},${y1 + margin}`,
+        `M ${x1},${y1}`,
         `L ${x1},${cornerY}`,
         `A ${curveRadius},${curveRadius} 0 0,0 ${x1 + curveRadius},${y2}`,
         `L ${targetLeftSide},${y2}`,
@@ -251,15 +238,12 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     }
 
     const verticalDirection = y2 > y1 ? 1 : -1;
-    const cornerY = y2 - verticalDirection * margin;
+    const cornerY = y2 - verticalDirection;
     const horizontalSweep = x2 > x1 ? 0 : 1;
 
-    return [
-      `M ${x1},${y1 + margin}`,
-      `L ${x1},${cornerY}`,
-      `A ${margin},${margin} 0 0,${horizontalSweep} ${x1 + (horizontalSweep ? -margin : margin)},${y2}`,
-      `L ${x2 - margin},${y2}`,
-    ].join(' ');
+    return [`M ${x1},${y1}`, `L ${x1},${cornerY}`, `A 0,0 0 0,${horizontalSweep} ${x1},${y2}`, `L ${x2},${y2}`].join(
+      ' ',
+    );
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
