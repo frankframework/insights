@@ -256,7 +256,7 @@ describe('ReleaseDetailsComponent', () => {
     it('should navigate to /graph when goBack is called', () => {
       component.goBack();
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph'], { queryParams: {} });
     });
   });
 

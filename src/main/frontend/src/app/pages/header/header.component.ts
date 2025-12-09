@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
+import { GraphStateService } from '../../services/graph-state.service';
 
 @Component({
   selector: 'app-header',
@@ -13,6 +14,7 @@ import { LocationService } from '../../services/location.service';
 export class HeaderComponent {
   public authService = inject(AuthService);
   public showUserMenu = false;
+  public graphStateService = inject(GraphStateService);
   private locationService = inject(LocationService);
 
   @HostListener('document:click', ['$event'])
@@ -27,6 +29,7 @@ export class HeaderComponent {
 
   onLoginWithGitHub(): void {
     this.authService.setLoading(true);
+    this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }
 

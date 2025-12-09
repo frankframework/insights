@@ -6,6 +6,7 @@ import { Label, LabelService } from '../../services/label.service';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
 import { AuthService } from '../../services/auth.service';
+import { GraphStateService } from '../../services/graph-state.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { ReleaseHighlightsComponent } from './release-highlights/release-highlights.component';
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
@@ -46,6 +47,7 @@ export class ReleaseDetailsComponent implements OnInit {
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
   private route = inject(ActivatedRoute);
+  private graphStateService = inject(GraphStateService);
 
   ngOnInit(): void {
     this.route.paramMap
@@ -74,7 +76,8 @@ export class ReleaseDetailsComponent implements OnInit {
   }
 
   public goBack(): void {
-    this.router.navigate(['/graph']);
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph'], { queryParams: queryParameters });
   }
 
   public toggleBusinessValue(): void {

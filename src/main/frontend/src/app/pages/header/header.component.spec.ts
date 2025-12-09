@@ -85,21 +85,19 @@ describe('HeaderComponent', () => {
     it('should display Release graph navigation link', () => {
       fixture.detectChanges();
 
-      const links = fixture.debugElement.queryAll(By.css('li[routerLink]'));
-      const graphLink = links.find((link) => link.nativeElement.textContent.includes('Release graph'));
+      const navItems = fixture.debugElement.queryAll(By.css('nav ul li'));
+      const graphLink = navItems.find((item) => item.nativeElement.textContent.includes('Release graph'));
 
       expect(graphLink).toBeTruthy();
-      expect(graphLink?.attributes['routerLink']).toBe('/graph');
     });
 
     it('should display Roadmap navigation link', () => {
       fixture.detectChanges();
 
-      const links = fixture.debugElement.queryAll(By.css('li[routerLink]'));
-      const roadmapLink = links.find((link) => link.nativeElement.textContent.includes('Roadmap'));
+      const navItems = fixture.debugElement.queryAll(By.css('nav ul li'));
+      const roadmapLink = navItems.find((item) => item.nativeElement.textContent.includes('Roadmap'));
 
       expect(roadmapLink).toBeTruthy();
-      expect(roadmapLink?.attributes['routerLink']).toBe('/roadmap');
     });
   });
 

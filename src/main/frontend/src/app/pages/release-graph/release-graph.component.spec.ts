@@ -167,7 +167,7 @@ describe('ReleaseGraphComponent', () => {
       const mockRouter = TestBed.inject(Router) as any;
       component.openReleaseNodeDetails('release-id-123');
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-id-123']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-id-123'], { queryParams: {} });
     });
   });
 
@@ -325,7 +325,7 @@ describe('ReleaseGraphComponent', () => {
         component.onNodeTouchEnd(mockTouchEvent, 'release-123');
 
         expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
-        expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-123']);
+        expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-123'], { queryParams: {} });
       });
 
       it('should not open release node details when drag detected', () => {
@@ -374,6 +374,7 @@ describe('ReleaseGraphComponent', () => {
 
   describe('Timeline and Quarter Markers', () => {
     it('should load quarter markers from the node service timeline scale', () => {
+      spyOn<any>(component, 'extendQuarterMarkersToLifecycleEnd').and.returnValue(mockTimelineScale.quarters);
       fixture.detectChanges();
 
       expect(component.quarterMarkers).toBeDefined();
