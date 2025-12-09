@@ -264,6 +264,7 @@
       font-size: 11px;
       font-weight: 600;
       fill: #1e1e1e;
+      transition: transform 0.15s ease-out;
     }
 
     circle {
@@ -273,6 +274,8 @@
     }
 
     &:hover {
+      transition: transform 0.15s ease-out;
+
       circle, text {
         transform: scale(1.05);
         cursor: pointer;

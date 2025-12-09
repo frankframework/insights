@@ -78,10 +78,10 @@
             (touchcancel)="handleNodeTouchEnd($event, releaseNode)"
           >
             @if (releaseNode.isMiniNode) {
-              <circle r="6" fill="white" />
+              <circle r="6" fill="#999" />
             } @else {
               <circle r="10" [attr.fill]="releaseNode.color" />
-              <text x="-20" y="-20">
+              <text x="0" y="-20" text-anchor="middle">
                 {{ releaseNode.label }}
               </text>
             }
