@@ -44,6 +44,7 @@ describe('BusinessValueEditComponent', () => {
     fixture = TestBed.createComponent(BusinessValueEditComponent);
     component = fixture.componentInstance;
     component.businessValue = mockBusinessValue;
+    fixture.detectChanges();
   });
 
   it('should create', () => {
@@ -51,40 +52,69 @@ describe('BusinessValueEditComponent', () => {
   });
 
   describe('Initialization', () => {
-    it('should initialize with empty form fields before ngOnInit', () => {
-      expect(component.name()).toBe('');
-      expect(component.description()).toBe('');
-      expect(component.isSaving()).toBeFalse();
-      expect(component.errorMessage()).toBe('');
-    });
-
-    it('should populate form fields with businessValue data on ngOnInit', () => {
-      component.ngOnInit();
-
+    it('should populate form fields with businessValue data on input change (setter)', () => {
       expect(component.name()).toBe('Original Title');
       expect(component.description()).toBe('Original Description');
     });
 
-    it('should handle ngOnInit when businessValue is provided', () => {
-      component.businessValue = {
+    it('should handle input change when businessValue is updated', () => {
+      const newBV: BusinessValue = {
         id: 'custom-id',
         title: 'Custom Title',
         description: 'Custom Description',
         issues: [],
       };
 
-      component.ngOnInit();
+      component.businessValue = newBV;
+      fixture.detectChanges();
 
       expect(component.name()).toBe('Custom Title');
       expect(component.description()).toBe('Custom Description');
+      expect(component.isFormValidAndChanged()).toBeFalse();
+    });
+  });
+
+  describe('isFormValidAndChanged', () => {
+    it('should be FALSE immediately after initialization (no changes)', () => {
+      expect(component.name()).toBe('Original Title');
+      expect(component.description()).toBe('Original Description');
+      expect(component.isFormValidAndChanged()).toBeFalse();
+    });
+
+    it('should be TRUE when name is changed', () => {
+      component.updateName(createInputEvent('New Title'));
+
+      expect(component.isFormValidAndChanged()).toBeTrue();
+    });
+
+    it('should be TRUE when description is changed', () => {
+      component.updateDescription(createInputEvent('New Description'));
+
+      expect(component.isFormValidAndChanged()).toBeTrue();
+    });
+
+    it('should be FALSE when a field is changed back to original value', () => {
+      component.updateName(createInputEvent('New Title'));
+
+      expect(component.isFormValidAndChanged()).toBeTrue();
+
+      component.updateName(createInputEvent('Original Title'));
+
+      expect(component.isFormValidAndChanged()).toBeFalse();
+    });
+
+    it('should be FALSE if a field becomes empty', () => {
+      component.updateName(createInputEvent('New Title'));
+
+      expect(component.isFormValidAndChanged()).toBeTrue();
+
+      component.updateName(createInputEvent(''));
+
+      expect(component.isFormValidAndChanged()).toBeFalse();
     });
   });
 
   describe('Form Updates', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
-
     it('should update name when updateName is called', () => {
       component.updateName(createInputEvent('New Title'));
 
@@ -115,11 +145,12 @@ describe('BusinessValueEditComponent', () => {
   });
 
   describe('Validation', () => {
-    beforeEach(() => {
-      component.ngOnInit();
-    });
+    const makeValidAndChanged = () => {
+      component.updateName(createInputEvent('New Title'));
+      component.updateDescription(createInputEvent('New Description'));
+    }
 
-    it('should show error when title is empty', () => {
+    it('should not call save when title is empty (isFormValidAndChanged is false)', () => {
       component.updateName(createInputEvent(''));
       component.updateDescription(createInputEvent('Valid Description'));
 
@@ -216,7 +247,6 @@ describe('BusinessValueEditComponent', () => {
 
   describe('Save Operation', () => {
     beforeEach(() => {
-      component.ngOnInit();
       component.updateName(createInputEvent('Updated Title'));
       component.updateDescription(createInputEvent('Updated Description'));
     });
@@ -324,6 +354,17 @@ describe('BusinessValueEditComponent', () => {
       expect(updatedEmitted).toBeFalse();
       expect(closedEmitted).toBeFalse();
     });
+
+    it('should not call updateBusinessValue when there are no changes', () => {
+      component.businessValue = mockBusinessValue;
+      fixture.detectChanges();
+
+      expect(component.isFormValidAndChanged()).toBeFalse();
+
+      component.save();
+
+      expect(mockBusinessValueService.updateBusinessValue).not.toHaveBeenCalled();
+    });
   });
 
   describe('Close Operation', () => {
@@ -333,31 +374,6 @@ describe('BusinessValueEditComponent', () => {
       });
 
       component.close();
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should allow saving without any changes', () => {
-      component.ngOnInit();
-      mockBusinessValueService.updateBusinessValue.and.returnValue(of(mockBusinessValue));
-
-      component.save();
-
-      expect(mockBusinessValueService.updateBusinessValue).toHaveBeenCalledWith(
-        'bv-123',
-        'Original Title',
-        'Original Description',
-      );
-    });
-
-    it('should handle multiple consecutive save attempts', () => {
-      component.ngOnInit();
-      mockBusinessValueService.updateBusinessValue.and.returnValue(of(updatedBusinessValue));
-
-      component.save();
-      component.save();
-
-      expect(mockBusinessValueService.updateBusinessValue).toHaveBeenCalledTimes(2);
     });
   });
 });

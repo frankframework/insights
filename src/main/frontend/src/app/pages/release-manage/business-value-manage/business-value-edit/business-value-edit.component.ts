@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, signal, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../components/modal/modal.component';
@@ -11,10 +11,27 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
   templateUrl: './business-value-edit.component.html',
   styleUrl: './business-value-edit.component.scss',
 })
-export class BusinessValueEditComponent implements OnInit {
-  @Input() businessValue!: BusinessValue;
+export class BusinessValueEditComponent {
+  private _businessValue!: BusinessValue;
+
+  @Input({ required: true })
+  set businessValue(bv: BusinessValue) {
+    this._businessValue = bv;
+    this.name.set(bv.title);
+    this.description.set(bv.description);
+    this.originalName.set(bv.title);
+    this.originalDescription.set(bv.description);
+  }
+
+  get businessValue(): BusinessValue {
+    return this._businessValue;
+  }
+
   @Output() closed = new EventEmitter<void>();
   @Output() businessValueUpdated = new EventEmitter<BusinessValue>();
+
+  private originalName = signal<string>('');
+  private originalDescription = signal<string>('');
 
   public name = signal<string>('');
   public description = signal<string>('');
@@ -23,12 +40,16 @@ export class BusinessValueEditComponent implements OnInit {
 
   private businessValueService = inject(BusinessValueService);
 
-  ngOnInit(): void {
-    if (this.businessValue) {
-      this.name.set(this.businessValue.title);
-      this.description.set(this.businessValue.description);
-    }
-  }
+  public isFormValidAndChanged = computed<boolean>(() => {
+    const currentName = this.name().trim();
+    const currentDescription = this.description().trim();
+
+    const isRequiredFilled = currentName.length > 0 && currentDescription.length > 0;
+
+    const hasChanged = currentName !== this.originalName() || currentDescription !== this.originalDescription();
+
+    return isRequiredFilled && hasChanged;
+  });
 
   public close(): void {
     this.closed.emit();
@@ -43,8 +64,7 @@ export class BusinessValueEditComponent implements OnInit {
       return;
     }
 
-    if (!nameValue || !descriptionValue) {
-      this.errorMessage.set('Both title and description are required');
+    if (!this.isFormValidAndChanged()) {
       return;
     }
 
@@ -61,7 +81,7 @@ export class BusinessValueEditComponent implements OnInit {
     this.isSaving.set(true);
     this.errorMessage.set('');
 
-    this.businessValueService.updateBusinessValue(this.businessValue.id, nameValue, descriptionValue).subscribe({
+    this.businessValueService.updateBusinessValue(this._businessValue.id, nameValue, descriptionValue).subscribe({
       next: (businessValue) => {
         this.isSaving.set(false);
         this.businessValueUpdated.emit(businessValue);

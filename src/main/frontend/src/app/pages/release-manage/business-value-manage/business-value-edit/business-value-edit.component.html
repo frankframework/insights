@@ -38,7 +38,7 @@
 
     <div class="form-actions">
       <button class="btn btn-cancel" [disabled]="isSaving()" (click)="close()">Cancel</button>
-      <button class="btn btn-save" [disabled]="isSaving() || !name().trim() || !description().trim()" (click)="save()">
+      <button class="btn btn-save" [disabled]="isSaving() || !isFormValidAndChanged()" (click)="save()">
         @if (isSaving()) {
           <span>Saving...</span>
         } @else {

@@ -46,6 +46,7 @@ export class BusinessValueManageComponent implements OnInit {
 
   public businessValueToDelete = signal<BusinessValue | null>(null);
 
+  // eslint-disable-next-line unicorn/consistent-function-scoping
   public hasChanges = computed(() => this.hasIssueChanges());
 
   private route = inject(ActivatedRoute);
@@ -93,26 +94,23 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-    } else {
-      if (this.selectedBusinessValue()) {
-        this.updateIssueSelection(this.selectedBusinessValue()!);
-      }
     }
 
     this.closeDeleteModal();
   }
 
   public onBusinessValueUpdated(updatedBusinessValue: BusinessValue): void {
-    const updatedList = this.businessValues().map((bv) =>
-      bv.id === updatedBusinessValue.id ? updatedBusinessValue : bv,
+    this.businessValues.update((list) =>
+      list.map((bv) => (bv.id === updatedBusinessValue.id ? updatedBusinessValue : bv)),
     );
-    this.businessValues.set(updatedList);
+
     this.selectedBusinessValue.set(updatedBusinessValue);
+    this.toggleEditForm();
   }
 
   public onBusinessValueCreated(businessValue: BusinessValue): void {
-    const updatedList = [...this.businessValues(), businessValue];
-    this.businessValues.set(updatedList);
+    this.businessValues.update((list) => [...list, businessValue]);
+    this.selectBusinessValue(businessValue);
   }
 
   public selectBusinessValue(businessValue: BusinessValue): void {
@@ -175,11 +173,9 @@ export class BusinessValueManageComponent implements OnInit {
   private handleToggleIssue(issue: IssueWithSelection): void {
     if (issue.assignedToOther) return;
 
-    const issues = this.issuesWithSelection();
-    const updatedIssues = issues.map((index) =>
-      index.id === issue.id ? { ...index, isSelected: !index.isSelected } : index,
+    this.issuesWithSelection.update((issues) =>
+      issues.map((index) => (index.id === issue.id ? { ...index, isSelected: !index.isSelected } : index)),
     );
-    this.issuesWithSelection.set(updatedIssues);
   }
 
   private performSaveChanges(selectedBV: BusinessValue): void {

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, input, Output, EventEmitter, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { Issue } from '../../../../services/issue.service';
@@ -18,10 +18,10 @@ export interface IssueWithSelection extends Issue {
   styleUrl: './business-value-issue-panel.component.scss',
 })
 export class BusinessValueIssuePanelComponent {
-  @Input({ required: true }) selectedBusinessValue: BusinessValue | null = null;
-  @Input({ required: true }) issuesWithSelection: IssueWithSelection[] = [];
-  @Input({ required: true }) hasChanges = false;
-  @Input() isSaving = false;
+  public selectedBusinessValue = input.required<BusinessValue | null>();
+  public issuesWithSelection = input.required<IssueWithSelection[]>();
+  public hasChanges = input.required<boolean>();
+  public isSaving = input<boolean>(false);
 
   @Output() issueToggled = new EventEmitter<IssueWithSelection>();
   @Output() saveClicked = new EventEmitter<void>();
@@ -29,8 +29,8 @@ export class BusinessValueIssuePanelComponent {
   public issueSearchQuery = signal<string>('');
 
   public sortedIssues = computed(() => {
-    const issues = [...this.issuesWithSelection];
-    const selectedBV = this.selectedBusinessValue;
+    const issues = [...this.issuesWithSelection()];
+    const selectedBV = this.selectedBusinessValue();
     const searchQuery = this.issueSearchQuery().toLowerCase().trim();
 
     let filteredIssues = issues;

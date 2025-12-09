@@ -23,7 +23,7 @@ describe('BusinessValuePanelComponent', () => {
 
     fixture = TestBed.createComponent(BusinessValuePanelComponent);
     component = fixture.componentInstance;
-    component.businessValues = mockBusinessValues;
+    fixture.componentRef.setInput('businessValues', mockBusinessValues);
     fixture.detectChanges();
   });
 

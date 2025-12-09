@@ -10,7 +10,6 @@ import { BusinessValueManageComponent } from './business-value-manage.component'
 import { BusinessValueService, BusinessValue } from '../../../services/business-value.service';
 import { IssueService, Issue } from '../../../services/issue.service';
 import { ReleaseService, Release } from '../../../services/release.service';
-import { IssueWithSelection } from './business-value-issue-panel/business-value-issue-panel.component';
 
 @Component({ selector: 'app-business-value-add', standalone: true, template: '' })
 class MockBusinessValueAddComponent {
@@ -214,10 +213,15 @@ describe('BusinessValueManageComponent', () => {
     });
 
     it('should handle create business value', () => {
-      const newBV: BusinessValue = { id: 'new', title: 'New', description: '', issues: [] };
+      const newBV: BusinessValue = { id: 'new-bv', title: 'New', description: 'New Desc', issues: [] };
+
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(newBV));
+
       component.onBusinessValueCreated(newBV);
 
       expect(component.businessValues().length).toBe(3);
+      expect(component.selectedBusinessValue()?.id).toBe('new-bv');
+      expect(mockBusinessValueService.getBusinessValueById).toHaveBeenCalledWith('new-bv');
     });
   });
 

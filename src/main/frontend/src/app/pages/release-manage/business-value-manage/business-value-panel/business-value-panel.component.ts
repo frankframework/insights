@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, input, Output, EventEmitter, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../../services/business-value.service';
 
@@ -10,8 +10,8 @@ import { BusinessValue } from '../../../../services/business-value.service';
   styleUrl: './business-value-panel.component.scss',
 })
 export class BusinessValuePanelComponent {
-  @Input({ required: true }) businessValues: BusinessValue[] = [];
-  @Input() selectedBusinessValue: BusinessValue | null = null;
+  public businessValues = input.required<BusinessValue[]>();
+  public selectedBusinessValue = input<BusinessValue | null>(null);
 
   @Output() businessValueSelected = new EventEmitter<BusinessValue>();
   @Output() createClicked = new EventEmitter<void>();
@@ -22,7 +22,7 @@ export class BusinessValuePanelComponent {
 
   public filteredBusinessValues = computed(() => {
     const query = this.businessValueSearchQuery().toLowerCase().trim();
-    let values = this.businessValues;
+    let values = this.businessValues();
 
     if (query) {
       values = values.filter((bv) => this.filterBusinessValuesByQuery(bv, query));

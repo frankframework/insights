@@ -1,5 +1,5 @@
 <div class="right-panel">
-  @if (selectedBusinessValue) {
+  @if (selectedBusinessValue()) {
     <div class="panel-header">
       <h2>Issues</h2>
       <span class="count">{{ sortedIssues().length }}</span>
@@ -30,8 +30,8 @@
         />
       </div>
 
-      <button class="save-button" [disabled]="!hasChanges || isSaving" (click)="onSaveClick()">
-        @if (isSaving) {
+      <button class="save-button" [disabled]="!hasChanges() || isSaving()" (click)="onSaveClick()">
+        @if (isSaving()) {
           <span>Saving...</span>
         } @else {
           <span>Save Changes</span>

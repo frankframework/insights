@@ -56,10 +56,10 @@ describe('BusinessValueIssuePanelComponent', () => {
 
     fixture = TestBed.createComponent(BusinessValueIssuePanelComponent);
     component = fixture.componentInstance;
-    component.selectedBusinessValue = mockBusinessValue;
-    component.issuesWithSelection = mockIssuesWithSelection;
-    component.hasChanges = false;
-    component.isSaving = false;
+    fixture.componentRef.setInput('selectedBusinessValue', mockBusinessValue);
+    fixture.componentRef.setInput('issuesWithSelection', mockIssuesWithSelection);
+    fixture.componentRef.setInput('hasChanges', false);
+    fixture.componentRef.setInput('isSaving', false);
     fixture.detectChanges();
   });
 
@@ -157,10 +157,10 @@ describe('BusinessValueIssuePanelComponent', () => {
 
   describe('No Selection State', () => {
     it('should handle null selectedBusinessValue', () => {
-      component.selectedBusinessValue = null;
+      fixture.componentRef.setInput('selectedBusinessValue', null);
       fixture.detectChanges();
 
-      expect(component.selectedBusinessValue).toBeNull();
+      expect(component.selectedBusinessValue()).toBeNull();
     });
   });
 });
