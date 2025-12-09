@@ -1,14 +1,14 @@
 <nav id="header">
-  <li class="logo-container" (click)="navigateToHome()">
+  <li class="logo-container" routerLink="/" [queryParams]="graphStateService.getGraphQueryParams()">
     <img ngSrc="/assets/ff!-icon.svg" alt="FF! insights Logo" width="48" height="48" priority />
     <h2>Insights</h2>
   </li>
   <ul>
-    <li routerLinkActive="active" [routerLink]="['/graph']" (click)="navigateToGraph()">
+    <li routerLinkActive="active" [routerLink]="['/graph']" [queryParams]="graphStateService.getGraphQueryParams()">
       <h3>Release graph</h3>
       <span class="tab-underline"></span>
     </li>
-    <li routerLinkActive="active" [routerLink]="['/roadmap']" (click)="navigateToRoadmap()">
+    <li routerLinkActive="active" [routerLink]="['/roadmap']">
       <h3>Roadmap</h3>
       <span class="tab-underline"></span>
     </li>
