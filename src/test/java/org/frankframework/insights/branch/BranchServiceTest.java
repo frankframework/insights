@@ -51,16 +51,16 @@ public class BranchServiceTest {
     private PullRequest mockPullRequest;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         statsDTO = mock(GitHubRepositoryStatisticsDTO.class);
 
-        branchProtectionRegexes = List.of("release/.*", "main", "master");
+        branchProtectionRegexes = List.of("^master$", "^release/\\d+\\.\\d+$", "^\\d+\\.\\d+-release$");
         when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(branchProtectionRegexes);
 
-        protectedBranchDTO = new BranchDTO("id1", "release/v1.2.3");
+        protectedBranchDTO = new BranchDTO("id1", "release/1.2");
         protectedBranch = new Branch();
         protectedBranch.setId(UUID.randomUUID().toString());
-        protectedBranch.setName("release/v1.2.3");
+        protectedBranch.setName("release/1.2");
 
         unprotectedBranchDTO = new BranchDTO("id2", "feature/test");
 
@@ -98,6 +98,7 @@ public class BranchServiceTest {
         Set<BranchDTO> branchDTOs = Set.of(protectedBranchDTO, unprotectedBranchDTO);
         when(gitHubGraphQLClient.getBranches()).thenReturn(branchDTOs);
         when(mapper.toEntity(protectedBranchDTO, Branch.class)).thenReturn(protectedBranch);
+        when(branchRepository.findAll()).thenReturn(Collections.emptyList());
 
         branchService.injectBranches();
 
@@ -105,7 +106,7 @@ public class BranchServiceTest {
         verify(branchRepository).saveAll(captor.capture());
         Set<Branch> saved = captor.getValue();
         assertEquals(1, saved.size());
-        assertTrue(saved.iterator().next().getName().startsWith("release/"));
+        assertEquals("release/1.2", saved.iterator().next().getName());
     }
 
     @Test
@@ -213,5 +214,185 @@ public class BranchServiceTest {
         when(branchRepository.saveAll(branches)).thenReturn(Collections.emptyList());
         assertDoesNotThrow(() -> branchService.saveBranches(branches));
         verify(branchRepository).saveAll(branches);
+    }
+
+    @Test
+    public void injectBranches_shouldExcludeRenovateBranches()
+            throws GitHubGraphQLClientException, BranchInjectionException {
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsDTO);
+        when(statsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(branchRepository.count()).thenReturn(0L);
+
+        BranchDTO renovateBranchDTO = new BranchDTO("id3", "renovate/release/9.0-docker-(lts)");
+        BranchDTO renovateMasterBranchDTO = new BranchDTO("id4", "renovate/master-aspose");
+        BranchDTO invalidBranchDTO = new BranchDTO("id5", "release/9.0-docker");
+        BranchDTO validReleaseFormatBranchDTO = new BranchDTO("id6", "9.0-release");
+        Branch validReleaseFormatBranch = new Branch();
+        validReleaseFormatBranch.setId("id6");
+        validReleaseFormatBranch.setName("9.0-release");
+
+        Set<BranchDTO> branchDTOs = Set.of(
+                protectedBranchDTO,
+                renovateBranchDTO,
+                renovateMasterBranchDTO,
+                invalidBranchDTO,
+                validReleaseFormatBranchDTO);
+        when(gitHubGraphQLClient.getBranches()).thenReturn(branchDTOs);
+        when(mapper.toEntity(protectedBranchDTO, Branch.class)).thenReturn(protectedBranch);
+        when(mapper.toEntity(validReleaseFormatBranchDTO, Branch.class)).thenReturn(validReleaseFormatBranch);
+        when(branchRepository.findAll()).thenReturn(Collections.emptyList());
+
+        branchService.injectBranches();
+
+        ArgumentCaptor<Set<Branch>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(branchRepository).saveAll(captor.capture());
+        Set<Branch> saved = captor.getValue();
+        assertEquals(2, saved.size());
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("release/1.2")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("9.0-release")));
+        assertFalse(saved.stream().anyMatch(b -> b.getName().startsWith("renovate/")));
+        assertFalse(saved.stream().anyMatch(b -> b.getName().equals("release/9.0-docker")));
+    }
+
+    @Test
+    public void injectBranches_shouldCleanupOrphanedBranches()
+            throws GitHubGraphQLClientException, BranchInjectionException {
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsDTO);
+        when(statsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(branchRepository.count()).thenReturn(2L);
+
+        Branch orphanedBranch = new Branch();
+        orphanedBranch.setId("orphan-id");
+        orphanedBranch.setName("old-branch");
+
+        Set<BranchDTO> branchDTOs = Set.of(protectedBranchDTO);
+        when(gitHubGraphQLClient.getBranches()).thenReturn(branchDTOs);
+        when(mapper.toEntity(protectedBranchDTO, Branch.class)).thenReturn(protectedBranch);
+        when(branchRepository.findAll()).thenReturn(List.of(protectedBranch, orphanedBranch));
+
+        branchService.injectBranches();
+
+        ArgumentCaptor<List<Branch>> deleteCaptor = ArgumentCaptor.forClass(List.class);
+        verify(branchRepository).deleteAll(deleteCaptor.capture());
+        List<Branch> deleted = deleteCaptor.getValue();
+        assertEquals(1, deleted.size());
+        assertEquals("orphan-id", deleted.getFirst().getId());
+    }
+
+    @Test
+    public void injectBranches_shouldNotDeleteBranches_whenNoOrphans()
+            throws GitHubGraphQLClientException, BranchInjectionException {
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsDTO);
+        when(statsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(branchRepository.count()).thenReturn(0L);
+
+        Set<BranchDTO> branchDTOs = Set.of(protectedBranchDTO);
+        when(gitHubGraphQLClient.getBranches()).thenReturn(branchDTOs);
+        when(mapper.toEntity(protectedBranchDTO, Branch.class)).thenReturn(protectedBranch);
+        when(branchRepository.findAll()).thenReturn(Collections.emptyList());
+
+        branchService.injectBranches();
+
+        verify(branchRepository, never()).deleteAll(anyList());
+    }
+
+    @Test
+    public void injectBranches_shouldOnlyMatchStrictBranchPatterns()
+            throws GitHubGraphQLClientException, BranchInjectionException {
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsDTO);
+        when(statsDTO.getGitHubBranchCount(branchProtectionRegexes)).thenReturn(1);
+        when(branchRepository.count()).thenReturn(0L);
+
+        BranchDTO masterBranchDTO = new BranchDTO("master-id", "master");
+        BranchDTO release12DTO = new BranchDTO("release12-id", "release/1.2");
+        BranchDTO release90DTO = new BranchDTO("release90-id", "release/9.0");
+        BranchDTO release100DTO = new BranchDTO("release100-id", "release/10.0");
+        BranchDTO version12DTO = new BranchDTO("version12-id", "1.2-release");
+        BranchDTO version90DTO = new BranchDTO("version90-id", "9.0-release");
+        BranchDTO version100DTO = new BranchDTO("version100-id", "10.0-release");
+
+        BranchDTO masterDevDTO = new BranchDTO("master-dev-id", "master-dev");
+        BranchDTO releaseInvalidDTO = new BranchDTO("release-invalid-id", "release/9.0-docker");
+        BranchDTO releaseAlphaDTO = new BranchDTO("release-alpha-id", "release/v1.2");
+        BranchDTO renovateDTO = new BranchDTO("renovate-id", "renovate/release/9.0");
+        BranchDTO featureDTO = new BranchDTO("feature-id", "feature/test");
+
+        Branch masterBranch = new Branch();
+        masterBranch.setId("master-id");
+        masterBranch.setName("master");
+
+        Branch release12Branch = new Branch();
+        release12Branch.setId("release12-id");
+        release12Branch.setName("release/1.2");
+
+        Branch release90Branch = new Branch();
+        release90Branch.setId("release90-id");
+        release90Branch.setName("release/9.0");
+
+        Branch release100Branch = new Branch();
+        release100Branch.setId("release100-id");
+        release100Branch.setName("release/10.0");
+
+        Branch version12Branch = new Branch();
+        version12Branch.setId("version12-id");
+        version12Branch.setName("1.2-release");
+
+        Branch version90Branch = new Branch();
+        version90Branch.setId("version90-id");
+        version90Branch.setName("9.0-release");
+
+        Branch version100Branch = new Branch();
+        version100Branch.setId("version100-id");
+        version100Branch.setName("10.0-release");
+
+        Set<BranchDTO> branchDTOs = Set.of(
+                masterBranchDTO,
+                release12DTO,
+                release90DTO,
+                release100DTO,
+                version12DTO,
+                version90DTO,
+                version100DTO,
+                masterDevDTO,
+                releaseInvalidDTO,
+                releaseAlphaDTO,
+                renovateDTO,
+                featureDTO);
+
+        when(gitHubGraphQLClient.getBranches()).thenReturn(branchDTOs);
+        when(mapper.toEntity(masterBranchDTO, Branch.class)).thenReturn(masterBranch);
+        when(mapper.toEntity(release12DTO, Branch.class)).thenReturn(release12Branch);
+        when(mapper.toEntity(release90DTO, Branch.class)).thenReturn(release90Branch);
+        when(mapper.toEntity(release100DTO, Branch.class)).thenReturn(release100Branch);
+        when(mapper.toEntity(version12DTO, Branch.class)).thenReturn(version12Branch);
+        when(mapper.toEntity(version90DTO, Branch.class)).thenReturn(version90Branch);
+        when(mapper.toEntity(version100DTO, Branch.class)).thenReturn(version100Branch);
+        when(branchRepository.findAll()).thenReturn(Collections.emptyList());
+
+        branchService.injectBranches();
+
+        ArgumentCaptor<Set<Branch>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(branchRepository).saveAll(captor.capture());
+        Set<Branch> saved = captor.getValue();
+
+        assertEquals(7, saved.size());
+
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("master")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("release/1.2")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("release/9.0")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("release/10.0")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("1.2-release")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("9.0-release")));
+        assertTrue(saved.stream().anyMatch(b -> b.getName().equals("10.0-release")));
+
+        assertFalse(saved.stream().anyMatch(b -> b.getName().equals("master-dev")));
+        assertFalse(saved.stream().anyMatch(b -> b.getName().equals("release/9.0-docker")));
+        assertFalse(saved.stream().anyMatch(b -> b.getName().equals("release/v1.2")));
+        assertFalse(saved.stream().anyMatch(b -> b.getName().startsWith("renovate/")));
+        assertFalse(saved.stream().anyMatch(b -> b.getName().equals("feature/test")));
     }
 }

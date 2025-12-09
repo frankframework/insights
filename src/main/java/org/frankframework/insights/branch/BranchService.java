@@ -71,6 +71,9 @@ public class BranchService {
             if (!branches.isEmpty()) {
                 saveBranches(branches);
             }
+
+            // Clean up orphaned branches (branches in DB but not in GitHub)
+            cleanupOrphanedBranches(branchDTOs);
         } catch (Exception e) {
             throw new BranchInjectionException("Error while injecting GitHub branches", e);
         }
@@ -78,12 +81,14 @@ public class BranchService {
 
     /**
      * Finds protected branches by regex patterns and maps them to database entities.
+     * Excludes branches that start with "renovate/".
      * @param branchDTOs the set of branch DTOs to filter
      * @return a set of filtered and mapped Branch entities
      */
     private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
         log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()
+                .filter(branchDTO -> !branchDTO.name().startsWith("renovate/"))
                 .filter(branchDTO -> branchProtectionRegexes.stream()
                         .anyMatch(regex ->
                                 Pattern.compile(regex).matcher(branchDTO.name()).find()))
@@ -129,5 +134,27 @@ public class BranchService {
     public void saveBranches(Set<Branch> branches) {
         List<Branch> savedBranches = branchRepository.saveAll(branches);
         log.info("Successfully saved {} branches.", savedBranches.size());
+    }
+
+    /**
+     * Cleans up orphaned branches from the database.
+     * Orphaned branches are those that exist in the database but are no longer in GitHub.
+     * @param gitHubBranches the set of branch DTOs from GitHub
+     */
+    private void cleanupOrphanedBranches(Set<BranchDTO> gitHubBranches) {
+        Set<String> gitHubBranchNames =
+                gitHubBranches.stream().map(BranchDTO::name).collect(Collectors.toSet());
+
+        List<Branch> dbBranches = branchRepository.findAll();
+        List<Branch> orphanedBranches = dbBranches.stream()
+                .filter(branch -> !gitHubBranchNames.contains(branch.getName()))
+                .toList();
+
+        if (!orphanedBranches.isEmpty()) {
+            branchRepository.deleteAll(orphanedBranches);
+            log.info("Successfully cleaned up {} orphaned branches.", orphanedBranches.size());
+        } else {
+            log.info("No orphaned branches found.");
+        }
     }
 }
