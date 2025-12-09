@@ -72,7 +72,6 @@ public class BranchService {
                 saveBranches(branches);
             }
 
-            // Clean up orphaned branches (branches in DB but not in GitHub)
             cleanupOrphanedBranches(branchDTOs);
         } catch (Exception e) {
             throw new BranchInjectionException("Error while injecting GitHub branches", e);
@@ -81,14 +80,12 @@ public class BranchService {
 
     /**
      * Finds protected branches by regex patterns and maps them to database entities.
-     * Excludes branches that start with "renovate/".
      * @param branchDTOs the set of branch DTOs to filter
      * @return a set of filtered and mapped Branch entities
      */
     private Set<Branch> findProtectedBranchesByRegexPattern(Set<BranchDTO> branchDTOs) {
         log.info("Find protected branches by patterns: {}, and map them to database entities", branchProtectionRegexes);
         Set<Branch> filteredBranches = branchDTOs.stream()
-                .filter(branchDTO -> !branchDTO.name().startsWith("renovate/"))
                 .filter(branchDTO -> branchProtectionRegexes.stream()
                         .anyMatch(regex ->
                                 Pattern.compile(regex).matcher(branchDTO.name()).find()))
