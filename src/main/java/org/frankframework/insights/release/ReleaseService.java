@@ -87,14 +87,12 @@ public class ReleaseService {
                     .map(dto -> mapToRelease(dto, allBranches))
                     .collect(Collectors.toSet());
 
-            // Only save if we have releases, otherwise logging and skipping save
             if (!releases.isEmpty()) {
                 saveAllReleases(releases);
             } else {
                 log.info("No valid releases found.");
             }
 
-            // Always check for obsolete releases, even if the current list is empty (which implies deleting all)
             deleteObsoleteReleases(releases);
 
             if (releases.isEmpty()) {
