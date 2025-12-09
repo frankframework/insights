@@ -241,12 +241,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     const cornerY = y2 - verticalDirection;
     const horizontalSweep = x2 > x1 ? 0 : 1;
 
-    return [
-      `M ${x1},${y1}`,
-      `L ${x1},${cornerY}`,
-      `A 0,0 0 0,${horizontalSweep} ${x1},${y2}`,
-      `L ${x2},${y2}`,
-    ].join(' ');
+    return [`M ${x1},${y1}`, `L ${x1},${cornerY}`, `A 0,0 0 0,${horizontalSweep} ${x1},${y2}`, `L ${x2},${y2}`].join(
+      ' ',
+    );
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
