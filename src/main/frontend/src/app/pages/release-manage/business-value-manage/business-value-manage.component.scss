@@ -114,7 +114,6 @@
 }
 
 .panel-header-actions { display: flex; align-items: center; gap: .5rem; }
-
 .add-button {
   display: flex;
   align-items: center;
@@ -132,7 +131,6 @@
   }
   &:hover { background: #f9fafb; color: #3b82f6; border-color: #3b82f6; }
   &:active { background: #f3f4f6; }
-  svg { flex-shrink: 0; }
 }
 
 .action-buttons {
@@ -306,14 +304,12 @@
     border-color: #e5e7eb;
     cursor: not-allowed;
     &:hover { border-color: #e5e7eb; background: #f9fafb; }
-    input[type='checkbox'] { cursor: not-allowed; }
+    input[type='checkbox'],input[type='checkbox']::after { cursor: not-allowed; }
     input[type='checkbox']::after { opacity: .5; }
     .issue-content h4 { color: #9ca3af; }
   }
   input[type='checkbox'] {
     appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     margin-top: .25rem;
     width: 1.125rem;
     height: 1.125rem;
@@ -375,32 +371,35 @@
   @media (max-width: 640px) { font-size: .8125rem; }
 }
 
+.issue-type,.assigned-badge {
+  font: 600 .75rem/1 sans-serif;
+  padding: .125rem .5rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  @media (max-width: 640px) { font-size: .6875rem; padding: .125rem .375rem; }
+}
+
 .issue-type {
   background: #f3f4f6;
   color: #4b5563;
-  padding: .125rem .5rem;
   border-radius: 4px;
-  font: 600 .75rem/1 sans-serif;
   text-transform: uppercase;
-  flex-shrink: 0;
-  @media (max-width: 640px) { font-size: .6875rem; padding: .125rem .375rem; }
 }
 
 .assigned-badge {
   background: #e0f2fe;
   color: #0369a1;
-  font: 600 .75rem/1 sans-serif;
-  padding: .125rem .5rem;
   border-radius: 12px;
-  white-space: nowrap;
-  @media (max-width: 640px) { font-size: .6875rem; padding: .125rem .375rem; }
 }
 
-.empty-state, .no-selection {
+.empty-state,.no-selection,.loading {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.empty-state,.no-selection {
+  flex-direction: column;
   padding: 2rem 1rem;
   text-align: center;
   color: #6b7280;
@@ -410,9 +409,6 @@
 }
 
 .loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   height: 100%;
   p { color: #6b7280; font-size: 1.125rem; }
 }
