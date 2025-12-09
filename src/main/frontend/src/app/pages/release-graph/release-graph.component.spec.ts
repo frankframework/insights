@@ -3,8 +3,8 @@ import { ReleaseGraphComponent } from './release-graph.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLinkService, SkipNode } from './release-link.service';
-import { Router, NavigationEnd } from '@angular/router';
-import { of, ReplaySubject, throwError } from 'rxjs';
+import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
 import { ElementRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -16,6 +16,7 @@ describe('ReleaseGraphComponent', () => {
   let mockNodeService: jasmine.SpyObj<ReleaseNodeService>;
   let mockLinkService: jasmine.SpyObj<ReleaseLinkService>;
   let routerEventsSubject: ReplaySubject<NavigationEnd>;
+  let queryParametersSubject: BehaviorSubject<any>;
 
   const mockReleaseData: Record<string, Release[]> = {
     master: [{ id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), branch: { id: 'b1', name: 'master' } }],
@@ -57,11 +58,16 @@ describe('ReleaseGraphComponent', () => {
     ]);
     mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
     routerEventsSubject = new ReplaySubject<NavigationEnd>(1);
+    queryParametersSubject = new BehaviorSubject<any>({});
 
     const mockRouter = {
       events: routerEventsSubject.asObservable(),
       url: '/graph',
       navigate: jasmine.createSpy('navigate'),
+    };
+
+    const mockActivatedRoute = {
+      queryParams: queryParametersSubject.asObservable(),
     };
 
     await TestBed.configureTestingModule({
@@ -71,6 +77,7 @@ describe('ReleaseGraphComponent', () => {
         { provide: ReleaseNodeService, useValue: mockNodeService },
         { provide: ReleaseLinkService, useValue: mockLinkService },
         { provide: Router, useValue: mockRouter },
+        { provide: ActivatedRoute, useValue: mockActivatedRoute },
         provideHttpClient(),
         provideHttpClientTesting(),
       ],
@@ -674,6 +681,224 @@ describe('ReleaseGraphComponent', () => {
       expect(result).toBeDefined();
       expect(result?.id).toBe('start-node-node-1');
       expect(result?.position).toEqual({ x: 100, y: 0 });
+    });
+  });
+
+  describe('Extended Support Functionality', () => {
+    describe('Query Parameter Detection', () => {
+      it('should set showExtendedSupport to false by default', () => {
+        fixture.detectChanges();
+
+        expect(component.showExtendedSupport).toBe(false);
+      });
+
+      it('should set showExtendedSupport to true when extended param is present', () => {
+        queryParametersSubject.next({ extended: '' });
+        fixture.detectChanges();
+
+        expect(component.showExtendedSupport).toBe(true);
+      });
+
+      it('should set showExtendedSupport to false when extended param is removed', () => {
+        queryParametersSubject.next({ extended: '' });
+        fixture.detectChanges();
+
+        expect(component.showExtendedSupport).toBe(true);
+
+        queryParametersSubject.next({});
+
+        expect(component.showExtendedSupport).toBe(false);
+      });
+
+      it('should rebuild graph when extended mode changes', () => {
+        fixture.detectChanges();
+        component.releases = mockReleases;
+        spyOn<any>(component, 'buildReleaseGraph');
+
+        queryParametersSubject.next({ extended: '' });
+
+        expect((component as any).buildReleaseGraph).toHaveBeenCalledWith(mockStructuredGroups);
+      });
+    });
+
+    describe('calculateSupportEndDate', () => {
+      let calculateSupportEndDate: any;
+
+      beforeEach(() => {
+        calculateSupportEndDate = (component as any).calculateSupportEndDate.bind(component);
+      });
+
+      it('should calculate standard support end date for major version', () => {
+        component.showExtendedSupport = false;
+        const startDate = new Date('2024-01-01');
+        const endDate = calculateSupportEndDate(startDate, 4, true);
+
+        expect(endDate.getFullYear()).toBe(2025);
+        expect(endDate.getMonth()).toBe(0);
+      });
+
+      it('should calculate extended support end date for major version', () => {
+        component.showExtendedSupport = true;
+        const startDate = new Date('2024-01-01');
+        const endDate = calculateSupportEndDate(startDate, 4, true);
+
+        expect(endDate.getFullYear()).toBe(2025);
+        expect(endDate.getMonth()).toBe(6);
+      });
+
+      it('should calculate standard support end date for minor version', () => {
+        component.showExtendedSupport = false;
+        const startDate = new Date('2024-01-01');
+        const endDate = calculateSupportEndDate(startDate, 2, false);
+
+        expect(endDate.getFullYear()).toBe(2024);
+        expect(endDate.getMonth()).toBe(6);
+      });
+
+      it('should calculate extended support end date for minor version', () => {
+        component.showExtendedSupport = true;
+        const startDate = new Date('2024-01-01');
+        const endDate = calculateSupportEndDate(startDate, 2, false);
+
+        expect(endDate.getFullYear()).toBe(2024);
+        expect(endDate.getMonth()).toBe(9);
+      });
+    });
+
+    describe('calculatePhaseBoundaries', () => {
+      let calculatePhaseBoundaries: any;
+      const mockScale = { startDate: new Date('2024-01-01'), pixelsPerDay: 2 };
+
+      beforeEach(() => {
+        calculatePhaseBoundaries = (component as any).calculatePhaseBoundaries.bind(component);
+      });
+
+      it('should calculate 2-phase boundaries in standard mode', () => {
+        component.showExtendedSupport = false;
+        const result = calculatePhaseBoundaries(
+          new Date('2024-01-01'),
+          0,
+          1000,
+          6,
+          mockScale
+        );
+
+        expect(result.greenPhaseEndX).toBe(500);
+        expect(result.orangePhaseStartX).toBe(500);
+      });
+
+      it('should calculate 3-phase boundaries in extended mode for major version', () => {
+        component.showExtendedSupport = true;
+        const result = calculatePhaseBoundaries(
+          new Date('2024-01-01'),
+          0,
+          1000,
+          6,
+          mockScale
+        );
+
+        expect(result.greenPhaseEndX).toBeGreaterThan(0);
+        expect(result.orangePhaseStartX).toBeGreaterThan(result.greenPhaseEndX);
+        expect(result.orangePhaseStartX).toBeLessThan(1000);
+      });
+    });
+
+    describe('createLifecyclePhases', () => {
+      let createLifecyclePhases: any;
+
+      beforeEach(() => {
+        createLifecyclePhases = (component as any).createLifecyclePhases.bind(component);
+      });
+
+      it('should create 2 phases in standard mode', () => {
+        component.showExtendedSupport = false;
+        const phases = createLifecyclePhases(0, 500, 500, 1000, false);
+
+        expect(phases.length).toBe(2);
+        expect(phases[0].color).toContain('144, 238, 144');
+        expect(phases[1].color).toContain('251, 146, 60');
+      });
+
+      it('should create 3 phases in extended mode', () => {
+        component.showExtendedSupport = true;
+        const phases = createLifecyclePhases(0, 333, 666, 1000, false);
+
+        expect(phases.length).toBe(3);
+        expect(phases[0].color).toContain('144, 238, 144');
+        expect(phases[1].color).toContain('59, 130, 246');
+        expect(phases[2].color).toContain('251, 146, 60');
+      });
+
+      it('should use outdated colors when isOutdated is true', () => {
+        component.showExtendedSupport = false;
+        const phases = createLifecyclePhases(0, 500, 500, 1000, true);
+
+        expect(phases[0].color).toContain('210, 210, 210');
+        expect(phases[1].color).toContain('210, 210, 210');
+      });
+
+      it('should create phases with correct boundaries', () => {
+        component.showExtendedSupport = true;
+        const phases = createLifecyclePhases(0, 300, 600, 900, false);
+
+        expect(phases[0].startX).toBe(0);
+        expect(phases[0].endX).toBe(300);
+        expect(phases[1].startX).toBe(300);
+        expect(phases[1].endX).toBe(600);
+        expect(phases[2].startX).toBe(600);
+        expect(phases[2].endX).toBe(900);
+      });
+    });
+
+    describe('findMajorMinorRelease', () => {
+      let findMajorMinorRelease: any;
+
+      beforeEach(() => {
+        findMajorMinorRelease = (component as any).findMajorMinorRelease.bind(component);
+      });
+
+      it('should find a major.minor.0 release', () => {
+        component.releases = [
+          { id: '1', name: 'v7.0.0', publishedAt: new Date() } as Release,
+          { id: '2', name: 'v7.0.1', publishedAt: new Date() } as Release,
+        ];
+
+        const result = findMajorMinorRelease('7.0');
+
+        expect(result).toBeDefined();
+        expect(result?.name).toBe('v7.0.0');
+      });
+
+      it('should find release without v prefix', () => {
+        component.releases = [
+          { id: '1', name: '7.0.0', publishedAt: new Date() } as Release,
+        ];
+
+        const result = findMajorMinorRelease('7.0');
+
+        expect(result).toBeDefined();
+        expect(result?.name).toBe('7.0.0');
+      });
+
+      it('should not find nightly releases', () => {
+        component.releases = [
+          { id: '1', name: 'v7.0.0-nightly', publishedAt: new Date() } as Release,
+        ];
+
+        const result = findMajorMinorRelease('7.0');
+
+        expect(result).toBeUndefined();
+      });
+
+      it('should return undefined when no matching release exists', () => {
+        component.releases = [
+          { id: '1', name: 'v8.0.0', publishedAt: new Date() } as Release,
+        ];
+
+        const result = findMajorMinorRelease('7.0');
+
+        expect(result).toBeUndefined();
+      });
     });
   });
 });

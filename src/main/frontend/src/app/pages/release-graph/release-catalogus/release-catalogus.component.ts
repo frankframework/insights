@@ -1,4 +1,4 @@
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { AuthService } from '../../../services/auth.service';
@@ -11,6 +11,8 @@ import { AuthService } from '../../../services/auth.service';
   imports: [NgStyle, ModalComponent],
 })
 export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
+  @Input() showExtendedSupport = false;
+
   public modalOpen = false;
   public isSmallScreen = false;
 

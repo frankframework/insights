@@ -80,6 +80,11 @@
           border: 1.5px solid rgba(144, 238, 144, 0.6);
         }
 
+        &.support-extended {
+          background-color: rgba(59, 130, 246, 0.2);
+          border: 1.5px solid rgba(59, 130, 246, 0.4);
+        }
+
         &.support-security {
           background-color: rgba(239, 147, 2, 0.25);
           border: 1.5px solid rgba(239, 147, 2, 0.5);
