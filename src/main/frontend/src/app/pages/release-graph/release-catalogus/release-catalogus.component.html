@@ -76,6 +76,15 @@
           <p><strong>Active support window</strong> - Branch is receiving active development and bug fixes</p>
         </div>
 
+        @if (showExtendedSupport) {
+          <div class="release-content-item">
+            <div class="release-content-item-icon support-timeline-icon">
+              <div class="support-rectangle support-extended"></div>
+            </div>
+            <p><strong>Extended Support</strong> - Branch receives extended active development and bug fixes</p>
+          </div>
+        }
+
         <div class="release-content-item">
           <div class="release-content-item-icon support-timeline-icon">
             <div class="support-rectangle support-security"></div>
@@ -90,11 +99,19 @@
           <p><strong>Historical support window</strong> - Shows when the branch was supported in the past</p>
         </div>
 
-        <p class="policy-text">
-          Our policy is to provide major versions with one year of security support and six months of technical support.
-          For minor versions, these support periods are six months for security support and three months for technical
-          support.
-        </p>
+        @if (showExtendedSupport) {
+          <p class="policy-text">
+            Our extended support policy provides major versions with 18 months total support (6 months active + 6 months
+            extended + 6 months security). For minor versions, the total support period is 9 months (3 months active + 3
+            months extended + 3 months security).
+          </p>
+        } @else {
+          <p class="policy-text">
+            Our policy is to provide major versions with one year of security support and six months of technical
+            support. For minor versions, these support periods are six months for security support and three months for
+            technical support.
+          </p>
+        }
       </div>
     </ng-container>
   </app-modal>

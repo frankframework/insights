@@ -4,7 +4,7 @@ import { catchError, map, of, tap } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
-import { NavigationEnd, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
@@ -49,6 +49,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   public currentTimeX = 0;
   public showNotFoundError = false;
   public showNightlies = false;
+  public showExtendedSupport = false;
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -72,6 +73,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private nodeService = inject(ReleaseNodeService);
   private linkService = inject(ReleaseLinkService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
@@ -103,6 +105,18 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.isLoading = true;
     this.getAllReleases();
+
+    // Check for extended query parameter
+    this.route.queryParams.subscribe((parameters) => {
+      const wasExtended = this.showExtendedSupport;
+      this.showExtendedSupport = parameters['extended'] !== undefined;
+
+      // Rebuild graph if extended mode changed and we have releases
+      if (wasExtended !== this.showExtendedSupport && this.releases.length > 0) {
+        const sortedGroups = this.nodeService.structureReleaseData(this.releases);
+        this.buildReleaseGraph(sortedGroups);
+      }
+    });
 
     this.routerSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd && this.router.url.includes('/graph')) {
@@ -597,64 +611,130 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     return this.releaseNodes.find((n) => n.id === nodeId);
   }
 
+  private findMajorMinorRelease(branchMajorMinor: string): Release | undefined {
+    return this.releases.find((release) => {
+      const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
+      return releaseName.startsWith(`${branchMajorMinor}.0`) && !releaseName.includes('nightly');
+    });
+  }
+
+  private calculateSupportEndDate(branchStartDate: Date, totalSupportQuarters: number, isMajor: boolean): Date {
+    const supportEnd = new Date(branchStartDate);
+    if (this.showExtendedSupport) {
+      const extendedQuarters = isMajor ? 2 : 1;
+      supportEnd.setMonth(branchStartDate.getMonth() + (totalSupportQuarters + extendedQuarters) * 3);
+    } else {
+      supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
+    }
+    return supportEnd;
+  }
+
+  private calculatePhaseBoundaries(
+    branchStartDate: Date,
+    offsetStartX: number,
+    supportEndX: number,
+    phaseMonths: number,
+    scale: { startDate: Date; pixelsPerDay: number },
+  ): { greenPhaseEndX: number; orangePhaseStartX: number } {
+    if (this.showExtendedSupport) {
+      const greenPhaseEndDate = new Date(branchStartDate);
+      greenPhaseEndDate.setMonth(branchStartDate.getMonth() + phaseMonths);
+      const greenPhaseEndX = this.calculateXPositionFromDate(greenPhaseEndDate, scale);
+
+      const bluePhaseEndDate = new Date(branchStartDate);
+      bluePhaseEndDate.setMonth(branchStartDate.getMonth() + phaseMonths * 2);
+      const orangePhaseStartX = this.calculateXPositionFromDate(bluePhaseEndDate, scale);
+
+      return { greenPhaseEndX, orangePhaseStartX };
+    } else {
+      const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
+      return { greenPhaseEndX: midpointX, orangePhaseStartX: midpointX };
+    }
+  }
+
+  private createLifecyclePhases(
+    offsetStartX: number,
+    greenPhaseEndX: number,
+    orangePhaseStartX: number,
+    supportEndX: number,
+    isOutdated: boolean,
+  ): LifecyclePhase[] {
+    const OUTDATED_FILL_COLOR = 'rgba(210, 210, 210, 0.25)';
+    const OUTDATED_STROKE_COLOR = 'rgba(180, 180, 180, 0.4)';
+
+    const phases: LifecyclePhase[] = [
+      {
+        type: 'supported',
+        startX: offsetStartX,
+        endX: greenPhaseEndX,
+        color: isOutdated ? OUTDATED_FILL_COLOR : 'rgba(144, 238, 144, 0.20)',
+        stroke: isOutdated ? OUTDATED_STROKE_COLOR : 'rgba(144, 238, 144, 0.4)',
+      },
+    ];
+
+    if (this.showExtendedSupport) {
+      phases.push({
+        type: 'supported',
+        startX: greenPhaseEndX,
+        endX: orangePhaseStartX,
+        color: isOutdated ? OUTDATED_FILL_COLOR : 'rgba(59, 130, 246, 0.15)',
+        stroke: isOutdated ? OUTDATED_STROKE_COLOR : 'rgba(59, 130, 246, 0.15)',
+      });
+    }
+
+    phases.push({
+      type: 'supported',
+      startX: orangePhaseStartX,
+      endX: supportEndX,
+      color: isOutdated ? OUTDATED_FILL_COLOR : 'rgba(251, 146, 60, 0.15)',
+      stroke: isOutdated ? OUTDATED_STROKE_COLOR : 'rgba(251, 146, 60, 0.2)',
+    });
+
+    return phases;
+  }
+
   private calculateLifecyclePhasesForBranch(sortedNodes: ReleaseNode[]): LifecyclePhase[] {
     if (!this.nodeService.timelineScale || sortedNodes.length === 0) return [];
 
-    const phases: LifecyclePhase[] = [];
     const scale = this.nodeService.timelineScale;
-
     const firstNode = sortedNodes[0];
     const firstVersionInfo = this.nodeService.getVersionInfo(firstNode);
     if (!firstVersionInfo) return [];
 
     const branchMajorMinor = `${firstVersionInfo.major}.${firstVersionInfo.minor}`;
-    const majorMinorRelease = this.releases.find((release) => {
-      const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
-      return releaseName.startsWith(`${branchMajorMinor}.0`) && !releaseName.includes('nightly');
-    });
-
+    const majorMinorRelease = this.findMajorMinorRelease(branchMajorMinor);
     if (!majorMinorRelease) return [];
 
     const majorMinorNode = this.identifyAnyNodeById(majorMinorRelease.id);
     if (!majorMinorNode) return [];
 
-    const firstX = majorMinorNode.position.x;
     const versionInfo = this.nodeService.getVersionInfo(majorMinorNode);
     if (!versionInfo) return [];
 
     const totalSupportQuarters = versionInfo.type === 'major' ? 4 : 2;
-
     const branchStartDate = new Date(majorMinorRelease.publishedAt);
-    const supportEnd = new Date(branchStartDate);
-    supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
-
-    const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
-
-    const MINI_NODE_OFFSET = 40;
-    const offsetStartX = firstX - MINI_NODE_OFFSET;
-    const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
-
-    const now = new Date();
-    const isOutdated = now > supportEnd;
-
-    phases.push(
-      {
-        type: 'supported',
-        startX: offsetStartX,
-        endX: midpointX,
-        color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(144, 238, 144, 0.25)',
-        stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(144, 238, 144, 0.4)',
-      },
-      {
-        type: 'supported',
-        startX: midpointX,
-        endX: supportEndX,
-        color: isOutdated ? 'rgba(210, 210, 210, 0.25)' : 'rgba(251, 146, 60, 0.15)',
-        stroke: isOutdated ? 'rgba(180, 180, 180, 0.4)' : 'rgba(251, 146, 60, 0.25)',
-      },
+    const supportEnd = this.calculateSupportEndDate(
+      branchStartDate,
+      totalSupportQuarters,
+      versionInfo.type === 'major',
     );
 
-    return phases;
+    const supportEndX = this.calculateXPositionFromDate(supportEnd, scale);
+    const MINI_NODE_OFFSET = 40;
+    const offsetStartX = majorMinorNode.position.x - MINI_NODE_OFFSET;
+
+    const isOutdated = new Date() > supportEnd;
+    const phaseMonths = versionInfo.type === 'major' ? 6 : 3;
+
+    const { greenPhaseEndX, orangePhaseStartX } = this.calculatePhaseBoundaries(
+      branchStartDate,
+      offsetStartX,
+      supportEndX,
+      phaseMonths,
+      scale,
+    );
+
+    return this.createLifecyclePhases(offsetStartX, greenPhaseEndX, orangePhaseStartX, supportEndX, isOutdated);
   }
 
   private calculateXPositionFromDate(date: Date, scale: { startDate: Date; pixelsPerDay: number }): number {
