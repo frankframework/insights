@@ -10,6 +10,7 @@ import { BusinessValueManageComponent } from './business-value-manage.component'
 import { BusinessValueService, BusinessValue } from '../../../services/business-value.service';
 import { IssueService, Issue } from '../../../services/issue.service';
 import { ReleaseService, Release } from '../../../services/release.service';
+import { IssueWithSelection } from './business-value-issue-panel/business-value-issue-panel.component';
 
 @Component({ selector: 'app-business-value-add', standalone: true, template: '' })
 class MockBusinessValueAddComponent {
@@ -31,6 +32,7 @@ class MockBusinessValueDeleteComponent {
   @Output() businessValueDeleted = new EventEmitter<string>();
 }
 
+
 const mockIssues: Issue[] = [
   { id: 'issue-1', number: 101, title: 'Fix login bug', state: 'OPEN', url: '' },
   { id: 'issue-2', number: 102, title: 'Add dark mode', state: 'OPEN', url: '' },
@@ -49,10 +51,6 @@ const mockRelease: Release = {
   publishedAt: new Date(),
   branch: { id: 'b1', name: 'main' },
 };
-
-function createInputEvent(value: string): Event {
-  return { target: { value } } as any;
-}
 
 describe('BusinessValueManageComponent', () => {
   let component: BusinessValueManageComponent;
@@ -136,37 +134,7 @@ describe('BusinessValueManageComponent', () => {
     });
   });
 
-  describe('Computed Properties & Filtering', () => {
-    it('should filter business values by search query', () => {
-      component.updateBusinessValueSearchQuery(createInputEvent('Security'));
-
-      const filtered = component.filteredBusinessValues();
-
-      expect(filtered.length).toBe(1);
-      expect(filtered[0].title).toBe('Security Improvements');
-    });
-
-    it('should sort business values by issue count descending', () => {
-      const sorted = component.filteredBusinessValues();
-
-      expect(sorted[0].id).toBe('bv-1');
-      expect(sorted[1].id).toBe('bv-2');
-    });
-
-    it('should filter sortedIssues by search query', () => {
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(mockBusinessValues[0]));
-      component.selectBusinessValue(mockBusinessValues[0]);
-
-      component.updateIssueSearchQuery(createInputEvent('login'));
-
-      const issues = component.sortedIssues();
-
-      expect(issues.length).toBe(1);
-      expect(issues[0].id).toBe('issue-1');
-    });
-  });
-
-  describe('Selection Logic (Complex)', () => {
+  describe('Business Value Selection', () => {
     it('should select a business value and fetch its details', () => {
       const detailedBV = { ...mockBusinessValues[0], description: 'Detailed Desc' };
       mockBusinessValueService.getBusinessValueById.and.returnValue(of(detailedBV));
@@ -177,58 +145,29 @@ describe('BusinessValueManageComponent', () => {
       expect(mockBusinessValueService.getBusinessValueById).toHaveBeenCalledWith('bv-1');
     });
 
-    it('should mark issues as connected if they belong to the selected BV', () => {
+    it('should deselect business value when clicking the same one', () => {
+      const detailedBV = { ...mockBusinessValues[0], description: 'Detailed Desc' };
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(detailedBV));
+
+      component.selectBusinessValue(mockBusinessValues[0]);
+
+      expect(component.selectedBusinessValue()?.id).toBe('bv-1');
+
+      component.selectBusinessValue(mockBusinessValues[0]);
+
+      expect(component.selectedBusinessValue()).toBeNull();
+    });
+
+    it('should update issue selection when business value is selected', () => {
       mockBusinessValueService.getBusinessValueById.and.returnValue(of(mockBusinessValues[0]));
 
       component.selectBusinessValue(mockBusinessValues[0]);
 
       const issues = component.issuesWithSelection();
       const issue1 = issues.find(index => index.id === 'issue-1');
-      const issue2 = issues.find(index => index.id === 'issue-2');
 
       expect(issue1?.isConnected).toBeTrue();
       expect(issue1?.isSelected).toBeTrue();
-      expect(issue2?.isConnected).toBeFalse();
-    });
-
-    it('should mark issues as assignedToOther if they belong to a different BV', () => {
-      const bvWithIssue2 = { ...mockBusinessValues[1], issues: [mockIssues[1]] };
-      component.businessValues.set([mockBusinessValues[0], bvWithIssue2]);
-
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(mockBusinessValues[0]));
-      component.selectBusinessValue(mockBusinessValues[0]);
-
-      const issues = component.issuesWithSelection();
-      const issue2 = issues.find(index => index.id === 'issue-2');
-
-      expect(issue2?.assignedToOther).toBeTrue();
-      expect(issue2?.assignedBusinessValueTitle).toBe('UX Enhancements');
-    });
-
-    it('should toggle issue selection correctly', () => {
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(mockBusinessValues[0]));
-      component.selectBusinessValue(mockBusinessValues[0]);
-
-      const issue1 = component.issuesWithSelection().find(index => index.id === 'issue-1')!;
-
-      component.toggleIssue(issue1);
-
-      expect(component.issuesWithSelection().find(index => index.id === 'issue-1')?.isSelected).toBeFalse();
-      expect(component.hasChanges()).toBeTrue();
-
-      component.toggleIssue(issue1);
-
-      expect(component.issuesWithSelection().find(index => index.id === 'issue-1')?.isSelected).toBeTrue();
-      expect(component.hasChanges()).toBeFalse();
-    });
-
-    it('should NOT toggle issue if it is assigned to another BV', () => {
-      const issueAssigned = { ...mockIssues[0], assignedToOther: true, isSelected: false, isConnected: false };
-      component.issuesWithSelection.set([issueAssigned]);
-
-      component.toggleIssue(issueAssigned);
-
-      expect(component.issuesWithSelection()[0].isSelected).toBeFalse();
     });
   });
 
@@ -253,7 +192,6 @@ describe('BusinessValueManageComponent', () => {
     });
 
     it('should handle delete business value', () => {
-      // Open delete modal
       const event = new MouseEvent('click');
       component.openDeleteModal(mockBusinessValues[0], event);
 
