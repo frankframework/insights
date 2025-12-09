@@ -394,13 +394,78 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     this.branchLabels = this.createBranchLabels(releaseNodeMap, this.releases);
     this.branchLifecycles = this.calculateBranchLifecycles(releaseNodeMap);
 
-    this.quarterMarkers = this.nodeService.timelineScale?.quarters ?? [];
+    this.quarterMarkers = this.extendQuarterMarkersToLifecycleEnd();
 
     if (this.nodeService.timelineScale) {
       this.currentTimeX = this.calculateXPositionFromDate(new Date(), this.nodeService.timelineScale);
     }
 
     this.checkReleaseGraphLoading();
+  }
+
+  private extendQuarterMarkersToLifecycleEnd(): QuarterMarker[] {
+    const baseMarkers = this.nodeService.timelineScale?.quarters ?? [];
+    if (baseMarkers.length === 0) return baseMarkers;
+
+    const maxLifecycleEndX = this.getMaxLifecycleEndX();
+    if (maxLifecycleEndX === 0 || baseMarkers[baseMarkers.length - 1].x >= maxLifecycleEndX) {
+      return baseMarkers;
+    }
+
+    const additionalMarkers = this.generateAdditionalQuarters(baseMarkers[baseMarkers.length - 1], maxLifecycleEndX);
+    return [...baseMarkers, ...additionalMarkers];
+  }
+
+  private getMaxLifecycleEndX(): number {
+    let maxEndX = 0;
+    for (const lifecycle of this.branchLifecycles) {
+      for (const phase of lifecycle.phases) {
+        maxEndX = Math.max(maxEndX, phase.endX);
+      }
+    }
+    return maxEndX;
+  }
+
+  private generateAdditionalQuarters(lastMarker: QuarterMarker, maxEndX: number): QuarterMarker[] {
+    if (!this.nodeService.timelineScale) return [];
+
+    const markers: QuarterMarker[] = [];
+    let currentDate = new Date(lastMarker.date);
+    currentDate.setMonth(currentDate.getMonth() + 3);
+    let lastAddedX = lastMarker.x;
+
+    while (true) {
+      const x = this.calculateXFromDate(currentDate);
+      if (x > maxEndX) break;
+
+      markers.push(this.createQuarterMarker(currentDate, x, true));
+      lastAddedX = x;
+      currentDate.setMonth(currentDate.getMonth() + 3);
+    }
+
+    if (markers.length > 0 && lastAddedX < maxEndX) {
+      markers.push(this.createQuarterMarker(currentDate, this.calculateXFromDate(currentDate), false));
+    }
+
+    return markers;
+  }
+
+  private createQuarterMarker(date: Date, x: number, withLabel: boolean): QuarterMarker {
+    const quarter = Math.floor(date.getMonth() / 3) + 1;
+    return {
+      label: withLabel ? `Q${quarter} ${date.getFullYear()}` : '',
+      date: new Date(date),
+      x,
+      labelX: x + 100,
+      year: date.getFullYear(),
+      quarter,
+    };
+  }
+
+  private calculateXFromDate(date: Date): number {
+    if (!this.nodeService.timelineScale) return 0;
+    const daysSinceStart = (date.getTime() - this.nodeService.timelineScale.startDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceStart * this.nodeService.timelineScale.pixelsPerDay;
   }
 
   private updateSkipNodePositions(): void {
