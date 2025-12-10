@@ -1,9 +1,7 @@
 package org.frankframework.insights.release;
 
-import java.time.OffsetDateTime;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
+import java.time.OffsetDateTime;
 import org.frankframework.insights.branch.BranchResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)

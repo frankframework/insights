@@ -71,6 +71,8 @@ public class BranchService {
             if (!branches.isEmpty()) {
                 saveBranches(branches);
             }
+
+            cleanupOrphanedBranches(branchDTOs);
         } catch (Exception e) {
             throw new BranchInjectionException("Error while injecting GitHub branches", e);
         }
@@ -129,5 +131,27 @@ public class BranchService {
     public void saveBranches(Set<Branch> branches) {
         List<Branch> savedBranches = branchRepository.saveAll(branches);
         log.info("Successfully saved {} branches.", savedBranches.size());
+    }
+
+    /**
+     * Cleans up orphaned branches from the database.
+     * Orphaned branches are those that exist in the database but are no longer in GitHub.
+     * @param gitHubBranches the set of branch DTOs from GitHub
+     */
+    private void cleanupOrphanedBranches(Set<BranchDTO> gitHubBranches) {
+        Set<String> gitHubBranchNames =
+                gitHubBranches.stream().map(BranchDTO::name).collect(Collectors.toSet());
+
+        List<Branch> dbBranches = branchRepository.findAll();
+        List<Branch> orphanedBranches = dbBranches.stream()
+                .filter(branch -> !gitHubBranchNames.contains(branch.getName()))
+                .toList();
+
+        if (!orphanedBranches.isEmpty()) {
+            branchRepository.deleteAll(orphanedBranches);
+            log.info("Successfully cleaned up {} orphaned branches.", orphanedBranches.size());
+        } else {
+            log.info("No orphaned branches found.");
+        }
     }
 }
