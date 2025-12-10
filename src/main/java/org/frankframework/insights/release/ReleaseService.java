@@ -87,17 +87,13 @@ public class ReleaseService {
                     .map(dto -> mapToRelease(dto, allBranches))
                     .collect(Collectors.toSet());
 
-            if (!releases.isEmpty()) {
-                saveAllReleases(releases);
-            } else {
-                log.info("No valid releases found.");
-            }
-
-            deleteObsoleteReleases(releases);
-
             if (releases.isEmpty()) {
+                log.info("No valid releases found.");
                 return;
             }
+
+            saveAllReleases(releases);
+            deleteObsoleteReleases(releases);
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
                     .filter(r -> r.getBranch() != null)

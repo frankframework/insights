@@ -10,14 +10,12 @@ import org.frankframework.insights.user.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.stereotype.Component;
 
 /**
  * Custom OAuth2 login success handler that verifies FrankFramework organization membership
  * before allowing authentication to succeed. Only FrankFramework members can successfully
  * authenticate and access the application.
  */
-@Component
 @Slf4j
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
