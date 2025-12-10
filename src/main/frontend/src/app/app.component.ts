@@ -39,53 +39,29 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this.authService.hasSessionFlag()) {
-      this.authService.checkAuthStatus().subscribe();
-    }
+    const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
+
+    this.authService.checkAuthStatus().subscribe();
 
     this.route.queryParams.subscribe((parameters) => {
-      const loginParameter = parameters['login'];
-      const isGraphRoute = this.router.url.startsWith('/graph') || this.router.url === '/';
+      const currentUrl = this.router.url;
+      const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if (!loginParameter) {
-        if (isGraphRoute) {
-          if (parameters['extended'] === undefined) {
-            this.graphStateService.setShowExtendedSupport(false);
-          } else {
-            this.graphStateService.setShowExtendedSupport(true);
-          }
-        }
+      if (wasExtended && isGraphRoute && !currentUrl.includes('extended')) {
+        this.graphStateService.setShowExtendedSupport(true);
+        this.router.navigate([], {
+          queryParams: { extended: '' },
+          replaceUrl: true,
+        });
         return;
       }
 
-      const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
-      const queryParameters = wasExtended ? { extended: '' } : {};
-
-      if (loginParameter === 'success') {
-        this.authService.checkAuthStatus().subscribe({
-          next: () => {
-            this.router.navigate([], {
-              queryParams: queryParameters,
-              replaceUrl: true,
-            });
-          },
-          error: (error) => {
-            console.error('Failed to fetch user info after OAuth success:', error);
-            this.authService.setLoading(false);
-            this.router.navigate([], {
-              queryParams: queryParameters,
-              replaceUrl: true,
-            });
-          },
-        });
-      } else {
-        console.error('OAuth2 login failed');
-        this.authService.setLoading(false);
-        this.authService.clearError();
-        this.router.navigate([], {
-          queryParams: queryParameters,
-          replaceUrl: true,
-        });
+      if (isGraphRoute) {
+        if (parameters['extended'] === undefined) {
+          this.graphStateService.setShowExtendedSupport(false);
+        } else {
+          this.graphStateService.setShowExtendedSupport(true);
+        }
       }
     });
   }

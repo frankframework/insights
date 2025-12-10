@@ -1,0 +1,94 @@
+<div class="right-panel">
+  @if (selectedBusinessValue()) {
+    <div class="panel-header">
+      <h2>Issues</h2>
+      <span class="count">{{ sortedIssues().length }}</span>
+    </div>
+
+    <div class="search-and-save-section">
+      <div class="search-input-wrapper">
+        <svg
+          class="search-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.35-4.35" />
+        </svg>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search issues by title or number..."
+          [value]="issueSearchQuery()"
+          (input)="updateSearchQuery($event)"
+        />
+      </div>
+
+      <button class="save-button" [disabled]="!hasChanges() || isSaving()" (click)="onSaveClick()">
+        @if (isSaving()) {
+          <span>Saving...</span>
+        } @else {
+          <span>Save Changes</span>
+        }
+      </button>
+    </div>
+
+    <div class="issues-list">
+      @if (sortedIssues().length === 0) {
+        <div class="empty-state">
+          <p>No issues available for this release.</p>
+        </div>
+      } @else {
+        @for (issue of sortedIssues(); track issue.id) {
+          <div
+            class="issue-item"
+            role="button"
+            tabindex="0"
+            [class.selected]="issue.isSelected"
+            [class.connected]="issue.isConnected"
+            [class.assigned-to-other]="issue.assignedToOther"
+            (click)="toggleIssue(issue)"
+            (keydown.enter)="toggleIssue(issue)"
+            (keydown.space)="toggleIssue(issue)"
+          >
+            <input
+              type="checkbox"
+              [checked]="issue.isSelected"
+              [disabled]="issue.assignedToOther"
+              (click)="$event.stopPropagation()"
+              (change)="toggleIssue(issue)"
+            />
+            <div class="issue-content">
+              <div class="issue-header">
+                <span class="issue-number">#{{ issue.number }}</span>
+                @if (issue.issueType?.name) {
+                  <span class="issue-type">{{ issue.issueType?.name }}</span>
+                }
+                @if (issue.assignedToOther) {
+                  <span class="assigned-badge">Assigned to {{ issue.assignedBusinessValueTitle }}</span>
+                }
+              </div>
+              <h4>{{ issue.title }}</h4>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  } @else {
+    <div class="no-selection">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
+        <path d="M2 12l10 5 10-5" />
+      </svg>
+      <h3>Select a Business Value</h3>
+      <p>Choose a business value from the left panel to manage its connected issues.</p>
+    </div>
+  }
+</div>

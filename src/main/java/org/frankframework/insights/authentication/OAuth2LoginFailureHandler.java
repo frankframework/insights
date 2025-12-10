@@ -6,12 +6,10 @@ import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.stereotype.Component;
 
 /**
  * Custom OAuth2 login failure handler that redirects to the origin of the initial request.
  */
-@Component
 @Slf4j
 public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
@@ -20,6 +18,6 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
         log.error("OAuth2 authentication failed: {}", exception.getMessage());
-        OAuth2RedirectUtil.redirectToOrigin(request, response, getRedirectStrategy(), "login=error");
+        getRedirectStrategy().sendRedirect(request, response, "/");
     }
 }

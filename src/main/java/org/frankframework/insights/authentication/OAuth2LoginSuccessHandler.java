@@ -10,14 +10,12 @@ import org.frankframework.insights.user.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.stereotype.Component;
 
 /**
  * Custom OAuth2 login success handler that verifies FrankFramework organization membership
  * before allowing authentication to succeed. Only FrankFramework members can successfully
  * authenticate and access the application.
  */
-@Component
 @Slf4j
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
@@ -41,13 +39,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             if (user == null || !user.isFrankFrameworkMember()) {
                 log.warn("User '{}' is not a FrankFramework member - denying access", attributes.username());
                 request.getSession().invalidate();
-                getRedirectStrategy().sendRedirect(request, response, "/?login=forbidden");
+                getRedirectStrategy().sendRedirect(request, response, "/");
                 return;
             }
 
             log.info("User '{}' is a verified FrankFramework member - granting access", attributes.username());
         }
 
-        OAuth2RedirectUtil.redirectToOrigin(request, response, getRedirectStrategy(), "login=success");
+        getRedirectStrategy().sendRedirect(request, response, "/");
     }
 }

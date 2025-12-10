@@ -53,8 +53,8 @@ export class ReleaseManageComponent implements OnInit {
 
     if (section === 'business-value') {
       this.router.navigate(['/release-manage', releaseId, 'business-values']);
-    } else {
-      this.activeSection.set(section);
+    } else if (section === 'vulnerabilities') {
+      this.router.navigate(['/release-manage', releaseId, 'vulnerabilities']);
     }
   }
 

@@ -23,79 +23,112 @@
           </p>
         </div>
 
-        <div class="management-sections">
-          <div
-            class="section-card business-value-card"
-            role="button"
-            tabindex="0"
-            (click)="openSection('business-value')"
-            (keydown.enter)="openSection('business-value')"
-            (keydown.space)="openSection('business-value')"
-          >
-            <div class="card-icon-wrapper">
-              <svg
-                class="card-icon"
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+        <div class="sections-container">
+          <div class="section-group section-group-left">
+            <div class="section-group-header">
+              <h3>Release Specific Management</h3>
+              <p class="section-group-subtitle">Only for {{ release()?.name }}</p>
             </div>
-            <div class="card-content">
-              <h2>Business Values</h2>
-              <p>View and manage business values and the issues associated with these business values.</p>
-              <div class="card-footer">
-                <span class="action-link">
-                  Manage
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6" />
+            <div class="management-sections">
+              <div
+                class="section-card business-value-card"
+                role="button"
+                tabindex="0"
+                (click)="openSection('business-value')"
+                (keydown.enter)="openSection('business-value')"
+                (keydown.space)="openSection('business-value')"
+              >
+                <div class="card-icon-wrapper">
+                  <svg
+                    class="card-icon"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
                   </svg>
-                </span>
+                </div>
+                <div class="card-content">
+                  <h2>Business Values</h2>
+                  <p>
+                    View and manage business values and the issues associated with these business values for this
+                    specific release.
+                  </p>
+                  <div class="card-footer">
+                    <span class="action-link">
+                      Manage
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div
-            class="section-card vulnerabilities-card"
-            role="button"
-            tabindex="0"
-            (click)="openSection('vulnerabilities')"
-            (keydown.enter)="openSection('vulnerabilities')"
-            (keydown.space)="openSection('vulnerabilities')"
-          >
-            <div class="card-icon-wrapper">
-              <svg
-                class="card-icon"
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
+          <div class="section-group section-group-right">
+            <div class="section-group-header">
+              <h3>General Management</h3>
+              <p class="section-group-subtitle">Applies to all releases</p>
             </div>
-            <div class="card-content">
-              <h2>Vulnerabilities</h2>
-              <p>Review and manage vulnerability information and CVE details for this release.</p>
-              <div class="card-footer">
-                <span class="action-link">
-                  Manage
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6" />
+            <div class="management-sections">
+              <div
+                class="section-card vulnerabilities-card"
+                role="button"
+                tabindex="0"
+                (click)="openSection('vulnerabilities')"
+                (keydown.enter)="openSection('vulnerabilities')"
+                (keydown.space)="openSection('vulnerabilities')"
+              >
+                <div class="card-icon-wrapper">
+                  <svg
+                    class="card-icon"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
-                </span>
+                </div>
+                <div class="card-content">
+                  <h2>Vulnerabilities</h2>
+                  <p>Review and manage vulnerability impact scores and CVE details for all releases in the system</p>
+                  <div class="card-footer">
+                    <span class="action-link">
+                      Manage
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

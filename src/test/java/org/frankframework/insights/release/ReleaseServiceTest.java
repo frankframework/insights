@@ -10,6 +10,7 @@ import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
+import org.frankframework.insights.common.entityconnection.releasevulnerability.ReleaseVulnerabilityRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
@@ -38,6 +39,9 @@ public class ReleaseServiceTest {
 
     @Mock
     private ReleasePullRequestRepository releasePullRequestRepository;
+
+    @Mock
+    private ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
 
     private ReleaseService releaseService;
 
@@ -78,11 +82,13 @@ public class ReleaseServiceTest {
                 new ReleaseTagCommitDTO(OffsetDateTime.now().minusDays(1)));
 
         rel1 = new Release();
+        rel1.setId("id1");
         rel1.setTagName("v1.0");
         rel1.setPublishedAt(dto1.getReleaseDate());
         rel1.setBranch(masterBranch);
 
         rel2 = new Release();
+        rel2.setId("id2");
         rel2.setTagName("v1.1");
         rel2.setPublishedAt(dto2.getReleaseDate());
         rel2.setBranch(masterBranch);
@@ -94,7 +100,12 @@ public class ReleaseServiceTest {
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
 
         releaseService = new ReleaseService(
-                gitHubGraphQLClient, mapper, releaseRepository, branchService, releasePullRequestRepository);
+                gitHubGraphQLClient,
+                mapper,
+                releaseRepository,
+                branchService,
+                releasePullRequestRepository,
+                releaseVulnerabilityRepository);
     }
 
     @Test
@@ -117,6 +128,28 @@ public class ReleaseServiceTest {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Collections.emptySet());
         releaseService.injectReleases();
         verify(releaseRepository, never()).saveAll(anySet());
+    }
+
+    @Test
+    public void deletesObsoleteReleases_andCleansUpVulnerabilities() throws Exception {
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto2));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel2);
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel2));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        Release obsoleteRelease = new Release();
+        obsoleteRelease.setId("obsolete-id");
+        obsoleteRelease.setName("v1.0");
+        when(releaseRepository.findAll()).thenReturn(List.of(obsoleteRelease, rel2));
+
+        releaseService.injectReleases();
+
+        verify(releaseVulnerabilityRepository).deleteAllByReleaseId("obsolete-id");
+        verify(releasePullRequestRepository).deleteAllByReleaseId("obsolete-id");
+        verify(releaseRepository)
+                .deleteAll(argThat(
+                        iterable -> iterable instanceof List && ((List<?>) iterable).contains(obsoleteRelease)));
     }
 
     @Test

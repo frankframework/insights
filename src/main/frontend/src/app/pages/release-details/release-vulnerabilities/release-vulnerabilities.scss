@@ -102,7 +102,18 @@
   }
 }
 
-.cve-score {
+.cve-scores {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+
+  @media (max-width: 640px) {
+    gap: 0.75rem;
+  }
+}
+
+.cve-score, .impact-score {
   font-size: 0.75rem;
   color: #6b7280;
   flex-shrink: 0;
@@ -110,6 +121,11 @@
   @media (max-width: 640px) {
     font-size: 0.6875rem;
   }
+}
+
+.impact-score {
+  color: #16a34a;
+  font-weight: 500;
 }
 
 .severity-badge {

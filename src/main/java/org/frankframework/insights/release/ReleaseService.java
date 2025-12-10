@@ -11,6 +11,7 @@ import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.common.entityconnection.branchpullrequest.BranchPullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequest;
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
+import org.frankframework.insights.common.entityconnection.releasevulnerability.ReleaseVulnerabilityRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -29,6 +30,7 @@ public class ReleaseService {
     private final ReleaseRepository releaseRepository;
     private final BranchService branchService;
     private final ReleasePullRequestRepository releasePullRequestRepository;
+    private final ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
 
     private static final String MASTER_BRANCH_NAME = "master";
     private static final String NIGHTLY_RELEASE_NAME = "nightly";
@@ -44,18 +46,21 @@ public class ReleaseService {
      * @param releaseRepository Repository for managing Release entities.
      * @param branchService Service for managing branches.
      * @param releasePullRequestRepository Repository for managing ReleasePullRequest entities.
+     * @param releaseVulnerabilityRepository Repository for managing ReleaseVulnerability entities.
      */
     public ReleaseService(
             GitHubGraphQLClient gitHubGraphQLClient,
             Mapper mapper,
             ReleaseRepository releaseRepository,
             BranchService branchService,
-            ReleasePullRequestRepository releasePullRequestRepository) {
+            ReleasePullRequestRepository releasePullRequestRepository,
+            ReleaseVulnerabilityRepository releaseVulnerabilityRepository) {
         this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.releaseRepository = releaseRepository;
         this.branchService = branchService;
         this.releasePullRequestRepository = releasePullRequestRepository;
+        this.releaseVulnerabilityRepository = releaseVulnerabilityRepository;
     }
 
     /**
@@ -88,7 +93,6 @@ public class ReleaseService {
             }
 
             saveAllReleases(releases);
-
             deleteObsoleteReleases(releases);
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
@@ -355,6 +359,9 @@ public class ReleaseService {
         if (!releasesToDelete.isEmpty()) {
             // Delete all associated release-pull request connections first to avoid foreign key constraint violations
             releasesToDelete.forEach(release -> releasePullRequestRepository.deleteAllByReleaseId(release.getId()));
+
+            // Delete all associated release-vulnerability connections to avoid foreign key constraint violations
+            releasesToDelete.forEach(release -> releaseVulnerabilityRepository.deleteAllByReleaseId(release.getId()));
 
             releaseRepository.deleteAll(releasesToDelete);
             log.info("Deleted {} obsolete releases that no longer exist on GitHub.", releasesToDelete.size());

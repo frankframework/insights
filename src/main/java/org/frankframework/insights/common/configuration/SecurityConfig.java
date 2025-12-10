@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.frankframework.insights.authentication.OAuth2LoginFailureHandler;
 import org.frankframework.insights.authentication.OAuth2LoginSuccessHandler;
+import org.frankframework.insights.user.UserRepository;
 import org.frankframework.insights.user.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -31,19 +32,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class SecurityConfig {
     private static final int MAX_ALLOWED_SESSIONS = 3;
     private final UserService userService;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+    private final UserRepository userRepository;
 
     @Value("${frankframework.security.csrf.secure:true}")
     private boolean csrfCookieSecure;
 
-    public SecurityConfig(
-            UserService userService,
-            OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
-            OAuth2LoginFailureHandler oAuth2LoginFailureHandler) {
+    public SecurityConfig(UserService userService, UserRepository userRepository) {
         this.userService = userService;
-        this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
-        this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
+        this.userRepository = userRepository;
     }
 
     @Bean
@@ -71,10 +67,16 @@ public class SecurityConfig {
                         .anyRequest()
                         .permitAll())
                 .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(userService))
-                        .successHandler(oAuth2LoginSuccessHandler)
-                        .failureHandler(oAuth2LoginFailureHandler))
+                        .successHandler(new OAuth2LoginSuccessHandler(userRepository))
+                        .failureHandler(new OAuth2LoginFailureHandler()))
+                .exceptionHandling(
+                        exceptions -> exceptions.authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")))
                 .logout(logout -> logout.logoutUrl("/api/auth/logout")
-                        .logoutSuccessUrl("/")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.getWriter().flush();
+                        })
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "SECURE-XSRF-TOKEN", "XSRF-TOKEN")

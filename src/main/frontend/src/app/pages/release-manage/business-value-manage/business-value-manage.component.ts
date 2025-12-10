@@ -1,6 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
@@ -9,13 +8,12 @@ import { catchError, of, forkJoin } from 'rxjs';
 import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
 import { BusinessValueEditComponent } from './business-value-edit/business-value-edit.component';
 import { BusinessValueDeleteComponent } from './business-value-delete/business-value-delete.component';
-
-interface IssueWithSelection extends Issue {
-  isSelected: boolean;
-  isConnected: boolean;
-  assignedToOther?: boolean;
-  assignedBusinessValueTitle?: string;
-}
+import { BusinessValuePanelComponent } from './business-value-panel/business-value-panel.component';
+import {
+  BusinessValueIssuePanelComponent,
+  IssueWithSelection,
+} from './business-value-issue-panel/business-value-issue-panel.component';
+import { LoaderComponent } from '../../../components/loader/loader.component';
 
 @Component({
   selector: 'app-business-value-manage',
@@ -25,7 +23,9 @@ interface IssueWithSelection extends Issue {
     BusinessValueAddComponent,
     BusinessValueEditComponent,
     BusinessValueDeleteComponent,
-    FormsModule,
+    BusinessValuePanelComponent,
+    BusinessValueIssuePanelComponent,
+    LoaderComponent,
   ],
   templateUrl: './business-value-manage.component.html',
   styleUrl: './business-value-manage.component.scss',
@@ -46,39 +46,8 @@ export class BusinessValueManageComponent implements OnInit {
 
   public businessValueToDelete = signal<BusinessValue | null>(null);
 
-  public issueSearchQuery = signal<string>('');
-  public businessValueSearchQuery = signal<string>('');
-
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  public filteredBusinessValues = computed(() => {
-    const query = this.businessValueSearchQuery().toLowerCase().trim();
-    let values = this.businessValues();
-
-    if (query) {
-      values = values.filter((bv) => this.filterBusinessValuesByQuery(bv, query));
-    }
-
-    return [...values].toSorted(this.sortBusinessValuesByIssueCount);
-  });
-
   // eslint-disable-next-line unicorn/consistent-function-scoping
   public hasChanges = computed(() => this.hasIssueChanges());
-
-  // eslint-disable-next-line unicorn/consistent-function-scoping
-  public sortedIssues = computed(() => {
-    const issues = [...this.issuesWithSelection()];
-    const selectedBV = this.selectedBusinessValue();
-    const searchQuery = this.issueSearchQuery().toLowerCase().trim();
-
-    let filteredIssues = issues;
-    if (searchQuery) {
-      filteredIssues = issues.filter(
-        (issue) => issue.title.toLowerCase().includes(searchQuery) || issue.number.toString().includes(searchQuery),
-      );
-    }
-
-    return [...filteredIssues].toSorted((a, b) => this.sortIssuesByPriority(a, b, selectedBV));
-  });
 
   private route = inject(ActivatedRoute);
   private location = inject(Location);
@@ -108,14 +77,6 @@ export class BusinessValueManageComponent implements OnInit {
     this.showEditForm.update((value) => !value);
   }
 
-  public updateIssueSearchQuery(query: string): void {
-    this.issueSearchQuery.set(query);
-  }
-
-  public updateBusinessValueSearchQuery(query: string): void {
-    this.businessValueSearchQuery.set(query);
-  }
-
   public openDeleteModal(businessValue: BusinessValue, event: Event): void {
     event.stopPropagation();
     this.businessValueToDelete.set(businessValue);
@@ -133,26 +94,23 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-    } else {
-      if (this.selectedBusinessValue()) {
-        this.updateIssueSelection(this.selectedBusinessValue()!);
-      }
     }
 
     this.closeDeleteModal();
   }
 
   public onBusinessValueUpdated(updatedBusinessValue: BusinessValue): void {
-    const updatedList = this.businessValues().map((bv) =>
-      bv.id === updatedBusinessValue.id ? updatedBusinessValue : bv,
+    this.businessValues.update((list) =>
+      list.map((bv) => (bv.id === updatedBusinessValue.id ? updatedBusinessValue : bv)),
     );
-    this.businessValues.set(updatedList);
+
     this.selectedBusinessValue.set(updatedBusinessValue);
+    this.toggleEditForm();
   }
 
   public onBusinessValueCreated(businessValue: BusinessValue): void {
-    const updatedList = [...this.businessValues(), businessValue];
-    this.businessValues.set(updatedList);
+    this.businessValues.update((list) => [...list, businessValue]);
+    this.selectBusinessValue(businessValue);
   }
 
   public selectBusinessValue(businessValue: BusinessValue): void {
@@ -185,24 +143,6 @@ export class BusinessValueManageComponent implements OnInit {
     this.performSaveChanges(selectedBV);
   }
 
-  private sortIssuesByPriority = (
-    a: IssueWithSelection,
-    b: IssueWithSelection,
-    selectedBV: BusinessValue | null,
-  ): number => {
-    if (!selectedBV) return a.number - b.number;
-
-    if (a.isConnected && !b.isConnected) return -1;
-    if (!a.isConnected && b.isConnected) return 1;
-
-    const aFree = !a.isConnected && !a.assignedToOther;
-    const bFree = !b.isConnected && !b.assignedToOther;
-    if (aFree && !bFree) return -1;
-    if (!aFree && bFree) return 1;
-
-    return a.number - b.number;
-  };
-
   private hasIssueChanges = (): boolean => {
     const originalIds = this.originalSelectedIssueIds();
     const currentSelectedIds = new Set(
@@ -216,16 +156,6 @@ export class BusinessValueManageComponent implements OnInit {
       if (!originalIds.has(id)) return true;
     }
     return false;
-  };
-
-  private filterBusinessValuesByQuery = (bv: BusinessValue, query: string): boolean => {
-    return bv.title.toLowerCase().includes(query);
-  };
-
-  private sortBusinessValuesByIssueCount = (a: BusinessValue, b: BusinessValue): number => {
-    const countA = a.issues?.length || 0;
-    const countB = b.issues?.length || 0;
-    return countB - countA;
   };
 
   private resetIssueSelection(): void {
@@ -243,11 +173,9 @@ export class BusinessValueManageComponent implements OnInit {
   private handleToggleIssue(issue: IssueWithSelection): void {
     if (issue.assignedToOther) return;
 
-    const issues = this.issuesWithSelection();
-    const updatedIssues = issues.map((index) =>
-      index.id === issue.id ? { ...index, isSelected: !index.isSelected } : index,
+    this.issuesWithSelection.update((issues) =>
+      issues.map((index) => (index.id === issue.id ? { ...index, isSelected: !index.isSelected } : index)),
     );
-    this.issuesWithSelection.set(updatedIssues);
   }
 
   private performSaveChanges(selectedBV: BusinessValue): void {
