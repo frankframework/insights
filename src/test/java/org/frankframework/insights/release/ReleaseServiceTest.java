@@ -132,12 +132,16 @@ public class ReleaseServiceTest {
 
     @Test
     public void deletesObsoleteReleases_andCleansUpVulnerabilities() throws Exception {
-        when(gitHubGraphQLClient.getReleases()).thenReturn(Collections.emptySet());
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto2));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel2);
+        when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel2));
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
         Release obsoleteRelease = new Release();
         obsoleteRelease.setId("obsolete-id");
         obsoleteRelease.setName("v1.0");
-        when(releaseRepository.findAll()).thenReturn(List.of(obsoleteRelease));
+        when(releaseRepository.findAll()).thenReturn(List.of(obsoleteRelease, rel2));
 
         releaseService.injectReleases();
 
