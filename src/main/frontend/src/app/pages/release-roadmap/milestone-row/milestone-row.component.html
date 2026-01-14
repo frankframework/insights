@@ -1,7 +1,9 @@
 <div class="milestone-row" [class.milestone-row--last]="isLast">
   <div class="title-cell">
     @if (milestone.url) {
-      <a target="_blank" class="title-link" [href]="milestone.url">{{ milestone.title }}</a>
+      <a target="_blank" class="title-link" [href]="milestone.url + '?closed=1'">
+        {{ milestone.title }}
+      </a>
     } @else {
       <span class="title-link">{{ milestone.title }}</span>
     }
