@@ -10,7 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class CleanupFileVisitor extends SimpleFileVisitor<Path> {
     private final Path baseDirectory;
     private final AtomicInteger deletedCount;
@@ -51,6 +53,13 @@ public class CleanupFileVisitor extends SimpleFileVisitor<Path> {
             Files.delete(file);
             deletedCount.incrementAndGet();
         }
+        return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    @NonNull
+    public FileVisitResult visitFileFailed(Path file, IOException exception) {
+        log.warn("Could not access file during cleanup: {}. Skipping. Error: {}", file, exception.getMessage());
         return FileVisitResult.CONTINUE;
     }
 }
