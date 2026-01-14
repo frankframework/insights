@@ -301,6 +301,10 @@ export class ReleaseLinkService {
   }
 
   private isVersionGap(source: ReleaseNode, target: ReleaseNode, allNodes: ReleaseNode[] = []): boolean {
+    if (this.isNightlyRelease(target)) {
+      return false;
+    }
+
     const sourceNode = source.isMiniNode ? this.getLinkedBranchNode(source, allNodes) : source;
     const targetNode = target.isMiniNode ? this.getLinkedBranchNode(target, allNodes) : target;
 
@@ -317,6 +321,10 @@ export class ReleaseLinkService {
       return majorTransition || minorGap;
     }
     return false;
+  }
+
+  private isNightlyRelease(node: ReleaseNode): boolean {
+    return node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE);
   }
 
   private getLinkedBranchNode(miniNode: ReleaseNode, allNodes: ReleaseNode[]): ReleaseNode | null {
