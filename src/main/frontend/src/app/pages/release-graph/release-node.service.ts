@@ -60,8 +60,9 @@ interface SupportDates {
 
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
+  public static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
+
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
-  private static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
   private static readonly PIXELS_PER_QUARTER: number = 200;
 
   public timelineScale: TimelineScale | null = null;

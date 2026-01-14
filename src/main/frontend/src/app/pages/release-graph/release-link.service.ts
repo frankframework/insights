@@ -301,6 +301,10 @@ export class ReleaseLinkService {
   }
 
   private isVersionGap(source: ReleaseNode, target: ReleaseNode, allNodes: ReleaseNode[] = []): boolean {
+    if (target.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
+      return false;
+    }
+
     const sourceNode = source.isMiniNode ? this.getLinkedBranchNode(source, allNodes) : source;
     const targetNode = target.isMiniNode ? this.getLinkedBranchNode(target, allNodes) : target;
 
