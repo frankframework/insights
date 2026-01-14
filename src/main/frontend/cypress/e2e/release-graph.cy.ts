@@ -44,16 +44,20 @@ describe('Graph Rendering and Interaction', () => {
 
   context('Graph Interaction', () => {
     it('should pan the graph on mouse wheel scroll', () => {
-      let initialTransform: string | undefined;
+      cy.get('@graphSvg').find('> g').should('have.attr', 'transform').as('initialTransform');
 
-      cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').then((transform) => {
-        initialTransform = transform;
-      });
+      cy.get('@initialTransform').then((initial) => {
+        cy.get('@graphSvg').first().trigger('wheel', {
+          deltaY: 1000,
+          deltaX: 1000,
+          bubbles: true
+        });
 
-      cy.get('@graphSvg').first().trigger('wheel', { deltaY: 500, bubbles: true });
+        cy.wait(100);
 
-      cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
-        expect(newTransform).not.to.equal(initialTransform);
+        cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
+          expect(newTransform).not.to.equal(initial);
+        });
       });
     });
 
@@ -273,19 +277,15 @@ describe('Graph Rendering and Interaction', () => {
 
     context('Touch Events on Mobile', () => {
       it('should pan the graph on touch swipe gesture', () => {
-        let initialTransform: string | undefined;
+        cy.get('@graphSvg').find('> g').should('have.attr', 'transform').then((initial) => {
+          cy.get('@graphSvg').first()
+                  .trigger('touchstart', { touches: [{ clientX: 500, clientY: 200 }] })
+                  .trigger('touchmove', { touches: [{ clientX: 100, clientY: 200 }], bubbles: true })
+                  .trigger('touchend');
 
-        cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').then((transform) => {
-          initialTransform = transform;
-        });
-
-        cy.get('@graphSvg').first()
-                .trigger('touchstart', { touches: [{ clientX: 300, clientY: 200 }] })
-                .trigger('touchmove', { touches: [{ clientX: 200, clientY: 200 }] })
-                .trigger('touchend');
-
-        cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
-          expect(newTransform).not.to.equal(initialTransform);
+          cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
+            expect(newTransform).not.to.equal(initial);
+          });
         });
       });
 
