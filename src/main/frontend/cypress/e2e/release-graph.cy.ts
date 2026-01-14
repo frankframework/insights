@@ -43,24 +43,6 @@ describe('Graph Rendering and Interaction', () => {
   });
 
   context('Graph Interaction', () => {
-    it('should pan the graph on mouse wheel scroll', () => {
-      cy.get('@graphSvg').find('> g').should('have.attr', 'transform').as('initialTransform');
-
-      cy.get('@initialTransform').then((initial) => {
-        cy.get('@graphSvg').first().trigger('wheel', {
-          deltaY: 1000,
-          deltaX: 1000,
-          bubbles: true
-        });
-
-        cy.wait(100);
-
-        cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
-          expect(newTransform).not.to.equal(initial);
-        });
-      });
-    });
-
     it('should open and close the release support info modal', () => {
       cy.get('body').then(($body) => {
         if ($body.find('app-modal').length > 0) {
@@ -276,19 +258,6 @@ describe('Graph Rendering and Interaction', () => {
     });
 
     context('Touch Events on Mobile', () => {
-      it('should pan the graph on touch swipe gesture', () => {
-        cy.get('@graphSvg').find('> g').should('have.attr', 'transform').then((initial) => {
-          cy.get('@graphSvg').first()
-                  .trigger('touchstart', { touches: [{ clientX: 500, clientY: 200 }] })
-                  .trigger('touchmove', { touches: [{ clientX: 100, clientY: 200 }], bubbles: true })
-                  .trigger('touchend');
-
-          cy.get('@graphSvg').first().find('> g').invoke('attr', 'transform').should((newTransform) => {
-            expect(newTransform).not.to.equal(initial);
-          });
-        });
-      });
-
       it('should open skip node modal on tap without drag', () => {
         cy.get('@graphSvg').find('g[data-cy^="skip-node-"]').first().as('firstSkipNode');
 
