@@ -273,6 +273,7 @@
     pointer-events: none;
 
     .lifecycle-phase {
+      pointer-events: none;
       transition: opacity 0.2s;
       stroke-width: 1;
     }
