@@ -19,6 +19,7 @@ const createMockData = (): Release[] => {
       id: 'master-1',
       name: 'v8.0',
       publishedAt: new Date('2023-12-20T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['master'],
       tagName: 'v8.0',
     },
@@ -26,6 +27,7 @@ const createMockData = (): Release[] => {
       id: 'master-2',
       name: 'v7.0',
       publishedAt: new Date('2022-12-20T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['master'],
       tagName: 'v7.0',
     },
@@ -33,6 +35,7 @@ const createMockData = (): Release[] => {
       id: 'master-nightly',
       name: 'v9.4.0-20251108.042330 (nightly)',
       publishedAt: new Date('2025-06-10T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['master'],
       tagName: 'release/9.4-nightly',
     },
@@ -41,6 +44,7 @@ const createMockData = (): Release[] => {
       id: '9.0-anchor',
       name: 'v9.0.0',
       publishedAt: new Date('2025-01-10T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b90'],
       tagName: 'release/v9.0.0',
     },
@@ -48,6 +52,7 @@ const createMockData = (): Release[] => {
       id: '9.0-node-1',
       name: 'v9.0.1',
       publishedAt: new Date('2025-02-10T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b90'],
       tagName: 'release/v9.0.1',
     },
@@ -55,6 +60,7 @@ const createMockData = (): Release[] => {
       id: '9.0-nightly',
       name: 'v9.0.2 (nightly)',
       publishedAt: new Date('2025-03-10T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b90'],
       tagName: 'v9.0.2-nightly',
     },
@@ -62,6 +68,7 @@ const createMockData = (): Release[] => {
       id: '8.4-anchor',
       name: 'v8.4.0',
       publishedAt: new Date('2025-04-15T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b84'],
       tagName: 'release/v8.4.0',
     },
@@ -69,6 +76,7 @@ const createMockData = (): Release[] => {
       id: '8.4-node-1',
       name: 'v8.4.1',
       publishedAt: new Date('2025-05-15T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b84'],
       tagName: 'release/v8.4.1',
     },
@@ -76,6 +84,7 @@ const createMockData = (): Release[] => {
       id: '7.2-anchor',
       name: 'v7.2.0',
       publishedAt: new Date('2022-06-01T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b72'],
       tagName: 'release/v7.2.0',
     },
@@ -83,6 +92,7 @@ const createMockData = (): Release[] => {
       id: '7.2-node-1',
       name: 'v7.2.1',
       publishedAt: new Date('2022-07-01T10:00:00Z'),
+      lastScanned: new Date(),
       branch: branches['b72'],
       tagName: 'release/v7.2.1',
     },
@@ -146,10 +156,10 @@ describe('ReleaseNodeService', () => {
       };
 
       const nightlyReleases: Release[] = [
-        { id: 'R1-ANCHOR', name: 'v1.0.0', publishedAt: new Date('2024-10-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.0' },
-        { id: 'N1-OLD', name: 'v1.0.1 (nightly)', publishedAt: new Date('2024-11-01T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.1-nightly' },
-        { id: 'N2-OLDER', name: 'v1.0.2 (nightly)', publishedAt: new Date('2024-11-15T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.2-nightly' },
-        { id: 'N3-LATEST', name: 'v1.0.3 (nightly)', publishedAt: new Date('2024-11-20T10:00:00Z'), branch: branches['testNightlyBranch'], tagName: 'v1.0.3-nightly' },
+        { id: 'R1-ANCHOR', name: 'v1.0.0', publishedAt: new Date('2024-10-01T10:00:00Z'), lastScanned: new Date(), branch: branches['testNightlyBranch'], tagName: 'v1.0.0' },
+        { id: 'N1-OLD', name: 'v1.0.1 (nightly)', publishedAt: new Date('2024-11-01T10:00:00Z'), lastScanned: new Date(), branch: branches['testNightlyBranch'], tagName: 'v1.0.1-nightly' },
+        { id: 'N2-OLDER', name: 'v1.0.2 (nightly)', publishedAt: new Date('2024-11-15T10:00:00Z'), lastScanned: new Date(), branch: branches['testNightlyBranch'], tagName: 'v1.0.2-nightly' },
+        { id: 'N3-LATEST', name: 'v1.0.3 (nightly)', publishedAt: new Date('2024-11-20T10:00:00Z'), lastScanned: new Date(), branch: branches['testNightlyBranch'], tagName: 'v1.0.3-nightly' },
       ];
 
       const allReleases = [...mockReleases, ...nightlyReleases];
@@ -228,7 +238,7 @@ describe('ReleaseNodeService', () => {
   describe('transformNodeLabel', () => {
     it('should strip "release/" prefix and format nightly releases as vX.Y.Z-nightly', () => {
       const mockRelease: Release = {
-        id: '1', name: 'v1.2.3 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
+        id: '1', name: 'v1.2.3 (nightly)', publishedAt: new Date(), lastScanned: new Date(), branch: { id: 'b', name: 'dev' },
         tagName: 'release/v1.2.3-nightly'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
@@ -238,7 +248,7 @@ describe('ReleaseNodeService', () => {
 
     it('should format nightly releases with version from release.name', () => {
       const mockRelease: Release = {
-        id: '1', name: 'v1.2.3-20251108.042330 (nightly)', publishedAt: new Date(), branch: { id: 'b', name: 'dev' },
+        id: '1', name: 'v1.2.3-20251108.042330 (nightly)', publishedAt: new Date(), lastScanned: new Date(), branch: { id: 'b', name: 'dev' },
         tagName: 'v1.2.3-nightly-2025'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
@@ -251,6 +261,7 @@ describe('ReleaseNodeService', () => {
         id: '1',
         name: 'v9.4.0-20251108.042330 (nightly)',
         publishedAt: new Date(),
+        lastScanned: new Date(),
         branch: { id: 'b', name: 'master' },
         tagName: 'release/9.4-nightly'
       };
@@ -264,6 +275,7 @@ describe('ReleaseNodeService', () => {
         id: '1',
         name: '9.4.0-20251108.042330 (nightly)',
         publishedAt: new Date(),
+        lastScanned: new Date(),
         branch: { id: 'b', name: 'master' },
         tagName: 'release/9.4-nightly'
       };
@@ -274,7 +286,7 @@ describe('ReleaseNodeService', () => {
 
     it('should handle releases without nightly tags and strip prefix', () => {
       const mockRelease: Release = {
-        id: '1', name: 'v10.0.0', publishedAt: new Date(), branch: { id: 'b', name: '10.0' },
+        id: '1', name: 'v10.0.0', publishedAt: new Date(), lastScanned: new Date(), branch: { id: 'b', name: '10.0' },
         tagName: 'release/v10.0.0'
       };
       const label = (service as any).transformNodeLabel(mockRelease);
