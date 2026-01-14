@@ -60,7 +60,7 @@
 
         <div class="right-panel">
           @if (vulnerabilities !== undefined) {
-            <app-release-vulnerabilities [vulnerabilities]="vulnerabilities" />
+            <app-release-vulnerabilities [vulnerabilities]="vulnerabilities" [lastScanned]="release.lastScanned" />
           } @else {
             <div class="placeholder">
               <p>Loading vulnerability information...</p>

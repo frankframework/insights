@@ -47,6 +47,23 @@
     gap: 0.625rem;
     border-radius: 8px;
   }
+
+  .cve-list-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+    h4 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+      margin-top: .25rem;
+      text-align: right;
+    }
+  }
 }
 
 .cve-item {

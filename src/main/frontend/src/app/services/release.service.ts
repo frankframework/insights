@@ -6,7 +6,8 @@ export interface Release {
   id: string;
   tagName: string;
   name: string;
-  publishedAt: Date | string;
+  publishedAt: Date;
+  lastScanned: Date;
   branch: Branch;
 }
 
