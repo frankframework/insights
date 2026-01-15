@@ -38,6 +38,13 @@ export class AuthService {
    * Sets appropriate error messages for 403 (not authorized), but not for 401 (just not logged in)
    */
   public checkAuthStatus(): Observable<User | null> {
+    const hasSession = localStorage.getItem(this.SESSION_KEY) === 'true';
+
+    if (!hasSession) {
+      this.isAuthenticated.set(false);
+      return of(null);
+    }
+
     this.isLoading.set(true);
     return this.appService.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
       tap((user) => {
@@ -109,23 +116,6 @@ export class AuthService {
     const queryString =
       Object.keys(queryParameters).length > 0 ? `?${new URLSearchParams(queryParameters).toString()}` : '';
     this.locationService.navigateTo(`/${queryString}`);
-  }
-
-  /**
-   * Clear all cookies to ensure clean state after logout
-   * Note: HttpOnly cookies (like JSESSIONID) can only be cleared by the server
-   */
-  private clearAllCookies(): void {
-    const cookies = document.cookie.split(';');
-
-    for (const cookie of cookies) {
-      const eqPos = cookie.indexOf('=');
-      const name = eqPos === -1 ? cookie.trim() : cookie.slice(0, Math.max(0, eqPos)).trim();
-
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${globalThis.location.hostname}`;
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.${globalThis.location.hostname}`;
-    }
   }
 
   /**
