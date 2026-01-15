@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject, AfterViewInit } from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
 import { catchError, map, of, tap } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
@@ -33,7 +33,7 @@ export interface BranchLifecycle {
   styleUrls: ['./release-graph.component.scss'],
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, NgStyle],
 })
-export class ReleaseGraphComponent implements OnInit, OnDestroy {
+export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
 
@@ -69,6 +69,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
   private touchStartX = 0;
   private touchStartY = 0;
   private isTouchDragging = false;
+
+  private wheelListener: ((event: WheelEvent) => void) | null = null;
+  private touchStartListener: ((event: TouchEvent) => void) | null = null;
+  private touchMoveListener: ((event: TouchEvent) => void) | null = null;
 
   private releaseService = inject(ReleaseService);
   private nodeService = inject(ReleaseNodeService);
@@ -130,8 +134,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    this.attachNonPassiveEventListeners();
+  }
+
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
+    this.removeNonPassiveEventListeners();
   }
 
   public toggleNightlies(): void {
@@ -820,6 +829,36 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy {
     if (this.isLoading) {
       this.isLoading = false;
       requestAnimationFrame(() => requestAnimationFrame(() => this.centerGraph()));
+    }
+  }
+
+  private attachNonPassiveEventListeners(): void {
+    if (!this.svgElement?.nativeElement) return;
+
+    const svg = this.svgElement.nativeElement;
+
+    this.wheelListener = this.onWheel.bind(this);
+    this.touchStartListener = this.onTouchStart.bind(this);
+    this.touchMoveListener = this.onTouchMove.bind(this);
+
+    svg.addEventListener('wheel', this.wheelListener, { passive: false });
+    svg.addEventListener('touchstart', this.touchStartListener, { passive: false });
+    svg.addEventListener('touchmove', this.touchMoveListener, { passive: false });
+  }
+
+  private removeNonPassiveEventListeners(): void {
+    if (!this.svgElement?.nativeElement) return;
+
+    const svg = this.svgElement.nativeElement;
+
+    if (this.wheelListener) {
+      svg.removeEventListener('wheel', this.wheelListener);
+    }
+    if (this.touchStartListener) {
+      svg.removeEventListener('touchstart', this.touchStartListener);
+    }
+    if (this.touchMoveListener) {
+      svg.removeEventListener('touchmove', this.touchMoveListener);
     }
   }
 }

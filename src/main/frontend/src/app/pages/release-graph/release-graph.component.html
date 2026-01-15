@@ -8,13 +8,10 @@
       #svgElement
       id="svgElement"
       [attr.viewBox]="viewBox"
-      (wheel)="onWheel($event)"
       (mousedown)="onMouseDown($event)"
       (mouseup)="onMouseUp()"
       (mousemove)="onMouseMove($event)"
       (mouseleave)="onMouseUp()"
-      (touchstart)="onTouchStart($event)"
-      (touchmove)="onTouchMove($event)"
       (touchend)="onTouchEnd()"
       (touchcancel)="onTouchEnd()"
     >
