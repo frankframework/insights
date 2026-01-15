@@ -3,15 +3,18 @@ package org.frankframework.insights.release.releasecleanup;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FileTreeDeleter {
-    public void deleteTree(Path root, AtomicInteger deletedCount, AtomicLong freedSpace) throws IOException {
-        Files.walkFileTree(root, new DeleteTreeVisitor(deletedCount, freedSpace));
-    }
+    public void deleteTreeRecursively(Path path) throws IOException, InterruptedException {
+        if (!Files.exists(path)) return;
 
-    public void deleteTreeRecursively(Path path) throws IOException {
-        deleteTree(path, null, null);
+        try {
+            Files.walkFileTree(path, new DeleteTreeVisitor(null, null));
+        } catch (IOException e) {
+            log.warn("default deletion failed because of {}, convert to native rm", path);
+            new ProcessBuilder("rm", "-rf", path.toString()).start().waitFor();
+        }
     }
 }
