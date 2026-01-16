@@ -1,5 +1,6 @@
 package org.frankframework.insights.common.configuration;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
@@ -22,6 +23,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Configuration
 @Slf4j
 public class SystemDataInitializer implements CommandLineRunner {
+    private final AtomicBoolean isJobRunning = new AtomicBoolean(false);
+
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
     private final MilestoneService milestoneService;
@@ -69,10 +72,18 @@ public class SystemDataInitializer implements CommandLineRunner {
     @Override
     @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
-        log.info("Startup: Fetching GitHub statistics");
-        fetchGitHubStatistics();
-        log.info("Startup: Fetching full system data");
-        initializeSystemData();
+        if (!isJobRunning.compareAndSet(false, true)) {
+            log.warn("Startup job skipped: another job is already running");
+            return;
+        }
+        try {
+            log.info("Startup: Fetching GitHub statistics");
+            fetchGitHubStatistics();
+            log.info("Startup: Fetching full system data");
+            initializeSystemData();
+        } finally {
+            isJobRunning.set(false);
+        }
     }
 
     /**
@@ -81,9 +92,17 @@ public class SystemDataInitializer implements CommandLineRunner {
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
-        log.info("Daily fetch job started");
-        fetchGitHubStatistics();
-        initializeSystemData();
+        if (!isJobRunning.compareAndSet(false, true)) {
+            log.warn("Daily job skipped: another job is already running");
+            return;
+        }
+        try {
+            log.info("Daily fetch job started");
+            fetchGitHubStatistics();
+            initializeSystemData();
+        } finally {
+            isJobRunning.set(false);
+        }
     }
 
     /**
@@ -115,14 +134,14 @@ public class SystemDataInitializer implements CommandLineRunner {
             }
 
             log.info("Start fetching all GitHub data");
-            labelService.injectLabels();
-            milestoneService.injectMilestones();
-            issueTypeService.injectIssueTypes();
-            issueProjectItemsService.injectIssueProjectItems();
-            branchService.injectBranches();
-            issueService.injectIssues();
-            pullRequestService.injectBranchPullRequests();
-            releaseService.injectReleases();
+			labelService.injectLabels();
+			milestoneService.injectMilestones();
+			issueTypeService.injectIssueTypes();
+			issueProjectItemsService.injectIssueProjectItems();
+			branchService.injectBranches();
+			issueService.injectIssues();
+			pullRequestService.injectBranchPullRequests();
+			releaseService.injectReleases();
             log.info("Done fetching all GitHub data");
 
             log.info("Cleaning up obsolete release artifacts");
