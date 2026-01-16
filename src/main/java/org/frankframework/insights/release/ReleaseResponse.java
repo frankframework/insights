@@ -6,4 +6,4 @@ import org.frankframework.insights.branch.BranchResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReleaseResponse(
-        String id, String tagName, String name, OffsetDateTime publishedAt, String commitSha, BranchResponse branch) {}
+        String id, String tagName, String name, OffsetDateTime publishedAt, OffsetDateTime lastScanned, String commitSha, BranchResponse branch) {}

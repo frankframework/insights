@@ -17,6 +17,7 @@ const mockRelease: Release = {
   name: 'v1.0.0',
   tagName: 'v1',
   publishedAt: new Date(),
+  lastScanned: new Date(),
   branch: { id: 'b1', name: 'master' },
 };
 
@@ -228,6 +229,7 @@ describe('ReleaseDetailsComponent', () => {
         name: 'v2.0.0',
         tagName: 'v2',
         publishedAt: new Date(),
+        lastScanned: new Date(),
         branch: { id: 'b2', name: 'master' },
       };
 

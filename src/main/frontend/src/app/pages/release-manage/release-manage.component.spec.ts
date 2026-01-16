@@ -52,6 +52,7 @@ describe('ReleaseManageComponent', () => {
     tagName: 'v1.0.0',
     name: 'Release 1.0.0',
     publishedAt: new Date('2024-01-01'),
+    lastScanned: new Date(),
     branch: { id: '1', name: 'main' },
   };
 

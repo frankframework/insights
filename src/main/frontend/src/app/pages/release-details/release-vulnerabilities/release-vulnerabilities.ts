@@ -12,6 +12,7 @@ import { VulnerabilityDetailsOffCanvas } from '../vulnerability-details-off-canv
 })
 export class ReleaseVulnerabilities implements OnChanges {
   @Input() vulnerabilities: Vulnerability[] = [];
+  @Input() lastScanned: Date | null = null;
 
   public sortedVulnerabilities: Vulnerability[] = [];
   public selectedVulnerability: Vulnerability | null = null;
