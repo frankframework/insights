@@ -48,6 +48,7 @@ const mockRelease: Release = {
   name: 'v2.0',
   tagName: 'v2.0',
   publishedAt: new Date(),
+  lastScanned: new Date(),
   branch: { id: 'b1', name: 'main' },
 };
 

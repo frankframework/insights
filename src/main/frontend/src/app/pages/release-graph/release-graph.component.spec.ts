@@ -19,7 +19,7 @@ describe('ReleaseGraphComponent', () => {
   let queryParametersSubject: BehaviorSubject<any>;
 
   const mockReleaseData: Record<string, Release[]> = {
-    master: [{ id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), branch: { id: 'b1', name: 'master' } }],
+    master: [{ id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), lastScanned: new Date(), branch: { id: 'b1', name: 'master' } }],
   };
   const mockReleases: Release[] = Object.values(mockReleaseData).flat();
   const mockNodes: ReleaseNode[] = [
