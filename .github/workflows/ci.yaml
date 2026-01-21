@@ -113,7 +113,7 @@ jobs:
         working-directory: src/main/frontend
 
       - name: Build
-        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod"
+        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod" -Drevision="0.0.${{ github.run_number }}"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
