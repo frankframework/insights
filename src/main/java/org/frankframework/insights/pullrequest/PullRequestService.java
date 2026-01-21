@@ -142,8 +142,8 @@ public class PullRequestService {
      */
     private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
         try {
-            Set<PullRequestDTO> masterPullRequests =
-                    gitHubGraphQLClient.getBranchPullRequests(branchProtectionRegexes.getFirst());
+            Set<PullRequestDTO> masterPullRequests = gitHubGraphQLClient.getBranchPullRequests(
+                    branchProtectionRegexes.getFirst().replaceAll("^\\^|\\$$|\\\\", ""));
             return sortPullRequestsByMergedAt(masterPullRequests);
         } catch (Exception e) {
             throw new PullRequestInjectionException("Error while injecting GitHub pull requests of branch master", e);

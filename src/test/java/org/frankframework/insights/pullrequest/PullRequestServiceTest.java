@@ -755,4 +755,108 @@ public class PullRequestServiceTest {
 
         verify(pullRequestIssueRepository, never()).saveAll(anySet());
     }
+
+    @Test
+    public void fetchSortedMasterPullRequests_shouldStripCaretAndDollarFromRegex()
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^master$"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
+        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+
+        pullRequestService.injectBranchPullRequests();
+
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
+    }
+
+    @Test
+    public void fetchSortedMasterPullRequests_shouldHandleRegexWithOnlyCaret()
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^master"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
+        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+
+        pullRequestService.injectBranchPullRequests();
+
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
+    }
+
+    @Test
+    public void fetchSortedMasterPullRequests_shouldHandleRegexWithOnlyDollar()
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("master$"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
+        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+
+        pullRequestService.injectBranchPullRequests();
+
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
+    }
+
+    @Test
+    public void fetchSortedMasterPullRequests_shouldHandlePlainBranchNameWithoutRegexChars()
+            throws GitHubGraphQLClientException, PullRequestInjectionException {
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("master"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
+        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
+
+        pullRequestService.injectBranchPullRequests();
+
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
+    }
 }
