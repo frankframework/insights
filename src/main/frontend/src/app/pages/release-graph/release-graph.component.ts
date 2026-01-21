@@ -373,8 +373,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
         tap((releases) => {
           if (releases.length === 0) {
             this.showNotFoundError = true;
+            this.checkReleaseGraphLoading();
           }
-          this.checkReleaseGraphLoading();
         }),
         map((releases) => this.nodeService.structureReleaseData(releases)),
         tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
