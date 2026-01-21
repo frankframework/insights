@@ -5,14 +5,15 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@modelcontextprotocol/sdk@<1.25.2': '>=1.25.2'
-  diff@>=6.0.0 <8.0.3: '>=8.0.3'
-  qs@<6.14.1: '>=6.14.1'
-  systeminformation@<5.27.14: '>=5.27.14'
-  tar@<=7.5.2: '>=7.5.3'
-  tar@<=7.5.3: '>=7.5.4'
+  diff: '>=8.0.3'
+  tar: '>=7.5.4'
+  systeminformation: '>=5.27.14'
+  qs: '>=6.14.1'
+  '@modelcontextprotocol/sdk': '>=1.25.2'
 
 importers:
+
+  .: {}
 
   src/main/frontend:
     dependencies:
@@ -3232,10 +3233,6 @@ packages:
 
   di@0.0.1:
     resolution: {integrity: sha512-uJaamHkagcZtHPqCIHZxnFrXlunQXgBOsZSUOWwFw31QJCAbyTBoHMW75YOTur5ZNx8pIeAKgf6GWIgaqqiLhA==}
-
-  diff@5.2.2:
-    resolution: {integrity: sha512-vtcDfH3TOjP8UekytvnHH1o1P4FcUdt4eQ1Y+Abap1tk/OB2MWQvcwS2ClCd1zuIhc3JKOx6p3kod8Vfys3E+A==}
-    engines: {node: '>=0.3.1'}
 
   diff@8.0.3:
     resolution: {integrity: sha512-qejHi7bcSD4hQAZE0tNAawRK1ZtafHDmMTMkrrIGgSLl7hTnQHmKCeB45xAcbfTqK2zowkM3j3bHt/4b/ARbYQ==}
@@ -9565,8 +9562,6 @@ snapshots:
 
   di@0.0.1: {}
 
-  diff@5.2.2: {}
-
   diff@8.0.3: {}
 
   dns-packet@5.6.1:
@@ -11122,7 +11117,7 @@ snapshots:
   mochawesome@7.1.4(mocha@11.7.5):
     dependencies:
       chalk: 4.1.2
-      diff: 5.2.2
+      diff: 8.0.3
       json-stringify-safe: 5.0.1
       lodash.isempty: 4.4.0
       lodash.isfunction: 3.0.9
