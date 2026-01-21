@@ -828,12 +828,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private checkReleaseGraphLoading(): void {
     if (this.isLoading) {
       this.isLoading = false;
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          this.centerGraph();
-          this.attachNonPassiveEventListeners();
-        }),
-      );
+      requestAnimationFrame(() => {
+        this.centerGraph();
+        this.attachNonPassiveEventListeners();
+      });
     }
   }
 
