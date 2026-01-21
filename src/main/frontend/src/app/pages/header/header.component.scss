@@ -5,7 +5,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 0.5rem 0 .5rem 1rem;
   background-color: white;
   z-index: 20;
@@ -68,6 +68,31 @@
         @media (max-width: 540px) {
           font-size: .85rem;
         }
+      }
+    }
+  }
+
+  .build-info {
+    display: flex;
+    align-items: center;
+    cursor: help;
+    margin-top: 3px;
+
+    .version-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #6c757d;
+      background-color: #f8f9fa;
+      padding: 4px 8px;
+      border-radius: 12px;
+      border: 1px solid #dee2e6;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #e9ecef;
+        color: #495057;
+        border-color: #ced4da;
       }
     }
   }
