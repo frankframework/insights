@@ -11,5 +11,4 @@ public record ReleaseResponse(
         String name,
         OffsetDateTime publishedAt,
         OffsetDateTime lastScanned,
-        String commitSha,
         BranchResponse branch) {}

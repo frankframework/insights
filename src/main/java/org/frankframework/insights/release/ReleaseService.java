@@ -330,11 +330,22 @@ public class ReleaseService {
     }
 
     /**
-     * Saves all releases to the database.
+     * Saves all releases to the database, preserving existing lastScanned values.
      *
      * @param releases The set of releases to save.
      */
     private void saveAllReleases(Set<Release> releases) {
+        Map<String, OffsetDateTime> existingLastScanned = releaseRepository.findAll().stream()
+                .filter(r -> r.getLastScanned() != null)
+                .collect(Collectors.toMap(Release::getId, Release::getLastScanned));
+
+        releases.forEach(release -> {
+            OffsetDateTime lastScanned = existingLastScanned.get(release.getId());
+            if (lastScanned != null) {
+                release.setLastScanned(lastScanned);
+            }
+        });
+
         List<Release> savedReleases = releaseRepository.saveAll(releases);
         log.info("Saved {} releases.", savedReleases.size());
     }
