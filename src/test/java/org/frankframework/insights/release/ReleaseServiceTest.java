@@ -603,4 +603,41 @@ public class ReleaseServiceTest {
         verify(mapper, never()).toEntity(eq(rcLowercase), eq(Release.class));
         verify(mapper, never()).toEntity(eq(betaUppercase), eq(Release.class));
     }
+
+    @Test
+    public void saveAllReleases_shouldPreserveExistingLastScannedValue() throws Exception {
+        OffsetDateTime existingLastScanned = OffsetDateTime.parse("2025-06-15T10:00:00Z");
+
+        Release existingRelease = new Release();
+        existingRelease.setId("id1");
+        existingRelease.setTagName("v1.0");
+        existingRelease.setLastScanned(existingLastScanned);
+
+        Release newReleaseFromGitHub = new Release();
+        newReleaseFromGitHub.setId("id1");
+        newReleaseFromGitHub.setTagName("v1.0");
+        newReleaseFromGitHub.setPublishedAt(dto1.getReleaseDate());
+        newReleaseFromGitHub.setBranch(masterBranch);
+        newReleaseFromGitHub.setLastScanned(null);
+
+        when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
+        when(branchService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(newReleaseFromGitHub);
+        when(releaseRepository.findAll()).thenReturn(List.of(existingRelease));
+        when(releaseRepository.saveAll(anySet())).thenAnswer(invocation -> {
+            Set<Release> releases = invocation.getArgument(0);
+            return new ArrayList<>(releases);
+        });
+        when(branchService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
+
+        releaseService.injectReleases();
+
+        ArgumentCaptor<Set<Release>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(releaseRepository).saveAll(captor.capture());
+        Set<Release> savedReleases = captor.getValue();
+
+        assertEquals(1, savedReleases.size());
+        Release savedRelease = savedReleases.iterator().next();
+        assertEquals(existingLastScanned, savedRelease.getLastScanned());
+    }
 }
