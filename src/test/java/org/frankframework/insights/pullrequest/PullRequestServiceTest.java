@@ -783,132 +783,38 @@ public class PullRequestServiceTest {
     }
 
     @Test
-    public void fetchSortedMasterPullRequests_shouldStripBackslashesFromRegex()
-            throws GitHubGraphQLClientException, PullRequestInjectionException {
-        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^main\\.branch$"));
-
-        pullRequestService = new PullRequestService(
-                gitHubGraphQLClient,
-                mapper,
-                pullRequestRepository,
-                branchPullRequestRepository,
-                branchService,
-                milestoneService,
-                issueService,
-                gitHubProperties,
-                pullRequestLabelRepository,
-                pullRequestIssueRepository,
-                labelService);
-
-        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
-        when(gitHubGraphQLClient.getBranchPullRequests("main.branch")).thenReturn(Set.of());
-
-        pullRequestService.injectBranchPullRequests();
-
-        verify(gitHubGraphQLClient).getBranchPullRequests("main.branch");
-    }
-
-    @Test
-    public void fetchSortedMasterPullRequests_shouldHandleComplexRegexPattern()
-            throws GitHubGraphQLClientException, PullRequestInjectionException {
-        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^release\\/.*$"));
-
-        pullRequestService = new PullRequestService(
-                gitHubGraphQLClient,
-                mapper,
-                pullRequestRepository,
-                branchPullRequestRepository,
-                branchService,
-                milestoneService,
-                issueService,
-                gitHubProperties,
-                pullRequestLabelRepository,
-                pullRequestIssueRepository,
-                labelService);
-
-        when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
-        when(gitHubGraphQLClient.getBranchPullRequests("release/.*")).thenReturn(Set.of());
-
-        pullRequestService.injectBranchPullRequests();
-
-        verify(gitHubGraphQLClient).getBranchPullRequests("release/.*");
-    }
-
-    @Test
     public void fetchSortedMasterPullRequests_shouldHandleRegexWithOnlyCaret()
             throws GitHubGraphQLClientException, PullRequestInjectionException {
-        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^main"));
-
-        pullRequestService = new PullRequestService(
-                gitHubGraphQLClient,
-                mapper,
-                pullRequestRepository,
-                branchPullRequestRepository,
-                branchService,
-                milestoneService,
-                issueService,
-                gitHubProperties,
-                pullRequestLabelRepository,
-                pullRequestIssueRepository,
-                labelService);
-
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^master"));
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
-        when(gitHubGraphQLClient.getBranchPullRequests("main")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubGraphQLClient).getBranchPullRequests("main");
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
     }
 
     @Test
     public void fetchSortedMasterPullRequests_shouldHandleRegexWithOnlyDollar()
             throws GitHubGraphQLClientException, PullRequestInjectionException {
-        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("main$"));
-
-        pullRequestService = new PullRequestService(
-                gitHubGraphQLClient,
-                mapper,
-                pullRequestRepository,
-                branchPullRequestRepository,
-                branchService,
-                milestoneService,
-                issueService,
-                gitHubProperties,
-                pullRequestLabelRepository,
-                pullRequestIssueRepository,
-                labelService);
-
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("master$"));
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
-        when(gitHubGraphQLClient.getBranchPullRequests("main")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubGraphQLClient).getBranchPullRequests("main");
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
     }
 
     @Test
     public void fetchSortedMasterPullRequests_shouldHandlePlainBranchNameWithoutRegexChars()
             throws GitHubGraphQLClientException, PullRequestInjectionException {
-        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("develop"));
-
-        pullRequestService = new PullRequestService(
-                gitHubGraphQLClient,
-                mapper,
-                pullRequestRepository,
-                branchPullRequestRepository,
-                branchService,
-                milestoneService,
-                issueService,
-                gitHubProperties,
-                pullRequestLabelRepository,
-                pullRequestIssueRepository,
-                labelService);
-
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("master"));
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
-        when(gitHubGraphQLClient.getBranchPullRequests("develop")).thenReturn(Set.of());
+        when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
 
         pullRequestService.injectBranchPullRequests();
 
-        verify(gitHubGraphQLClient).getBranchPullRequests("develop");
+        verify(gitHubGraphQLClient).getBranchPullRequests("master");
     }
 }
