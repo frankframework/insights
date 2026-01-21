@@ -786,6 +786,20 @@ public class PullRequestServiceTest {
     public void fetchSortedMasterPullRequests_shouldHandleRegexWithOnlyCaret()
             throws GitHubGraphQLClientException, PullRequestInjectionException {
         when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("^master"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
 
@@ -798,6 +812,20 @@ public class PullRequestServiceTest {
     public void fetchSortedMasterPullRequests_shouldHandleRegexWithOnlyDollar()
             throws GitHubGraphQLClientException, PullRequestInjectionException {
         when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("master$"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
 
@@ -810,6 +838,20 @@ public class PullRequestServiceTest {
     public void fetchSortedMasterPullRequests_shouldHandlePlainBranchNameWithoutRegexChars()
             throws GitHubGraphQLClientException, PullRequestInjectionException {
         when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of("master"));
+
+        pullRequestService = new PullRequestService(
+                gitHubGraphQLClient,
+                mapper,
+                pullRequestRepository,
+                branchPullRequestRepository,
+                branchService,
+                milestoneService,
+                issueService,
+                gitHubProperties,
+                pullRequestLabelRepository,
+                pullRequestIssueRepository,
+                labelService);
+
         when(branchService.getAllBranches()).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getBranchPullRequests("master")).thenReturn(Set.of());
 
