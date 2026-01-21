@@ -83,7 +83,8 @@ public class SecurityConfig {
                         .permitAll())
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()).csrfTokenRequestHandler(requestHandler))
                 .addFilterAfter(new CsrfCookieFilter(csrfCookieSecure), CsrfFilter.class)
-                .headers(headers -> headers.contentSecurityPolicy(csp -> csp.policyDirectives(buildCspDirectives()))
+                .headers(headers -> headers.contentSecurityPolicy(csp ->
+                                csp.policyDirectives(buildCspDirectives()).reportOnly())
                         .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                         .referrerPolicy(referrer -> referrer.policy(
                                 ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
