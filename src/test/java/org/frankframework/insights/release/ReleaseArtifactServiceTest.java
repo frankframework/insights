@@ -119,4 +119,120 @@ public class ReleaseArtifactServiceTest {
 
         mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
     }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenArchiveDirectoryDoesNotExist_shouldCreateIt() throws IOException {
+        String tagName = "v9.0.0";
+        Path zipPath = ARCHIVE_DIR.resolve(tagName + ".zip");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(false);
+        mockedFiles.when(() -> Files.createDirectories(ARCHIVE_DIR)).thenReturn(ARCHIVE_DIR);
+        mockedFiles.when(() -> Files.exists(zipPath)).thenReturn(true);
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(zipPath, result);
+        mockedFiles.verify(() -> Files.createDirectories(ARCHIVE_DIR));
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_whenObsoleteZipExists_shouldDeleteIt() throws IOException {
+        Release release1 = createRelease("8.0.0", "v8.0.0");
+        List<Release> releases = List.of(release1);
+
+        Path activeZip = ARCHIVE_DIR.resolve("v8.0.0.zip");
+        Path obsoleteZip = ARCHIVE_DIR.resolve("v7.0.0.zip");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        when(releaseRepository.findAll()).thenReturn(releases);
+        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.of(activeZip, obsoleteZip));
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_whenAllZipsAreObsolete_shouldDeleteAll() throws IOException {
+        List<Release> releases = new ArrayList<>();
+
+        Path obsoleteZip1 = ARCHIVE_DIR.resolve("v6.0.0.zip");
+        Path obsoleteZip2 = ARCHIVE_DIR.resolve("v7.0.0.zip");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        when(releaseRepository.findAll()).thenReturn(releases);
+        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.of(obsoleteZip1, obsoleteZip2));
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        mockedFiles.verify(() -> Files.list(ARCHIVE_DIR));
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_withMixedContent_shouldOnlyProcessZipFiles() throws IOException {
+        Release release1 = createRelease("8.0.0", "v8.0.0");
+        List<Release> releases = List.of(release1);
+
+        Path activeZip = ARCHIVE_DIR.resolve("v8.0.0.zip");
+        Path textFile = ARCHIVE_DIR.resolve("notes.txt");
+        Path jsonFile = ARCHIVE_DIR.resolve("config.json");
+        Path subDir = ARCHIVE_DIR.resolve("extracted");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        when(releaseRepository.findAll()).thenReturn(releases);
+        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.of(activeZip, textFile, jsonFile, subDir));
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
+        mockedFiles.verify(() -> Files.delete(any()), never());
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_withMultipleActiveReleases_shouldKeepAllActive() throws IOException {
+        Release release1 = createRelease("7.8.0", "v7.8.0");
+        Release release2 = createRelease("8.0.0", "v8.0.0");
+        Release release3 = createRelease("8.1.0", "v8.1.0");
+        List<Release> releases = List.of(release1, release2, release3);
+
+        Path zip1 = ARCHIVE_DIR.resolve("v7.8.0.zip");
+        Path zip2 = ARCHIVE_DIR.resolve("v8.0.0.zip");
+        Path zip3 = ARCHIVE_DIR.resolve("v8.1.0.zip");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        when(releaseRepository.findAll()).thenReturn(releases);
+        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.of(zip1, zip2, zip3));
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
+        mockedFiles.verify(() -> Files.delete(any()), never());
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_withEmptyDirectory_shouldHandleGracefully() throws IOException {
+        Release release1 = createRelease("8.0.0", "v8.0.0");
+        List<Release> releases = List.of(release1);
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        when(releaseRepository.findAll()).thenReturn(releases);
+        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.empty());
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        mockedFiles.verify(() -> Files.walkFileTree(any(), any()), never());
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_withSpecialCharactersInTagName_shouldHandleCorrectly() throws IOException {
+        String tagName = "v8.0.0-RC1";
+        Path zipPath = ARCHIVE_DIR.resolve(tagName + ".zip");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        mockedFiles.when(() -> Files.exists(zipPath)).thenReturn(true);
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(zipPath, result);
+    }
 }
