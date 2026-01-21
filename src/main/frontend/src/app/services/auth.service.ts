@@ -90,6 +90,14 @@ export class AuthService {
     this.isLoading.set(loading);
   }
 
+  /**
+   * Set session flag to indicate OAuth flow is in progress
+   * This ensures checkAuthStatus will query the backend after OAuth redirect
+   */
+  public setPendingAuth(): void {
+    this.setSessionFlag(true);
+  }
+
   public logout(): Observable<void> {
     this.isLoading.set(true);
     return this.appService.post<void>(this.appService.createAPIUrl('auth/logout')).pipe(

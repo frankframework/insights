@@ -33,6 +33,7 @@ export class HeaderComponent {
 
   onLoginWithGitHub(): void {
     this.authService.setLoading(true);
+    this.authService.setPendingAuth();
     this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }

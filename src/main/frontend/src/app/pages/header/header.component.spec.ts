@@ -21,6 +21,7 @@ describe('HeaderComponent', () => {
     authError: WritableSignal<string | null>;
     isLoading: WritableSignal<boolean>;
     setLoading: jasmine.Spy;
+    setPendingAuth: jasmine.Spy;
     logout: jasmine.Spy;
     clearError: jasmine.Spy;
   };
@@ -44,6 +45,7 @@ describe('HeaderComponent', () => {
       authError: signal<string | null>(null),
       isLoading: signal<boolean>(false),
       setLoading: jasmine.createSpy('setLoading'),
+      setPendingAuth: jasmine.createSpy('setPendingAuth'),
       logout: jasmine.createSpy('logout').and.returnValue(of()),
       clearError: jasmine.createSpy('clearError'),
     };
@@ -230,10 +232,11 @@ describe('HeaderComponent', () => {
       fixture.detectChanges();
     });
 
-    it('onLoginWithGitHub should set loading, save state, and navigate', () => {
+    it('onLoginWithGitHub should set loading, set pending auth, save state, and navigate', () => {
       component.onLoginWithGitHub();
 
       expect(mockAuthService.setLoading).toHaveBeenCalledWith(true);
+      expect(mockAuthService.setPendingAuth).toHaveBeenCalledWith();
       expect(mockGraphStateService.getShowExtendedSupport).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveExtendedForOAuth).toHaveBeenCalledWith(false);
       expect(mockLocationService.navigateTo).toHaveBeenCalledWith('/oauth2/authorization/github');

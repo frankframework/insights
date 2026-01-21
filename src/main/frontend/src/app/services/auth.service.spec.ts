@@ -141,6 +141,26 @@ describe('AuthService', () => {
     });
   });
 
+  describe('setPendingAuth()', () => {
+    it('should set session flag in localStorage', () => {
+      service.setPendingAuth();
+
+      // eslint-disable-next-line no-undef
+      expect(localStorage.getItem('auth_session')).toBe('true');
+    });
+
+    it('should allow checkAuthStatus to make backend call after setPendingAuth', (done) => {
+      service.setPendingAuth();
+      service.checkAuthStatus().subscribe((user) => {
+        expect(user).toEqual(mockUser);
+        done();
+      });
+
+      const request = httpMock.expectOne((request_) => request_.url.includes('auth/user'));
+      request.flush(mockUser);
+    });
+  });
+
   describe('logout()', () => {
     it('should successfully logout and clear localStorage', (done) => {
       // eslint-disable-next-line no-undef
