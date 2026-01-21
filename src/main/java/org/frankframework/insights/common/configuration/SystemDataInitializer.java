@@ -134,14 +134,14 @@ public class SystemDataInitializer implements CommandLineRunner {
             }
 
             log.info("Start fetching all GitHub data");
-			labelService.injectLabels();
-			milestoneService.injectMilestones();
-			issueTypeService.injectIssueTypes();
-			issueProjectItemsService.injectIssueProjectItems();
-			branchService.injectBranches();
-			issueService.injectIssues();
-			pullRequestService.injectBranchPullRequests();
-			releaseService.injectReleases();
+            labelService.injectLabels();
+            milestoneService.injectMilestones();
+            issueTypeService.injectIssueTypes();
+            issueProjectItemsService.injectIssueProjectItems();
+            branchService.injectBranches();
+            issueService.injectIssues();
+            pullRequestService.injectBranchPullRequests();
+            releaseService.injectReleases();
             log.info("Done fetching all GitHub data");
 
             log.info("Cleaning up obsolete release artifacts");

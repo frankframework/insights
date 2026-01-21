@@ -373,8 +373,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
         tap((releases) => {
           if (releases.length === 0) {
             this.showNotFoundError = true;
+            this.checkReleaseGraphLoading();
           }
-          this.checkReleaseGraphLoading();
         }),
         map((releases) => this.nodeService.structureReleaseData(releases)),
         tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
@@ -828,7 +828,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private checkReleaseGraphLoading(): void {
     if (this.isLoading) {
       this.isLoading = false;
-      requestAnimationFrame(() => requestAnimationFrame(() => this.centerGraph()));
+      requestAnimationFrame(() => {
+        this.centerGraph();
+        this.attachNonPassiveEventListeners();
+      });
     }
   }
 
