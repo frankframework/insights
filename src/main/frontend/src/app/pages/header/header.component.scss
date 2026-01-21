@@ -32,6 +32,13 @@
     align-items: center;
     gap: .5rem;
     cursor: pointer;
+
+    .build-info {
+      display: flex;
+      align-items: center;
+      color: #1e1e1e80;
+      font-weight: 600;
+    }
   }
 
   ul {
@@ -62,37 +69,12 @@
         font-weight: 600;
         color: #444;
         transition: color 0.2s, opacity 0.2s;
-        margin-top: .2rem;
+        margin-top: 0;
         margin-bottom: 0;
 
         @media (max-width: 540px) {
           font-size: .85rem;
         }
-      }
-    }
-  }
-
-  .build-info {
-    display: flex;
-    align-items: center;
-    cursor: help;
-    margin-top: 3px;
-
-    .version-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #6c757d;
-      background-color: #f8f9fa;
-      padding: 4px 8px;
-      border-radius: 12px;
-      border: 1px solid #dee2e6;
-      white-space: nowrap;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: #e9ecef;
-        color: #495057;
-        border-color: #ced4da;
       }
     }
   }

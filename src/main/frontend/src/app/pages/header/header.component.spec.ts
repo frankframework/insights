@@ -118,10 +118,10 @@ describe('HeaderComponent', () => {
     it('should display build version from VersionService', fakeAsync(() => {
       tick();
       fixture.detectChanges();
-      const versionBadge = fixture.debugElement.query(By.css('.version-badge'));
+      const versionBadge = fixture.debugElement.query(By.css('.build-info'));
 
       expect(versionBadge).toBeTruthy();
-      expect(versionBadge.nativeElement.textContent).toContain('v0.0.1');
+      expect(versionBadge.nativeElement.textContent).toContain('0.0.1');
     }));
   });
 

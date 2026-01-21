@@ -2,7 +2,16 @@
   <li class="logo-container" routerLink="/" [queryParams]="graphStateService.getGraphQueryParams()">
     <img ngSrc="/assets/ff!-icon.svg" alt="FF! insights Logo" width="48" height="48" priority />
     <h2>Insights</h2>
+
+    @if (buildInfo$ | async; as buildInfo) {
+      @if (buildInfo.version) {
+        <h2 class="build-info" [title]="'Built at: ' + (buildInfo.time | date: 'medium')">
+          {{ buildInfo.version }}
+        </h2>
+      }
+    }
   </li>
+
   <ul>
     <li routerLinkActive="active" [routerLink]="['/graph']" [queryParams]="graphStateService.getGraphQueryParams()">
       <h3>Release graph</h3>
@@ -13,14 +22,6 @@
       <span class="tab-underline"></span>
     </li>
   </ul>
-
-  @if (buildInfo$ | async; as buildInfo) {
-    @if (buildInfo.version) {
-      <div class="build-info" [title]="'Built at: ' + (buildInfo.time | date: 'medium')">
-        <span class="version-badge">v{{ buildInfo.version }}</span>
-      </div>
-    }
-  }
 
   <div class="auth-section">
     @if (authService.isAuthenticated()) {
