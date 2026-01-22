@@ -1,13 +1,17 @@
 package org.frankframework.insights.release.releasecleanup;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mockStatic;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.MockedStatic;
 
 public class FileTreeDeleterTest {
 
@@ -187,6 +191,26 @@ public class FileTreeDeleterTest {
     private long countFiles(Path dir) throws IOException {
         try (var stream = Files.walk(dir)) {
             return stream.filter(Files::isRegularFile).count();
+        }
+    }
+
+    @Test
+    @DisabledOnOs(OS.LINUX)
+    void deleteTreeRecursively_whenWalkFileTreeFailsAndRmNotAvailable_shouldThrowIOException(@TempDir Path tempDir)
+            throws IOException {
+        Path dir = tempDir.resolve("fallback-test");
+        Files.createDirectories(dir);
+        Files.writeString(dir.resolve("file.txt"), "content");
+
+        try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation -> {
+            if (invocation.getMethod().getName().equals("walkFileTree")) {
+                throw new IOException("Simulated walkFileTree failure");
+            }
+            return invocation.callRealMethod();
+        })) {
+            IOException exception = assertThrows(IOException.class, () -> fileTreeDeleter.deleteTreeRecursively(dir));
+
+            assertTrue(exception.getMessage().contains("rm not available"));
         }
     }
 }
