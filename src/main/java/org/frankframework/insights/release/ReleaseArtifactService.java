@@ -77,7 +77,7 @@ public class ReleaseArtifactService {
                             log.info("Deletion of obsolete release artifact: {}", fileName);
                             fileTreeDeleter.deleteTreeRecursively(path);
                         } catch (Exception e) {
-                            log.error("Could not deelte file: {}", fileName, e);
+                            log.error("Could not delete file: {}", fileName, e);
                         }
                     }
                 }
