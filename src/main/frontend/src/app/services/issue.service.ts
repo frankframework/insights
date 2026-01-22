@@ -3,6 +3,7 @@ import { AppService, GitHubState } from '../app.service';
 import { Milestone } from './milestone.service';
 import { Label } from './label.service';
 import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 export interface Issue {
   id: string;
@@ -46,17 +47,18 @@ export interface IssueState {
   providedIn: 'root',
 })
 export class IssueService {
-  private appService = inject(AppService);
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly appService: AppService = inject(AppService);
 
   public getIssuesByReleaseId(releaseId: string): Observable<Issue[]> {
-    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));
+    return this.http.get<Issue[]>(this.appService.createAPIUrl(`issues/release/${releaseId}`));
   }
 
   public getIssuesByMilestoneId(milestoneId: string): Observable<Issue[]> {
-    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
+    return this.http.get<Issue[]>(this.appService.createAPIUrl(`issues/milestone/${milestoneId}`));
   }
 
   public getFutureEpicIssues(): Observable<Issue[]> {
-    return this.appService.get<Issue[]>(this.appService.createAPIUrl(`issues/future`));
+    return this.http.get<Issue[]>(this.appService.createAPIUrl(`issues/future`));
   }
 }

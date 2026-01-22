@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { AppService } from '../app.service';
 import { Observable } from 'rxjs';
 import { Issue } from './issue.service';
+import { HttpClient } from '@angular/common/http';
 
 export interface BusinessValue {
   id: string;
@@ -23,36 +24,37 @@ export interface CreateBusinessValueRequest {
   providedIn: 'root',
 })
 export class BusinessValueService {
-  private appService = inject(AppService);
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly appService: AppService = inject(AppService);
 
   public getAllBusinessValues(): Observable<BusinessValue[]> {
-    return this.appService.get<BusinessValue[]>(this.appService.createAPIUrl('business-value'));
+    return this.http.get<BusinessValue[]>(this.appService.createAPIUrl('business-value'));
   }
 
   public getBusinessValuesByReleaseId(releaseId: string): Observable<BusinessValue[]> {
-    return this.appService.get<BusinessValue[]>(this.appService.createAPIUrl(`business-value/release/${releaseId}`));
+    return this.http.get<BusinessValue[]>(this.appService.createAPIUrl(`business-value/release/${releaseId}`));
   }
 
   public getBusinessValueById(id: string): Observable<BusinessValue> {
-    return this.appService.get<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`));
+    return this.http.get<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`));
   }
 
   public createBusinessValue(title: string, description: string): Observable<BusinessValue> {
     const request: CreateBusinessValueRequest = { title, description };
-    return this.appService.post<BusinessValue>(this.appService.createAPIUrl('business-value'), request);
+    return this.http.post<BusinessValue>(this.appService.createAPIUrl('business-value'), request);
   }
 
   public updateBusinessValue(id: string, title: string, description: string): Observable<BusinessValue> {
     const request: CreateBusinessValueRequest = { title, description };
-    return this.appService.put<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`), request);
+    return this.http.put<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`), request);
   }
 
   public updateIssueConnections(id: string, issueIds: string[]): Observable<BusinessValue> {
     const request: ConnectIssuesRequest = { issueIds };
-    return this.appService.put<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}/issues`), request);
+    return this.http.put<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}/issues`), request);
   }
 
   public deleteBusinessValue(id: string): Observable<void> {
-    return this.appService.delete<void>(this.appService.createAPIUrl(`business-value/${id}`));
+    return this.http.delete<void>(this.appService.createAPIUrl(`business-value/${id}`));
   }
 }

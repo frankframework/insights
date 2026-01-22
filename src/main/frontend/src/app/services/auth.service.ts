@@ -1,5 +1,5 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { Injectable, inject, signal, WritableSignal } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
@@ -22,15 +22,16 @@ export interface ErrorResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  public currentUser = signal<User | null>(null);
-  public isAuthenticated = signal<boolean>(false);
-  public authError = signal<string | null>(null);
-  public isLoading = signal<boolean>(false);
+  public currentUser: WritableSignal<User | null> = signal<User | null>(null);
+  public isAuthenticated: WritableSignal<boolean> = signal<boolean>(false);
+  public authError: WritableSignal<string | null> = signal<string | null>(null);
+  public isLoading: WritableSignal<boolean> = signal<boolean>(false);
 
-  private readonly SESSION_KEY = 'auth_session';
-  private appService = inject(AppService);
-  private locationService = inject(LocationService);
-  private graphStateService = inject(GraphStateService);
+  private readonly SESSION_KEY: string = 'auth_session';
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly appService: AppService = inject(AppService);
+  private readonly locationService: LocationService = inject(LocationService);
+  private readonly graphStateService: GraphStateService = inject(GraphStateService);
 
   /**
    * Check authentication status by calling the backend
@@ -46,7 +47,7 @@ export class AuthService {
     }
 
     this.isLoading.set(true);
-    return this.appService.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
+    return this.http.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
       tap((user) => {
         this.currentUser.set(user);
         this.isAuthenticated.set(true);
@@ -98,9 +99,9 @@ export class AuthService {
     this.setSessionFlag(true);
   }
 
-  public logout(): Observable<void> {
+  public logout(): Observable<ArrayBuffer> {
     this.isLoading.set(true);
-    return this.appService.post<void>(this.appService.createAPIUrl('auth/logout')).pipe(
+    return this.http.post<ArrayBuffer>(this.appService.createAPIUrl('auth/logout'), null).pipe(
       tap(() => {
         this.isLoading.set(false);
         this.clearAuthState();
