@@ -38,7 +38,7 @@ export class ReleaseDetailsComponent implements OnInit {
   public vulnerabilities?: Vulnerability[];
   public isLoading = true;
   public showBusinessValue = signal<boolean>(true);
-  public showImportantIssues = signal<boolean>(false);
+  public showImportantIssues = signal<boolean>(true);
   public authService = inject(AuthService);
 
   private router = inject(Router);
