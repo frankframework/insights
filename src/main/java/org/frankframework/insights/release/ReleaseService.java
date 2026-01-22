@@ -339,15 +339,24 @@ public class ReleaseService {
                 .filter(r -> r.getLastScanned() != null)
                 .collect(Collectors.toMap(Release::getId, Release::getLastScanned));
 
-        releases.forEach(release -> {
-            OffsetDateTime lastScanned = existingLastScanned.get(release.getId());
-            if (lastScanned != null) {
-                release.setLastScanned(lastScanned);
-            }
-        });
+        releases.forEach(release -> replaceOldScannedPropertyToNew(existingLastScanned, release));
 
         List<Release> savedReleases = releaseRepository.saveAll(releases);
         log.info("Saved {} releases.", savedReleases.size());
+    }
+
+    /**
+     * Replaces the lastScanned property of a release with the existing value from the database if it exists.
+     * This ensures that the lastScanned timestamp is preserved during updates.
+     *
+     * @param existingLastScanned Map of release IDs to their existing lastScanned values.
+     * @param release The release to update.
+     */
+    private void replaceOldScannedPropertyToNew(Map<String, OffsetDateTime> existingLastScanned, Release release) {
+        OffsetDateTime lastScanned = existingLastScanned.get(release.getId());
+        if (lastScanned != null) {
+            release.setLastScanned(lastScanned);
+        }
     }
 
     /**
