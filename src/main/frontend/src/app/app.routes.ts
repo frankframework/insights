@@ -10,19 +10,22 @@ import { FrankFrameworkMemberGuard } from './guards/frankframework-member.guard'
 
 export const routes: Routes = [
   { path: '', redirectTo: 'graph', pathMatch: 'full' },
-  { path: 'graph', component: ReleaseGraphComponent },
-  { path: 'graph/:id', component: ReleaseDetailsComponent },
-  { path: 'roadmap', component: ReleaseRoadmapComponent },
-  { path: 'release-manage/:id', component: ReleaseManageComponent, canActivate: [FrankFrameworkMemberGuard] },
   {
-    path: 'release-manage/:id/business-values',
-    component: BusinessValueManageComponent,
-    canActivate: [FrankFrameworkMemberGuard],
+    path: 'graph',
+    children: [
+      { path: '', component: ReleaseGraphComponent },
+      { path: ':id', component: ReleaseDetailsComponent },
+    ],
   },
+  { path: 'roadmap', component: ReleaseRoadmapComponent },
   {
-    path: 'release-manage/:id/vulnerabilities',
-    component: VulnerabilityImpactManageComponent,
+    path: 'release-manage/:id',
     canActivate: [FrankFrameworkMemberGuard],
+    children: [
+      { path: '', component: ReleaseManageComponent },
+      { path: 'business-values', component: BusinessValueManageComponent },
+      { path: 'vulnerabilities', component: VulnerabilityImpactManageComponent },
+    ],
   },
   { path: 'not-found', component: NotFoundComponent },
   { path: '**', redirectTo: 'not-found' },
