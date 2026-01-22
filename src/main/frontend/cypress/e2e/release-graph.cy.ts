@@ -138,9 +138,6 @@ describe('Graph Rendering and Interaction', () => {
 
         cy.get('app-release-details').contains('v9.0.1');
         cy.get('app-release-details').contains('CVE-2024-0001');
-
-        cy.get('.section-toggle').contains('Important Issues').click();
-
         cy.get('app-release-details').contains('Feature: Add real-time graphing widget');
       });
     });
