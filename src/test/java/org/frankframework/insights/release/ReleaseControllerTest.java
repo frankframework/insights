@@ -50,16 +50,10 @@ public class ReleaseControllerTest {
     @Test
     public void getAllReleases_returnsOkWithReleases() throws Exception {
         BranchResponse branchResponse = Mockito.mock(BranchResponse.class);
-        ReleaseResponse response1 = new ReleaseResponse(
-                "id1", "tag1", "name1", OffsetDateTime.now(), OffsetDateTime.now(), "sha1", branchResponse);
+        ReleaseResponse response1 =
+                new ReleaseResponse("id1", "tag1", "name1", OffsetDateTime.now(), OffsetDateTime.now(), branchResponse);
         ReleaseResponse response2 = new ReleaseResponse(
-                "id2",
-                "tag2",
-                "name2",
-                OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now(),
-                "sha2",
-                branchResponse);
+                "id2", "tag2", "name2", OffsetDateTime.now().minusDays(1), OffsetDateTime.now(), branchResponse);
         Set<ReleaseResponse> releases = Set.of(response1, response2);
 
         when(releaseService.getAllReleases()).thenReturn(releases);
@@ -96,8 +90,8 @@ public class ReleaseControllerTest {
     @Test
     public void getReleaseByReleaseId_returnsOk() throws Exception {
         BranchResponse branchResponse = Mockito.mock(BranchResponse.class);
-        ReleaseResponse response = new ReleaseResponse(
-                "id1", "tag1", "name1", OffsetDateTime.now(), OffsetDateTime.now(), "sha1", branchResponse);
+        ReleaseResponse response =
+                new ReleaseResponse("id1", "tag1", "name1", OffsetDateTime.now(), OffsetDateTime.now(), branchResponse);
         when(releaseService.getReleaseById("rel1")).thenReturn(response);
 
         mockMvc.perform(get("/api/releases/rel1"))
