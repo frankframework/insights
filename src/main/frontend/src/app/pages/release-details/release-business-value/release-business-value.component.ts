@@ -2,7 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges, inject, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { ReleaseBusinessValueModalComponent } from '../release-business-value-modal/release-business-value-modal.component';
-import { catchError, of } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
 
 @Component({
   selector: 'app-release-business-value',
@@ -45,10 +45,8 @@ export class ReleaseBusinessValueComponent implements OnChanges {
           console.error('Failed to load business values:', error);
           return of([]);
         }),
+        finalize(() => this.isLoadingBusinessValues.set(false)),
       )
-      .subscribe((businessValues) => {
-        this.businessValues.set(businessValues);
-        this.isLoadingBusinessValues.set(false);
-      });
+      .subscribe((businessValues) => this.businessValues.set(businessValues));
   }
 }

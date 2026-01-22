@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { catchError, finalize, forkJoin, map, Observable, of, switchMap, tap } from 'rxjs';
+import { catchError, finalize, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { RoadmapToolbarComponent } from './roadmap-toolbar/roadmap-toolbar.component';
 import { TimelineHeaderComponent } from './timeline-header/timeline-header.component';
 import { MilestoneRowComponent } from './milestone-row/milestone-row.component';
@@ -478,11 +478,6 @@ export class ReleaseRoadmapComponent implements OnInit {
         switchMap(({ milestones, unplannedEpics }) =>
           this.fetchIssuesForMilestones(milestones).pipe(map(() => ({ milestones, unplannedEpics }))),
         ),
-        tap(({ milestones, unplannedEpics }) => {
-          this.allMilestones = milestones;
-          this.allUnplannedEpics = unplannedEpics;
-          this.isDataLoaded = true;
-        }),
         catchError((error) => {
           console.error(`Could not load roadmap data: ${error}`);
           return of(null);
@@ -493,7 +488,13 @@ export class ReleaseRoadmapComponent implements OnInit {
           this.cdr.detectChanges();
         }),
       )
-      .subscribe();
+      .subscribe((result) => {
+        if (result) {
+          this.allMilestones = result.milestones;
+          this.allUnplannedEpics = result.unplannedEpics;
+          this.isDataLoaded = true;
+        }
+      });
   }
 
   private updateVisibleData(): void {

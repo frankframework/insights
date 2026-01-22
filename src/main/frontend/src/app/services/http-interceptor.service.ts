@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
 export type HttpBody = object | null | void;
@@ -53,16 +53,16 @@ export class HttpInterceptorService implements HttpInterceptor {
 
   private performLogout(): void {
     this.isLoggingOut = true;
-    this.authService.logout().subscribe({
-      next: () => {
-        this.isLoggingOut = false;
-        this.router.navigate(['/graph']);
-      },
-      error: (logoutError) => {
-        console.error('Error during logout:', logoutError);
-        this.isLoggingOut = false;
-        this.router.navigate(['/graph']);
-      },
-    });
+    this.authService
+      .logout()
+      .pipe(
+        finalize(() => {
+          this.isLoggingOut = false;
+          this.router.navigate(['/graph']);
+        }),
+      )
+      .subscribe({
+        error: (logoutError) => console.error('Error during logout:', logoutError),
+      });
   }
 }

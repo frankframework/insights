@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject, AfterViewInit } from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
-import { catchError, map, of, tap } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
@@ -369,15 +369,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       .getAllReleases()
       .pipe(
         map((record) => Object.values(record).flat()),
-        tap((releases) => (this.releases = releases)),
-        tap((releases) => {
-          if (releases.length === 0) {
-            this.showNotFoundError = true;
-            this.checkReleaseGraphLoading();
-          }
-        }),
-        map((releases) => this.nodeService.structureReleaseData(releases)),
-        tap((sortedGroups) => this.buildReleaseGraph(sortedGroups)),
         catchError(() => {
           this.showNotFoundError = true;
           this.releaseNodes = [];
@@ -386,7 +377,16 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
           return of([]);
         }),
       )
-      .subscribe();
+      .subscribe((releases) => {
+        this.releases = releases;
+        if (releases.length === 0) {
+          this.showNotFoundError = true;
+          this.checkReleaseGraphLoading();
+          return;
+        }
+        const sortedGroups = this.nodeService.structureReleaseData(releases);
+        this.buildReleaseGraph(sortedGroups);
+      });
   }
 
   private buildReleaseGraph(sortedGroups: Map<string, ReleaseNode[]>[]): void {

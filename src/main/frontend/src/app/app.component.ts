@@ -41,7 +41,13 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
 
-    this.authService.checkAuthStatus().subscribe();
+    this.authService.checkAuthStatus().subscribe({
+      next: (user) => {
+        if (user) {
+          this.authService.setAuthenticated(user);
+        }
+      },
+    });
 
     this.route.queryParams.subscribe((parameters) => {
       const currentUrl = this.router.url;
