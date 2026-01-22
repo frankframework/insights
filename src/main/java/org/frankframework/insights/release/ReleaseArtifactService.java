@@ -38,7 +38,8 @@ public class ReleaseArtifactService {
         Path archiveDir = Paths.get(releaseArchiveDirectory);
         if (!Files.exists(archiveDir)) Files.createDirectories(archiveDir);
 
-        Path zipPath = archiveDir.resolve(tagName + ".zip");
+        String safeFileName = tagName.replace("/", "-") + ".zip";
+        Path zipPath = archiveDir.resolve(safeFileName);
 
         if (Files.exists(zipPath)) {
             return zipPath;
