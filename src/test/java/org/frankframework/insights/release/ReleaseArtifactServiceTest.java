@@ -65,6 +65,35 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
+    public void downloadReleaseZipToPvc_whenTagNameContainsSlash_shouldReplaceWithDash() throws IOException {
+        String tagName = "feature/snapshot";
+        String expectedFileName = "feature-snapshot.zip";
+        Path expectedZipPath = ARCHIVE_DIR.resolve(expectedFileName);
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        mockedFiles.when(() -> Files.exists(expectedZipPath)).thenReturn(true);
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(expectedZipPath, result);
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenTagNameContainsMultipleSlashes_shouldReplaceAllWithDash()
+            throws IOException {
+        String tagName = "release/v1/beta";
+        String expectedFileName = "release-v1-beta.zip";
+        Path expectedZipPath = ARCHIVE_DIR.resolve(expectedFileName);
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        mockedFiles.when(() -> Files.exists(expectedZipPath)).thenReturn(true);
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(expectedZipPath, result);
+    }
+
+    @Test
     public void deleteObsoleteReleaseArtifacts_whenArchiveDirectoryDoesNotExist_shouldSkipCleanup() {
         mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(false);
 
