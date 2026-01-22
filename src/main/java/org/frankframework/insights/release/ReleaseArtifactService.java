@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.common.util.TagNameSanitizer;
 import org.frankframework.insights.release.releasecleanup.FileTreeDeleter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class ReleaseArtifactService {
         Path archiveDir = Paths.get(releaseArchiveDirectory);
         if (!Files.exists(archiveDir)) Files.createDirectories(archiveDir);
 
-        String safeFileName = tagName.replace("/", "-") + ".zip";
+        String safeFileName = TagNameSanitizer.sanitizeWithSuffix(tagName, ".zip");
         Path zipPath = archiveDir.resolve(safeFileName);
 
         if (Files.exists(zipPath)) {
