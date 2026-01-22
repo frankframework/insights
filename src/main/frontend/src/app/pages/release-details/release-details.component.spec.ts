@@ -327,8 +327,8 @@ describe('ReleaseDetailsComponent', () => {
       expect(component.showBusinessValue()).toBe(true);
     });
 
-    it('should initialize showImportantIssues to false', () => {
-      expect(component.showImportantIssues()).toBe(false);
+    it('should initialize showImportantIssues to true', () => {
+      expect(component.showImportantIssues()).toBe(true);
     });
   });
 });
