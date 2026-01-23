@@ -1,6 +1,6 @@
 <div class="release-manage-container">
   @if (!isLoading() && release()) {
-    <div class="header">
+    <header>
       <button class="back-button" (click)="goBack()">
         <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
         Back
@@ -9,7 +9,7 @@
         <h1>{{ release()?.name }}</h1>
         <p class="subtitle">Release Management</p>
       </div>
-    </div>
+    </header>
 
     @if (activeSection() === null) {
       <div class="overview-content">

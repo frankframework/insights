@@ -3,12 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseSkippedVersions } from './release-skipped-versions';
 import { SkipNode } from '../release-link.service';
-
-interface Release {
-  id: string;
-  name: string;
-  branch: { name: string };
-}
+import { Release } from '../../../services/release.service';
 
 describe('ReleaseSkippedVersions', () => {
   let component: ReleaseSkippedVersions;
@@ -45,9 +40,30 @@ describe('ReleaseSkippedVersions', () => {
       };
 
       const releases: Release[] = [
-        { id: 'r1', name: 'v7.0.0', branch: { name: 'master' } },
-        { id: 'r2', name: 'v7.1.0', branch: { name: 'master' } },
-        { id: 'r3', name: 'v7.2.0', branch: { name: 'master' } },
+        {
+          id: 'r1',
+          name: 'v7.0.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date,
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r2',
+          name: 'v7.1.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r3',
+          name: 'v7.2.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date,
+        },
       ];
 
       component.skipNode = skipNode;
@@ -74,9 +90,30 @@ describe('ReleaseSkippedVersions', () => {
       };
 
       const releases: Release[] = [
-        { id: 'r1', name: 'v7.1.0', branch: { name: 'master' } },
-        { id: 'r2', name: 'v7.1.1', branch: { name: 'master' } },
-        { id: 'r3', name: 'v7.1.2', branch: { name: 'master' } },
+        {
+          id: 'r1',
+          name: 'v7.1.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r2',
+          name: 'v7.1.1',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r3',
+          name: 'v7.1.2',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
 
       component.skipNode = skipNode;
@@ -104,10 +141,30 @@ describe('ReleaseSkippedVersions', () => {
       };
 
       const releases: Release[] = [
-        { id: 'r1', name: 'v7.2.0', branch: { name: 'master' } },
-        { id: 'r2', name: 'v7.0.0', branch: { name: 'master' } },
-        { id: 'r3', name: 'v7.1.0', branch: { name: 'master' } },
-      ];
+        {
+          id: 'r1',
+          name: 'v7.2.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        }, {
+          id: 'r2',
+          name: 'v7.0.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r3',
+          name: 'v7.1.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+  ];
 
       component.skipNode = skipNode;
       component.releases = releases;
@@ -132,8 +189,14 @@ describe('ReleaseSkippedVersions', () => {
       };
 
       const releases: Release[] = [
-        { id: 'r1', name: '7.0.0', branch: { name: 'master' } },
-      ];
+        {
+          id: 'r1',
+          name: 'v7.0.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },      ];
 
       component.skipNode = skipNode;
       component.releases = releases;
@@ -165,7 +228,14 @@ describe('ReleaseSkippedVersions', () => {
     it('should not create release tree if skipNode is null', () => {
       component.skipNode = null;
       component.releases = [
-        { id: 'r1', name: 'v7.0.0', branch: { name: 'master' } },
+        {
+          id: 'r1',
+          name: 'v7.0.0',
+          branch: { name: 'master' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
       component.ngOnChanges({
         releases: { currentValue: component.releases, previousValue: [], firstChange: true, isFirstChange: () => true },
