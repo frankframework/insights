@@ -9,6 +9,7 @@ import {
   ActivatedRoute,
 } from '@angular/router';
 import { LoaderComponent } from './components/loader/loader.component';
+import { FeedbackComponent } from './components/feedback/feedback.component';
 import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './pages/release-roadmap/issue-bar/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
@@ -16,7 +17,7 @@ import { GraphStateService } from './services/graph-state.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, LoaderComponent, HeaderComponent, TooltipComponent],
+  imports: [RouterOutlet, LoaderComponent, FeedbackComponent, HeaderComponent, TooltipComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
