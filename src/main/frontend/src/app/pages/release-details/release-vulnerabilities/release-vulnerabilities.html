@@ -1,6 +1,6 @@
 <div class="vulnerabilities-container">
   <div class="cve-list">
-    <div class="cve-list-header">
+    <header class="cve-list-header">
       <h3 class="vulnerabilities-title">Vulnerabilities ({{ sortedVulnerabilities.length }})</h3>
       <div>
         <h4 class="last-scanned-label">Last Scanned</h4>
@@ -12,7 +12,7 @@
           }
         </p>
       </div>
-    </div>
+    </header>
 
     @if (sortedVulnerabilities.length === 0) {
       <p class="no-vulnerabilities">No vulnerabilities found for this release.</p>
@@ -27,12 +27,12 @@
           (keydown.enter)="selectVulnerability(vulnerability)"
           (keydown.space)="selectVulnerability(vulnerability)"
         >
-          <div class="cve-header">
+          <header class="cve-header">
             <span class="cve-id">{{ vulnerability.cveId }}</span>
             <span class="severity-badge" [ngClass]="getSeverityClass(vulnerability.severity)">
               {{ vulnerability.severity }}
             </span>
-          </div>
+          </header>
           <div class="cve-scores">
             <div class="cve-score">CVSS Score: {{ formatCvssScore(vulnerability.cvssScore) }}</div>
             @if (vulnerability.impactScore !== null && vulnerability.impactScore !== undefined) {
