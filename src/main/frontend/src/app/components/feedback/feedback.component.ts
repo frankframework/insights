@@ -34,7 +34,6 @@ export class FeedbackComponent {
 
     const parameters = new URLSearchParams({
       title: '',
-      labels: 'bug,feedback',
       body: `## Context
 - **Page:** \`${currentPage}\`
 - **Version:** \`${version}\`
