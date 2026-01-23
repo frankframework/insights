@@ -38,7 +38,7 @@ export interface QuarterMarker {
 
 export const SupportColors = {
   LATEST_STABLE: '#30A102',
-  CUTTING_EDGE: '#FFD700',
+  BLEEDING_EDGE: '#FFD700',
   SUPPORTED: '#007BFF',
   LTS: '#9370DB',
   EOL: '#DC3545',
@@ -116,7 +116,7 @@ export class ReleaseNodeService {
     this.assignEOLColors(branchGroups);
     this.assignSupportedColors(branchGroups);
     this.assignLTSColors(allNodes, branchGroups);
-    this.assignCuttingEdgeColor(branchGroups);
+    this.assignBleedingEdgeColor(branchGroups);
     this.assignLatestStableColors(allNodes, branchGroups);
   }
 
@@ -350,13 +350,13 @@ export class ReleaseNodeService {
     return version1 !== null && version1.major === version2.major && version1.minor === version2.minor;
   }
 
-  private assignCuttingEdgeColor(branchGroups: Map<string, ReleaseNode[]>): void {
+  private assignBleedingEdgeColor(branchGroups: Map<string, ReleaseNode[]>): void {
     const masterNodes = branchGroups.get(ReleaseNodeService.GITHUB_MASTER_BRANCH);
     if (!masterNodes) return;
 
-    const cuttingEdge = this.findLatestNightly(masterNodes);
-    if (cuttingEdge) {
-      cuttingEdge.color = SupportColors.CUTTING_EDGE;
+    const bleedingEdge = this.findLatestNightly(masterNodes);
+    if (bleedingEdge) {
+      bleedingEdge.color = SupportColors.BLEEDING_EDGE;
     }
   }
 
