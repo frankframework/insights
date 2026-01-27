@@ -300,7 +300,7 @@ describe('ReleaseNodeService', () => {
     const ONE_MONTH_AGO = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000);
     const THIRTEEN_MONTHS_AGO = new Date(NOW.getTime() - 395 * 24 * 60 * 60 * 1000);
 
-    it('should assign CUTTING_EDGE color to master nightly', () => {
+    it('should assign BLEEDING_EDGE color to master nightly', () => {
       const masterNightly: ReleaseNode = {
         id: 'master-nightly',
         label: 'v9.4.0-nightly',
@@ -313,7 +313,7 @@ describe('ReleaseNodeService', () => {
       const releaseGroups = new Map([[MASTER_BRANCH_NAME, [masterNightly]]]);
       service.assignReleaseColors(releaseGroups);
 
-      expect(masterNightly.color).toBe(SupportColors.CUTTING_EDGE);
+      expect(masterNightly.color).toBe(SupportColors.BLEEDING_EDGE);
     });
 
     it('should assign LTS color to latest major release and its nightly', () => {
