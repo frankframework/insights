@@ -1,0 +1,55 @@
+.feedback-wrapper {
+  // Verplaats de positionering van de button naar deze container
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px; // Ruimte tussen tekst en button
+
+  // Als je over de hele wrapper (of button) hovert, toon de tekst
+  &:hover {
+    .feedback-label {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .feedback-button {
+      background-color: #FDC300;
+    }
+  }
+}
+
+.feedback-label {
+  background-color: white;
+  color: black;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.feedback-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background-color: black;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s, transform 0.2s;
+}

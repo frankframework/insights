@@ -129,7 +129,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.routerSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd && this.router.url.includes('/graph')) {
-        requestAnimationFrame(() => requestAnimationFrame(() => this.centerGraph()));
+        this.waitForSvgReady(() => this.centerGraph());
       }
     });
   }
@@ -828,11 +828,21 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private checkReleaseGraphLoading(): void {
     if (this.isLoading) {
       this.isLoading = false;
-      requestAnimationFrame(() => {
+      this.waitForSvgReady(() => {
         this.centerGraph();
         this.attachNonPassiveEventListeners();
       });
     }
+  }
+
+  private waitForSvgReady(callback: () => void): void {
+    requestAnimationFrame(() => {
+      if (this.svgElement?.nativeElement?.clientWidth > 0) {
+        callback();
+      } else {
+        this.waitForSvgReady(callback);
+      }
+    });
   }
 
   private attachNonPassiveEventListeners(): void {
