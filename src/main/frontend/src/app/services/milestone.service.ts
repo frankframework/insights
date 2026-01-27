@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AppService, GitHubState } from '../app.service';
 import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 
 export interface Milestone {
   id: string;
@@ -18,9 +19,10 @@ export interface Milestone {
   providedIn: 'root',
 })
 export class MilestoneService {
-  private appService = inject(AppService);
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly appService: AppService = inject(AppService);
 
   public getMilestones(): Observable<Milestone[]> {
-    return this.appService.get<Milestone[]>(this.appService.createAPIUrl('milestones'));
+    return this.http.get<Milestone[]>(this.appService.createAPIUrl('milestones'));
   }
 }

@@ -2,12 +2,12 @@
   <div class="business-value-modal-content">
     @if (businessValue()) {
       <div class="business-value-details">
-        <div class="description-section">
+        <section class="description-section">
           <h3>Description</h3>
           <p class="description-text">{{ businessValue()!.description }}</p>
-        </div>
+        </section>
 
-        <div class="issues-section">
+        <section class="issues-section">
           <div class="issues-header">
             <h3>Connected Issues</h3>
             <span class="issue-count"
@@ -37,7 +37,7 @@
               <p>No issues connected to this business value.</p>
             </div>
           }
-        </div>
+        </section>
       </div>
     }
   </div>

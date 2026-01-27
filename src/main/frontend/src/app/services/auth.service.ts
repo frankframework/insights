@@ -1,6 +1,7 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, tap, catchError, of } from 'rxjs';
+import { Injectable, inject, signal, WritableSignal } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, of } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
 import { GraphStateService } from './graph-state.service';
@@ -22,15 +23,16 @@ export interface ErrorResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  public currentUser = signal<User | null>(null);
-  public isAuthenticated = signal<boolean>(false);
-  public authError = signal<string | null>(null);
-  public isLoading = signal<boolean>(false);
+  public currentUser: WritableSignal<User | null> = signal<User | null>(null);
+  public isAuthenticated: WritableSignal<boolean> = signal<boolean>(false);
+  public authError: WritableSignal<string | null> = signal<string | null>(null);
+  public isLoading: WritableSignal<boolean> = signal<boolean>(false);
 
-  private readonly SESSION_KEY = 'auth_session';
-  private appService = inject(AppService);
-  private locationService = inject(LocationService);
-  private graphStateService = inject(GraphStateService);
+  private readonly SESSION_KEY: string = 'auth_session';
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly appService: AppService = inject(AppService);
+  private readonly locationService: LocationService = inject(LocationService);
+  private readonly graphStateService: GraphStateService = inject(GraphStateService);
 
   /**
    * Check authentication status by calling the backend
@@ -46,40 +48,20 @@ export class AuthService {
     }
 
     this.isLoading.set(true);
-    return this.appService.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
-      tap((user) => {
-        this.currentUser.set(user);
-        this.isAuthenticated.set(true);
-        this.authError.set(null);
-        this.isLoading.set(false);
-        this.setSessionFlag(true);
-      }),
+    return this.http.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
+      finalize(() => this.isLoading.set(false)),
       catchError((error: HttpErrorResponse) => {
-        this.currentUser.set(null);
-        this.isAuthenticated.set(false);
-        this.isLoading.set(false);
-        this.setSessionFlag(false);
-
-        if (error.status === 401) {
-          console.log('AuthService: User is not authenticated (no active session)');
-          this.authError.set(null);
-        } else if (error.status === 403) {
-          console.warn('AuthService: User authenticated but not authorized (not a frankframework member)');
-          const errorResponse = error.error as ErrorResponse;
-
-          if (errorResponse?.messages?.length > 0) {
-            this.authError.set(errorResponse.messages.join(' '));
-          } else {
-            this.authError.set('Access denied. You must be a member of the frankframework organization.');
-          }
-        } else {
-          console.error('AuthService: Unexpected error from /api/auth/user:', error.status, error.message);
-          this.authError.set(null);
-        }
-
+        this.handleAuthError(error);
         return of(null);
       }),
     );
+  }
+
+  public setAuthenticated(user: User): void {
+    this.currentUser.set(user);
+    this.isAuthenticated.set(true);
+    this.authError.set(null);
+    this.setSessionFlag(true);
   }
 
   public clearError(): void {
@@ -98,17 +80,15 @@ export class AuthService {
     this.setSessionFlag(true);
   }
 
-  public logout(): Observable<void> {
+  public logout(): Observable<ArrayBuffer> {
     this.isLoading.set(true);
-    return this.appService.post<void>(this.appService.createAPIUrl('auth/logout')).pipe(
-      tap(() => {
+    return this.http.post<ArrayBuffer>(this.appService.createAPIUrl('auth/logout'), null).pipe(
+      finalize(() => {
         this.isLoading.set(false);
         this.clearAuthState();
       }),
       catchError((error) => {
         console.error('AuthService: Logout failed, clearing state anyway:', error);
-        this.isLoading.set(false);
-        this.clearAuthState();
         return of();
       }),
     );
@@ -124,6 +104,32 @@ export class AuthService {
     const queryString =
       Object.keys(queryParameters).length > 0 ? `?${new URLSearchParams(queryParameters).toString()}` : '';
     this.locationService.navigateTo(`/${queryString}`);
+  }
+
+  /**
+   * Handle authentication errors from /api/auth/user
+   * @param error The HTTP error response
+   */
+  private handleAuthError(error: HttpErrorResponse): void {
+    this.currentUser.set(null);
+    this.isAuthenticated.set(false);
+    this.setSessionFlag(false);
+
+    if (error.status === 401) {
+      console.log('AuthService: User is not authenticated (no active session)');
+      this.authError.set(null);
+    } else if (error.status === 403) {
+      console.warn('AuthService: User authenticated but not authorized (not a frankframework member)');
+      const errorResponse = error.error as ErrorResponse;
+      const message =
+        errorResponse?.messages?.length > 0
+          ? errorResponse.messages.join(' ')
+          : 'Access denied. You must be a member of the frankframework organization.';
+      this.authError.set(message);
+    } else {
+      console.error('AuthService: Unexpected error from /api/auth/user:', error.status, error.message);
+      this.authError.set(null);
+    }
   }
 
   /**

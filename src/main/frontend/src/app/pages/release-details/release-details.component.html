@@ -1,6 +1,6 @@
 <div class="release-details-container">
   @if (!isLoading && release) {
-    <div class="release-details-header">
+    <header class="release-details-header">
       <div class="header-actions">
         <button class="back-button" (click)="goBack()">
           <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
@@ -14,11 +14,11 @@
         <h2>{{ release.name }}</h2>
         <span>{{ release.publishedAt | date: 'longDate' }}</span>
       </div>
-    </div>
+    </header>
 
     <div class="release-details-body">
       <div class="release-details-content">
-        <div class="left-panel">
+        <section class="left-panel">
           @if (highlightedLabels === undefined && releaseIssues === undefined) {
             <div class="no-new-features">
               <p>No new features found towards previous release.</p>
@@ -56,9 +56,9 @@
               </div>
             }
           }
-        </div>
+        </section>
 
-        <div class="right-panel">
+        <section class="right-panel">
           @if (vulnerabilities !== undefined) {
             <app-release-vulnerabilities [vulnerabilities]="vulnerabilities" [lastScanned]="release.lastScanned" />
           } @else {
@@ -66,7 +66,7 @@
               <p>Loading vulnerability information...</p>
             </div>
           }
-        </div>
+        </section>
       </div>
     </div>
   } @else if (isLoading) {

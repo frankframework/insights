@@ -20,7 +20,7 @@
   }
 
   @if (!isLoading()) {
-    <div class="header">
+    <header class="header">
       <button class="back-button" (click)="goBack()">
         <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
         Back to Overview
@@ -30,7 +30,7 @@
         <h1>{{ releaseTitle() }}</h1>
         <p class="subtitle">Manage Business Values</p>
       </div>
-    </div>
+    </header>
 
     <div class="content">
       <app-business-value-panel

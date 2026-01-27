@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { BusinessValue, BusinessValueService } from '../../../../services/business-value.service';
 
@@ -81,17 +82,16 @@ export class BusinessValueEditComponent {
     this.isSaving.set(true);
     this.errorMessage.set('');
 
-    this.businessValueService.updateBusinessValue(this._businessValue.id, nameValue, descriptionValue).subscribe({
-      next: (businessValue) => {
-        this.isSaving.set(false);
-        this.businessValueUpdated.emit(businessValue);
-        this.close();
-      },
-      error: (error) => {
-        this.isSaving.set(false);
-        this.errorMessage.set(error.error?.message || 'Failed to update business value');
-      },
-    });
+    this.businessValueService
+      .updateBusinessValue(this._businessValue.id, nameValue, descriptionValue)
+      .pipe(finalize(() => this.isSaving.set(false)))
+      .subscribe({
+        next: (businessValue) => {
+          this.businessValueUpdated.emit(businessValue);
+          this.close();
+        },
+        error: (error) => this.errorMessage.set(error.error?.message || 'Failed to update business value'),
+      });
   }
 
   public updateName(event: Event): void {

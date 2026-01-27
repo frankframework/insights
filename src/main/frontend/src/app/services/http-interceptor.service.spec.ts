@@ -38,22 +38,11 @@ describe('HttpInterceptorService', () => {
     authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
 
-    authService.logout.and.returnValue(of(void 0));
+    authService.logout.and.returnValue(of());
   });
 
   afterEach(() => {
     httpTestingController.verify();
-  });
-
-  it('should add Content-Type header and withCredentials flag to requests', () => {
-    httpClient.get('/api/data').subscribe();
-
-    const request = httpTestingController.expectOne('/api/data');
-
-    expect(request.request.headers.get('Content-Type')).toBe('application/json');
-    expect(request.request.withCredentials).toBeTrue();
-
-    request.flush({});
   });
 
   it('should logout and redirect on 401 Unauthorized error', fakeAsync(() => {

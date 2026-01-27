@@ -8,7 +8,7 @@ import { ReleaseImportantIssuesComponent } from '../release-details/release-impo
 import { ReleaseVulnerabilities } from '../release-details/release-vulnerabilities/release-vulnerabilities';
 import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
-import { catchError, of } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
 
 @Component({
   selector: 'app-release-manage',
@@ -65,18 +65,17 @@ export class ReleaseManageComponent implements OnInit {
   private fetchReleaseData(releaseId: string): void {
     this.isLoading.set(true);
 
-    this.releaseService.getReleaseById(releaseId).subscribe({
-      next: (release) => {
-        this.release.set(release);
-        this.fetchIssues(releaseId);
-        this.fetchVulnerabilities(releaseId);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.router.navigate(['/not-found']);
-      },
-    });
+    this.releaseService
+      .getReleaseById(releaseId)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (release) => {
+          this.release.set(release);
+          this.fetchIssues(releaseId);
+          this.fetchVulnerabilities(releaseId);
+        },
+        error: () => this.router.navigate(['/not-found']),
+      });
   }
 
   private fetchIssues(releaseId: string): void {

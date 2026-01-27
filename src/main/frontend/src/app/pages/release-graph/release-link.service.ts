@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 
 export interface ReleaseLink {
@@ -19,12 +20,6 @@ export interface SkipNode {
   isMiniNode?: boolean;
   sourceNodeId?: string;
   targetNodeId?: string;
-}
-
-export interface Release {
-  id: string;
-  name: string;
-  branch: { name: string };
 }
 
 interface SkipNodeContext {

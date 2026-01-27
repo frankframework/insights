@@ -16,9 +16,9 @@ export interface BuildInfo {
   providedIn: 'root',
 })
 export class VersionService {
-  private actuatorUrl = '/actuator/info';
+  private readonly actuatorUrl = '/actuator/info';
 
-  private http = inject(HttpClient);
+  private readonly http: HttpClient = inject(HttpClient);
 
   /**
    * Fetches the build information from the backend.

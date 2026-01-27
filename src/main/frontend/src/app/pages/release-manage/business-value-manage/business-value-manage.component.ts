@@ -4,7 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
 import { ReleaseService } from '../../../services/release.service';
-import { catchError, of, forkJoin } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
 import { BusinessValueEditComponent } from './business-value-edit/business-value-edit.component';
 import { BusinessValueDeleteComponent } from './business-value-delete/business-value-delete.component';
@@ -185,19 +185,18 @@ export class BusinessValueManageComponent implements OnInit {
       .filter((issue) => issue.isSelected)
       .map((issue) => issue.id);
 
-    this.businessValueService.updateIssueConnections(selectedBV.id, selectedIssueIds).subscribe({
-      next: (updatedBV) => {
-        const updatedBusinessValues = this.businessValues().map((bv) => (bv.id === selectedBV.id ? updatedBV : bv));
-        this.businessValues.set(updatedBusinessValues);
-        this.selectedBusinessValue.set(updatedBV);
-        this.updateIssueSelection(updatedBV);
-        this.isSaving.set(false);
-      },
-      error: (error) => {
-        console.error('Failed to save business value connections:', error);
-        this.isSaving.set(false);
-      },
-    });
+    this.businessValueService
+      .updateIssueConnections(selectedBV.id, selectedIssueIds)
+      .pipe(finalize(() => this.isSaving.set(false)))
+      .subscribe({
+        next: (updatedBV) => {
+          const updatedBusinessValues = this.businessValues().map((bv) => (bv.id === selectedBV.id ? updatedBV : bv));
+          this.businessValues.set(updatedBusinessValues);
+          this.selectedBusinessValue.set(updatedBV);
+          this.updateIssueSelection(updatedBV);
+        },
+        error: (error) => console.error('Failed to save business value connections:', error),
+      });
   }
 
   private fetchData(releaseId: string): void {
@@ -206,8 +205,9 @@ export class BusinessValueManageComponent implements OnInit {
       businessValues: this.businessValueService.getAllBusinessValues().pipe(catchError(() => of([]))),
       issues: this.issueService.getIssuesByReleaseId(releaseId).pipe(catchError(() => of([]))),
       release: this.releaseService.getReleaseById(releaseId).pipe(catchError(() => of(null))),
-    }).subscribe({
-      next: ({ businessValues, issues, release }) => {
+    })
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe(({ businessValues, issues, release }) => {
         this.businessValues.set(businessValues);
         this.allIssues.set(issues ?? []);
 
@@ -224,13 +224,7 @@ export class BusinessValueManageComponent implements OnInit {
           isConnected: false,
         }));
         this.issuesWithSelection.set(issuesWithSelection);
-
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-      },
-    });
+      });
   }
 
   private updateIssueSelection(currentBusinessValue: BusinessValue): void {

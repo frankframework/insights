@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ReleaseLinkService, Release, SkipNode } from './release-link.service';
+import { ReleaseLinkService, SkipNode } from './release-link.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
+import { Release } from '../../services/release.service';
 
 const MASTER_BRANCH_NAME = 'master';
 
@@ -100,8 +101,22 @@ describe('ReleaseLinkService', () => {
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
-        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.1.0', name: 'v7.1.0', branch: { name: MASTER_BRANCH_NAME } }
+        {
+          id: 'v7.0.0',
+          name: 'v7.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v7.1.0',
+          name: 'v7.1.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
 
       masterNodes[0].position = { x: 0, y: 0 };
@@ -121,8 +136,22 @@ describe('ReleaseLinkService', () => {
       const masterNodes = [createMockNode('v5.0.0', undefined, 'v5.0.0')];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
-        { id: 'v3.0.0', name: 'v3.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v4.0.0', name: 'v4.0.0', branch: { name: MASTER_BRANCH_NAME } }
+        {
+          id: 'v3.0.0',
+          name: 'v3.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v4.0.0',
+          name: 'v4.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
 
       masterNodes[0].position = { x: 450, y: 0 };
@@ -146,10 +175,38 @@ describe('ReleaseLinkService', () => {
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
-        { id: 'v7.0.0', name: 'v7.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.0.1', name: 'v7.0.1', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.1.0', name: 'v7.1.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v7.1.1', name: 'v7.1.1', branch: { name: MASTER_BRANCH_NAME } }
+        {
+          id: 'v7.0.0',
+          name: 'v7.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v7.0.1',
+          name: 'v7.0.1',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v7.1.0',
+          name: 'v7.1.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v7.1.1',
+          name: 'v7.1.1',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
 
       masterNodes[0].position = { x: 0, y: 0 };
@@ -169,8 +226,22 @@ describe('ReleaseLinkService', () => {
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
-        { id: 'v6.0.1', name: 'v6.0.1', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.0.2', name: 'v6.0.2', branch: { name: MASTER_BRANCH_NAME } }
+        {
+          id: 'v6.0.1',
+          name: 'v6.0.1',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v6.0.2',
+          name: 'v6.0.2',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
 
       masterNodes[0].position = { x: 0, y: 0 };
@@ -402,12 +473,54 @@ describe('ReleaseLinkService', () => {
 
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const allReleases: Release[] = [
-        { id: 'v1.0.0', name: 'v1.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v2.0.0', name: 'v2.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v3.0.0', name: 'v3.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v5.0.0', name: 'v5.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v6.0.0', name: 'v6.0.0', branch: { name: MASTER_BRANCH_NAME } },
-        { id: 'v8.0.0', name: 'v8.0.0', branch: { name: MASTER_BRANCH_NAME } }
+        {
+          id: 'v1.0.0',
+          name: 'v1.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v2.0.0',
+          name: 'v2.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v3.0.0',
+          name: 'v3.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v5.0.0',
+          name: 'v5.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v6.0.0',
+          name: 'v6.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'v8.0.0',
+          name: 'v8.0.0',
+          branch: { name: MASTER_BRANCH_NAME },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
       ];
 
       mockNodeService.timelineScale = { pixelsPerDay: 1 } as any;

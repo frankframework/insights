@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppService } from '../app.service';
+import { HttpClient } from '@angular/common/http';
 
 export interface Release {
   id: string;
@@ -20,13 +21,14 @@ export interface Branch {
   providedIn: 'root',
 })
 export class ReleaseService {
-  private appService = inject(AppService);
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly appService: AppService = inject(AppService);
 
   public getAllReleases(): Observable<Release[]> {
-    return this.appService.get<Release[]>(this.appService.createAPIUrl('releases'));
+    return this.http.get<Release[]>(this.appService.createAPIUrl('releases'));
   }
 
   public getReleaseById(releaseId: string): Observable<Release> {
-    return this.appService.get<Release>(this.appService.createAPIUrl(`releases/${releaseId}`));
+    return this.http.get<Release>(this.appService.createAPIUrl(`releases/${releaseId}`));
   }
 }

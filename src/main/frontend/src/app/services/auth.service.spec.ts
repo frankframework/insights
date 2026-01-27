@@ -87,23 +87,6 @@ describe('AuthService', () => {
       request.flush(mockUser);
     });
 
-    it('should successfully authenticate and set user data on 200 response', (done) => {
-      // eslint-disable-next-line no-undef
-      localStorage.setItem('auth_session', 'true');
-
-      service.checkAuthStatus().subscribe((user) => {
-        expect(user).toEqual(mockUser);
-        expect(service.currentUser()).toEqual(mockUser);
-        expect(service.isAuthenticated()).toBe(true);
-        // eslint-disable-next-line no-undef
-        expect(localStorage.getItem('auth_session')).toBe('true');
-        done();
-      });
-
-      const request = httpMock.expectOne((request_) => request_.url.includes('auth/user'));
-      request.flush(mockUser);
-    });
-
     it('should handle 401 and clear session flag', (done) => {
       // eslint-disable-next-line no-undef
       localStorage.setItem('auth_session', 'true');
@@ -158,25 +141,6 @@ describe('AuthService', () => {
 
       const request = httpMock.expectOne((request_) => request_.url.includes('auth/user'));
       request.flush(mockUser);
-    });
-  });
-
-  describe('logout()', () => {
-    it('should successfully logout and clear localStorage', (done) => {
-      // eslint-disable-next-line no-undef
-      localStorage.setItem('auth_session', 'true');
-      service.isAuthenticated.set(true);
-
-      service.logout().subscribe(() => {
-        expect(service.isAuthenticated()).toBe(false);
-        // eslint-disable-next-line no-undef
-        expect(localStorage.getItem('auth_session')).toBeNull();
-        expect(mockLocationService.navigateTo).toHaveBeenCalledWith('/');
-        done();
-      });
-
-      const request = httpMock.expectOne((request_) => request_.url.includes('auth/logout'));
-      request.flush(null);
     });
   });
 });

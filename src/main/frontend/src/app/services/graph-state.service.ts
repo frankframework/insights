@@ -1,11 +1,11 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, WritableSignal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GraphStateService {
-  private static readonly OAUTH_TEMP_KEY = 'oauth_temp_extended';
-  private showExtendedSupport = signal<boolean>(false);
+  private static readonly OAUTH_TEMP_KEY: string = 'oauth_temp_extended';
+  private showExtendedSupport: WritableSignal<boolean> = signal<boolean>(false);
 
   public getShowExtendedSupport(): boolean {
     return this.showExtendedSupport();
