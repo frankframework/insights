@@ -2,6 +2,7 @@ describe('Release Vulnerabilities Component', () => {
   beforeEach(() => {
     cy.visit('/');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
+    cy.dismissReleaseCatalogusModal()
   });
 
   it('should display vulnerabilities when navigating to release details', () => {

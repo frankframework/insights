@@ -1,6 +1,7 @@
 describe('Application Routing', () => {
   beforeEach(() => {
     cy.visit('/');
+    cy.dismissReleaseCatalogusModal();
     cy.get('app-header').find('li').contains('Roadmap').click();
   });
 

@@ -34,6 +34,7 @@ describe('Release Roadmap End-to-End Tests', () => {
     cy.clock(TODAY.getTime(), ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']);
 
     cy.visit('/');
+    cy.dismissReleaseCatalogusModal();
     cy.get('app-header').find('li').contains('Roadmap').click();
 
     cy.tick(5000);

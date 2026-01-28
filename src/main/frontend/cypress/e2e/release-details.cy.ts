@@ -2,6 +2,7 @@ describe('Release Details Page Journey', () => {
   beforeEach(() => {
     cy.visit('/');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
+    cy.dismissReleaseCatalogusModal()
   });
 
   it('should navigate to release details page and display all content correctly', () => {
