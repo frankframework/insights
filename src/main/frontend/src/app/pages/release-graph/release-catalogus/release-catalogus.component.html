@@ -13,9 +13,22 @@
 </button>
 
 @if (modalOpen) {
-  <app-modal [title]="'Release Support'" (closed)="toggleModal()">
+  <app-modal [title]="'Release Support'" [hideScrollBar]="true" (closed)="toggleModal()">
     <ng-container>
       <div class="release-modal-content">
+        <h3 class="legend-section-title">Graph Navigation</h3>
+        <span>You can navigate inside the release graph on multiple ways.</span>
+        <div class="animation-container">
+          <app-gesture
+            imageSrc="/assets/icons/grab-gesture.png"
+            gestureDescription="You can grab and hold your mouse in the canvas and swipe to the left or right to navigate inside the release graph"
+          />
+          <app-gesture
+            imageSrc="/assets/icons/swipe-gesture.png"
+            gestureDescription="You can touch and hold your touchpad with two fingers in the canvas and swipe to the left or right to navigate inside the release graph"
+          />
+        </div>
+
         <h3 class="legend-section-title">Status</h3>
 
         <div class="release-content-item">
@@ -111,6 +124,28 @@
             support. For minor versions, these support periods are six months for security support and three months for
             technical support.
           </p>
+        }
+
+        @if (buildInfo$ | async; as buildInfo) {
+          @if (buildInfo.version && buildInfo.time) {
+            <h3 class="legend-section-title">Build Information</h3>
+
+            <span>
+              The current release build: <strong>{{ buildInfo.version }}</strong
+              >.
+            </span>
+            <span>
+              Made on:
+              <strong>
+                {{ buildInfo.time | date: 'd MMMM y' }}
+              </strong>
+              at
+              <strong>
+                {{ buildInfo.time | date: 'h:mm a' | lowercase }}
+              </strong>
+              .
+            </span>
+          }
         }
       </div>
     </ng-container>

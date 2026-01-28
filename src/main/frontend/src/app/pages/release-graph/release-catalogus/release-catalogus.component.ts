@@ -1,22 +1,26 @@
 import { Component, inject, Input, OnDestroy, OnInit } from '@angular/core';
-import { NgStyle } from '@angular/common';
+import { AsyncPipe, DatePipe, LowerCasePipe, NgStyle } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { AuthService } from '../../../services/auth.service';
+import { BuildInfo, VersionService } from '../../../services/version.service';
+import { Observable } from 'rxjs';
+import { GestureComponent } from '../../../components/gesture/gesture.component';
 
 @Component({
   selector: 'app-release-catalogus',
   standalone: true,
   templateUrl: './release-catalogus.component.html',
   styleUrl: './release-catalogus.component.scss',
-  imports: [NgStyle, ModalComponent],
+  imports: [NgStyle, ModalComponent, AsyncPipe, DatePipe, LowerCasePipe, GestureComponent],
 })
 export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
   @Input() showExtendedSupport = false;
 
   public modalOpen = false;
   public isSmallScreen = false;
+  public buildInfo$: Observable<BuildInfo | null> = inject(VersionService).getBuildInformation();
 
-  protected authService = inject(AuthService);
+  protected authService: AuthService = inject(AuthService);
 
   private mediaQueryList: MediaQueryList | null = null;
   private mediaListener: (() => void) | null = null;

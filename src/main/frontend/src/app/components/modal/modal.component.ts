@@ -9,6 +9,7 @@ import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, View
 })
 export class ModalComponent implements AfterViewInit {
   @Input() title = '';
+  @Input() hideScrollBar = false;
   @Output() closed = new EventEmitter<void>();
   @ViewChild('modalContent') modalContent!: ElementRef<HTMLDivElement>;
 
