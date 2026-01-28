@@ -2,6 +2,7 @@ describe('Graph Rendering and Interaction', () => {
   beforeEach(() => {
     cy.visit('/');
     cy.get('app-loader', { timeout: 5000 }).should('not.exist');
+    cy.dismissReleaseCatalogusModal();
     cy.get('.graph-container > svg').as('graphSvg');
   });
 

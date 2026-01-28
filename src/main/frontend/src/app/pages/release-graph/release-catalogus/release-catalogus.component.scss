@@ -36,6 +36,21 @@
     }
   }
 
+  span {
+    text-align: center;
+  }
+
+  .animation-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: 0 auto;
+
+    @media (max-width: 992px) {
+      flex-direction: column;
+    }
+  }
+
   p {
     border-left: #444444 3px solid;
     padding-inline: 1rem;
@@ -103,5 +118,13 @@
     padding: .5rem;
     overflow-x: auto;
     margin: 0;
+  }
+
+  span {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    color: #1e1e1e80;
+    font-weight: 600;
   }
 }

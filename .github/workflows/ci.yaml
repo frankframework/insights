@@ -112,20 +112,8 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
         working-directory: src/main/frontend
 
-
-      - name: Calculate Dynamic Version
-        run: |
-          RUN_NUM=${{ github.run_number }}
-          printf -v PADDED "%03d" $RUN_NUM
-          PATCH=${PADDED: -1}
-          MINOR=${PADDED: -2:1}
-          MAJOR=${PADDED:0:${#PADDED}-2}
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          
-          echo "APP_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-
       - name: Build
-        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod" -Drevision="${{ env.APP_VERSION }}"
+        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod" -Drevision="0.0.${{ github.run_number }}"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer

@@ -13,6 +13,7 @@
     tabindex="0"
     role="dialog"
     aria-modal="true"
+    [class.hide-scrollbar]="hideScrollBar"
     [attr.aria-label]="title || 'Modal window'"
     (click)="$event.stopPropagation()"
   >

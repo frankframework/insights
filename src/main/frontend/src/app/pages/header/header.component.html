@@ -6,7 +6,7 @@
     @if (buildInfo$ | async; as buildInfo) {
       @if (buildInfo.version) {
         <h2 class="build-info" [title]="'Built at: ' + (buildInfo.time | date: 'medium')">
-          {{ buildInfo.version }}
+          {{ formatVersion(buildInfo.version) }}
         </h2>
       }
     }

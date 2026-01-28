@@ -4,7 +4,8 @@ import { NgOptimizedImage, AsyncPipe, DatePipe } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
-import { VersionService } from '../../services/version.service';
+import { BuildInfo, VersionService } from '../../services/version.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-header',
@@ -16,8 +17,8 @@ import { VersionService } from '../../services/version.service';
 export class HeaderComponent {
   public authService = inject(AuthService);
   public showUserMenu = false;
-  public graphStateService = inject(GraphStateService);
-  public buildInfo$ = inject(VersionService).getBuildInformation();
+  public graphStateService: GraphStateService = inject(GraphStateService);
+  public buildInfo$: Observable<BuildInfo | null> = inject(VersionService).getBuildInformation();
 
   private locationService = inject(LocationService);
 
@@ -31,27 +32,31 @@ export class HeaderComponent {
     }
   }
 
-  onLoginWithGitHub(): void {
+  public onLoginWithGitHub(): void {
     this.authService.setLoading(true);
     this.authService.setPendingAuth();
     this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }
 
-  toggleUserMenu(): void {
+  public toggleUserMenu(): void {
     this.showUserMenu = !this.showUserMenu;
   }
 
-  closeUserMenu(): void {
-    this.showUserMenu = false;
-  }
-
-  onLogout(): void {
+  public onLogout(): void {
     this.closeUserMenu();
     this.authService.logout().subscribe();
   }
 
-  onDismissError(): void {
+  public onDismissError(): void {
     this.authService.clearError();
+  }
+
+  public formatVersion(version: string): string {
+    return version ? version.replace(/^0\.0\./, '') : '';
+  }
+
+  private closeUserMenu(): void {
+    this.showUserMenu = false;
   }
 }
