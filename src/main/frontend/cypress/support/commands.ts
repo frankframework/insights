@@ -25,9 +25,12 @@ declare global {
  * The modal opens automatically on fresh sessions.
  */
 Cypress.Commands.add('dismissReleaseCatalogusModal', () => {
+  cy.get('app-root', { timeout: 10000 }).should('exist');
+  cy.wait(500);
   cy.get('body').then(($body) => {
     if ($body.find('app-modal').length > 0) {
-      cy.get('button[aria-label="Close modal"]').click();
+      cy.get('app-modal button.close-btn').click();
+      cy.get('app-modal').should('not.exist');
     }
   });
 });
