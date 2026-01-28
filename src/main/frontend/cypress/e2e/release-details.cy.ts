@@ -12,7 +12,7 @@ describe('Release Details Page Journey', () => {
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
-    cy.get('.release-details-header h2').should('contain.text', 'v9.0.1');
+    cy.get('.release-details-header a').should('contain.text', 'v9.0.1');
 
     cy.get('.back-button').should('be.visible').should('contain.text', 'Back');
 
@@ -85,13 +85,13 @@ describe('Release Details Page Journey', () => {
   it('should handle navigation between different releases', () => {
     cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
-    cy.get('.release-details-header h2').should('contain.text', 'v9.0.1');
+    cy.get('.release-details-header a').should('contain.text', 'v9.0.1');
 
     cy.get('.back-button').click();
     cy.get('app-release-graph').should('be.visible');
 
     cy.get('[data-cy="node-v9.0.0"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
-    cy.get('.release-details-header h2').should('contain.text', 'v9.0.0');
+    cy.get('.release-details-header a').should('contain.text', 'v9.0.0');
   });
 });

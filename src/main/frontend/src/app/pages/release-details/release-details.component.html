@@ -11,7 +11,13 @@
         }
       </div>
       <div class="header-details">
-        <h2>{{ release.name }}</h2>
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          [href]="'https://github.com/frankframework/frankframework/releases/tag/' + release.tagName"
+        >
+          {{ release.name }}
+        </a>
         <span>{{ release.publishedAt | date: 'longDate' }}</span>
       </div>
     </header>
