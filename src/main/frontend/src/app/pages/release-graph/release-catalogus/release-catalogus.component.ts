@@ -14,6 +14,8 @@ import { GestureComponent } from '../../../components/gesture/gesture.component'
   imports: [NgStyle, ModalComponent, AsyncPipe, DatePipe, LowerCasePipe, GestureComponent],
 })
 export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
+  private static readonly SESSION_KEY = 'releaseCatalogusShown';
+
   @Input() showExtendedSupport = false;
 
   public modalOpen = false;
@@ -36,6 +38,11 @@ export class ReleaseCatalogusComponent implements OnInit, OnDestroy {
       this.isSmallScreen = this.mediaQueryList?.matches ?? false;
     };
     this.mediaQueryList?.addEventListener('change', this.mediaListener);
+
+    if (!sessionStorage.getItem(ReleaseCatalogusComponent.SESSION_KEY)) {
+      this.modalOpen = true;
+      sessionStorage.setItem(ReleaseCatalogusComponent.SESSION_KEY, 'true');
+    }
   }
 
   ngOnDestroy(): void {

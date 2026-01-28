@@ -10,6 +10,9 @@ describe('ReleaseCatalogusComponent', () => {
   let fixture: ComponentFixture<ReleaseCatalogusComponent>;
 
   beforeEach(async () => {
+    // eslint-disable-next-line no-undef
+    sessionStorage.clear();
+
     await TestBed.configureTestingModule({
       imports: [ReleaseCatalogusComponent],
       providers: [
@@ -17,17 +20,79 @@ describe('ReleaseCatalogusComponent', () => {
         provideHttpClientTesting(),
       ],
     }).compileComponents();
+  });
 
+  afterEach(() => {
+    // eslint-disable-next-line no-undef
+    sessionStorage.clear();
+  });
+
+  function createComponent(): void {
     fixture = TestBed.createComponent(ReleaseCatalogusComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-  });
+  }
 
   it('should create', () => {
+    createComponent();
+
     expect(component).toBeTruthy();
   });
 
+  describe('Fresh Session Modal Behavior', () => {
+    it('should open modal automatically on fresh session', () => {
+      createComponent();
+
+      expect(component.modalOpen).toBe(true);
+    });
+
+    it('should set sessionStorage key on fresh session', () => {
+      createComponent();
+
+      // eslint-disable-next-line no-undef
+      expect(sessionStorage.getItem('releaseCatalogusShown')).toBe('true');
+    });
+
+    it('should not open modal if session already exists', () => {
+      // eslint-disable-next-line no-undef
+      sessionStorage.setItem('releaseCatalogusShown', 'true');
+
+      createComponent();
+
+      expect(component.modalOpen).toBe(false);
+    });
+
+    it('should toggle modal from open to closed on fresh session', () => {
+      createComponent();
+
+      expect(component.modalOpen).toBe(true);
+
+      component.toggleModal();
+
+      expect(component.modalOpen).toBe(false);
+    });
+
+    it('should toggle modal from closed to open on existing session', () => {
+      // eslint-disable-next-line no-undef
+      sessionStorage.setItem('releaseCatalogusShown', 'true');
+
+      createComponent();
+
+      expect(component.modalOpen).toBe(false);
+
+      component.toggleModal();
+
+      expect(component.modalOpen).toBe(true);
+    });
+  });
+
   describe('Extended Support Display', () => {
+    beforeEach(() => {
+      // eslint-disable-next-line no-undef
+      sessionStorage.setItem('releaseCatalogusShown', 'true');
+      createComponent();
+    });
+
     it('should not show extended support timeline by default', () => {
       component.showExtendedSupport = false;
       component.modalOpen = true;

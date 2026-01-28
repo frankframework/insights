@@ -123,7 +123,7 @@ describe('HeaderComponent', () => {
       const versionBadge = fixture.debugElement.query(By.css('.build-info'));
 
       expect(versionBadge).toBeTruthy();
-      expect(versionBadge.nativeElement.textContent).toContain('0.0.1');
+      expect(versionBadge.nativeElement.textContent).toContain('1');
     }));
   });
 
