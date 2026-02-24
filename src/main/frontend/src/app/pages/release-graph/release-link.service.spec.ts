@@ -333,12 +333,15 @@ describe('ReleaseLinkService', () => {
       expect(links).toEqual([]);
     });
 
-    it('should only create special links for master if no sub-branches are provided and nodes have version gaps', () => {
+    it('should create a direct link between major-version nodes when no skip node covers the gap', () => {
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, [masterNode1, masterNode3]]])];
       const links = service.createLinks(structuredGroups, []);
 
-      expect(links.length).toBe(1);
-      const specialLinks = links.filter(link => link.source.startsWith('start-node-'));
+      const directLink = links.find((link) => link.source === masterNode1.id && link.target === masterNode3.id);
+
+      expect(directLink).toBeDefined();
+
+      const specialLinks = links.filter((link) => link.source.startsWith('start-node-'));
 
       expect(specialLinks.length).toBe(1);
       expect(specialLinks[0].source).toBe('start-node-master-1');
@@ -413,6 +416,135 @@ describe('ReleaseLinkService', () => {
       expect(fadeInLink?.isGap).toBe(true);
       expect(fadeInLink?.source).toBe('start-node-master-1');
       expect(fadeInLink?.target).toBe('skip-initial-master-1');
+    });
+  });
+
+  describe('Regression: direct link between consecutive mini nodes across a major version boundary', () => {
+    it('should create a direct link between the 9.4 and 10.0 mini nodes when no intermediate releases are skipped', () => {
+      const subNode94: ReleaseNode = {
+        id: 'sub-9.4-1',
+        label: 'v9.4.0',
+        branch: 'release/9.4',
+        position: { x: 100, y: 90 },
+        color: '',
+        publishedAt: new Date('2023-06-01'),
+      };
+
+      const subNode100: ReleaseNode = {
+        id: 'sub-10.0-1',
+        label: 'v10.0.0',
+        branch: 'release/10.0',
+        position: { x: 200, y: 90 },
+        color: '',
+        publishedAt: new Date('2024-01-01'),
+      };
+
+      const miniNode94: ReleaseNode = {
+        id: 'mini-sub-9.4-1',
+        label: '',
+        branch: MASTER_BRANCH_NAME,
+        originalBranch: 'release/9.4',
+        position: { x: 60, y: 0 },
+        color: '',
+        publishedAt: new Date('2023-06-01'),
+        isMiniNode: true,
+        linkedBranchNode: subNode94.id,
+      };
+
+      const miniNode100: ReleaseNode = {
+        id: 'mini-sub-10.0-1',
+        label: '',
+        branch: MASTER_BRANCH_NAME,
+        originalBranch: 'release/10.0',
+        position: { x: 160, y: 0 },
+        color: '',
+        publishedAt: new Date('2024-01-01'),
+        isMiniNode: true,
+        linkedBranchNode: subNode100.id,
+      };
+
+      const structuredGroups = [
+        new Map([[MASTER_BRANCH_NAME, [miniNode94, miniNode100]]]),
+        new Map([['release/9.4', [subNode94]]]),
+        new Map([['release/10.0', [subNode100]]]),
+      ];
+
+      const links = service.createLinks(structuredGroups, []);
+
+      const directLink = links.find(
+        (link) => link.source === miniNode94.id && link.target === miniNode100.id,
+      );
+
+      expect(directLink).withContext('expected a direct link between the 9.4 and 10.0 mini nodes').toBeDefined();
+    });
+
+    it('should NOT create a direct link between mini nodes when a skip node already covers the gap', () => {
+      const subNode94: ReleaseNode = {
+        id: 'sub-9.4-1',
+        label: 'v9.4.0',
+        branch: 'release/9.4',
+        position: { x: 100, y: 90 },
+        color: '',
+        publishedAt: new Date('2023-06-01'),
+      };
+
+      const subNode100: ReleaseNode = {
+        id: 'sub-10.0-1',
+        label: 'v10.0.0',
+        branch: 'release/10.0',
+        position: { x: 200, y: 90 },
+        color: '',
+        publishedAt: new Date('2024-01-01'),
+      };
+
+      const miniNode94: ReleaseNode = {
+        id: 'mini-sub-9.4-1',
+        label: '',
+        branch: MASTER_BRANCH_NAME,
+        originalBranch: 'release/9.4',
+        position: { x: 60, y: 0 },
+        color: '',
+        publishedAt: new Date('2023-06-01'),
+        isMiniNode: true,
+        linkedBranchNode: subNode94.id,
+      };
+
+      const miniNode100: ReleaseNode = {
+        id: 'mini-sub-10.0-1',
+        label: '',
+        branch: MASTER_BRANCH_NAME,
+        originalBranch: 'release/10.0',
+        position: { x: 160, y: 0 },
+        color: '',
+        publishedAt: new Date('2024-01-01'),
+        isMiniNode: true,
+        linkedBranchNode: subNode100.id,
+      };
+
+      const structuredGroups = [
+        new Map([[MASTER_BRANCH_NAME, [miniNode94, miniNode100]]]),
+        new Map([['release/9.4', [subNode94]]]),
+        new Map([['release/10.0', [subNode100]]]),
+      ];
+
+      const skipNodes: SkipNode[] = [{
+        id: 'skip-mini-sub-9.4-1-mini-sub-10.0-1',
+        x: 110,
+        y: 0,
+        skippedCount: 1,
+        skippedVersions: ['v9.5.0'],
+        label: '1 skipped',
+        sourceNodeId: miniNode94.id,
+        targetNodeId: miniNode100.id,
+      }];
+
+      const links = service.createLinks(structuredGroups, skipNodes);
+
+      const directLink = links.find(
+        (link) => link.source === miniNode94.id && link.target === miniNode100.id,
+      );
+
+      expect(directLink).withContext('expected no direct link when a skip node covers the gap').toBeUndefined();
     });
   });
 
