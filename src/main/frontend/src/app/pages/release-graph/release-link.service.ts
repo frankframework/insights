@@ -41,7 +41,7 @@ export class ReleaseLinkService {
     const allNodes = this.getAllNodesFlat(structuredGroups);
 
     return [
-      ...this.createIntraBranchLinks(masterNodes, allNodes),
+      ...this.createIntraBranchLinks(masterNodes, allNodes, skipNodes),
       ...this.createBranchLinks(structuredGroups.slice(1), masterNodes),
       ...this.createSpecialLinks(masterNodes, skipNodes),
     ];
@@ -255,13 +255,22 @@ export class ReleaseLinkService {
     return miniNode ? this.buildLink(miniNode, firstBranchNode) : null;
   }
 
-  private createIntraBranchLinks(nodes: ReleaseNode[], allNodes: ReleaseNode[] = []): ReleaseLink[] {
+  private createIntraBranchLinks(
+    nodes: ReleaseNode[],
+    allNodes: ReleaseNode[] = [],
+    skipNodes: SkipNode[] = [],
+  ): ReleaseLink[] {
     const links: ReleaseLink[] = [];
     for (let index = 0; index < nodes.length - 1; index++) {
       const source = nodes[index];
       const target = nodes[index + 1];
 
-      if (!this.isVersionGap(source, target, allNodes)) {
+      if (this.isVersionGap(source, target, allNodes)) {
+        const hasSkipNode = skipNodes.some((s) => s.sourceNodeId === source.id && s.targetNodeId === target.id);
+        if (!hasSkipNode) {
+          links.push(this.buildLink(source, target));
+        }
+      } else {
         links.push(this.buildLink(source, target));
       }
     }
