@@ -178,6 +178,56 @@ describe('ReleaseSkippedVersions', () => {
       expect(component.releaseTree[2].version).toBe('v7.2.0');
     });
 
+    it('should group patch releases under the major (x.0.0) parent, not create a duplicate minor entry', () => {
+      const skipNode: SkipNode = {
+        id: 'skip-1',
+        x: 100,
+        y: 0,
+        skippedCount: 1,
+        skippedVersions: ['v9.0.0', 'v9.0.1', 'v9.0.2'],
+        label: '1 skipped',
+      };
+
+      const releases: Release[] = [
+        {
+          id: 'r1',
+          name: 'v9.0.0',
+          branch: { name: 'release/9.0' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r2',
+          name: 'v9.0.1',
+          branch: { name: 'release/9.0' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+        {
+          id: 'r3',
+          name: 'v9.0.2',
+          branch: { name: 'release/9.0' },
+          tagName: '',
+          publishedAt: new Date(),
+          lastScanned: new Date(),
+        },
+      ];
+
+      component.skipNode = skipNode;
+      component.releases = releases;
+      component.ngOnChanges({
+        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
+        releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
+      });
+
+      expect(component.releaseTree.length).toBe(1);
+      expect(component.releaseTree[0].version).toBe('v9.0.0');
+      expect(component.releaseTree[0].type).toBe('major');
+      expect(component.releaseTree[0].patches.length).toBe(2);
+    });
+
     it('should handle releases without v prefix', () => {
       const skipNode: SkipNode = {
         id: 'skip-1',

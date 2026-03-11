@@ -64,6 +64,7 @@ export class ReleaseNodeService {
 
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly PIXELS_PER_QUARTER: number = 200;
+  private static readonly KEEP_LATEST_LTS_COUNT: number = 3;
 
   public timelineScale: TimelineScale | null = null;
 
@@ -474,20 +475,42 @@ export class ReleaseNodeService {
   }
 
   /**
+   * Returns the set of branch names for the N most recent major (x.0) version branches.
+   * These are always kept visible regardless of support status or nightly activity.
+   */
+  private findLatestMajorBranchNames(branchNames: string[]): Set<string> {
+    const majorBranches = branchNames
+      .map((name) => ({ name, version: this.getVersionFromBranchName(name) }))
+      .filter(
+        (item): item is { name: string; version: { major: number; minor: number } } =>
+          item.version !== null && item.version.minor === 0,
+      )
+      .toSorted((a, b) => b.version.major - a.version.major)
+      .slice(0, ReleaseNodeService.KEEP_LATEST_LTS_COUNT);
+
+    return new Set(majorBranches.map((b) => b.name));
+  }
+
+  /**
    * Removes branches that are historically dead.
    * Logic:
    * 1. If it has an active Nightly -> KEEP (Active development).
-   * 2. If NO Nightly -> Check the SUPPORT status of the BRANCH ROOT (the .0 release).
+   * 2. The latest N major version (x.0) branches are always kept regardless of support status.
+   * 3. If NO Nightly -> Check the SUPPORT status of the BRANCH ROOT (the .0 release).
    * If the .0 release is unsupported, the whole branch is considered historical/skipped,
    * even if a recent patch was released.
    */
   private pruneHistoricalBranchesWithoutNightly(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
   ): void {
+    const protectedBranches = this.findLatestMajorBranchNames([...groupedByBranch.keys()]);
+
     for (const [branchName, releases] of groupedByBranch.entries()) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) {
         continue;
       }
+
+      if (protectedBranches.has(branchName)) continue;
 
       if (releases.length === 0) continue;
 
@@ -686,8 +709,10 @@ export class ReleaseNodeService {
     const Y_SPACING = 90;
     let yLevel = 1;
 
+    const protectedBranches = this.findLatestMajorBranchNames(branches.map(([name]) => name));
+
     for (const [branchName, nodes] of branches) {
-      if (nodes.every((n) => this.isUnsupported(n))) continue;
+      if (!protectedBranches.has(branchName) && nodes.every((n) => this.isUnsupported(n))) continue;
 
       const miniNode = masterNodes.find((n) => n.originalBranch === branchName && n.isMiniNode);
       if (!miniNode) continue;
