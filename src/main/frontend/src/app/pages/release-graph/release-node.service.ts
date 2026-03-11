@@ -480,7 +480,6 @@ export class ReleaseNodeService {
    */
   private findLatestMajorBranchNames(branchNames: string[]): Set<string> {
     const majorBranches = branchNames
-      .filter((name) => name !== ReleaseNodeService.GITHUB_MASTER_BRANCH)
       .map((name) => ({ name, version: this.getVersionFromBranchName(name) }))
       .filter(
         (item): item is { name: string; version: { major: number; minor: number } } =>
