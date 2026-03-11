@@ -10,6 +10,11 @@
 	},
 	"packageRules": [
 		{
+			"matchManagers": ["dockerfile"],
+			"addLabels": ["Docker"],
+			"schedule": ["* 7 * * 1"]
+		},
+		{
 			"matchManagers": ["maven"],
 			"addLabels": ["Java"],
 			"schedule": ["* 7 * * 1"]

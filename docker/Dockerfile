@@ -1,10 +1,4 @@
-FROM alpine:3.22 AS trivy-downloader
-ARG TRIVY_VERSION=0.67.2
-
-RUN wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz && \
-    tar zxvf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz && \
-    mv trivy /usr/local/bin/trivy && \
-    rm trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
+FROM aquasec/trivy:0.69.3 AS trivy-downloader
 
 FROM eclipse-temurin:25.0.1_8-jre-jammy AS runner
 ARG GID=2000
