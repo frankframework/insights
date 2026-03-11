@@ -222,7 +222,6 @@ describe('ReleaseSkippedVersions', () => {
         releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
       });
 
-      // Should be a single entry for v9.0.0 (major), NOT a duplicate v9.0 (minor) + v9.0.0 (major)
       expect(component.releaseTree.length).toBe(1);
       expect(component.releaseTree[0].version).toBe('v9.0.0');
       expect(component.releaseTree[0].type).toBe('major');
