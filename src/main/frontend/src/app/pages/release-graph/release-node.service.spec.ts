@@ -191,6 +191,55 @@ describe('ReleaseNodeService', () => {
       expect(branchOrder).toEqual(['release/9.0', 'release/8.4']);
     });
 
+    it('should keep the latest LTS (major x.0) branch even if it has no nightly and is past support window', () => {
+      const branches: Record<string, any> = {
+        master: { id: 'b-master', name: MASTER_BRANCH_NAME },
+        b90: { id: 'b-90', name: 'release/9.0' },
+        b80: { id: 'b-80', name: 'release/8.0' },
+      };
+
+      const releases: Release[] = [
+        {
+          id: 'master-nightly',
+          name: 'v9.4.0-20251108.042330 (nightly)',
+          publishedAt: new Date('2025-06-10T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: branches['master'],
+          tagName: 'release/9.4-nightly',
+        },
+        {
+          id: '9.0-anchor',
+          name: 'v9.0.0',
+          publishedAt: new Date('2025-01-10T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: branches['b90'],
+          tagName: 'release/v9.0.0',
+        },
+        {
+          id: '8.0-anchor',
+          name: 'v8.0.0',
+          publishedAt: new Date('2023-01-01T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: branches['b80'],
+          tagName: 'release/v8.0.0',
+        },
+        {
+          id: '8.0-node-1',
+          name: 'v8.0.1',
+          publishedAt: new Date('2023-02-01T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: branches['b80'],
+          tagName: 'release/v8.0.1',
+        },
+      ];
+
+      const structured = service.structureReleaseData(releases);
+      const positionedMap = service.calculateReleaseCoordinates(structured);
+      const branchOrder = [...positionedMap.keys()].filter((b) => b !== MASTER_BRANCH_NAME);
+
+      expect(branchOrder).toContain('release/8.0');
+    });
+
     it('should position master nodes on Y=0 axis', () => {
       const positionedMap = service.calculateReleaseCoordinates(structuredData);
       const masterNodes = positionedMap.get(MASTER_BRANCH_NAME)!;
