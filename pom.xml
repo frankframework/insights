@@ -46,7 +46,7 @@
 
 	<properties>
 		<revision>0.0.1-SNAPSHOT</revision>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 		<jackson.version>2.20.1</jackson.version>
 		<junit.bom.version>6.0.1</junit.bom.version>
 		<lombok.version>1.18.42</lombok.version>
@@ -71,8 +71,8 @@
         <junit.includedTags/>
 
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
 	</properties>
 
 	<dependencyManagement>
@@ -308,7 +308,6 @@
 							<version>${lombok.version}</version>
 						</path>
 					</annotationProcessorPaths>
-					<compilerArgs>--enable-preview</compilerArgs>
 				</configuration>
 			</plugin>
 

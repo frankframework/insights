@@ -8,9 +8,9 @@ on:
     branches: [ master ]
 
 env:
-  JAVA_VERSION: 21
-  NODE_VERSION: 23
-  PNPM_VERSION: 10.4.0
+  JAVA_VERSION: 25
+  NODE_VERSION: 24
+  PNPM_VERSION: 10.33.0
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
