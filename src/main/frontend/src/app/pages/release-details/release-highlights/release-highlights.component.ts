@@ -73,7 +73,6 @@ export class ReleaseHighlightsComponent implements OnChanges {
   private generatePieData(): void {
     if (!this.releaseIssues) return;
 
-    // --- Inner ring: issue types ---
     const pieDataMap = new Map<string, { count: number; color: string; originalColor: string }>();
 
     for (const issue of this.releaseIssues) {
@@ -101,7 +100,6 @@ export class ReleaseHighlightsComponent implements OnChanges {
     const innerData = sortedInnerEntries.map(([, { count }]) => count);
     const innerColors = sortedInnerEntries.map(([, { color }]) => color);
 
-    // --- Outer ring: highlighted labels ---
     const outerLabels: string[] = [];
     const outerData: number[] = [];
     const outerColors: string[] = [];
@@ -117,8 +115,6 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
     this.hasHighlightRing = outerLabels.length > 0;
 
-    // Pad both datasets to the same length so Chart.js aligns tooltips correctly.
-    // Zero-value segments are invisible and non-hoverable.
     const allLabels = [...innerLabels, ...outerLabels];
     const paddedInnerData = [...innerData, ...outerLabels.map(() => 0)];
     const paddedInnerColors = [...innerColors, ...outerLabels.map(() => 'transparent')];
