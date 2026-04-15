@@ -25,7 +25,7 @@
     <div class="release-details-body">
       <div class="release-details-content">
         <section class="left-panel">
-          @if (highlightedLabels === undefined && releaseIssues === undefined) {
+          @if (highlightedLabels === undefined && releaseIssues === undefined && !businessValues) {
             <div class="no-new-features">
               <p>No new features found towards previous release.</p>
               <p>Please try again later.</p>
@@ -64,7 +64,7 @@
               <div class="section-content last-section">
                 <app-release-business-value [businessValues]="businessValues" />
               </div>
-            } @else {
+            } @else if (releaseIssues || businessValues) {
               <div class="section-content last-section">
                 <app-release-important-issues [releaseIssues]="releaseIssues" />
               </div>
