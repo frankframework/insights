@@ -55,14 +55,14 @@ describe('ReleaseImportantIssuesComponent', () => {
       expect(component.selectedType()).toBe('all');
     });
 
-    it('should handle an empty or undefined releaseIssues input gracefully', () => {
-      component.releaseIssues = undefined;
-      component.ngOnChanges({ releaseIssues: new SimpleChange(null, undefined, true) });
+    it('should handle an empty or null releaseIssues input gracefully', () => {
+      component.releaseIssues = null;
+      component.ngOnChanges({ releaseIssues: new SimpleChange(null, null, true) });
 
       expect((component as any).issuesSignal()).toEqual([]);
 
       component.releaseIssues = [];
-      component.ngOnChanges({ releaseIssues: new SimpleChange(undefined, [], true) });
+      component.ngOnChanges({ releaseIssues: new SimpleChange(null, [], true) });
 
       expect((component as any).issuesSignal()).toEqual([]);
     });

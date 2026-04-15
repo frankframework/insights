@@ -85,8 +85,8 @@ describe('ReleaseHighlightsComponent', () => {
       expect(colorService.colorNameToRgba).toHaveBeenCalledWith('blue');
     });
 
-    it('should not generate data if releaseIssues is undefined', () => {
-      component.releaseIssues = undefined;
+    it('should not generate data if releaseIssues is null', () => {
+      component.releaseIssues = null;
       component.ngOnChanges();
 
       const chartData = component.doughnutChartData;

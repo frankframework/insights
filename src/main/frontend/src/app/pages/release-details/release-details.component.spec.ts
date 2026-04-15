@@ -165,7 +165,7 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.isLoading).toBe(false);
-      expect(component.highlightedLabels).toBeUndefined();
+      expect(component.highlightedLabels).toBeNull();
       expect(component.releaseIssues).toEqual(mockIssues);
       expect(component.vulnerabilities).toEqual(mockVulnerabilities);
     }));
@@ -184,12 +184,12 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(component.isLoading).toBe(false);
-      expect(component.releaseIssues).toBeUndefined();
+      expect(component.releaseIssues).toBeNull();
       expect(component.highlightedLabels).toEqual(mockLabels);
       expect(component.vulnerabilities).toEqual(mockVulnerabilities);
     }));
 
-    it('should set data to undefined if API returns an empty array for labels', fakeAsync(() => {
+    it('should set data to null if API returns an empty array for labels', fakeAsync(() => {
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
@@ -200,7 +200,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.highlightedLabels).toBeUndefined();
+      expect(component.highlightedLabels).toBeNull();
     }));
 
     it('should set data to undefined if API returns an empty array for issues', fakeAsync(() => {
@@ -214,7 +214,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.releaseIssues).toBeUndefined();
+      expect(component.releaseIssues).toBeNull();
     }));
 
     it('should handle vulnerability fetch error gracefully', fakeAsync(() => {
@@ -307,7 +307,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.businessValues).toBeUndefined();
+      expect(component.businessValues).toBeNull();
       expect(component.activeView()).toBe('issues');
     }));
 

@@ -149,14 +149,14 @@ describe('ReleaseManageComponent', () => {
       expect(component.businessValues()).toEqual([]);
     });
 
-    it('should set businessValues to undefined when service throws an error', () => {
+    it('should set businessValues to null when service throws an error', () => {
       mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(
         throwError(() => new Error('API error')),
       );
 
       component.ngOnInit();
 
-      expect(component.businessValues()).toBeUndefined();
+      expect(component.businessValues()).toBeNull();
     });
   });
 

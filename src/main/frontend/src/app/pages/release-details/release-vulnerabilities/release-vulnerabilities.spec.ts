@@ -65,7 +65,7 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should initialize with empty vulnerabilities', () => {
-      expect(component.vulnerabilities).toEqual([]);
+      expect(component.vulnerabilities).toBeNull();
       expect(component.sortedVulnerabilities).toEqual([]);
       expect(component.selectedVulnerability).toBeNull();
     });

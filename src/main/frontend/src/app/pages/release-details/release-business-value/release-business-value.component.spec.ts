@@ -71,8 +71,8 @@ describe('ReleaseBusinessValueComponent', () => {
       expect(descriptions[1].textContent.trim()).toBe('Description 2');
     });
 
-    it('should show empty message when businessValues is undefined', () => {
-      component.businessValues = undefined;
+    it('should show empty message when businessValues is null', () => {
+      component.businessValues = null;
       fixture.detectChanges();
 
       const emptyMessage = fixture.nativeElement.querySelector('.no-business-values');
