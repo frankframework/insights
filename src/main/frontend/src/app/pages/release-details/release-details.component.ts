@@ -14,6 +14,7 @@ import { ReleaseBusinessValueComponent } from './release-business-value/release-
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
 
 @Component({
   selector: 'app-release-details',
@@ -36,9 +37,9 @@ export class ReleaseDetailsComponent implements OnInit {
   public highlightedLabels?: Label[];
   public releaseIssues?: Issue[];
   public vulnerabilities?: Vulnerability[];
+  public businessValues?: BusinessValue[];
   public isLoading = true;
-  public showBusinessValue = signal<boolean>(true);
-  public showImportantIssues = signal<boolean>(true);
+  public activeView = signal<'business-value' | 'issues'>('issues');
   public authService = inject(AuthService);
 
   private router = inject(Router);
@@ -46,6 +47,7 @@ export class ReleaseDetailsComponent implements OnInit {
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
+  private businessValueService = inject(BusinessValueService);
   private route = inject(ActivatedRoute);
   private graphStateService = inject(GraphStateService);
 
@@ -80,12 +82,8 @@ export class ReleaseDetailsComponent implements OnInit {
     this.router.navigate(['/graph'], { queryParams: queryParameters });
   }
 
-  public toggleBusinessValue(): void {
-    this.showBusinessValue.set(!this.showBusinessValue());
-  }
-
-  public toggleImportantIssues(): void {
-    this.showImportantIssues.set(!this.showImportantIssues());
+  public setActiveView(view: 'business-value' | 'issues'): void {
+    this.activeView.set(view);
   }
 
   private fetchData(releaseId: string): void {
@@ -110,17 +108,30 @@ export class ReleaseDetailsComponent implements OnInit {
       }),
     );
 
+    const businessValues$ = this.businessValueService.getBusinessValuesByReleaseId(releaseId).pipe(
+      catchError((error) => {
+        console.error('Failed to load businessValues:', error);
+        return of([]);
+      }),
+    );
+
     forkJoin({
       labels: labels$,
       issues: issues$,
       vulnerabilities: vulnerabilities$,
+      businessValues: businessValues$,
     })
-      .pipe(finalize(() => (this.isLoading = false)))
-      .subscribe(({ labels, issues, vulnerabilities }) => {
-        this.highlightedLabels = labels && labels.length > 0 ? labels : undefined;
-        this.releaseIssues = issues && issues.length > 0 ? issues : undefined;
-
-        this.vulnerabilities = vulnerabilities && vulnerabilities.length > 0 ? vulnerabilities : [];
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        }),
+      )
+      .subscribe(({ labels, issues, vulnerabilities, businessValues }) => {
+        this.highlightedLabels = labels.length > 0 ? labels : undefined;
+        this.releaseIssues = issues.length > 0 ? issues : undefined;
+        this.vulnerabilities = vulnerabilities;
+        this.businessValues = businessValues.length > 0 ? businessValues : undefined;
+        this.activeView.set(this.businessValues ? 'business-value' : 'issues');
       });
   }
 }

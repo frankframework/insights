@@ -39,26 +39,34 @@
               </div>
             }
 
-            <div class="section-toggle-container">
-              <label class="section-toggle" [class.active]="showBusinessValue()">
-                <input type="checkbox" [checked]="showBusinessValue()" (change)="toggleBusinessValue()" />
-                <span class="toggle-label">Business Values</span>
-              </label>
-              <label class="section-toggle" [class.active]="showImportantIssues()">
-                <input type="checkbox" [checked]="showImportantIssues()" (change)="toggleImportantIssues()" />
-                <span class="toggle-label">Important Issues</span>
-              </label>
-            </div>
-
-            @if (showBusinessValue()) {
-              <div class="section-content" [class.last-section]="!showImportantIssues()">
-                <app-release-business-value [releaseId]="release.id" />
+            @if (businessValues) {
+              <div class="section-view-toggle">
+                <button
+                  class="view-tab"
+                  title="Grouped issues that contribute to one functional item."
+                  [class.active]="activeView() === 'business-value'"
+                  (click)="setActiveView('business-value')"
+                >
+                  Business Values
+                </button>
+                <button
+                  class="view-tab"
+                  title="Subsets of issues that might be relevant to you."
+                  [class.active]="activeView() === 'issues'"
+                  (click)="setActiveView('issues')"
+                >
+                  Important Issues
+                </button>
               </div>
             }
 
-            @if (releaseIssues && showImportantIssues()) {
+            @if (activeView() === 'business-value') {
               <div class="section-content last-section">
-                <app-release-important-issues [releaseIssues]="releaseIssues" [releaseId]="release.id" />
+                <app-release-business-value [businessValues]="businessValues" />
+              </div>
+            } @else {
+              <div class="section-content last-section">
+                <app-release-important-issues [releaseIssues]="releaseIssues" />
               </div>
             }
           }

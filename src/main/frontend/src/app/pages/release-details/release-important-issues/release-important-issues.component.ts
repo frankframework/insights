@@ -26,7 +26,6 @@ interface IssueTypeOption {
 })
 export class ReleaseImportantIssuesComponent implements OnChanges {
   @Input() releaseIssues?: Issue[] = [];
-  @Input() releaseId?: string;
 
   public selectedType = signal<string | null | 'all'>('all');
 

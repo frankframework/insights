@@ -9,6 +9,7 @@ import { ReleaseVulnerabilities } from '../release-details/release-vulnerabiliti
 import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
 import { catchError, finalize, of } from 'rxjs';
+import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
 
 @Component({
   selector: 'app-release-manage',
@@ -22,6 +23,7 @@ export class ReleaseManageComponent implements OnInit {
   public release = signal<Release | null>(null);
   public releaseIssues = signal<Issue[] | undefined>([]);
   public vulnerabilities = signal<Vulnerability[] | undefined>([]);
+  public businessValues = signal<BusinessValue[] | undefined>([]);
   public isLoading = signal<boolean>(true);
   public activeSection = signal<'business-value' | 'vulnerabilities' | null>(null);
 
@@ -30,6 +32,7 @@ export class ReleaseManageComponent implements OnInit {
   private releaseService = inject(ReleaseService);
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
+  private businessValueService = inject(BusinessValueService);
 
   ngOnInit(): void {
     const releaseId = this.route.snapshot.paramMap.get('id');
@@ -73,6 +76,7 @@ export class ReleaseManageComponent implements OnInit {
           this.release.set(release);
           this.fetchIssues(releaseId);
           this.fetchVulnerabilities(releaseId);
+          this.fetchBusinessValue(releaseId);
         },
         error: () => this.router.navigate(['/not-found']),
       });
@@ -103,6 +107,20 @@ export class ReleaseManageComponent implements OnInit {
       )
       .subscribe((vulnerabilities) => {
         this.vulnerabilities.set(vulnerabilities);
+      });
+  }
+
+  private fetchBusinessValue(releaseId: string): void {
+    this.businessValueService
+      .getBusinessValuesByReleaseId(releaseId)
+      .pipe(
+        catchError(() => {
+          this.businessValues.set(undefined);
+          return of();
+        }),
+      )
+      .subscribe((values) => {
+        this.businessValues.set(values);
       });
   }
 }

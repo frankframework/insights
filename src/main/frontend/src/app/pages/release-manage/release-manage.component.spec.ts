@@ -7,6 +7,7 @@ import { AuthService, User } from '../../services/auth.service';
 import { ReleaseService, Release } from '../../services/release.service';
 import { IssueService } from '../../services/issue.service';
 import { VulnerabilityService } from '../../services/vulnerability.service';
+import { BusinessValueService, BusinessValue } from '../../services/business-value.service';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, Input } from '@angular/core';
@@ -38,7 +39,12 @@ describe('ReleaseManageComponent', () => {
   let mockReleaseService: jasmine.SpyObj<ReleaseService>;
   let mockIssueService: jasmine.SpyObj<IssueService>;
   let mockVulnerabilityService: jasmine.SpyObj<VulnerabilityService>;
+  let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
   let mockRouter: jasmine.SpyObj<Router>;
+
+  const mockBusinessValues: BusinessValue[] = [
+    { id: 'bv-1', title: 'Business Value 1', description: 'Description 1' },
+  ];
 
   const mockUser: User = {
     githubId: 123,
@@ -63,11 +69,13 @@ describe('ReleaseManageComponent', () => {
     mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getReleaseById']);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
+    mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
     mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
     mockReleaseService.getReleaseById.and.returnValue(of(mockRelease));
     mockIssueService.getIssuesByReleaseId.and.returnValue(of([]));
     mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of([]));
+    mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
 
     await TestBed.configureTestingModule({
       imports: [ReleaseManageComponent],
@@ -76,6 +84,7 @@ describe('ReleaseManageComponent', () => {
         { provide: ReleaseService, useValue: mockReleaseService },
         { provide: IssueService, useValue: mockIssueService },
         { provide: VulnerabilityService, useValue: mockVulnerabilityService },
+        { provide: BusinessValueService, useValue: mockBusinessValueService },
         { provide: Router, useValue: mockRouter },
         {
           provide: ActivatedRoute,
@@ -118,12 +127,37 @@ describe('ReleaseManageComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should fetch release data, issues, and vulnerabilities on init', () => {
+  it('should fetch release data, issues, vulnerabilities and business values on init', () => {
     expect(mockReleaseService.getReleaseById).toHaveBeenCalledWith('123');
     expect(mockIssueService.getIssuesByReleaseId).toHaveBeenCalledWith('123');
     expect(mockVulnerabilityService.getVulnerabilitiesByReleaseId).toHaveBeenCalledWith('123');
+    expect(mockBusinessValueService.getBusinessValuesByReleaseId).toHaveBeenCalledWith('123');
     expect(component.release()).toEqual(mockRelease);
     expect(component.isLoading()).toBeFalse();
+  });
+
+  describe('fetchBusinessValue', () => {
+    it('should set businessValues signal when service returns data', () => {
+      expect(component.businessValues()).toEqual(mockBusinessValues);
+    });
+
+    it('should set businessValues to empty array when service returns empty array', () => {
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of([]));
+
+      component.ngOnInit();
+
+      expect(component.businessValues()).toEqual([]);
+    });
+
+    it('should set businessValues to undefined when service throws an error', () => {
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(
+        throwError(() => new Error('API error')),
+      );
+
+      component.ngOnInit();
+
+      expect(component.businessValues()).toBeUndefined();
+    });
   });
 
   it('should display the release name in the header', () => {

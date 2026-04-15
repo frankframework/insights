@@ -10,6 +10,7 @@ import { ReleaseService, Release } from '../../services/release.service';
 import { LabelService, Label } from '../../services/label.service';
 import { IssueService, Issue } from '../../services/issue.service';
 import { VulnerabilityService, Vulnerability, VulnerabilitySeverities } from '../../services/vulnerability.service';
+import { BusinessValueService, BusinessValue } from '../../services/business-value.service';
 import { GitHubStates } from '../../app.service';
 
 const mockRelease: Release = {
@@ -29,8 +30,11 @@ const mockVulnerabilities: Vulnerability[] = [
     severity: VulnerabilitySeverities.CRITICAL,
     cvssScore: 9.8,
     description: 'Critical vulnerability',
-    cwes: ['CWE-79']
-  }
+    cwes: ['CWE-79'],
+  },
+];
+const mockBusinessValues: BusinessValue[] = [
+  { id: 'bv-1', title: 'Business Value 1', description: 'Description 1' },
 ];
 
 describe('ReleaseDetailsComponent', () => {
@@ -40,6 +44,7 @@ describe('ReleaseDetailsComponent', () => {
   let mockLabelService: jasmine.SpyObj<LabelService>;
   let mockIssueService: jasmine.SpyObj<IssueService>;
   let mockVulnerabilityService: jasmine.SpyObj<VulnerabilityService>;
+  let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
   let mockLocation: jasmine.SpyObj<Location>;
   let mockRouter: jasmine.SpyObj<Router>;
   let parameterMapSubject: Subject<any>;
@@ -49,6 +54,7 @@ describe('ReleaseDetailsComponent', () => {
     mockLabelService = jasmine.createSpyObj('LabelService', ['getHighLightsByReleaseId']);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
+    mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
     mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
@@ -65,6 +71,7 @@ describe('ReleaseDetailsComponent', () => {
         { provide: LabelService, useValue: mockLabelService },
         { provide: IssueService, useValue: mockIssueService },
         { provide: VulnerabilityService, useValue: mockVulnerabilityService },
+        { provide: BusinessValueService, useValue: mockBusinessValueService },
         { provide: Location, useValue: mockLocation },
         { provide: Router, useValue: mockRouter },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
@@ -77,6 +84,15 @@ describe('ReleaseDetailsComponent', () => {
     component = fixture.componentInstance;
   });
 
+  function setupAndLoad(businessValues: BusinessValue[]): Promise<void> {
+    mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
+    mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
+    mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+    mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+    mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(businessValues).pipe(delay(0)));
+    return Promise.resolve();
+  }
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });
@@ -87,6 +103,7 @@ describe('ReleaseDetailsComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -103,6 +120,7 @@ describe('ReleaseDetailsComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -112,10 +130,12 @@ describe('ReleaseDetailsComponent', () => {
       expect(mockLabelService.getHighLightsByReleaseId).toHaveBeenCalledWith('release-1');
       expect(mockIssueService.getIssuesByReleaseId).toHaveBeenCalledWith('release-1');
       expect(mockVulnerabilityService.getVulnerabilitiesByReleaseId).toHaveBeenCalledWith('release-1');
+      expect(mockBusinessValueService.getBusinessValuesByReleaseId).toHaveBeenCalledWith('release-1');
       expect(component.release).toEqual(mockRelease);
       expect(component.highlightedLabels).toEqual(mockLabels);
       expect(component.releaseIssues).toEqual(mockIssues);
       expect(component.vulnerabilities).toEqual(mockVulnerabilities);
+      expect(component.businessValues).toEqual(mockBusinessValues);
     }));
 
     it('should handle release fetch error gracefully', fakeAsync(() => {
@@ -138,13 +158,13 @@ describe('ReleaseDetailsComponent', () => {
       );
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
       expect(component.isLoading).toBe(false);
-
       expect(component.highlightedLabels).toBeUndefined();
       expect(component.releaseIssues).toEqual(mockIssues);
       expect(component.vulnerabilities).toEqual(mockVulnerabilities);
@@ -157,6 +177,7 @@ describe('ReleaseDetailsComponent', () => {
         throwError(() => new Error('Issue API Error')).pipe(delay(0)),
       );
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -173,6 +194,7 @@ describe('ReleaseDetailsComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -186,6 +208,7 @@ describe('ReleaseDetailsComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -201,6 +224,7 @@ describe('ReleaseDetailsComponent', () => {
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(
         throwError(() => new Error('Vulnerability API Error')).pipe(delay(0)),
       );
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -215,6 +239,7 @@ describe('ReleaseDetailsComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -237,6 +262,7 @@ describe('ReleaseDetailsComponent', () => {
       mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
       mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
       mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
 
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
@@ -254,6 +280,54 @@ describe('ReleaseDetailsComponent', () => {
     }));
   });
 
+  describe('activeView behavior', () => {
+    it('should set activeView to business-value when businessValues are loaded', fakeAsync(() => {
+      mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
+      mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
+      mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues).pipe(delay(0)));
+
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+
+      expect(component.businessValues).toEqual(mockBusinessValues);
+      expect(component.activeView()).toBe('business-value');
+    }));
+
+    it('should set activeView to issues when businessValues is empty', fakeAsync(() => {
+      mockReleaseService.getReleaseById.and.returnValue(of(mockRelease).pipe(delay(0)));
+      mockLabelService.getHighLightsByReleaseId.and.returnValue(of(mockLabels).pipe(delay(0)));
+      mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues).pipe(delay(0)));
+      mockVulnerabilityService.getVulnerabilitiesByReleaseId.and.returnValue(of(mockVulnerabilities).pipe(delay(0)));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of([]).pipe(delay(0)));
+
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+
+      expect(component.businessValues).toBeUndefined();
+      expect(component.activeView()).toBe('issues');
+    }));
+
+    it('should switch view when setActiveView is called', () => {
+      component.activeView.set('business-value');
+
+      component.setActiveView('issues');
+
+      expect(component.activeView()).toBe('issues');
+    });
+
+    it('should switch back to business-value view', () => {
+      component.activeView.set('issues');
+
+      component.setActiveView('business-value');
+
+      expect(component.activeView()).toBe('business-value');
+    });
+  });
+
   describe('goBack', () => {
     it('should navigate to /graph when goBack is called', () => {
       component.goBack();
@@ -262,73 +336,104 @@ describe('ReleaseDetailsComponent', () => {
     });
   });
 
-  describe('toggleBusinessValue', () => {
-    it('should toggle showBusinessValue from true to false', () => {
-      component.showBusinessValue.set(true);
-
-      component.toggleBusinessValue();
-
-      expect(component.showBusinessValue()).toBe(false);
-    });
-
-    it('should toggle showBusinessValue from false to true', () => {
-      component.showBusinessValue.set(false);
-
-      component.toggleBusinessValue();
-
-      expect(component.showBusinessValue()).toBe(true);
-    });
-
-    it('should toggle showBusinessValue multiple times correctly', () => {
-      const initialState = component.showBusinessValue();
-
-      component.toggleBusinessValue();
-
-      expect(component.showBusinessValue()).toBe(!initialState);
-
-      component.toggleBusinessValue();
-
-      expect(component.showBusinessValue()).toBe(initialState);
-    });
-  });
-
-  describe('toggleImportantIssues', () => {
-    it('should toggle showImportantIssues from true to false', () => {
-      component.showImportantIssues.set(true);
-
-      component.toggleImportantIssues();
-
-      expect(component.showImportantIssues()).toBe(false);
-    });
-
-    it('should toggle showImportantIssues from false to true', () => {
-      component.showImportantIssues.set(false);
-
-      component.toggleImportantIssues();
-
-      expect(component.showImportantIssues()).toBe(true);
-    });
-
-    it('should toggle showImportantIssues multiple times correctly', () => {
-      const initialState = component.showImportantIssues();
-
-      component.toggleImportantIssues();
-
-      expect(component.showImportantIssues()).toBe(!initialState);
-
-      component.toggleImportantIssues();
-
-      expect(component.showImportantIssues()).toBe(initialState);
-    });
-  });
-
   describe('Signal initial states', () => {
-    it('should initialize showBusinessValue to true', () => {
-      expect(component.showBusinessValue()).toBe(true);
+    it('should initialize activeView to issues', () => {
+      expect(component.activeView()).toBe('issues');
     });
+  });
 
-    it('should initialize showImportantIssues to true', () => {
-      expect(component.showImportantIssues()).toBe(true);
-    });
+  describe('view toggle template', () => {
+    it('should show view toggle when businessValues are present', fakeAsync(() => {
+      setupAndLoad(mockBusinessValues);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      const toggle = fixture.nativeElement.querySelector('.section-view-toggle');
+
+      expect(toggle).toBeTruthy();
+    }));
+
+    it('should not show view toggle when there are no businessValues', fakeAsync(() => {
+      setupAndLoad([]);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      const toggle = fixture.nativeElement.querySelector('.section-view-toggle');
+
+      expect(toggle).toBeNull();
+    }));
+
+    it('should render two tab buttons with correct labels when businessValues are present', fakeAsync(() => {
+      setupAndLoad(mockBusinessValues);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      const tabs = fixture.nativeElement.querySelectorAll('.view-tab');
+
+      expect(tabs.length).toBe(2);
+      expect(tabs[0].textContent.trim()).toBe('Business Values');
+      expect(tabs[1].textContent.trim()).toBe('Important Issues');
+    }));
+
+    it('should have correct tooltip titles on toggle buttons', fakeAsync(() => {
+      setupAndLoad(mockBusinessValues);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      const tabs = fixture.nativeElement.querySelectorAll('.view-tab');
+
+      expect(tabs[0].title).toBe('Grouped issues that contribute to one functional item.');
+      expect(tabs[1].title).toBe('Subsets of issues that might be relevant to you.');
+    }));
+
+    it('should mark Business Values tab as active by default when businessValues are present', fakeAsync(() => {
+      setupAndLoad(mockBusinessValues);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      const tabs = fixture.nativeElement.querySelectorAll('.view-tab');
+
+      expect(tabs[0].classList).toContain('active');
+      expect(tabs[1].classList).not.toContain('active');
+    }));
+
+    it('should switch active tab when Important Issues is clicked', fakeAsync(() => {
+      setupAndLoad(mockBusinessValues);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      const tabs = fixture.nativeElement.querySelectorAll('.view-tab');
+      tabs[1].click();
+      fixture.detectChanges();
+
+      expect(component.activeView()).toBe('issues');
+      expect(tabs[1].classList).toContain('active');
+      expect(tabs[0].classList).not.toContain('active');
+    }));
+
+    it('should show issues section when there are no businessValues', fakeAsync(() => {
+      setupAndLoad([]);
+      fixture.detectChanges();
+      parameterMapSubject.next({ get: () => 'release-1' });
+      tick();
+      fixture.detectChanges();
+
+      expect(component.activeView()).toBe('issues');
+      const issuesSection = fixture.nativeElement.querySelector('app-release-important-issues');
+
+      expect(issuesSection).toBeTruthy();
+    }));
   });
 });
