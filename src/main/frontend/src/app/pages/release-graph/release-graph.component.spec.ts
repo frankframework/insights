@@ -163,11 +163,21 @@ describe('ReleaseGraphComponent', () => {
       expect(component.translateX).toBe(-100);
     });
 
-    it('should navigate to release details on openReleaseNodeDetails', () => {
+    it('should navigate to release details using tagName on openReleaseNodeDetails', () => {
       const mockRouter = TestBed.inject(Router) as any;
-      component.openReleaseNodeDetails('release-id-123');
+      component.releases = mockReleases;
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-id-123'], { queryParams: {} });
+      component.openReleaseNodeDetails('1');
+
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'v1'], { queryParams: {} });
+    });
+
+    it('should fall back to node id when release is not found on openReleaseNodeDetails', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+
+      component.openReleaseNodeDetails('unknown-id');
+
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'unknown-id'], { queryParams: {} });
     });
   });
 
@@ -320,12 +330,13 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should open release node details when tap detected (no drag)', () => {
+        component.releases = mockReleases;
         (component as any).isTouchDragging = false;
 
-        component.onNodeTouchEnd(mockTouchEvent, 'release-123');
+        component.onNodeTouchEnd(mockTouchEvent, '1');
 
         expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
-        expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'release-123'], { queryParams: {} });
+        expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'v1'], { queryParams: {} });
       });
 
       it('should not open release node details when drag detected', () => {
@@ -396,16 +407,22 @@ describe('ReleaseGraphComponent', () => {
   });
 
   describe('Nightly Toggle Functionality', () => {
-    it('should toggle showNightlies state', () => {
-      expect(component.showNightlies).toBe(false);
+    it('should navigate to add nightly param when nightlies are hidden', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      component.showNightlies = false;
 
       component.toggleNightlies();
 
-      expect(component.showNightlies).toBe(true);
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], { queryParams: { nightly: '' }, replaceUrl: true });
+    });
+
+    it('should navigate to remove nightly param when nightlies are shown', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      component.showNightlies = true;
 
       component.toggleNightlies();
 
-      expect(component.showNightlies).toBe(false);
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], { queryParams: {}, replaceUrl: true });
     });
 
     it('should return all nodes when showNightlies is true', () => {

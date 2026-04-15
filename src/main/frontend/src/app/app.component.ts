@@ -41,6 +41,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
+    const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -54,21 +55,20 @@ export class AppComponent implements OnInit {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if (wasExtended && isGraphRoute && !currentUrl.includes('extended')) {
-        this.graphStateService.setShowExtendedSupport(true);
-        this.router.navigate([], {
-          queryParams: { extended: '' },
-          replaceUrl: true,
-        });
+      if ((wasExtended || wasNightly) && isGraphRoute) {
+        const queryParameters: Record<string, string> = {};
+        if (wasExtended) queryParameters['extended'] = '';
+        if (wasNightly) queryParameters['nightly'] = '';
+
+        this.graphStateService.setShowExtendedSupport(wasExtended);
+        this.graphStateService.setShowNightlies(wasNightly);
+        this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
         return;
       }
 
       if (isGraphRoute) {
-        if (parameters['extended'] === undefined) {
-          this.graphStateService.setShowExtendedSupport(false);
-        } else {
-          this.graphStateService.setShowExtendedSupport(true);
-        }
+        this.graphStateService.setShowExtendedSupport(parameters['extended'] !== undefined);
+        this.graphStateService.setShowNightlies(parameters['nightly'] !== undefined);
       }
     });
   }
