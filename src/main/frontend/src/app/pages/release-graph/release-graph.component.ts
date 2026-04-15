@@ -86,7 +86,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       return this.releaseNodes;
     }
 
-    // Filter out nightly nodes when showNightlies is false
     return this.releaseNodes.filter((node) => !this.isNightlyNode(node));
   }
 
@@ -112,15 +111,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isLoading = true;
     this.getAllReleases();
 
-    // Check for extended query parameter
     this.route.queryParams.subscribe((parameters) => {
       const wasExtended = this.showExtendedSupport;
       this.showExtendedSupport = parameters['extended'] !== undefined;
+      this.showNightlies = parameters['nightly'] !== undefined;
 
-      // Sync with global state service
       this.graphStateService.setShowExtendedSupport(this.showExtendedSupport);
+      this.graphStateService.setShowNightlies(this.showNightlies);
 
-      // Rebuild graph if extended mode changed and we have releases
       if (wasExtended !== this.showExtendedSupport && this.releases.length > 0) {
         const sortedGroups = this.nodeService.structureReleaseData(this.releases);
         this.buildReleaseGraph(sortedGroups);
@@ -144,7 +142,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public toggleNightlies(): void {
-    this.showNightlies = !this.showNightlies;
+    const queryParameters = { ...this.graphStateService.getGraphQueryParams() };
+    if (this.showNightlies) {
+      delete queryParameters['nightly'];
+    } else {
+      queryParameters['nightly'] = '';
+    }
+    this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
   }
 
   public onMouseDown(event: MouseEvent): void {
@@ -275,8 +279,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
+    const release = this.releases.find((r) => r.id === releaseNodeId);
+    const identifier = (release?.tagName ?? releaseNodeId).replace(/^release\//, '');
     const queryParameters = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph', releaseNodeId], { queryParams: queryParameters });
+    this.router.navigate(['/graph', identifier], { queryParams: queryParameters });
   }
 
   public openSkipNodeModal(skipNodeId: string): void {
@@ -295,7 +301,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     const release = this.releases.find((r) => r.name === version || `v${r.name}` === version);
     if (release) {
       const queryParameters = this.graphStateService.getGraphQueryParams();
-      this.router.navigate(['/graph', release.id], { queryParams: queryParameters });
+      this.router.navigate(['/graph', release.tagName.replace(/^release\//, '')], { queryParams: queryParameters });
     }
   }
 

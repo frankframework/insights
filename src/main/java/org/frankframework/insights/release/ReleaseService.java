@@ -421,6 +421,15 @@ public class ReleaseService {
      */
     public Release checkIfReleaseExists(String releaseId) throws ReleaseNotFoundException {
         Optional<Release> release = releaseRepository.findById(releaseId);
+
+        if (release.isEmpty()) {
+            release = releaseRepository.findByTagName(releaseId);
+        }
+
+        if (release.isEmpty()) {
+            release = releaseRepository.findByTagName("release/" + releaseId);
+        }
+
         if (release.isEmpty()) {
             throw new ReleaseNotFoundException("Release with ID [" + releaseId + "] not found.", null);
         }
