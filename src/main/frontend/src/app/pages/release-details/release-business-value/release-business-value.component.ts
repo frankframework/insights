@@ -11,7 +11,7 @@ import { ReleaseBusinessValueModalComponent } from '../release-business-value-mo
   styleUrl: './release-business-value.component.scss',
 })
 export class ReleaseBusinessValueComponent {
-  @Input() businessValues?: BusinessValue[];
+  @Input() businessValues: BusinessValue[] | null = null;
 
   public selectedBusinessValue = signal<BusinessValue | null>(null);
 

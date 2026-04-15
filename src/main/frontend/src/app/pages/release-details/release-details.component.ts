@@ -12,7 +12,7 @@ import { ReleaseHighlightsComponent } from './release-highlights/release-highlig
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
 
@@ -22,7 +22,7 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
   imports: [
     CommonModule,
     FormsModule,
-    RouterModule,
+    RouterLink,
     LoaderComponent,
     ReleaseHighlightsComponent,
     ReleaseImportantIssuesComponent,
@@ -34,10 +34,10 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
 })
 export class ReleaseDetailsComponent implements OnInit {
   public release?: Release;
-  public highlightedLabels?: Label[];
-  public releaseIssues?: Issue[];
-  public vulnerabilities?: Vulnerability[];
-  public businessValues?: BusinessValue[];
+  public highlightedLabels: Label[] | null = null;
+  public releaseIssues: Issue[] | null = null;
+  public vulnerabilities: Vulnerability[] | null = null;
+  public businessValues: BusinessValue[] | null = null;
   public isLoading = true;
   public activeView = signal<'business-value' | 'issues'>('issues');
   public authService = inject(AuthService);
@@ -127,10 +127,10 @@ export class ReleaseDetailsComponent implements OnInit {
         }),
       )
       .subscribe(({ labels, issues, vulnerabilities, businessValues }) => {
-        this.highlightedLabels = labels.length > 0 ? labels : undefined;
-        this.releaseIssues = issues.length > 0 ? issues : undefined;
+        this.highlightedLabels = labels.length > 0 ? labels : null;
+        this.releaseIssues = issues.length > 0 ? issues : null;
         this.vulnerabilities = vulnerabilities;
-        this.businessValues = businessValues.length > 0 ? businessValues : undefined;
+        this.businessValues = businessValues.length > 0 ? businessValues : null;
         this.activeView.set(this.businessValues ? 'business-value' : 'issues');
       });
   }

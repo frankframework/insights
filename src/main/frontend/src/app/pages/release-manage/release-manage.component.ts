@@ -21,9 +21,9 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
 export class ReleaseManageComponent implements OnInit {
   public authService = inject(AuthService);
   public release = signal<Release | null>(null);
-  public releaseIssues = signal<Issue[] | undefined>([]);
-  public vulnerabilities = signal<Vulnerability[] | undefined>([]);
-  public businessValues = signal<BusinessValue[] | undefined>([]);
+  public releaseIssues = signal<Issue[] | null>([]);
+  public vulnerabilities = signal<Vulnerability[] | null>([]);
+  public businessValues = signal<BusinessValue[] | null>([]);
   public isLoading = signal<boolean>(true);
   public activeSection = signal<'business-value' | 'vulnerabilities' | null>(null);
 
@@ -87,7 +87,7 @@ export class ReleaseManageComponent implements OnInit {
       .getIssuesByReleaseId(releaseId)
       .pipe(
         catchError(() => {
-          this.releaseIssues.set(undefined);
+          this.releaseIssues.set(null);
           return of();
         }),
       )
@@ -101,7 +101,7 @@ export class ReleaseManageComponent implements OnInit {
       .getVulnerabilitiesByReleaseId(releaseId)
       .pipe(
         catchError(() => {
-          this.vulnerabilities.set(undefined);
+          this.vulnerabilities.set(null);
           return of();
         }),
       )
@@ -115,7 +115,7 @@ export class ReleaseManageComponent implements OnInit {
       .getBusinessValuesByReleaseId(releaseId)
       .pipe(
         catchError(() => {
-          this.businessValues.set(undefined);
+          this.businessValues.set(null);
           return of();
         }),
       )

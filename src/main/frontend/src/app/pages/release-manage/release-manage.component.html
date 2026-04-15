@@ -153,10 +153,11 @@
               <h3>Business Values</h3>
               <app-release-business-value [businessValues]="businessValues()" />
             </div>
-          } @else if (releaseIssues()) {
+          }
+          @if (releaseIssues()) {
             <div class="subsection">
               <h3>Important Issues</h3>
-              <app-release-important-issues [releaseIssues]="releaseIssues()!" />
+              <app-release-important-issues [releaseIssues]="releaseIssues()" />
             </div>
           }
         </div>
