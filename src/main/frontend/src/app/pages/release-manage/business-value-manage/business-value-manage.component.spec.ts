@@ -226,6 +226,83 @@ describe('BusinessValueManageComponent', () => {
     });
   });
 
+  describe('Cross-release issue preservation', () => {
+    it('should preserve issues from other releases when saving', () => {
+      const otherReleaseIssue = { id: 'issue-4', number: 104, title: 'Other release issue', state: 'OPEN', url: '' };
+      const bvWithOtherReleaseIssue: BusinessValue = {
+        ...mockBusinessValues[0],
+        issues: [mockIssues[0], otherReleaseIssue as any],
+      };
+
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithOtherReleaseIssue));
+      component.selectBusinessValue(mockBusinessValues[0]);
+
+      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithOtherReleaseIssue));
+      component.saveChanges();
+
+      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
+
+      expect(sentIds).toContain('issue-4');
+      expect(sentIds).toContain('issue-1');
+    });
+
+    it('should not duplicate issues that exist in both current release and already connected', () => {
+      const bv: BusinessValue = { ...mockBusinessValues[0], issues: [mockIssues[0]] };
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bv));
+      component.selectBusinessValue(mockBusinessValues[0]);
+
+      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bv));
+      component.saveChanges();
+
+      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
+      const issue1Count = sentIds.filter((id: string) => id === 'issue-1').length;
+
+      expect(issue1Count).toBe(1);
+    });
+
+    it('should allow deselecting an issue from the current release without affecting other-release issues', () => {
+      const otherReleaseIssue = { id: 'issue-4', number: 104, title: 'Other release issue', state: 'OPEN', url: '' };
+      const bvWithBoth: BusinessValue = {
+        ...mockBusinessValues[0],
+        issues: [mockIssues[0], mockIssues[1], otherReleaseIssue as any],
+      };
+
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithBoth));
+      component.selectBusinessValue(mockBusinessValues[0]);
+
+      const issue1 = component.issuesWithSelection().find(issue => issue.id === 'issue-1')!;
+      component.toggleIssue(issue1);
+
+      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithBoth));
+      component.saveChanges();
+
+      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
+
+      expect(sentIds).not.toContain('issue-1');
+      expect(sentIds).toContain('issue-2');
+      expect(sentIds).toContain('issue-4');
+    });
+
+    it('should send only other-release issues when no current-release issues are selected', () => {
+      const otherReleaseIssue = { id: 'issue-4', number: 104, title: 'Other release issue', state: 'OPEN', url: '' };
+      const bvWithOnlyOtherRelease: BusinessValue = {
+        ...mockBusinessValues[1],
+        issues: [otherReleaseIssue as any],
+      };
+
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithOnlyOtherRelease));
+      component.selectBusinessValue(mockBusinessValues[1]);
+
+      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithOnlyOtherRelease));
+      component.saveChanges();
+
+      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
+
+      expect(sentIds).toContain('issue-4');
+      expect(sentIds.length).toBe(1);
+    });
+  });
+
   describe('UI Interaction', () => {
     it('should toggle create form visibility', () => {
       expect(component.showCreateForm()).toBeFalse();

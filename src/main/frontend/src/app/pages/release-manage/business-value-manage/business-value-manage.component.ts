@@ -181,12 +181,14 @@ export class BusinessValueManageComponent implements OnInit {
   private performSaveChanges(selectedBV: BusinessValue): void {
     this.isSaving.set(true);
 
+    const currentReleaseIssueIds = new Set(this.allIssues().map((issue) => issue.id));
     const selectedIssueIds = this.issuesWithSelection()
       .filter((issue) => issue.isSelected)
       .map((issue) => issue.id);
+    const otherReleaseIds = [...this.originalSelectedIssueIds()].filter((id) => !currentReleaseIssueIds.has(id));
 
     this.businessValueService
-      .updateIssueConnections(selectedBV.id, selectedIssueIds)
+      .updateIssueConnections(selectedBV.id, [...selectedIssueIds, ...otherReleaseIds])
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (updatedBV) => {
