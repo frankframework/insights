@@ -4,7 +4,7 @@
   }
 
   <h3>Business Values</h3>
-  @if (businessValues) {
+  @if (businessValues?.length) {
     <ul class="business-values-list">
       @for (businessValue of businessValues; track businessValue.id) {
         <li class="business-value-item" (click)="openBusinessValueModal(businessValue)">
