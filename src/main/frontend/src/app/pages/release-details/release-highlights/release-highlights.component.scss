@@ -96,7 +96,7 @@
 }
 
 .highlight-donut-chart-wrapper {
-  height: 300px;
+  height: 340px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -112,12 +112,34 @@
   }
 }
 
-.chart-legend {
+.chart-legends {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem 1.5rem;
+  gap: 0.5rem 1.5rem;
   width: fit-content;
   margin: 0 auto;
+}
+
+.chart-legend {
+  display: contents;
+
+  .legend-title {
+    grid-column: 1 / -1;
+    margin: 0.5rem 0 0.25rem 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
+
+    &:last-of-type {
+      margin-top: 1rem;
+    }
+  }
 
   .legend-item {
     display: flex;
@@ -144,8 +166,4 @@
     }
   }
 
-  @media (max-width: 540px) {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
 }

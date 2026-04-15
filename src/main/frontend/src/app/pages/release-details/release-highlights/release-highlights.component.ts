@@ -27,7 +27,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
   public doughnutChartOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '70%',
+    cutout: '50%',
     plugins: {
       legend: {
         display: false,
@@ -40,7 +40,9 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
   public doughnutChartPlugins = [];
   public legendItems: { label: string; color: string; count: number }[] = [];
+  public highlightLegendItems: { label: string; color: string; count: number }[] = [];
   public sortedHighlightedLabels: Label[] = [];
+  public hasHighlightRing = false;
 
   private colorService = inject(ColorService);
 
@@ -71,6 +73,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
   private generatePieData(): void {
     if (!this.releaseIssues) return;
 
+    // --- Inner ring: issue types ---
     const pieDataMap = new Map<string, { count: number; color: string; originalColor: string }>();
 
     for (const issue of this.releaseIssues) {
@@ -86,32 +89,74 @@ export class ReleaseHighlightsComponent implements OnChanges {
       }
     }
 
-    const sortedEntries = [...pieDataMap.entries()].toSorted(([nameA, dataA], [nameB, dataB]) => {
-      const normalizedColorA = this.normalizeColor(dataA.originalColor);
-      const normalizedColorB = this.normalizeColor(dataB.originalColor);
-      const colorComparison = normalizedColorA.localeCompare(normalizedColorB);
+    const sortedInnerEntries = [...pieDataMap.entries()].toSorted(([nameA, dataA], [nameB, dataB]) => {
+      const colorComparison = this.normalizeColor(dataA.originalColor).localeCompare(
+        this.normalizeColor(dataB.originalColor),
+      );
       if (colorComparison !== 0) return colorComparison;
       return nameA.localeCompare(nameB);
     });
 
-    const labels = sortedEntries.map(([name]) => name);
-    const data = sortedEntries.map(([, { count }]) => count);
-    const backgroundColor = sortedEntries.map(([, { color }]) => color);
+    const innerLabels = sortedInnerEntries.map(([name]) => name);
+    const innerData = sortedInnerEntries.map(([, { count }]) => count);
+    const innerColors = sortedInnerEntries.map(([, { color }]) => color);
+
+    // --- Outer ring: highlighted labels ---
+    const outerLabels: string[] = [];
+    const outerData: number[] = [];
+    const outerColors: string[] = [];
+
+    for (const label of this.sortedHighlightedLabels) {
+      const count = this.releaseIssues.filter((issue) => issue.labels?.some((l) => l.id === label.id)).length;
+      if (count > 0) {
+        outerLabels.push(label.name);
+        outerData.push(count);
+        outerColors.push(this.colorService.colorNameToRgba(this.getDotColor(label.color)));
+      }
+    }
+
+    this.hasHighlightRing = outerLabels.length > 0;
+
+    // Pad both datasets to the same length so Chart.js aligns tooltips correctly.
+    // Zero-value segments are invisible and non-hoverable.
+    const allLabels = [...innerLabels, ...outerLabels];
+    const paddedInnerData = [...innerData, ...outerLabels.map(() => 0)];
+    const paddedInnerColors = [...innerColors, ...outerLabels.map(() => 'transparent')];
+    const paddedOuterData = [...innerLabels.map(() => 0), ...outerData];
+    const paddedOuterColors = [...innerLabels.map(() => 'transparent'), ...outerColors];
 
     this.doughnutChartData = {
-      labels,
+      labels: allLabels,
       datasets: [
         {
-          data,
-          backgroundColor,
+          data: paddedInnerData,
+          backgroundColor: paddedInnerColors,
+          borderWidth: 2,
+          borderColor: '#ffffff',
         },
+        ...(this.hasHighlightRing
+          ? [
+              {
+                data: paddedOuterData,
+                backgroundColor: paddedOuterColors,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+              },
+            ]
+          : []),
       ],
     };
 
-    this.legendItems = sortedEntries.map(([label, { count, color }]) => ({
+    this.legendItems = sortedInnerEntries.map(([label, { count, color }]) => ({
       label,
       color,
       count,
+    }));
+
+    this.highlightLegendItems = outerLabels.map((label, index) => ({
+      label,
+      color: outerColors[index],
+      count: outerData[index],
     }));
   }
 
