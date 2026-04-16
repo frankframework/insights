@@ -16,8 +16,8 @@ Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
   styleUrl: './release-highlights.component.scss',
 })
 export class ReleaseHighlightsComponent implements OnChanges {
-  @Input() highlightedLabels?: Label[] = [];
-  @Input() releaseIssues?: Issue[] = [];
+  @Input() highlightedLabels: Label[] | null = null;
+  @Input() releaseIssues: Issue[] | null = null;
 
   public doughnutChartData: ChartConfiguration<'doughnut'>['data'] = {
     labels: [],

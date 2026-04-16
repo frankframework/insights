@@ -1,14 +1,12 @@
 <div class="business-values-container">
-  @if (selectedBusinessValue()) {
-    <app-release-business-value-modal [businessValue]="selectedBusinessValue()" (closed)="closeModal()" />
+  @if (selectedBusinessValue(); as selectedBusinessValue) {
+    <app-release-business-value-modal [businessValue]="selectedBusinessValue" (closed)="closeModal()" />
   }
 
   <h3>Business Values</h3>
-  @if (isLoadingBusinessValues()) {
-    <p class="loading-message">Loading business values...</p>
-  } @else if (businessValues().length > 0) {
+  @if (businessValues?.length) {
     <ul class="business-values-list">
-      @for (businessValue of businessValues(); track businessValue.id) {
+      @for (businessValue of businessValues; track businessValue.id) {
         <li class="business-value-item" (click)="openBusinessValueModal(businessValue)">
           <div class="business-value-title">{{ businessValue.title }}</div>
           <div class="business-value-description">{{ businessValue.description }}</div>

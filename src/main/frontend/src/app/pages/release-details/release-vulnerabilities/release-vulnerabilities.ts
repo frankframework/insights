@@ -11,7 +11,7 @@ import { VulnerabilityDetailsOffCanvas } from '../vulnerability-details-off-canv
   styleUrl: './release-vulnerabilities.scss',
 })
 export class ReleaseVulnerabilities implements OnChanges {
-  @Input() vulnerabilities: Vulnerability[] = [];
+  @Input() vulnerabilities: Vulnerability[] | null = null;
   @Input() lastScanned: Date | null = null;
 
   public sortedVulnerabilities: Vulnerability[] = [];
@@ -51,7 +51,7 @@ export class ReleaseVulnerabilities implements OnChanges {
   }
 
   private sortVulnerabilities(): void {
-    this.sortedVulnerabilities = [...this.vulnerabilities].toSorted((a, b) => {
+    this.sortedVulnerabilities = [...(this.vulnerabilities ?? [])].toSorted((a, b) => {
       const orderA = this.severityOrder[a.severity] || 999;
       const orderB = this.severityOrder[b.severity] || 999;
       if (orderA !== orderB) {
