@@ -119,19 +119,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
     this.hasHighlightRing = outerLabels.length > 0;
 
-    if (!this.hasHighlightRing) {
-      this.doughnutChartData = {
-        labels: innerLabels,
-        datasets: [
-          {
-            data: innerData,
-            backgroundColor: innerColors,
-            borderWidth: 2,
-            borderColor: '#ffffff',
-          },
-        ],
-      };
-    } else {
+    if (this.hasHighlightRing) {
       const allLabels = [...outerLabels, ...innerLabels];
       const paddedLabelData = [...outerData, ...innerLabels.map(() => 0)];
       const paddedLabelColors = [...outerColors, ...innerLabels.map(() => 'transparent')];
@@ -150,6 +138,18 @@ export class ReleaseHighlightsComponent implements OnChanges {
           {
             data: paddedTypeData,
             backgroundColor: paddedTypeColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+        ],
+      };
+    } else {
+      this.doughnutChartData = {
+        labels: innerLabels,
+        datasets: [
+          {
+            data: innerData,
+            backgroundColor: innerColors,
             borderWidth: 2,
             borderColor: '#ffffff',
           },
