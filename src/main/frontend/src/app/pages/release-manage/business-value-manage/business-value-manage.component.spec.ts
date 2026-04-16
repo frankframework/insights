@@ -13,6 +13,7 @@ import { ReleaseService, Release } from '../../../services/release.service';
 
 @Component({ selector: 'app-business-value-add', standalone: true, template: '' })
 class MockBusinessValueAddComponent {
+  @Input() releaseId!: string;
   @Output() closed = new EventEmitter<void>();
   @Output() businessValueCreated = new EventEmitter<BusinessValue>();
 }
@@ -31,7 +32,6 @@ class MockBusinessValueDeleteComponent {
   @Output() businessValueDeleted = new EventEmitter<string>();
 }
 
-
 const mockIssues: Issue[] = [
   { id: 'issue-1', number: 101, title: 'Fix login bug', state: 'OPEN', url: '' },
   { id: 'issue-2', number: 102, title: 'Add dark mode', state: 'OPEN', url: '' },
@@ -39,14 +39,23 @@ const mockIssues: Issue[] = [
 ];
 
 const mockBusinessValues: BusinessValue[] = [
-  { id: 'bv-1', title: 'Security Improvements', description: 'desc', issues: [mockIssues[0]] },
-  { id: 'bv-2', title: 'UX Enhancements', description: 'desc', issues: [] },
+  { id: 'bv-1', title: 'Security Improvements', description: 'desc', releaseId: 'release-123', issues: [mockIssues[0]] },
+  { id: 'bv-2', title: 'UX Enhancements', description: 'desc', releaseId: 'release-123', issues: [] },
 ];
 
 const mockRelease: Release = {
   id: 'release-123',
   name: 'v2.0',
   tagName: 'v2.0',
+  publishedAt: new Date(),
+  lastScanned: new Date(),
+  branch: { id: 'b1', name: 'main' },
+};
+
+const mockOtherRelease: Release = {
+  id: 'release-456',
+  name: 'v1.0',
+  tagName: 'v1.0',
   publishedAt: new Date(),
   lastScanned: new Date(),
   branch: { id: 'b1', name: 'main' },
@@ -63,16 +72,19 @@ describe('BusinessValueManageComponent', () => {
 
   beforeEach(async () => {
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', [
-      'getAllBusinessValues',
+      'getBusinessValuesByReleaseId',
       'getBusinessValueById',
-      'updateIssueConnections'
+      'updateIssueConnections',
+      'duplicateBusinessValues',
     ]);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
-    mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getReleaseById']);
+    mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getReleaseById', 'getAllReleases']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
-    mockBusinessValueService.getAllBusinessValues.and.returnValue(of(mockBusinessValues));
+
+    mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
     mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues));
     mockReleaseService.getReleaseById.and.returnValue(of(mockRelease));
+    mockReleaseService.getAllReleases.and.returnValue(of([mockRelease, mockOtherRelease]));
 
     await TestBed.configureTestingModule({
       imports: [BusinessValueManageComponent],
@@ -91,16 +103,12 @@ describe('BusinessValueManageComponent', () => {
         provideHttpClientTesting(),
       ],
     })
-            .overrideComponent(BusinessValueManageComponent, {
-              add: {
-                imports: [
-                  MockBusinessValueAddComponent,
-                  MockBusinessValueEditComponent,
-                  MockBusinessValueDeleteComponent
-                ]
-              }
-            })
-            .compileComponents();
+      .overrideComponent(BusinessValueManageComponent, {
+        add: {
+          imports: [MockBusinessValueAddComponent, MockBusinessValueEditComponent, MockBusinessValueDeleteComponent],
+        },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(BusinessValueManageComponent);
     component = fixture.componentInstance;
@@ -113,10 +121,11 @@ describe('BusinessValueManageComponent', () => {
   });
 
   describe('Initialization (ngOnInit)', () => {
-    it('should fetch business values, issues, and release info on init', () => {
-      expect(mockBusinessValueService.getAllBusinessValues).toHaveBeenCalledWith();
+    it('should fetch business values by releaseId, issues, release info, and all releases on init', () => {
+      expect(mockBusinessValueService.getBusinessValuesByReleaseId).toHaveBeenCalledWith('release-123');
       expect(mockIssueService.getIssuesByReleaseId).toHaveBeenCalledWith('release-123');
       expect(mockReleaseService.getReleaseById).toHaveBeenCalledWith('release-123');
+      expect(mockReleaseService.getAllReleases).toHaveBeenCalledWith();
 
       expect(component.isLoading()).toBeFalse();
       expect(component.businessValues().length).toBe(2);
@@ -124,8 +133,15 @@ describe('BusinessValueManageComponent', () => {
       expect(component.releaseTitle()).toBe('v2.0');
     });
 
+    it('should populate otherReleases excluding the current release', () => {
+      const others = component.otherReleases();
+
+      expect(others.length).toBe(1);
+      expect(others[0].id).toBe('release-456');
+    });
+
     it('should handle error during initialization gracefully', () => {
-      mockBusinessValueService.getAllBusinessValues.and.returnValue(throwError(() => new Error('API Error')));
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(throwError(() => new Error('API Error')));
 
       component.ngOnInit();
 
@@ -164,33 +180,49 @@ describe('BusinessValueManageComponent', () => {
       component.selectBusinessValue(mockBusinessValues[0]);
 
       const issues = component.issuesWithSelection();
-      const issue1 = issues.find(index => index.id === 'issue-1');
+      const issue1 = issues.find((index) => index.id === 'issue-1');
 
       expect(issue1?.isConnected).toBeTrue();
       expect(issue1?.isSelected).toBeTrue();
     });
   });
 
-  describe('CRUD Actions & Saving', () => {
-    it('should call updateIssueConnections on save', () => {
+  describe('Save Changes', () => {
+    it('should call updateIssueConnections with only current-release selected issues', () => {
       mockBusinessValueService.getBusinessValueById.and.returnValue(of(mockBusinessValues[0]));
       component.selectBusinessValue(mockBusinessValues[0]);
 
-      const issue2 = component.issuesWithSelection().find(index => index.id === 'issue-2')!;
+      const issue2 = component.issuesWithSelection().find((index) => index.id === 'issue-2')!;
       component.toggleIssue(issue2);
 
       mockBusinessValueService.updateIssueConnections.and.returnValue(of(mockBusinessValues[0]));
-
       component.saveChanges();
 
-      expect(mockBusinessValueService.updateIssueConnections).toHaveBeenCalledWith(
-              'bv-1',
-              jasmine.arrayContaining(['issue-1', 'issue-2'])
-      );
+      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
 
+      expect(sentIds).toContain('issue-1');
+      expect(sentIds).toContain('issue-2');
       expect(component.isSaving()).toBeFalse();
     });
 
+    it('should not include issues from other releases (BVs are now release-scoped)', () => {
+      const bvWithOnlyCurrentIssues: BusinessValue = {
+        ...mockBusinessValues[0],
+        issues: [mockIssues[0]],
+      };
+      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithOnlyCurrentIssues));
+      component.selectBusinessValue(mockBusinessValues[0]);
+
+      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithOnlyCurrentIssues));
+      component.saveChanges();
+
+      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
+
+      expect(sentIds).toEqual(['issue-1']);
+    });
+  });
+
+  describe('CRUD Actions', () => {
     it('should handle delete business value', () => {
       const event = new MouseEvent('click');
       component.openDeleteModal(mockBusinessValues[0], event);
@@ -210,96 +242,57 @@ describe('BusinessValueManageComponent', () => {
 
       const list = component.businessValues();
 
-      expect(list.find(b => b.id === 'bv-1')?.title).toBe('New Title');
+      expect(list.find((b) => b.id === 'bv-1')?.title).toBe('New Title');
     });
 
     it('should handle create business value', () => {
-      const newBV: BusinessValue = { id: 'new-bv', title: 'New', description: 'New Desc', issues: [] };
-
+      const newBV: BusinessValue = { id: 'new-bv', title: 'New', description: 'New Desc', releaseId: 'release-123', issues: [] };
       mockBusinessValueService.getBusinessValueById.and.returnValue(of(newBV));
 
       component.onBusinessValueCreated(newBV);
 
       expect(component.businessValues().length).toBe(3);
       expect(component.selectedBusinessValue()?.id).toBe('new-bv');
-      expect(mockBusinessValueService.getBusinessValueById).toHaveBeenCalledWith('new-bv');
     });
   });
 
-  describe('Cross-release issue preservation', () => {
-    it('should preserve issues from other releases when saving', () => {
-      const otherReleaseIssue = { id: 'issue-4', number: 104, title: 'Other release issue', state: 'OPEN', url: '' };
-      const bvWithOtherReleaseIssue: BusinessValue = {
-        ...mockBusinessValues[0],
-        issues: [mockIssues[0], otherReleaseIssue as any],
-      };
+  describe('Duplicate from release', () => {
+    it('should open and close the duplicate modal', () => {
+      expect(component.showDuplicateModal()).toBeFalse();
 
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithOtherReleaseIssue));
-      component.selectBusinessValue(mockBusinessValues[0]);
+      component.openDuplicateModal();
 
-      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithOtherReleaseIssue));
-      component.saveChanges();
+      expect(component.showDuplicateModal()).toBeTrue();
 
-      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
+      component.closeDuplicateModal();
 
-      expect(sentIds).toContain('issue-4');
-      expect(sentIds).toContain('issue-1');
+      expect(component.showDuplicateModal()).toBeFalse();
     });
 
-    it('should not duplicate issues that exist in both current release and already connected', () => {
-      const bv: BusinessValue = { ...mockBusinessValues[0], issues: [mockIssues[0]] };
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bv));
-      component.selectBusinessValue(mockBusinessValues[0]);
+    it('should call duplicateBusinessValues and add results to the list', () => {
+      const duplicated: BusinessValue[] = [
+        { id: 'bv-dup-1', title: 'Security Improvements', description: 'desc', releaseId: 'release-123', issues: [] },
+      ];
+      mockBusinessValueService.duplicateBusinessValues.and.returnValue(of(duplicated));
 
-      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bv));
-      component.saveChanges();
+      component.openDuplicateModal();
+      component.duplicateFromRelease(mockOtherRelease);
 
-      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
-      const issue1Count = sentIds.filter((id: string) => id === 'issue-1').length;
-
-      expect(issue1Count).toBe(1);
+      expect(mockBusinessValueService.duplicateBusinessValues).toHaveBeenCalledWith('release-123', 'release-456');
+      expect(component.businessValues().length).toBe(3);
+      expect(component.showDuplicateModal()).toBeFalse();
     });
 
-    it('should allow deselecting an issue from the current release without affecting other-release issues', () => {
-      const otherReleaseIssue = { id: 'issue-4', number: 104, title: 'Other release issue', state: 'OPEN', url: '' };
-      const bvWithBoth: BusinessValue = {
-        ...mockBusinessValues[0],
-        issues: [mockIssues[0], mockIssues[1], otherReleaseIssue as any],
-      };
+    it('should show error message when duplicate fails', () => {
+      mockBusinessValueService.duplicateBusinessValues.and.returnValue(
+        throwError(() => ({ error: { message: 'Duplicate failed' } })),
+      );
 
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithBoth));
-      component.selectBusinessValue(mockBusinessValues[0]);
+      component.openDuplicateModal();
+      component.duplicateFromRelease(mockOtherRelease);
 
-      const issue1 = component.issuesWithSelection().find(issue => issue.id === 'issue-1')!;
-      component.toggleIssue(issue1);
-
-      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithBoth));
-      component.saveChanges();
-
-      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
-
-      expect(sentIds).not.toContain('issue-1');
-      expect(sentIds).toContain('issue-2');
-      expect(sentIds).toContain('issue-4');
-    });
-
-    it('should send only other-release issues when no current-release issues are selected', () => {
-      const otherReleaseIssue = { id: 'issue-4', number: 104, title: 'Other release issue', state: 'OPEN', url: '' };
-      const bvWithOnlyOtherRelease: BusinessValue = {
-        ...mockBusinessValues[1],
-        issues: [otherReleaseIssue as any],
-      };
-
-      mockBusinessValueService.getBusinessValueById.and.returnValue(of(bvWithOnlyOtherRelease));
-      component.selectBusinessValue(mockBusinessValues[1]);
-
-      mockBusinessValueService.updateIssueConnections.and.returnValue(of(bvWithOnlyOtherRelease));
-      component.saveChanges();
-
-      const [, sentIds] = mockBusinessValueService.updateIssueConnections.calls.mostRecent().args;
-
-      expect(sentIds).toContain('issue-4');
-      expect(sentIds.length).toBe(1);
+      expect(component.duplicateErrorMessage()).toBe('Duplicate failed');
+      expect(component.showDuplicateModal()).toBeTrue();
     });
   });
 

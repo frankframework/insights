@@ -181,6 +181,10 @@ MERGE INTO pull_request (id, number, title, url, merged_at) KEY(id) VALUES
 	('pr-502', 502, 'fix(css): Correct widget alignment on Firefox', 'http://example.com/pulls/502', DATEADD('DAY', -1, DATEADD('MONTH', -3, CURRENT_TIMESTAMP()))),
 	('pr-503', 503, 'feat(auth): Add API key authentication middleware', 'http://example.com/pulls/503', DATEADD('MONTH', -3, CURRENT_TIMESTAMP()));
 
+MERGE INTO business_value (id, title, description, release_id) KEY(id) VALUES
+	('11111111-1111-1111-1111-111111111111', 'Performance', 'Performance improvements for v9.0.1', 'RE_kwDOAIg5ds4MnUo_'),
+	('22222222-2222-2222-2222-222222222222', 'Security', 'Security enhancements for v9.0.1', 'RE_kwDOAIg5ds4MnUo_');
+
 MERGE INTO pull_request_issue (pull_request_id, issue_id) KEY(pull_request_id, issue_id) VALUES
 	('pr-501', 'issue-feat-103'),
 	('pr-501', 'issue-task-102'),

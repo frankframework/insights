@@ -69,6 +69,40 @@
   gap: 0.5rem;
 }
 
+.duplicate-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: #fff;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  @media (max-width: 640px) {
+    width: 1.5rem;
+    height: 1.5rem;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &:hover {
+    background: #f9fafb;
+    color: #8b5cf6;
+    border-color: #8b5cf6;
+  }
+
+  &:active {
+    background: #f3f4f6;
+  }
+}
+
 .add-button {
   display: flex;
   align-items: center;

@@ -1,0 +1,42 @@
+<app-modal title="Duplicate business values from release" (closed)="close()">
+  <div class="duplicate-container">
+    @if (errorMessage) {
+      <div class="error-message">{{ errorMessage }}</div>
+    }
+
+    @if (releases.length === 0) {
+      <p class="empty-state">No other releases available.</p>
+    } @else {
+      <p class="description">
+        Select a release to copy its business values (title &amp; description only) into
+        <strong>{{ targetReleaseTitle }}</strong
+        >. Business values whose title already exists in this release will be skipped.
+      </p>
+
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search releases..."
+        [value]="searchQuery()"
+        (input)="updateSearchQuery($event)"
+      />
+
+      <ul class="release-list">
+        @if (filteredReleases().length === 0) {
+          <li class="no-results">No releases match your search.</li>
+        }
+        @for (release of filteredReleases(); track release.id) {
+          <li class="release-item">
+            <button class="release-button" [disabled]="isDuplicating" (click)="selectRelease(release)">
+              {{ release.name }}
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    @if (isDuplicating) {
+      <p class="duplicating-message">Duplicating...</p>
+    }
+  </div>
+</app-modal>
