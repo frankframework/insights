@@ -34,7 +34,7 @@ const mockVulnerabilities: Vulnerability[] = [
   },
 ];
 const mockBusinessValues: BusinessValue[] = [
-  { id: 'bv-1', title: 'Business Value 1', description: 'Description 1' },
+  { id: 'bv-1', title: 'Business Value 1', description: 'Description 1', releaseId: 'bv-release-1', issues: [] },
 ];
 
 describe('ReleaseDetailsComponent', () => {
