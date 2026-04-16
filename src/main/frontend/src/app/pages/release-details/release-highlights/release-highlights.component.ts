@@ -100,41 +100,45 @@ export class ReleaseHighlightsComponent implements OnChanges {
     const innerData = sortedInnerEntries.map(([, { count }]) => count);
     const innerColors = sortedInnerEntries.map(([, { color }]) => color);
 
-    const outerLabels: string[] = [];
-    const outerData: number[] = [];
-    const outerColors: string[] = [];
+    const MAX_LABELS = 20;
 
-    for (const label of this.sortedHighlightedLabels) {
-      const count = this.releaseIssues.filter((issue) => issue.labels?.some((l) => l.id === label.id)).length;
-      if (count > 0) {
-        outerLabels.push(label.name);
-        outerData.push(count);
-        outerColors.push(this.colorService.colorNameToRgba(this.getDotColor(label.color)));
-      }
-    }
+    const sortedLabelEntries = this.sortedHighlightedLabels
+      .map((label) => ({
+        name: label.name,
+        color: this.colorService.colorNameToRgba(this.getDotColor(label.color)),
+        originalColor: this.normalizeColor(label.color || ''),
+        count: this.releaseIssues!.filter((issue) => issue.labels?.some((l) => l.id === label.id)).length,
+      }))
+      .filter((entry) => entry.count > 0)
+      .toSorted((a, b) => a.originalColor.localeCompare(b.originalColor) || b.count - a.count)
+      .slice(0, MAX_LABELS);
+
+    const outerLabels = sortedLabelEntries.map((label) => label.name);
+    const outerData = sortedLabelEntries.map((label) => label.count);
+    const outerColors = sortedLabelEntries.map((label) => label.color);
 
     this.hasHighlightRing = outerLabels.length > 0;
 
-    const allLabels = [...innerLabels, ...outerLabels];
-    const paddedInnerData = [...innerData, ...outerLabels.map(() => 0)];
-    const paddedInnerColors = [...innerColors, ...outerLabels.map(() => 'transparent')];
-    const paddedOuterData = [...innerLabels.map(() => 0), ...outerData];
-    const paddedOuterColors = [...innerLabels.map(() => 'transparent'), ...outerColors];
+    const allLabels = [...outerLabels, ...innerLabels];
+    const paddedLabelData = [...outerData, ...innerLabels.map(() => 0)];
+    const paddedLabelColors = [...outerColors, ...innerLabels.map(() => 'transparent')];
+    const paddedTypeData = [...outerLabels.map(() => 0), ...innerData];
+    const paddedTypeColors = [...outerLabels.map(() => 'transparent'), ...innerColors];
 
     this.doughnutChartData = {
       labels: allLabels,
       datasets: [
         {
-          data: paddedInnerData,
-          backgroundColor: paddedInnerColors,
+          data: paddedLabelData,
+          backgroundColor: paddedLabelColors,
           borderWidth: 2,
           borderColor: '#ffffff',
         },
         ...(this.hasHighlightRing
           ? [
               {
-                data: paddedOuterData,
-                backgroundColor: paddedOuterColors,
+                data: paddedTypeData,
+                backgroundColor: paddedTypeColors,
                 borderWidth: 2,
                 borderColor: '#ffffff',
               },
