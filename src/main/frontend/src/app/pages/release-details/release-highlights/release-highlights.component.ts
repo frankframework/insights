@@ -16,8 +16,8 @@ Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
   styleUrl: './release-highlights.component.scss',
 })
 export class ReleaseHighlightsComponent implements OnChanges {
-  @Input() highlightedLabels?: Label[] = [];
-  @Input() releaseIssues?: Issue[] = [];
+  @Input() highlightedLabels: Label[] | null = null;
+  @Input() releaseIssues: Issue[] | null = null;
 
   public doughnutChartData: ChartConfiguration<'doughnut'>['data'] = {
     labels: [],
@@ -27,7 +27,7 @@ export class ReleaseHighlightsComponent implements OnChanges {
   public doughnutChartOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '70%',
+    cutout: '50%',
     plugins: {
       legend: {
         display: false,
@@ -40,7 +40,9 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
   public doughnutChartPlugins = [];
   public legendItems: { label: string; color: string; count: number }[] = [];
+  public highlightLegendItems: { label: string; color: string; count: number }[] = [];
   public sortedHighlightedLabels: Label[] = [];
+  public hasHighlightRing = false;
 
   private colorService = inject(ColorService);
 
@@ -86,32 +88,85 @@ export class ReleaseHighlightsComponent implements OnChanges {
       }
     }
 
-    const sortedEntries = [...pieDataMap.entries()].toSorted(([nameA, dataA], [nameB, dataB]) => {
-      const normalizedColorA = this.normalizeColor(dataA.originalColor);
-      const normalizedColorB = this.normalizeColor(dataB.originalColor);
-      const colorComparison = normalizedColorA.localeCompare(normalizedColorB);
+    const sortedInnerEntries = [...pieDataMap.entries()].toSorted(([nameA, dataA], [nameB, dataB]) => {
+      const colorComparison = this.normalizeColor(dataA.originalColor).localeCompare(
+        this.normalizeColor(dataB.originalColor),
+      );
       if (colorComparison !== 0) return colorComparison;
       return nameA.localeCompare(nameB);
     });
 
-    const labels = sortedEntries.map(([name]) => name);
-    const data = sortedEntries.map(([, { count }]) => count);
-    const backgroundColor = sortedEntries.map(([, { color }]) => color);
+    const innerLabels = sortedInnerEntries.map(([name]) => name);
+    const innerData = sortedInnerEntries.map(([, { count }]) => count);
+    const innerColors = sortedInnerEntries.map(([, { color }]) => color);
 
-    this.doughnutChartData = {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor,
-        },
-      ],
-    };
+    const MAX_LABELS = 20;
 
-    this.legendItems = sortedEntries.map(([label, { count, color }]) => ({
+    const sortedLabelEntries = this.sortedHighlightedLabels
+      .map((label) => ({
+        name: label.name,
+        color: this.colorService.colorNameToRgba(this.getDotColor(label.color)),
+        originalColor: this.normalizeColor(label.color || ''),
+        count: this.releaseIssues!.filter((issue) => issue.labels?.some((l) => l.id === label.id)).length,
+      }))
+      .filter((entry) => entry.count > 0)
+      .toSorted((a, b) => a.originalColor.localeCompare(b.originalColor) || b.count - a.count)
+      .slice(0, MAX_LABELS);
+
+    const outerLabels = sortedLabelEntries.map((label) => label.name);
+    const outerData = sortedLabelEntries.map((label) => label.count);
+    const outerColors = sortedLabelEntries.map((label) => label.color);
+
+    this.hasHighlightRing = outerLabels.length > 0;
+
+    if (this.hasHighlightRing) {
+      const allLabels = [...outerLabels, ...innerLabels];
+      const paddedLabelData = [...outerData, ...innerLabels.map(() => 0)];
+      const paddedLabelColors = [...outerColors, ...innerLabels.map(() => 'transparent')];
+      const paddedTypeData = [...outerLabels.map(() => 0), ...innerData];
+      const paddedTypeColors = [...outerLabels.map(() => 'transparent'), ...innerColors];
+
+      this.doughnutChartData = {
+        labels: allLabels,
+        datasets: [
+          {
+            data: paddedLabelData,
+            backgroundColor: paddedLabelColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+          {
+            data: paddedTypeData,
+            backgroundColor: paddedTypeColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+        ],
+      };
+    } else {
+      this.doughnutChartData = {
+        labels: innerLabels,
+        datasets: [
+          {
+            data: innerData,
+            backgroundColor: innerColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+        ],
+      };
+    }
+
+    this.legendItems = sortedInnerEntries.map(([label, { count, color }]) => ({
       label,
       color,
       count,
+    }));
+
+    this.highlightLegendItems = outerLabels.map((label, index) => ({
+      label,
+      color: outerColors[index],
+      count: outerData[index],
     }));
   }
 

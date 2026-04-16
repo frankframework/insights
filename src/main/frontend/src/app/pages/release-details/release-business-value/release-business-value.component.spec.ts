@@ -1,21 +1,22 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseBusinessValueComponent } from './release-business-value.component';
-import { BusinessValueService } from '../../../services/business-value.service';
-import { of, throwError } from 'rxjs';
+import { BusinessValue } from '../../../services/business-value.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+
+const mockBusinessValues: BusinessValue[] = [
+  { id: '1', title: 'Value 1', description: 'Description 1' },
+  { id: '2', title: 'Value 2', description: 'Description 2' },
+];
 
 describe('ReleaseBusinessValueComponent', () => {
   let component: ReleaseBusinessValueComponent;
   let fixture: ComponentFixture<ReleaseBusinessValueComponent>;
-  let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
-  let consoleErrorSpy: jasmine.Spy;
 
   beforeEach(async () => {
-    mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
-    consoleErrorSpy = spyOn(globalThis.console, 'error');
-
     await TestBed.configureTestingModule({
       imports: [ReleaseBusinessValueComponent],
-      providers: [{ provide: BusinessValueService, useValue: mockBusinessValueService }],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseBusinessValueComponent);
@@ -47,25 +48,24 @@ describe('ReleaseBusinessValueComponent', () => {
       expect(mockBusinessValueService.getBusinessValuesByReleaseId).toHaveBeenCalledWith('test-release-id');
       expect(component.businessValues()).toEqual(mockBusinessValues);
     });
-
-    it('should not fetch business values when releaseId is undefined', () => {
-      component.releaseId = undefined;
-      component.ngOnChanges({
-        releaseId: {
-          currentValue: undefined,
-          previousValue: undefined,
-          firstChange: true,
-          isFirstChange: () => true,
-        },
-      });
-
-      expect(mockBusinessValueService.getBusinessValuesByReleaseId).not.toHaveBeenCalled();
+  });
+      
+  describe('selectedBusinessValue signal', () => {
+    it('should initialize selectedBusinessValue as null', () => {
+      expect(component.selectedBusinessValue()).toBeNull();
     });
 
-    it('should not fetch business values when releaseId change is not present', () => {
-      component.ngOnChanges({});
+    it('should set selectedBusinessValue when openBusinessValueModal is called', () => {
+      component.openBusinessValueModal(mockBusinessValues[0]);
 
-      expect(mockBusinessValueService.getBusinessValuesByReleaseId).not.toHaveBeenCalled();
+      expect(component.selectedBusinessValue()).toEqual(mockBusinessValues[0]);
+    });
+
+    it('should clear selectedBusinessValue when closeModal is called', () => {
+      component.openBusinessValueModal(mockBusinessValues[0]);
+      component.closeModal();
+
+      expect(component.selectedBusinessValue()).toBeNull();
     });
   });
 
@@ -91,59 +91,59 @@ describe('ReleaseBusinessValueComponent', () => {
       expect(component.isLoadingBusinessValues()).toBe(false);
       expect(component.businessValues()).toEqual(mockBusinessValues);
     });
-
-    it('should set isLoadingBusinessValues to false even when an error occurs', () => {
-      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(throwError(() => new Error('Test error')));
-
-      component.releaseId = 'test-release-id';
-      component.ngOnChanges({
-        releaseId: {
-          currentValue: 'test-release-id',
-          previousValue: undefined,
-          firstChange: true,
-          isFirstChange: () => true,
-        },
-      });
-
-      expect(component.isLoadingBusinessValues()).toBe(false);
-    });
   });
 
-  describe('Error handling', () => {
-    it('should handle errors when fetching business values', () => {
-      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(throwError(() => new Error('Test error')));
+  describe('rendering with businessValues input', () => {
+    it('should render a list item for each business value', () => {
+      component.businessValues = mockBusinessValues;
+      fixture.detectChanges();
 
-      component.releaseId = 'test-release-id';
-      component.ngOnChanges({
-        releaseId: {
-          currentValue: 'test-release-id',
-          previousValue: undefined,
-          firstChange: true,
-          isFirstChange: () => true,
-        },
-      });
+      const items = fixture.nativeElement.querySelectorAll('.business-value-item');
 
-      expect(component.businessValues()).toEqual([]);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load business values:', jasmine.any(Error));
+      expect(items.length).toBe(2);
     });
 
-    it('should return empty array when service returns error', () => {
-      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(
-        throwError(() => new Error('Network error')),
-      );
+    it('should display title and description of each business value', () => {
+      component.businessValues = mockBusinessValues;
+      fixture.detectChanges();
 
-      component.releaseId = 'test-release-id';
-      component.ngOnChanges({
-        releaseId: {
-          currentValue: 'test-release-id',
-          previousValue: undefined,
-          firstChange: true,
-          isFirstChange: () => true,
-        },
-      });
+      const titles = fixture.nativeElement.querySelectorAll('.business-value-title');
 
-      expect(component.businessValues()).toEqual([]);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load business values:', jasmine.any(Error));
+      expect(titles[0].textContent.trim()).toBe('Value 1');
+      expect(titles[1].textContent.trim()).toBe('Value 2');
+
+      const descriptions = fixture.nativeElement.querySelectorAll('.business-value-description');
+
+      expect(descriptions[0].textContent.trim()).toBe('Description 1');
+      expect(descriptions[1].textContent.trim()).toBe('Description 2');
+    });
+
+    it('should show empty message when businessValues is null', () => {
+      component.businessValues = null;
+      fixture.detectChanges();
+
+      const emptyMessage = fixture.nativeElement.querySelector('.no-business-values');
+
+      expect(emptyMessage).toBeTruthy();
+      expect(emptyMessage.textContent.trim()).toBe('No business values found for this release.');
+    });
+
+    it('should show empty message when businessValues is an empty array', () => {
+      component.businessValues = [];
+      fixture.detectChanges();
+
+      const emptyMessage = fixture.nativeElement.querySelector('.no-business-values');
+
+      expect(emptyMessage).toBeTruthy();
+    });
+
+    it('should not render list when businessValues is empty', () => {
+      component.businessValues = [];
+      fixture.detectChanges();
+
+      const list = fixture.nativeElement.querySelector('.business-values-list');
+
+      expect(list).toBeNull();
     });
   });
 
@@ -169,21 +169,39 @@ describe('ReleaseBusinessValueComponent', () => {
       expect(component.businessValues()).toEqual(mockBusinessValues);
       expect(component.businessValues().length).toBe(3);
     });
+  });
 
-    it('should handle empty business values array', () => {
-      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of([]));
+  describe('modal interaction', () => {
+    it('should open modal when clicking a business value item', () => {
+      component.businessValues = mockBusinessValues;
+      fixture.detectChanges();
 
-      component.releaseId = 'test-release-id';
-      component.ngOnChanges({
-        releaseId: {
-          currentValue: 'test-release-id',
-          previousValue: undefined,
-          firstChange: true,
-          isFirstChange: () => true,
-        },
-      });
+      const item = fixture.nativeElement.querySelector('.business-value-item');
+      item.click();
+      fixture.detectChanges();
 
-      expect(component.businessValues()).toEqual([]);
+      expect(component.selectedBusinessValue()).toEqual(mockBusinessValues[0]);
+    });
+
+    it('should show modal when selectedBusinessValue is set', () => {
+      component.businessValues = mockBusinessValues;
+      fixture.detectChanges();
+
+      component.openBusinessValueModal(mockBusinessValues[0]);
+      fixture.detectChanges();
+
+      const modal = fixture.nativeElement.querySelector('app-release-business-value-modal');
+
+      expect(modal).toBeTruthy();
+    });
+
+    it('should hide modal when selectedBusinessValue is null', () => {
+      component.businessValues = mockBusinessValues;
+      fixture.detectChanges();
+
+      const modal = fixture.nativeElement.querySelector('app-release-business-value-modal');
+
+      expect(modal).toBeNull();
     });
   });
 });

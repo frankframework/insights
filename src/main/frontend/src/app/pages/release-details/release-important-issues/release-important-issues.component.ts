@@ -25,8 +25,7 @@ interface IssueTypeOption {
   styleUrl: './release-important-issues.component.scss',
 })
 export class ReleaseImportantIssuesComponent implements OnChanges {
-  @Input() releaseIssues?: Issue[] = [];
-  @Input() releaseId?: string;
+  @Input() releaseIssues: Issue[] | null = null;
 
   public selectedType = signal<string | null | 'all'>('all');
 

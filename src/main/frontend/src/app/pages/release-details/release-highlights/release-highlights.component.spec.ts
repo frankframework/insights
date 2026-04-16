@@ -76,7 +76,6 @@ describe('ReleaseHighlightsComponent', () => {
       const chartData = component.doughnutChartData;
       const dataset = chartData.datasets[0];
 
-      // Sorted by color (blue < red alphabetically), then by name
       expect(chartData.labels).toEqual(['Feature', 'Bug']);
       expect(dataset.data).toEqual([1, 2]);
 
@@ -85,8 +84,8 @@ describe('ReleaseHighlightsComponent', () => {
       expect(colorService.colorNameToRgba).toHaveBeenCalledWith('blue');
     });
 
-    it('should not generate data if releaseIssues is undefined', () => {
-      component.releaseIssues = undefined;
+    it('should not generate data if releaseIssues is null', () => {
+      component.releaseIssues = null;
       component.ngOnChanges();
 
       const chartData = component.doughnutChartData;

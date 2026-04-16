@@ -148,14 +148,16 @@
           <h2>Business Values & Important Issues</h2>
         </div>
         <div class="section-content">
-          <div class="subsection">
-            <h3>Business Values</h3>
-            <app-release-business-value [releaseId]="release()?.id" />
-          </div>
+          @if (businessValues()) {
+            <div class="subsection">
+              <h3>Business Values</h3>
+              <app-release-business-value [businessValues]="businessValues()" />
+            </div>
+          }
           @if (releaseIssues()) {
             <div class="subsection">
               <h3>Important Issues</h3>
-              <app-release-important-issues [releaseIssues]="releaseIssues()!" [releaseId]="release()?.id" />
+              <app-release-important-issues [releaseIssues]="releaseIssues()" />
             </div>
           }
         </div>

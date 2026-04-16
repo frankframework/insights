@@ -5,7 +5,9 @@ import { Injectable, signal, WritableSignal } from '@angular/core';
 })
 export class GraphStateService {
   private static readonly OAUTH_TEMP_KEY: string = 'oauth_temp_extended';
+  private static readonly OAUTH_TEMP_NIGHTLY_KEY: string = 'oauth_temp_nightly';
   private showExtendedSupport: WritableSignal<boolean> = signal<boolean>(false);
+  private showNightlies: WritableSignal<boolean> = signal<boolean>(false);
 
   public getShowExtendedSupport(): boolean {
     return this.showExtendedSupport();
@@ -15,8 +17,33 @@ export class GraphStateService {
     this.showExtendedSupport.set(value);
   }
 
+  public getShowNightlies(): boolean {
+    return this.showNightlies();
+  }
+
+  public setShowNightlies(value: boolean): void {
+    this.showNightlies.set(value);
+  }
+
   public getGraphQueryParams(): Record<string, string> {
-    return this.showExtendedSupport() ? { extended: '' } : {};
+    const parameters: Record<string, string> = {};
+    if (this.showExtendedSupport()) parameters['extended'] = '';
+    if (this.showNightlies()) parameters['nightly'] = '';
+    return parameters;
+  }
+
+  public saveNightlyForOAuth(value: boolean): void {
+    if (value) {
+      localStorage.setItem(GraphStateService.OAUTH_TEMP_NIGHTLY_KEY, 'true');
+    } else {
+      localStorage.removeItem(GraphStateService.OAUTH_TEMP_NIGHTLY_KEY);
+    }
+  }
+
+  public restoreAndClearOAuthNightly(): boolean {
+    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_NIGHTLY_KEY);
+    localStorage.removeItem(GraphStateService.OAUTH_TEMP_NIGHTLY_KEY);
+    return stored === 'true';
   }
 
   /**

@@ -36,8 +36,6 @@ public class LabelService {
     private final ReleaseService releaseService;
     private final List<String> includedLabels;
 
-    private static final int MAX_HIGHLIGHTED_LABELS = 15;
-
     public LabelService(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
             GitHubGraphQLClient gitHubGraphQLClient,
@@ -114,9 +112,9 @@ public class LabelService {
     }
 
     /**
-     * Selects the top highlighted labels based on their occurrence and inclusion criteria.
+     * Selects highlighted labels based on their occurrence and inclusion criteria.
      * @param allLabels A list of all labels from a release, including duplicates.
-     * @return A list of the top highlighted labels, limited to MAX_HIGHLIGHTED_LABELS.
+     * @return A list of highlighted labels sorted by occurrence count.
      */
     private List<Label> selectFinalHighlights(List<Label> allLabels) {
         return calculateLabelCounts(allLabels).entrySet().stream()
@@ -124,7 +122,6 @@ public class LabelService {
                         includedLabels.contains(entry.getKey().getColor().toUpperCase()))
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .map(Map.Entry::getKey)
-                .limit(MAX_HIGHLIGHTED_LABELS)
                 .toList();
     }
 

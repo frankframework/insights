@@ -134,7 +134,7 @@ describe('Graph Rendering and Interaction', () => {
       it('should navigate to release details on node click', () => {
         robustClickNode('[data-cy="node-v9.0.1"]');
 
-        cy.url().should('include', '/graph/RE_kwDOAIg5ds4MnUo_');
+        cy.url().should('include', '/graph/v9.0.1');
         cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
 
         cy.get('app-release-details').contains('v9.0.1');

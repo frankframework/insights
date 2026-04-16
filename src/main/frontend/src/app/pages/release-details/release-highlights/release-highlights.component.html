@@ -1,10 +1,10 @@
 <div class="highlight-pie">
   <div class="highlight-info-container">
     <h4 class="highlight-title">Highlights</h4>
-    @for (highlightedLabel of sortedHighlightedLabels; track highlightedLabel) {
+    @for (item of highlightLegendItems; track item.label) {
       <div class="highlight-label">
-        <span class="highlight-dot" [style.background]="getDotColor(highlightedLabel.color)"></span>
-        <p>{{ highlightedLabel.name }}</p>
+        <span class="highlight-dot" [style.background]="item.color"></span>
+        <p>{{ item.label }}</p>
       </div>
     }
   </div>
@@ -20,12 +20,29 @@
       >
       </canvas>
     </div>
-    <div class="chart-legend">
-      @for (item of legendItems; track item.label) {
-        <div class="legend-item">
-          <span class="legend-color" [style.background]="item.color"></span>
-          <span class="legend-label">{{ item.label }}</span>
-          <span class="legend-count">({{ item.count }})</span>
+    <div class="chart-legends">
+      <div class="chart-legend">
+        @if (hasHighlightRing) {
+          <p class="legend-title">Issue types</p>
+        }
+        @for (item of legendItems; track item.label) {
+          <div class="legend-item">
+            <span class="legend-color" [style.background]="item.color"></span>
+            <span class="legend-label">{{ item.label }}</span>
+            <span class="legend-count">({{ item.count }})</span>
+          </div>
+        }
+      </div>
+      @if (hasHighlightRing) {
+        <div class="chart-legend">
+          <p class="legend-title">Highlights</p>
+          @for (item of highlightLegendItems; track item.label) {
+            <div class="legend-item">
+              <span class="legend-color" [style.background]="item.color"></span>
+              <span class="legend-label">{{ item.label }}</span>
+              <span class="legend-count">({{ item.count }})</span>
+            </div>
+          }
         </div>
       }
     </div>

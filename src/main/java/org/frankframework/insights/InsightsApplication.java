@@ -34,7 +34,8 @@ public class InsightsApplication {
     /**
      * This is a custom router function to accommodate to our single page application that we serve from this spring boot backend as well.
      * This RouterFunction will make sure that we serve `frontend/index.html` whenever the path does not start with `/api/`, is not `/error` and does
-     * not have a path extension (to exclude static resources).
+     * not have a non-numeric path extension (to exclude static resources like JS/CSS/images).
+     * Version strings like "v9.0.0" are intentionally not treated as file extensions since their suffix is numeric.
      *
      * @see <a href="https://github.com/spring-projects/spring-framework/issues/27257">Spring framework issue 27257</a> for more details.
      */
@@ -43,8 +44,9 @@ public class InsightsApplication {
         ClassPathResource index = new ClassPathResource("frontend/index.html");
         RequestPredicate spaPredicate = path("/api/**")
                 .or(path("/error"))
-                .or(pathExtension(extension -> !extension.isBlank()))
+                .or(pathExtension(extension -> !extension.isBlank() && !extension.chars().allMatch(Character::isDigit)))
                 .negate();
+
         return route().resource(spaPredicate, index).build();
     }
 }
