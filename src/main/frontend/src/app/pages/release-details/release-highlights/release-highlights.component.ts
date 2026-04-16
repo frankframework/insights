@@ -119,33 +119,43 @@ export class ReleaseHighlightsComponent implements OnChanges {
 
     this.hasHighlightRing = outerLabels.length > 0;
 
-    const allLabels = [...outerLabels, ...innerLabels];
-    const paddedLabelData = [...outerData, ...innerLabels.map(() => 0)];
-    const paddedLabelColors = [...outerColors, ...innerLabels.map(() => 'transparent')];
-    const paddedTypeData = [...outerLabels.map(() => 0), ...innerData];
-    const paddedTypeColors = [...outerLabels.map(() => 'transparent'), ...innerColors];
+    if (!this.hasHighlightRing) {
+      this.doughnutChartData = {
+        labels: innerLabels,
+        datasets: [
+          {
+            data: innerData,
+            backgroundColor: innerColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+        ],
+      };
+    } else {
+      const allLabels = [...outerLabels, ...innerLabels];
+      const paddedLabelData = [...outerData, ...innerLabels.map(() => 0)];
+      const paddedLabelColors = [...outerColors, ...innerLabels.map(() => 'transparent')];
+      const paddedTypeData = [...outerLabels.map(() => 0), ...innerData];
+      const paddedTypeColors = [...outerLabels.map(() => 'transparent'), ...innerColors];
 
-    this.doughnutChartData = {
-      labels: allLabels,
-      datasets: [
-        {
-          data: paddedLabelData,
-          backgroundColor: paddedLabelColors,
-          borderWidth: 2,
-          borderColor: '#ffffff',
-        },
-        ...(this.hasHighlightRing
-          ? [
-              {
-                data: paddedTypeData,
-                backgroundColor: paddedTypeColors,
-                borderWidth: 2,
-                borderColor: '#ffffff',
-              },
-            ]
-          : []),
-      ],
-    };
+      this.doughnutChartData = {
+        labels: allLabels,
+        datasets: [
+          {
+            data: paddedLabelData,
+            backgroundColor: paddedLabelColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+          {
+            data: paddedTypeData,
+            backgroundColor: paddedTypeColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+          },
+        ],
+      };
+    }
 
     this.legendItems = sortedInnerEntries.map(([label, { count, color }]) => ({
       label,
