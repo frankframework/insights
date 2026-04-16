@@ -29,8 +29,9 @@ describe('ReleaseBusinessValueComponent', () => {
   describe('ngOnChanges', () => {
     it('should fetch business values when releaseId changes', () => {
       const mockBusinessValues = [
-        { id: '1', title: 'Test Value', description: 'Test Description', issueUrl: 'http://test.com', issueNumber: 123 },
+        { id: '1', title: 'Test Value', description: 'Test Description', releaseId: 'release-1', issues: [] },
       ];
+
       mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
 
       component.releaseId = 'test-release-id';
@@ -71,7 +72,7 @@ describe('ReleaseBusinessValueComponent', () => {
   describe('Loading state', () => {
     it('should set isLoadingBusinessValues to true when fetching and false when complete', () => {
       const mockBusinessValues = [
-        { id: '1', title: 'Test Value', description: 'Test Description', issueUrl: 'http://test.com', issueNumber: 123 },
+        { id: '1', title: 'Test Value', description: 'Test Description', releaseId: 'release-1', issues: [] },
       ];
       mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
 
@@ -149,9 +150,9 @@ describe('ReleaseBusinessValueComponent', () => {
   describe('Multiple business values', () => {
     it('should handle multiple business values', () => {
       const mockBusinessValues = [
-        { id: '1', title: 'Value 1', description: 'Description 1', issueUrl: 'http://test1.com', issueNumber: 123 },
-        { id: '2', title: 'Value 2', description: 'Description 2', issueUrl: 'http://test2.com', issueNumber: 456 },
-        { id: '3', title: 'Value 3', description: 'Description 3', issueUrl: 'http://test3.com', issueNumber: 789 },
+        { id: '1', title: 'Value 1', description: 'Description 1', releaseId: 'release-1', issues: [] },
+        { id: '2', title: 'Value 2', description: 'Description 2', releaseId: 'release-2', issues: [] },
+        { id: '3', title: 'Value 3', description: 'Description 3', releaseId: 'release-3', issues: [] },
       ];
       mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
 

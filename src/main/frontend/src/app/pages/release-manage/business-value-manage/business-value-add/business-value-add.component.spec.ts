@@ -18,6 +18,7 @@ describe('BusinessValueAddComponent', () => {
     id: 'bv-123',
     title: 'Test Business Value',
     description: 'Test Description',
+    releaseId: 'bv-release-123',
     issues: [],
   };
 
@@ -35,6 +36,9 @@ describe('BusinessValueAddComponent', () => {
 
     fixture = TestBed.createComponent(BusinessValueAddComponent);
     component = fixture.componentInstance;
+
+    component.releaseId = '';
+
     fixture.detectChanges();
   });
 
@@ -154,7 +158,7 @@ describe('BusinessValueAddComponent', () => {
 
       component.save();
 
-      expect(mockBusinessValueService.createBusinessValue).toHaveBeenCalledWith(maxTitle, 'Valid Description');
+      expect(mockBusinessValueService.createBusinessValue).toHaveBeenCalledWith(maxTitle, 'Valid Description', '');
     });
 
     it('should accept description with exactly 1000 characters', () => {
@@ -165,7 +169,7 @@ describe('BusinessValueAddComponent', () => {
 
       component.save();
 
-      expect(mockBusinessValueService.createBusinessValue).toHaveBeenCalledWith('Valid Title', maxDescription);
+      expect(mockBusinessValueService.createBusinessValue).toHaveBeenCalledWith('Valid Title', maxDescription, '');
     });
   });
 
@@ -182,7 +186,7 @@ describe('BusinessValueAddComponent', () => {
 
       component.save();
 
-      expect(mockBusinessValueService.createBusinessValue).toHaveBeenCalledWith('Test Title', 'Test Description');
+      expect(mockBusinessValueService.createBusinessValue).toHaveBeenCalledWith('Test Title', 'Test Description', '');
     });
 
     it('should set isSaving to true during save', () => {

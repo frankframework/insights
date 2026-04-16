@@ -3,9 +3,9 @@ import { BusinessValuePanelComponent } from './business-value-panel.component';
 import { BusinessValue } from '../../../../services/business-value.service';
 
 const mockBusinessValues: BusinessValue[] = [
-  { id: 'bv-1', title: 'Security Improvements', description: 'desc', issues: [{ id: 'i1' } as any] },
-  { id: 'bv-2', title: 'UX Enhancements', description: 'desc', issues: [] },
-  { id: 'bv-3', title: 'Performance', description: 'desc', issues: [{ id: 'i2' } as any, { id: 'i3' } as any] },
+  { id: 'bv-1', title: 'Security Improvements', description: 'desc', releaseId: 'bv-release-1', issues: [{ id: 'i1' } as any] },
+  { id: 'bv-2', title: 'UX Enhancements', description: 'desc', releaseId: 'bv-release-2', issues: [] },
+  { id: 'bv-3', title: 'Performance', description: 'desc', releaseId: 'bv-release-3', issues: [{ id: 'i2' } as any, { id: 'i3' } as any] },
 ];
 
 function createInputEvent(value: string): Event {

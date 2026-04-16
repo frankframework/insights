@@ -14,6 +14,7 @@ describe('BusinessValueDeleteComponent', () => {
     id: 'bv-123',
     title: 'Business Value to Delete',
     description: 'This will be deleted',
+    releaseId: 'bv-release-123',
     issues: [],
   };
 
@@ -187,6 +188,7 @@ describe('BusinessValueDeleteComponent', () => {
         id: 'bv-456',
         title: 'BV with Issues',
         description: 'Has issues',
+        releaseId: 'bv-release-456',
         issues: [
           { id: 'issue-1', number: 101, title: 'Issue 1', state: 'OPEN', url: '' },
           { id: 'issue-2', number: 102, title: 'Issue 2', state: 'CLOSED', url: '' },

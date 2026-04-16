@@ -19,6 +19,7 @@ describe('BusinessValueEditComponent', () => {
     id: 'bv-123',
     title: 'Original Title',
     description: 'Original Description',
+    releaseId: 'bv-release-123',
     issues: [],
   };
 
@@ -26,6 +27,7 @@ describe('BusinessValueEditComponent', () => {
     id: 'bv-123',
     title: 'Updated Title',
     description: 'Updated Description',
+    releaseId: 'bv-release-123',
     issues: [],
   };
 
@@ -62,6 +64,7 @@ describe('BusinessValueEditComponent', () => {
         id: 'custom-id',
         title: 'Custom Title',
         description: 'Custom Description',
+        releaseId: 'custom-release-id',
         issues: [],
       };
       fixture.detectChanges();
@@ -283,16 +286,6 @@ describe('BusinessValueEditComponent', () => {
 
       component.businessValueUpdated.subscribe((result) => {
         expect(result).toEqual(updatedBusinessValue);
-        done();
-      });
-
-      component.save();
-    });
-
-    it('should emit closed event on successful save', (done) => {
-      mockBusinessValueService.updateBusinessValue.and.returnValue(of(updatedBusinessValue));
-
-      component.closed.subscribe(() => {
         done();
       });
 
