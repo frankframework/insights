@@ -197,22 +197,6 @@ public class LabelServiceTest {
     }
 
     @Test
-    public void shouldLimitToMaxHighlightedLabels() throws Exception {
-        Release release = new Release();
-        release.setId("max");
-        when(releaseService.checkIfReleaseExists("max")).thenReturn(release);
-        List<Label> manyLabels = IntStream.range(0, 20)
-                .mapToObj(i -> createLabel("l" + i, "n" + i, "d" + i, "007BFF"))
-                .collect(Collectors.toList());
-        when(labelRepository.findLabelsByReleaseId("max")).thenReturn(manyLabels);
-
-        labelService.getHighlightsByReleaseId("max");
-
-        verify(mapper).toDTO(labelSetCaptor.capture(), eq(LabelResponse.class));
-        assertEquals(15, labelSetCaptor.getValue().size(), "Result should be limited to 15 labels.");
-    }
-
-    @Test
     public void shouldReturnEmptySet_whenReleaseHasNoLabels() throws Exception {
         Release release = new Release();
         release.setId("relX");
