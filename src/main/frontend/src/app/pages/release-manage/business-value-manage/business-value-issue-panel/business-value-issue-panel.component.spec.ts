@@ -6,6 +6,7 @@ const mockBusinessValue: BusinessValue = {
   id: 'bv-1',
   title: 'Security Improvements',
   description: 'desc',
+  releaseId: 'bv-release-1',
   issues: [{ id: 'issue-1' } as any],
 };
 

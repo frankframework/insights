@@ -8,6 +8,7 @@ export interface BusinessValue {
   id: string;
   title: string;
   description: string;
+  releaseId: string;
   issues?: Issue[];
 }
 
@@ -18,6 +19,11 @@ export interface ConnectIssuesRequest {
 export interface CreateBusinessValueRequest {
   title: string;
   description: string;
+  releaseId: string;
+}
+
+export interface DuplicateBusinessValuesRequest {
+  sourceReleaseId: string;
 }
 
 @Injectable({
@@ -27,10 +33,6 @@ export class BusinessValueService {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly appService: AppService = inject(AppService);
 
-  public getAllBusinessValues(): Observable<BusinessValue[]> {
-    return this.http.get<BusinessValue[]>(this.appService.createAPIUrl('business-value'));
-  }
-
   public getBusinessValuesByReleaseId(releaseId: string): Observable<BusinessValue[]> {
     return this.http.get<BusinessValue[]>(this.appService.createAPIUrl(`business-value/release/${releaseId}`));
   }
@@ -39,14 +41,13 @@ export class BusinessValueService {
     return this.http.get<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`));
   }
 
-  public createBusinessValue(title: string, description: string): Observable<BusinessValue> {
-    const request: CreateBusinessValueRequest = { title, description };
+  public createBusinessValue(title: string, description: string, releaseId: string): Observable<BusinessValue> {
+    const request: CreateBusinessValueRequest = { title, description, releaseId };
     return this.http.post<BusinessValue>(this.appService.createAPIUrl('business-value'), request);
   }
 
   public updateBusinessValue(id: string, title: string, description: string): Observable<BusinessValue> {
-    const request: CreateBusinessValueRequest = { title, description };
-    return this.http.put<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`), request);
+    return this.http.put<BusinessValue>(this.appService.createAPIUrl(`business-value/${id}`), { title, description });
   }
 
   public updateIssueConnections(id: string, issueIds: string[]): Observable<BusinessValue> {
@@ -56,5 +57,13 @@ export class BusinessValueService {
 
   public deleteBusinessValue(id: string): Observable<void> {
     return this.http.delete<void>(this.appService.createAPIUrl(`business-value/${id}`));
+  }
+
+  public duplicateBusinessValues(targetReleaseId: string, sourceReleaseId: string): Observable<BusinessValue[]> {
+    const request: DuplicateBusinessValuesRequest = { sourceReleaseId };
+    return this.http.post<BusinessValue[]>(
+      this.appService.createAPIUrl(`business-value/release/${targetReleaseId}/duplicate`),
+      request,
+    );
   }
 }

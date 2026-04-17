@@ -3,11 +3,12 @@ import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
-import { ReleaseService } from '../../../services/release.service';
+import { Release, ReleaseService } from '../../../services/release.service';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { BusinessValueAddComponent } from './business-value-add/business-value-add.component';
 import { BusinessValueEditComponent } from './business-value-edit/business-value-edit.component';
 import { BusinessValueDeleteComponent } from './business-value-delete/business-value-delete.component';
+import { BusinessValueDuplicateComponent } from './business-value-duplicate/business-value-duplicate.component';
 import { BusinessValuePanelComponent } from './business-value-panel/business-value-panel.component';
 import {
   BusinessValueIssuePanelComponent,
@@ -23,6 +24,7 @@ import { LoaderComponent } from '../../../components/loader/loader.component';
     BusinessValueAddComponent,
     BusinessValueEditComponent,
     BusinessValueDeleteComponent,
+    BusinessValueDuplicateComponent,
     BusinessValuePanelComponent,
     BusinessValueIssuePanelComponent,
     LoaderComponent,
@@ -43,8 +45,13 @@ export class BusinessValueManageComponent implements OnInit {
   public showCreateForm = signal<boolean>(false);
   public showEditForm = signal<boolean>(false);
   public showDeleteForm = signal<boolean>(false);
+  public showDuplicateModal = signal<boolean>(false);
 
   public businessValueToDelete = signal<BusinessValue | null>(null);
+
+  public otherReleases = signal<Release[]>([]);
+  public isDuplicating = signal<boolean>(false);
+  public duplicateErrorMessage = signal<string>('');
 
   // eslint-disable-next-line unicorn/consistent-function-scoping
   public hasChanges = computed(() => this.hasIssueChanges());
@@ -88,6 +95,32 @@ export class BusinessValueManageComponent implements OnInit {
     this.businessValueToDelete.set(null);
   }
 
+  public openDuplicateModal(): void {
+    this.duplicateErrorMessage.set('');
+    this.showDuplicateModal.set(true);
+  }
+
+  public closeDuplicateModal(): void {
+    this.showDuplicateModal.set(false);
+    this.duplicateErrorMessage.set('');
+  }
+
+  public duplicateFromRelease(sourceRelease: Release): void {
+    this.isDuplicating.set(true);
+    this.duplicateErrorMessage.set('');
+
+    this.businessValueService
+      .duplicateBusinessValues(this.releaseId(), sourceRelease.id)
+      .pipe(finalize(() => this.isDuplicating.set(false)))
+      .subscribe({
+        next: (duplicated) => {
+          this.businessValues.update((list) => [...list, ...duplicated]);
+          this.closeDuplicateModal();
+        },
+        error: (error) => this.duplicateErrorMessage.set(error.error?.message || 'Failed to duplicate business values'),
+      });
+  }
+
   public onBusinessValueDeleted(deletedId: string): void {
     this.businessValues.update((list) => list.filter((item) => item.id !== deletedId));
 
@@ -105,7 +138,7 @@ export class BusinessValueManageComponent implements OnInit {
     );
 
     this.selectedBusinessValue.set(updatedBusinessValue);
-    this.toggleEditForm();
+    this.showEditForm.set(false);
   }
 
   public onBusinessValueCreated(businessValue: BusinessValue): void {
@@ -202,12 +235,13 @@ export class BusinessValueManageComponent implements OnInit {
   private fetchData(releaseId: string): void {
     this.isLoading.set(true);
     forkJoin({
-      businessValues: this.businessValueService.getAllBusinessValues().pipe(catchError(() => of([]))),
+      businessValues: this.businessValueService.getBusinessValuesByReleaseId(releaseId).pipe(catchError(() => of([]))),
       issues: this.issueService.getIssuesByReleaseId(releaseId).pipe(catchError(() => of([]))),
       release: this.releaseService.getReleaseById(releaseId).pipe(catchError(() => of(null))),
+      allReleases: this.releaseService.getAllReleases().pipe(catchError(() => of([]))),
     })
       .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe(({ businessValues, issues, release }) => {
+      .subscribe(({ businessValues, issues, release, allReleases }) => {
         this.businessValues.set(businessValues);
         this.allIssues.set(issues ?? []);
 
@@ -217,6 +251,11 @@ export class BusinessValueManageComponent implements OnInit {
         } else {
           this.releaseTitle.set(releaseId);
         }
+
+        const otherReleases = (allReleases as Release[])
+          .filter((r) => r.id !== releaseId)
+          .toSorted((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        this.otherReleases.set(otherReleases);
 
         const issuesWithSelection: IssueWithSelection[] = (issues ?? []).map((issue) => ({
           ...issue,

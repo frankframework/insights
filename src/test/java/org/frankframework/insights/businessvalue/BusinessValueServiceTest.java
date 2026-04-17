@@ -9,6 +9,9 @@ import org.frankframework.insights.issue.Issue;
 import org.frankframework.insights.issue.IssueNotFoundException;
 import org.frankframework.insights.issue.IssueRepository;
 import org.frankframework.insights.issue.IssueResponse;
+import org.frankframework.insights.release.Release;
+import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.frankframework.insights.release.ReleaseRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +29,16 @@ public class BusinessValueServiceTest {
     private IssueRepository issueRepository;
 
     @Mock
+    private ReleaseRepository releaseRepository;
+
+    @Mock
     private Mapper mapper;
 
     @InjectMocks
     private BusinessValueService businessValueService;
 
+    private Release release1;
+    private Release release2;
     private BusinessValue businessValue1;
     private BusinessValue businessValue2;
     private Issue issue1;
@@ -41,16 +49,26 @@ public class BusinessValueServiceTest {
     public void setup() {
         businessValueId = UUID.randomUUID();
 
+        release1 = new Release();
+        release1.setId("release-1");
+        release1.setName("v1.0.0");
+
+        release2 = new Release();
+        release2.setId("release-2");
+        release2.setName("v2.0.0");
+
         businessValue1 = new BusinessValue();
         businessValue1.setId(businessValueId);
         businessValue1.setTitle("Performance");
         businessValue1.setDescription("Performance improvements");
+        businessValue1.setRelease(release1);
         businessValue1.setIssues(new HashSet<>());
 
         businessValue2 = new BusinessValue();
         businessValue2.setId(UUID.randomUUID());
         businessValue2.setTitle("Security");
         businessValue2.setDescription("Security enhancements");
+        businessValue2.setRelease(release1);
         businessValue2.setIssues(new HashSet<>());
 
         issue1 = new Issue();
@@ -73,65 +91,30 @@ public class BusinessValueServiceTest {
         issue2.setSubIssues(Set.of(subIssue1));
     }
 
+    // ---- getBusinessValuesByReleaseId ----
+
     @Test
-    public void getBusinessValuesByReleaseId_returnsBusinessValues() {
-        String releaseId = "rel123";
-        Set<Issue> allIssues = Set.of(issue1);
+    public void getBusinessValuesByReleaseId_returnsBusinessValuesForRelease() {
+        when(businessValueRepository.findByReleaseId("release-1")).thenReturn(List.of(businessValue1, businessValue2));
 
-        when(issueRepository.findIssuesByReleaseId(releaseId)).thenReturn(allIssues);
-        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.of(businessValue1));
-
-        Set<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId(releaseId);
+        List<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId("release-1");
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(issueRepository).findIssuesByReleaseId(releaseId);
-        verify(businessValueRepository).findByTitle("Performance");
+        assertEquals(2, result.size());
+        verify(businessValueRepository).findByReleaseId("release-1");
     }
 
     @Test
-    public void getBusinessValuesByReleaseId_handlesNullBusinessValues() {
-        String releaseId = "rel123";
-        Issue issueWithoutBV = new Issue();
-        issueWithoutBV.setId("issue3");
-        issueWithoutBV.setBusinessValue(null);
-        Set<Issue> allIssues = Set.of(issueWithoutBV);
+    public void getBusinessValuesByReleaseId_returnsEmptyListWhenNoBusinessValues() {
+        when(businessValueRepository.findByReleaseId("release-empty")).thenReturn(Collections.emptyList());
 
-        when(issueRepository.findIssuesByReleaseId(releaseId)).thenReturn(allIssues);
-
-        Set<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId(releaseId);
+        List<BusinessValueResponse> result = businessValueService.getBusinessValuesByReleaseId("release-empty");
 
         assertNotNull(result);
-        assertEquals(0, result.size());
+        assertTrue(result.isEmpty());
     }
 
-    @Test
-    public void createBusinessValue_createsSuccessfully() throws BusinessValueAlreadyExistsException {
-        BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements");
-
-        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.empty());
-        when(mapper.toEntity(request, BusinessValue.class)).thenReturn(businessValue1);
-        when(businessValueRepository.save(businessValue1)).thenReturn(businessValue1);
-
-        BusinessValueResponse result = businessValueService.createBusinessValue(request);
-
-        assertNotNull(result);
-        verify(businessValueRepository).findByTitle("Performance");
-        verify(businessValueRepository).save(businessValue1);
-    }
-
-    @Test
-    public void createBusinessValue_throwsExceptionWhenAlreadyExists() {
-        BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements");
-
-        when(businessValueRepository.findByTitle("Performance")).thenReturn(Optional.of(businessValue1));
-
-        assertThrows(
-                BusinessValueAlreadyExistsException.class, () -> businessValueService.createBusinessValue(request));
-
-        verify(businessValueRepository).findByTitle("Performance");
-        verify(businessValueRepository, never()).save(any());
-    }
+    // ---- getBusinessValueById ----
 
     @Test
     public void getBusinessValueById_returnsBusinessValueWithIssues() throws BusinessValueNotFoundException {
@@ -146,6 +129,7 @@ public class BusinessValueServiceTest {
         assertNotNull(result);
         assertEquals(businessValueId, result.id());
         assertEquals("Performance", result.title());
+        assertEquals("release-1", result.releaseId());
         assertEquals(1, result.issues().size());
         verify(businessValueRepository).findById(businessValueId);
     }
@@ -160,34 +144,83 @@ public class BusinessValueServiceTest {
         verify(businessValueRepository).findById(businessValueId);
     }
 
+    // ---- createBusinessValue ----
+
     @Test
-    public void getAllBusinessValues_returnsAllBusinessValues() {
-        List<BusinessValue> businessValues = List.of(businessValue1, businessValue2);
+    public void createBusinessValue_createsSuccessfully()
+            throws BusinessValueAlreadyExistsException, ReleaseNotFoundException {
+        BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements", "release-1");
 
-        when(businessValueRepository.findAll()).thenReturn(businessValues);
+        when(releaseRepository.findById("release-1")).thenReturn(Optional.of(release1));
+        when(businessValueRepository.findByTitleAndRelease("Performance", release1))
+                .thenReturn(Optional.empty());
+        when(businessValueRepository.save(any(BusinessValue.class))).thenReturn(businessValue1);
 
-        Set<BusinessValueResponse> result = businessValueService.getAllBusinessValues();
+        BusinessValueResponse result = businessValueService.createBusinessValue(request);
 
         assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(businessValueRepository).findAll();
+        assertEquals("Performance", result.title());
+        assertEquals("release-1", result.releaseId());
+        verify(businessValueRepository).save(any(BusinessValue.class));
     }
 
     @Test
-    public void getAllBusinessValues_returnsEmptySetWhenNoneExist() {
-        when(businessValueRepository.findAll()).thenReturn(Collections.emptyList());
+    public void createBusinessValue_throwsExceptionWhenTitleAlreadyExistsInRelease() {
+        BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements", "release-1");
 
-        Set<BusinessValueResponse> result = businessValueService.getAllBusinessValues();
+        when(releaseRepository.findById("release-1")).thenReturn(Optional.of(release1));
+        when(businessValueRepository.findByTitleAndRelease("Performance", release1))
+                .thenReturn(Optional.of(businessValue1));
+
+        assertThrows(
+                BusinessValueAlreadyExistsException.class, () -> businessValueService.createBusinessValue(request));
+
+        verify(businessValueRepository, never()).save(any());
+    }
+
+    @Test
+    public void createBusinessValue_allowsSameTitleInDifferentReleases()
+            throws BusinessValueAlreadyExistsException, ReleaseNotFoundException {
+        BusinessValueRequest request = new BusinessValueRequest("Performance", "Performance improvements", "release-2");
+
+        when(releaseRepository.findById("release-2")).thenReturn(Optional.of(release2));
+        when(businessValueRepository.findByTitleAndRelease("Performance", release2))
+                .thenReturn(Optional.empty());
+
+        BusinessValue bvInRelease2 = new BusinessValue();
+        bvInRelease2.setId(UUID.randomUUID());
+        bvInRelease2.setTitle("Performance");
+        bvInRelease2.setDescription("Performance improvements");
+        bvInRelease2.setRelease(release2);
+        bvInRelease2.setIssues(new HashSet<>());
+
+        when(businessValueRepository.save(any(BusinessValue.class))).thenReturn(bvInRelease2);
+
+        BusinessValueResponse result = businessValueService.createBusinessValue(request);
 
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(businessValueRepository).findAll();
+        assertEquals("Performance", result.title());
+        assertEquals("release-2", result.releaseId());
     }
+
+    @Test
+    public void createBusinessValue_throwsExceptionWhenReleaseNotFound() {
+        BusinessValueRequest request =
+                new BusinessValueRequest("Performance", "Performance improvements", "nonexistent");
+
+        when(releaseRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThrows(ReleaseNotFoundException.class, () -> businessValueService.createBusinessValue(request));
+
+        verify(businessValueRepository, never()).save(any());
+    }
+
+    // ---- updateBusinessValue ----
 
     @Test
     public void updateBusinessValue_updatesSuccessfully()
             throws BusinessValueNotFoundException, BusinessValueAlreadyExistsException {
-        BusinessValueRequest request = new BusinessValueRequest("Performance", "Updated description");
+        UpdateBusinessValueRequest request = new UpdateBusinessValueRequest("Performance", "Updated description");
 
         when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
         when(businessValueRepository.save(businessValue1)).thenReturn(businessValue1);
@@ -196,13 +229,12 @@ public class BusinessValueServiceTest {
 
         assertNotNull(result);
         assertEquals("Updated description", businessValue1.getDescription());
-        verify(businessValueRepository).findById(businessValueId);
         verify(businessValueRepository).save(businessValue1);
     }
 
     @Test
     public void updateBusinessValue_throwsExceptionWhenNotFound() {
-        BusinessValueRequest request = new BusinessValueRequest("Performance", "Updated description");
+        UpdateBusinessValueRequest request = new UpdateBusinessValueRequest("Performance", "Updated description");
 
         when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.empty());
 
@@ -210,70 +242,25 @@ public class BusinessValueServiceTest {
                 BusinessValueNotFoundException.class,
                 () -> businessValueService.updateBusinessValue(businessValueId, request));
 
-        verify(businessValueRepository).findById(businessValueId);
         verify(businessValueRepository, never()).save(any());
     }
 
     @Test
-    public void updateBusinessValue_throwsExceptionWhenNameAlreadyExists() {
-        BusinessValueRequest request = new BusinessValueRequest("Security", "Updated description");
+    public void updateBusinessValue_throwsExceptionWhenTitleAlreadyExistsInSameRelease() {
+        UpdateBusinessValueRequest request = new UpdateBusinessValueRequest("Security", "Updated description");
 
         when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(businessValueRepository.findByTitle("Security")).thenReturn(Optional.of(businessValue2));
+        when(businessValueRepository.findByTitleAndRelease("Security", release1))
+                .thenReturn(Optional.of(businessValue2));
 
         assertThrows(
                 BusinessValueAlreadyExistsException.class,
                 () -> businessValueService.updateBusinessValue(businessValueId, request));
 
-        verify(businessValueRepository).findById(businessValueId);
         verify(businessValueRepository, never()).save(any());
     }
 
-    @Test
-    public void replaceIssueConnections_replacesSuccessfully()
-            throws BusinessValueNotFoundException, IssueNotFoundException {
-        Set<String> newIssueIds = Set.of("issue2");
-        ConnectIssuesRequest request = new ConnectIssuesRequest(newIssueIds);
-
-        Set<Issue> mutableIssues = new HashSet<>();
-        mutableIssues.add(issue1);
-        businessValue1.setIssues(mutableIssues);
-        issue1.setBusinessValue(businessValue1);
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue1")).thenReturn(Optional.of(issue1));
-        when(issueRepository.findById("issue2")).thenReturn(Optional.of(issue2));
-        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> {
-            Set<Issue> issues = inv.getArgument(0);
-            return List.copyOf(issues);
-        });
-
-        BusinessValueResponse result = businessValueService.replaceIssueConnections(businessValueId, request);
-
-        assertNotNull(result);
-        verify(issueRepository, atLeast(2)).saveAll(anySet());
-    }
-
-    @Test
-    public void replaceIssueConnections_handlesEmptyCurrentIssues()
-            throws BusinessValueNotFoundException, IssueNotFoundException {
-        Set<String> newIssueIds = Set.of("issue1");
-        ConnectIssuesRequest request = new ConnectIssuesRequest(newIssueIds);
-
-        businessValue1.setIssues(new HashSet<>());
-
-        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
-        when(issueRepository.findById("issue1")).thenReturn(Optional.of(issue1));
-        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> {
-            Set<Issue> issues = inv.getArgument(0);
-            return List.copyOf(issues);
-        });
-
-        BusinessValueResponse result = businessValueService.replaceIssueConnections(businessValueId, request);
-
-        assertNotNull(result);
-        verify(issueRepository).saveAll(anySet());
-    }
+    // ---- deleteBusinessValue ----
 
     @Test
     public void deleteBusinessValue_deletesSuccessfully() throws BusinessValueNotFoundException {
@@ -281,7 +268,6 @@ public class BusinessValueServiceTest {
 
         businessValueService.deleteBusinessValue(businessValueId);
 
-        verify(businessValueRepository).findById(businessValueId);
         verify(businessValueRepository).delete(businessValue1);
     }
 
@@ -292,7 +278,6 @@ public class BusinessValueServiceTest {
         assertThrows(
                 BusinessValueNotFoundException.class, () -> businessValueService.deleteBusinessValue(businessValueId));
 
-        verify(businessValueRepository).findById(businessValueId);
         verify(businessValueRepository, never()).delete(any());
     }
 
@@ -312,6 +297,52 @@ public class BusinessValueServiceTest {
         assertNull(issue1.getBusinessValue());
     }
 
+    // ---- replaceIssueConnections ----
+
+    @Test
+    public void replaceIssueConnections_disconnectsOldAndConnectsNew()
+            throws BusinessValueNotFoundException, IssueNotFoundException {
+        Set<String> newIssueIds = Set.of("issue2");
+        ConnectIssuesRequest request = new ConnectIssuesRequest(newIssueIds);
+
+        Set<Issue> mutableIssues = new HashSet<>();
+        mutableIssues.add(issue1);
+        businessValue1.setIssues(mutableIssues);
+        issue1.setBusinessValue(businessValue1);
+
+        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
+        when(issueRepository.findById("issue2")).thenReturn(Optional.of(issue2));
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> List.copyOf(inv.getArgument(0)));
+
+        BusinessValueResponse result = businessValueService.replaceIssueConnections(businessValueId, request);
+
+        assertNotNull(result);
+        assertNull(issue1.getBusinessValue());
+        assertEquals(businessValue1, issue2.getBusinessValue());
+        verify(issueRepository, times(2)).saveAll(anySet());
+    }
+
+    @Test
+    public void replaceIssueConnections_connectsExactlyTheProvidedIssues()
+            throws BusinessValueNotFoundException, IssueNotFoundException {
+        Set<String> newIssueIds = Set.of("issue2");
+        ConnectIssuesRequest request = new ConnectIssuesRequest(newIssueIds);
+
+        businessValue1.setIssues(new HashSet<>());
+
+        when(businessValueRepository.findById(businessValueId)).thenReturn(Optional.of(businessValue1));
+        when(issueRepository.findById("issue2")).thenReturn(Optional.of(issue2));
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> List.copyOf(inv.getArgument(0)));
+
+        BusinessValueResponse result = businessValueService.replaceIssueConnections(businessValueId, request);
+
+        assertNotNull(result);
+        assertEquals(businessValue1, issue2.getBusinessValue());
+        // sub-issues of issue2 are NOT auto-connected
+        assertEquals(1, businessValue1.getIssues().size());
+        verify(issueRepository, times(1)).saveAll(anySet());
+    }
+
     @Test
     public void replaceIssueConnections_throwsExceptionWhenIssueNotFound() {
         Set<String> newIssueIds = Set.of("nonexistent");
@@ -325,7 +356,74 @@ public class BusinessValueServiceTest {
         assertThrows(
                 IssueNotFoundException.class,
                 () -> businessValueService.replaceIssueConnections(businessValueId, request));
+    }
 
-        verify(businessValueRepository, atLeastOnce()).findById(businessValueId);
+    // ---- duplicateBusinessValues ----
+
+    @Test
+    public void duplicateBusinessValues_duplicatesAllFromSourceRelease() throws ReleaseNotFoundException {
+        DuplicateBusinessValuesRequest request = new DuplicateBusinessValuesRequest("release-1");
+
+        when(releaseRepository.findById("release-2")).thenReturn(Optional.of(release2));
+        when(businessValueRepository.findByReleaseId("release-1")).thenReturn(List.of(businessValue1, businessValue2));
+        when(businessValueRepository.findByReleaseId("release-2")).thenReturn(Collections.emptyList());
+        when(businessValueRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BusinessValueResponse> result = businessValueService.duplicateBusinessValues("release-2", request);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(businessValueRepository).saveAll(anyList());
+    }
+
+    @Test
+    public void duplicateBusinessValues_skipsExistingTitlesInTargetRelease() throws ReleaseNotFoundException {
+        DuplicateBusinessValuesRequest request = new DuplicateBusinessValuesRequest("release-1");
+
+        BusinessValue existingInTarget = new BusinessValue();
+        existingInTarget.setId(UUID.randomUUID());
+        existingInTarget.setTitle("Performance");
+        existingInTarget.setDescription("Already exists");
+        existingInTarget.setRelease(release2);
+        existingInTarget.setIssues(new HashSet<>());
+
+        when(releaseRepository.findById("release-2")).thenReturn(Optional.of(release2));
+        when(businessValueRepository.findByReleaseId("release-1")).thenReturn(List.of(businessValue1, businessValue2));
+        when(businessValueRepository.findByReleaseId("release-2")).thenReturn(List.of(existingInTarget));
+        when(businessValueRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        List<BusinessValueResponse> result = businessValueService.duplicateBusinessValues("release-2", request);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Security", result.get(0).title());
+    }
+
+    @Test
+    public void duplicateBusinessValues_returnsEmptyWhenSourceHasNoBusinessValues() throws ReleaseNotFoundException {
+        DuplicateBusinessValuesRequest request = new DuplicateBusinessValuesRequest("release-empty");
+
+        when(releaseRepository.findById("release-2")).thenReturn(Optional.of(release2));
+        when(businessValueRepository.findByReleaseId("release-empty")).thenReturn(Collections.emptyList());
+        when(businessValueRepository.findByReleaseId("release-2")).thenReturn(Collections.emptyList());
+        when(businessValueRepository.saveAll(anyList())).thenReturn(Collections.emptyList());
+
+        List<BusinessValueResponse> result = businessValueService.duplicateBusinessValues("release-2", request);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void duplicateBusinessValues_throwsExceptionWhenTargetReleaseNotFound() {
+        DuplicateBusinessValuesRequest request = new DuplicateBusinessValuesRequest("release-1");
+
+        when(releaseRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThrows(
+                ReleaseNotFoundException.class,
+                () -> businessValueService.duplicateBusinessValues("nonexistent", request));
+
+        verify(businessValueRepository, never()).saveAll(anyList());
     }
 }

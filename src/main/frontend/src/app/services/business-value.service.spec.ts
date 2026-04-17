@@ -1,4 +1,4 @@
-﻿import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { BusinessValueService, BusinessValue } from './business-value.service';
@@ -12,6 +12,7 @@ describe('BusinessValueService', () => {
     id: '123',
     title: 'Enhance Performance',
     description: 'Improve app load times',
+    releaseId: 'release-1',
     issues: [],
   };
 
@@ -37,29 +38,14 @@ describe('BusinessValueService', () => {
     expect(service).toBeTruthy();
   });
 
-  describe('getAllBusinessValues', () => {
-    it('should retrieve all business values via GET', () => {
-      const mockResponse: BusinessValue[] = [mockBusinessValue];
-
-      service.getAllBusinessValues().subscribe((response) => {
-        expect(response).toEqual(mockResponse);
-        expect(response.length).toBe(1);
-      });
-
-      const request = httpMock.expectOne('/api/business-value');
-
-      expect(request.request.method).toBe('GET');
-      request.flush(mockResponse);
-    });
-  });
-
   describe('getBusinessValuesByReleaseId', () => {
     it('should retrieve business values for a release via GET', () => {
-      const releaseId = 'REL-2024';
+      const releaseId = 'release-1';
       const mockResponse: BusinessValue[] = [mockBusinessValue];
 
       service.getBusinessValuesByReleaseId(releaseId).subscribe((response) => {
         expect(response).toEqual(mockResponse);
+        expect(response.length).toBe(1);
       });
 
       const request = httpMock.expectOne(`/api/business-value/release/${releaseId}`);
@@ -83,24 +69,25 @@ describe('BusinessValueService', () => {
   });
 
   describe('createBusinessValue', () => {
-    it('should create a business value via POST', () => {
+    it('should create a business value via POST with releaseId', () => {
       const title = 'New Value';
       const description = 'Description';
+      const releaseId = 'release-1';
 
-      service.createBusinessValue(title, description).subscribe((response) => {
+      service.createBusinessValue(title, description, releaseId).subscribe((response) => {
         expect(response).toEqual(mockBusinessValue);
       });
 
       const request = httpMock.expectOne('/api/business-value');
 
       expect(request.request.method).toBe('POST');
-      expect(request.request.body).toEqual({ title, description });
+      expect(request.request.body).toEqual({ title, description, releaseId });
       request.flush(mockBusinessValue);
     });
   });
 
   describe('updateBusinessValue', () => {
-    it('should update a business value via PUT', () => {
+    it('should update a business value via PUT without releaseId', () => {
       const id = '123';
       const title = 'Updated Title';
       const description = 'Updated Description';
@@ -146,6 +133,25 @@ describe('BusinessValueService', () => {
 
       expect(request.request.method).toBe('DELETE');
       request.flush(null);
+    });
+  });
+
+  describe('duplicateBusinessValues', () => {
+    it('should duplicate business values via POST', () => {
+      const targetReleaseId = 'release-2';
+      const sourceReleaseId = 'release-1';
+      const mockResponse: BusinessValue[] = [mockBusinessValue];
+
+      service.duplicateBusinessValues(targetReleaseId, sourceReleaseId).subscribe((response) => {
+        expect(response).toEqual(mockResponse);
+        expect(response.length).toBe(1);
+      });
+
+      const request = httpMock.expectOne(`/api/business-value/release/${targetReleaseId}/duplicate`);
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ sourceReleaseId });
+      request.flush(mockResponse);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -13,6 +13,8 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
   styleUrl: './business-value-add.component.scss',
 })
 export class BusinessValueAddComponent {
+  @Input({ required: true }) releaseId!: string;
+
   @Output() closed = new EventEmitter<void>();
   @Output() businessValueCreated = new EventEmitter<BusinessValue>();
 
@@ -52,7 +54,7 @@ export class BusinessValueAddComponent {
     this.errorMessage.set('');
 
     this.businessValueService
-      .createBusinessValue(nameValue, descriptionValue)
+      .createBusinessValue(nameValue, descriptionValue, this.releaseId)
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (businessValue) => {

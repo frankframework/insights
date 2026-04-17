@@ -14,6 +14,7 @@ export class BusinessValuePanelComponent {
   @Output() createClicked = new EventEmitter<void>();
   @Output() editClicked = new EventEmitter<void>();
   @Output() deleteClicked = new EventEmitter<{ businessValue: BusinessValue; event: Event }>();
+  @Output() duplicateClicked = new EventEmitter<void>();
 
   public businessValues = input.required<BusinessValue[]>();
   public selectedBusinessValue = input<BusinessValue | null>(null);
@@ -52,6 +53,10 @@ export class BusinessValuePanelComponent {
   public onDeleteClick(businessValue: BusinessValue, event: Event): void {
     event.stopPropagation();
     this.deleteClicked.emit({ businessValue, event });
+  }
+
+  public onDuplicateClick(): void {
+    this.duplicateClicked.emit();
   }
 
   private filterBusinessValuesByQuery(bv: BusinessValue, query: string): boolean {

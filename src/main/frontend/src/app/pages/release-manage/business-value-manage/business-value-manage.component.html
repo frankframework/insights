@@ -1,6 +1,10 @@
 <div class="business-value-manage-container">
   @if (showCreateForm()) {
-    <app-business-value-add (closed)="toggleCreateForm()" (businessValueCreated)="onBusinessValueCreated($event)" />
+    <app-business-value-add
+      [releaseId]="releaseId()"
+      (closed)="toggleCreateForm()"
+      (businessValueCreated)="onBusinessValueCreated($event)"
+    />
   }
 
   @if (showEditForm() && selectedBusinessValue()) {
@@ -16,6 +20,17 @@
       [businessValue]="businessValueToDelete()!"
       (closed)="closeDeleteModal()"
       (businessValueDeleted)="onBusinessValueDeleted($event)"
+    />
+  }
+
+  @if (showDuplicateModal()) {
+    <app-business-value-duplicate
+      [targetReleaseTitle]="releaseTitle()"
+      [releases]="otherReleases()"
+      [isDuplicating]="isDuplicating()"
+      [errorMessage]="duplicateErrorMessage()"
+      (closed)="closeDuplicateModal()"
+      (duplicateSelected)="duplicateFromRelease($event)"
     />
   }
 
@@ -40,6 +55,7 @@
         (createClicked)="toggleCreateForm()"
         (editClicked)="toggleEditForm()"
         (deleteClicked)="openDeleteModal($event.businessValue, $event.event)"
+        (duplicateClicked)="openDuplicateModal()"
       />
 
       <app-business-value-issue-panel

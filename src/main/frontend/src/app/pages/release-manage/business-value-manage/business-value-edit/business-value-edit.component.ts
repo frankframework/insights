@@ -88,7 +88,6 @@ export class BusinessValueEditComponent {
       .subscribe({
         next: (businessValue) => {
           this.businessValueUpdated.emit(businessValue);
-          this.close();
         },
         error: (error) => this.errorMessage.set(error.error?.message || 'Failed to update business value'),
       });

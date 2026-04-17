@@ -1,8 +1,7 @@
 package org.frankframework.insights.businessvalue;
 
 import jakarta.validation.Valid;
-import java.util.Optional;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.exception.ApiException;
@@ -14,8 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * REST controller for managing business values.
+ * Business values are release-scoped: each release has its own set of business values.
  * All endpoints require FrankFramework member authentication via OAuth2,
- * except /by-release/{releaseId} which is public.
+ * except /release/{releaseId} (GET) which is public.
  */
 @RestController
 @RequestMapping("/business-value")
@@ -29,18 +29,17 @@ public class BusinessValueController {
     }
 
     /**
-     * Retrieves all business values.
-     * Requires authentication.
+     * Retrieves all business values for a specific release.
+     * This is the primary endpoint for fetching business values — they are release-scoped.
+     * Public endpoint, no authentication required.
      *
-     * @param principal the authenticated user
-     * @return set of all business values
+     * @param releaseId the release ID
+     * @return list of business values for the release
      */
-    @GetMapping
-    public ResponseEntity<Set<BusinessValueResponse>> getAllBusinessValues(
-            @AuthenticationPrincipal OAuth2User principal) {
-        log.info("User {} is fetching all business values", Optional.ofNullable(principal.getAttribute("login")));
-
-        Set<BusinessValueResponse> responses = businessValueService.getAllBusinessValues();
+    @GetMapping("/release/{releaseId}")
+    public ResponseEntity<List<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId) {
+        log.info("Fetching business values for release with id: {}", releaseId);
+        List<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
         return ResponseEntity.ok(responses);
     }
 
@@ -64,23 +63,12 @@ public class BusinessValueController {
     }
 
     /**
-     * Retrieves business values associated with a specific release ID.
-     * @param releaseId the release ID
-     * @return set of business values for the release
-     */
-    @GetMapping("/release/{releaseId}")
-    public ResponseEntity<Set<BusinessValueResponse>> getBusinessValuesByReleaseId(@PathVariable String releaseId) {
-        log.info("Fetching business values for release with id: {}", releaseId);
-        Set<BusinessValueResponse> responses = businessValueService.getBusinessValuesByReleaseId(releaseId);
-        return ResponseEntity.ok(responses);
-    }
-
-    /**
-     * Creates a new business value.
+     * Creates a new business value for a specific release.
+     * Title must be unique within the release.
      * Requires authentication.
      *
-     * @param request the business value request
-     * @param principal the authenticated user (ensures FrankFramework member access)
+     * @param request the business value request (includes releaseId)
+     * @param principal the authenticated user
      * @return the created business value response
      * @throws ApiException if creation fails
      */
@@ -89,16 +77,18 @@ public class BusinessValueController {
             @Valid @RequestBody BusinessValueRequest request, @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info(
-                "User {} is creating a new business value with name: {}",
+                "User {} is creating a new business value '{}' for release {}",
                 principal.getAttribute("login"),
-                request.title());
+                request.title(),
+                request.releaseId());
 
         BusinessValueResponse response = businessValueService.createBusinessValue(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
-     * Updates a business value's details (name and/or description).
+     * Updates a business value's details (title and/or description).
+     * Title must remain unique within the release.
      * Requires authentication.
      *
      * @param id the UUID of the business value
@@ -110,7 +100,7 @@ public class BusinessValueController {
     @PutMapping("/{id}")
     public ResponseEntity<BusinessValueResponse> updateBusinessValue(
             @PathVariable UUID id,
-            @Valid @RequestBody BusinessValueRequest request,
+            @Valid @RequestBody UpdateBusinessValueRequest request,
             @AuthenticationPrincipal OAuth2User principal)
             throws ApiException {
         log.info("User {} is updating business value with id: {}", principal.getAttribute("login"), id);
@@ -119,6 +109,10 @@ public class BusinessValueController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Deletes a business value and disconnects all its issues.
+     * Requires authentication.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBusinessValue(
             @PathVariable UUID id, @AuthenticationPrincipal OAuth2User principal)
@@ -130,8 +124,8 @@ public class BusinessValueController {
 
     /**
      * Updates the issue connections for a business value by replacing them.
-     * This endpoint disconnects all currently connected issues and connects the new ones.
-     * If an issue has sub-issues, all sub-issues are also connected automatically.
+     * Disconnects all currently connected issues and connects the new ones.
+     * Sub-issues of connected parent issues are automatically included.
      * Requires authentication.
      *
      * @param id the UUID of the business value
@@ -153,5 +147,32 @@ public class BusinessValueController {
 
         BusinessValueResponse response = businessValueService.replaceIssueConnections(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Duplicates all business values from a source release into the target release.
+     * Only title and description are copied — no issue connections are carried over.
+     * Business values whose title already exists in the target release are skipped.
+     * Requires authentication.
+     *
+     * @param targetReleaseId the release to copy business values into
+     * @param request contains the sourceReleaseId
+     * @param principal the authenticated user
+     * @return list of newly created business value responses
+     */
+    @PostMapping("/release/{targetReleaseId}/duplicate")
+    public ResponseEntity<List<BusinessValueResponse>> duplicateBusinessValues(
+            @PathVariable String targetReleaseId,
+            @Valid @RequestBody DuplicateBusinessValuesRequest request,
+            @AuthenticationPrincipal OAuth2User principal)
+            throws ApiException {
+        log.info(
+                "User {} is duplicating business values from release {} to release {}",
+                principal.getAttribute("login"),
+                request.sourceReleaseId(),
+                targetReleaseId);
+
+        List<BusinessValueResponse> responses = businessValueService.duplicateBusinessValues(targetReleaseId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 }
