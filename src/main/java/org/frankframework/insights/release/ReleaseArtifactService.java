@@ -3,6 +3,7 @@ package org.frankframework.insights.release;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,7 +52,7 @@ public class ReleaseArtifactService {
         try (InputStream in = new URI(url).toURL().openStream()) {
             Files.copy(in, zipPath, StandardCopyOption.REPLACE_EXISTING);
             log.info("ZIP succesfully downloading to storage: {}", zipPath);
-        } catch (Exception e) {
+        } catch (IOException | URISyntaxException e) {
             try {
                 Files.deleteIfExists(zipPath);
             } catch (IOException ignored) {
@@ -78,6 +79,9 @@ public class ReleaseArtifactService {
                         try {
                             log.info("Deletion of obsolete release artifact: {}", fileName);
                             fileTreeDeleter.deleteTreeRecursively(path);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            log.error("Interrupted while deleting file: {}", fileName, e);
                         } catch (Exception e) {
                             log.error("Could not delete file: {}", fileName, e);
                         }
