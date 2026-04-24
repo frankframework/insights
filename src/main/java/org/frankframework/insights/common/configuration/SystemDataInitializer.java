@@ -70,8 +70,11 @@ public class SystemDataInitializer implements CommandLineRunner {
      * @param args command line arguments
      */
     @Override
-    @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
+        if (!dataFetchEnabled) {
+            log.info("Skipping startup data fetch: data.fetch-enabled=false");
+            return;
+        }
         if (!isJobRunning.compareAndSet(false, true)) {
             log.warn("Startup job skipped: another job is already running");
             return;

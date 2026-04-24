@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.7</version>
+		<version>4.0.5</version>
 		<relativePath/>
 	</parent>
 	<groupId>org.frankframework</groupId>
@@ -47,7 +47,6 @@
 	<properties>
 		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>25</java.version>
-		<jackson.version>2.20.1</jackson.version>
 		<junit.bom.version>6.0.1</junit.bom.version>
 		<lombok.version>1.18.42</lombok.version>
 		<postgresql.version>42.7.8</postgresql.version>
@@ -132,8 +131,11 @@
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-hibernate6</artifactId>
-			<version>${jackson.version}</version>
+			<artifactId>jackson-datatype-hibernate7</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -177,6 +179,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
@@ -211,6 +218,7 @@
 		<dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
+			<version>1.21.4</version>
             <scope>test</scope>
         </dependency>
 	</dependencies>

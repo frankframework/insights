@@ -14,8 +14,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.session.SessionInformation;
@@ -26,7 +26,18 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest
+@SpringBootTest(
+        properties = {
+            "spring.datasource.url=jdbc:h2:mem:security-test-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
+            "spring.datasource.username=sa",
+            "spring.datasource.password=",
+            "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+            "spring.jpa.hibernate.ddl-auto=create-drop",
+            "spring.flyway.enabled=false",
+            "spring.security.oauth2.client.registration.github.client-id=dummy-client-id",
+            "spring.security.oauth2.client.registration.github.client-secret=dummy-client-secret",
+            "server.servlet.session.cookie.http-only=true"
+        })
 @AutoConfigureMockMvc
 @ActiveProfiles("local-seed")
 public class SecurityConfigIntegrationTest {

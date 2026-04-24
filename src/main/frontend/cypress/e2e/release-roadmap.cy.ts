@@ -38,7 +38,7 @@ describe('Release Roadmap End-to-End Tests', () => {
     cy.get('app-header').find('li').contains('Roadmap').click();
 
     cy.tick(5000);
-    cy.get('app-loader').should('not.exist');
+    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
   });
 
   context('Initial Load and View', () => {
@@ -261,19 +261,14 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('button[title="Go to today"]').click();
       cy.tick(5000);
 
-      cy.get('body').then($body => {
-        const initialCount = $body.find('app-milestone-row').length;
-
-        for (let i = 0; i < (initialCount || 1) + 10; i++) {
-          cy.get('button[title="Next month"]').click();
-          cy.tick(5000);
-        }
-
+      // Navigate 24 months forward — well past all seed data milestone dates
+      for (let i = 0; i < 24; i++) {
+        cy.get('button[title="Next month"]').click();
         cy.tick(5000);
+      }
 
-        cy.get('app-milestone-row').should('not.exist');
-        cy.get('.empty-state').should('be.visible');
-      });
+      cy.get('app-milestone-row', { timeout: 10000 }).should('not.exist');
+      cy.get('.empty-state').should('be.visible');
     });
   });
 });

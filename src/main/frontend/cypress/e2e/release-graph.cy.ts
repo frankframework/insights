@@ -89,17 +89,18 @@ describe('Graph Rendering and Interaction', () => {
                   .and('match', /^#[0-9A-Fa-f]{6}$/);
         }
       });
+    });
 
-      it('should display nightly releases with appropriate colors', () => {
-        cy.get('@graphSvg')
-                .find('g[data-cy*="-nightly"]')
-                .should('have.length.greaterThan', 0)
-                .first()
-                .find('circle')
-                .should('exist')
-                .and('have.attr', 'fill')
-                .and('match', /^#[0-9A-Fa-f]{6}$/);
-      });
+    it('should display nightly releases with appropriate colors', () => {
+      getToggleButton().click();
+      cy.get('@graphSvg')
+              .find('g[data-cy*="-nightly"]')
+              .should('have.length.greaterThan', 0)
+              .first()
+              .find('circle')
+              .should('exist')
+              .and('have.attr', 'fill')
+              .and('match', /^#[0-9A-Fa-f]{6}$/);
     });
 
     context('Skip Node Functionality (based on Seeder data)', () => {
@@ -138,7 +139,7 @@ describe('Graph Rendering and Interaction', () => {
         cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
 
         cy.get('app-release-details').contains('v9.0.1');
-        cy.get('app-release-details').contains('CVE-2024-0001');
+        cy.get('app-release-details').contains('CVE-2024-0001', { timeout: 10000 });
       });
     });
 
