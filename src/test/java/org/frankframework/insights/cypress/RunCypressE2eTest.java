@@ -82,7 +82,7 @@ public class RunCypressE2eTest {
     public static void startTestContainer() {
         org.testcontainers.Testcontainers.exposeHostPorts(8080);
 
-        container = new CypressContainer("cypress/included:15.0.0");
+        container = new CypressContainer("cypress/included:15.8.0");
 
         container.withBaseUrl(TEST_CONTAINER_BASE_URL);
         container.withMochawesomeReportsAt(MOCHAWESOME_REPORTS_DIR);

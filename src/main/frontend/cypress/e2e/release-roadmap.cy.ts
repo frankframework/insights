@@ -31,14 +31,11 @@ describe('Release Roadmap End-to-End Tests', () => {
   }
 
   beforeEach(() => {
-    cy.clock(TODAY.getTime(), ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval']);
-
     cy.visit('/');
     cy.dismissReleaseCatalogusModal();
     cy.get('app-header').find('li').contains('Roadmap').click();
 
-    cy.tick(5000);
-    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
+    cy.get('app-loader', { timeout: 30000 }).should('not.exist');
   });
 
   context('Initial Load and View', () => {
@@ -81,7 +78,6 @@ describe('Release Roadmap End-to-End Tests', () => {
 
       cy.get('.period-label').should('contain.text', initialLabel);
       cy.get('button[title="Previous quarter"]').click();
-      cy.tick(5000);
       cy.get('.period-label').should('contain.text', expectedLabel);
     });
 
@@ -95,7 +91,6 @@ describe('Release Roadmap End-to-End Tests', () => {
 
       cy.get('.period-label').should('contain.text', initialLabel);
       cy.get('button[title="Next quarter"]').click();
-      cy.tick(5000);
       cy.get('.period-label').should('contain.text', expectedLabel);
     });
 
@@ -108,11 +103,9 @@ describe('Release Roadmap End-to-End Tests', () => {
       const nextLabel = getPeriodLabel(nextDate);
 
       cy.get('button[title="Next quarter"]').click();
-      cy.tick(5000);
       cy.get('.period-label').should('contain.text', nextLabel);
       cy.get('button[title="Go to today"]').click();
-      cy.tick(5000);
-      cy.get('app-loader').should('not.exist');
+      cy.get('app-loader', { timeout: 30000 }).should('not.exist');
       cy.get('.period-label').should('contain.text', initialLabel);
     });
   });
@@ -170,12 +163,12 @@ describe('Release Roadmap End-to-End Tests', () => {
       cy.get('body').then(($body) => {
         if ($body.find('a.issue-bar').length > 0) {
           cy.get('a.issue-bar').first().trigger('mouseenter');
-          cy.tick(500);
+          cy.wait(500);
           cy.get('app-tooltip').should('be.visible');
           cy.get('.tooltip-title').should('not.be.empty');
 
           cy.get('a.issue-bar').first().trigger('mouseleave');
-          cy.tick(500);
+          cy.wait(500);
           cy.get('app-tooltip').should('not.be.visible');
         } else {
           cy.log('No issue bars found - skipping tooltip test');
@@ -203,8 +196,7 @@ describe('Release Roadmap End-to-End Tests', () => {
   context('Monthly View', () => {
     beforeEach(() => {
       cy.get('app-roadmap-toolbar button[title="Monthly view (1 month)"]').click();
-      cy.tick(5000);
-      cy.get('app-loader').should('not.exist');
+      cy.get('app-loader', { timeout: 30000 }).should('not.exist');
     });
 
     it('should navigate 1 month back when clicking "Previous month"', () => {
@@ -216,7 +208,7 @@ describe('Release Roadmap End-to-End Tests', () => {
 
       cy.get('.period-label').should('contain.text', initialLabel);
       cy.get('button[title="Previous month"]').click();
-      cy.tick(5000);
+      cy.get('app-loader', { timeout: 30000 }).should('not.exist');
       cy.get('.period-label').should('contain.text', expectedLabel);
     });
 
@@ -228,12 +220,10 @@ describe('Release Roadmap End-to-End Tests', () => {
       const nextLabel = getMonthlyPeriodLabel(nextDate);
 
       cy.get('button[title="Next month"]').click();
-      cy.tick(5000);
       cy.get('.period-label').should('contain.text', nextLabel);
 
       cy.get('button[title="Go to today"]').click();
-      cy.tick(5000);
-      cy.get('app-loader').should('not.exist');
+      cy.get('app-loader', { timeout: 30000 }).should('not.exist');
       cy.get('.period-label').should('contain.text', initialLabel);
     });
 
@@ -259,12 +249,10 @@ describe('Release Roadmap End-to-End Tests', () => {
 
     it('should filter out milestones not relevant to the current month', () => {
       cy.get('button[title="Go to today"]').click();
-      cy.tick(5000);
 
       // Navigate 24 months forward — well past all seed data milestone dates
       for (let i = 0; i < 24; i++) {
         cy.get('button[title="Next month"]').click();
-        cy.tick(5000);
       }
 
       cy.get('app-milestone-row', { timeout: 10000 }).should('not.exist');

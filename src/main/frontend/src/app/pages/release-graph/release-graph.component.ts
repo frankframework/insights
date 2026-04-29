@@ -841,14 +841,12 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  private waitForSvgReady(callback: () => void): void {
-    requestAnimationFrame(() => {
-      if (this.svgElement?.nativeElement?.clientWidth > 0) {
-        callback();
-      } else {
-        this.waitForSvgReady(callback);
-      }
-    });
+  private waitForSvgReady(callback: () => void, attempts = 0): void {
+    if (this.svgElement?.nativeElement?.clientWidth > 0) {
+      callback();
+    } else if (attempts < 100) {
+      setTimeout(() => this.waitForSvgReady(callback, attempts + 1), 50);
+    }
   }
 
   private attachNonPassiveEventListeners(): void {
