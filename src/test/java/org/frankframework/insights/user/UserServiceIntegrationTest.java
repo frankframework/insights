@@ -43,7 +43,7 @@ import org.springframework.web.client.RestTemplate;
  * - Edge cases and boundary conditions
  */
 @SpringBootTest
-@ActiveProfiles("local-seed")
+@ActiveProfiles("test")
 public class UserServiceIntegrationTest {
 
     @Autowired
