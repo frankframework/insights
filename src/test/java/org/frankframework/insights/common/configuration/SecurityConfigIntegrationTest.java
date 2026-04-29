@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles("local-seed")
 public class SecurityConfigIntegrationTest {
 
     @Autowired
