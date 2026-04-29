@@ -139,7 +139,7 @@ describe('Graph Rendering and Interaction', () => {
         cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
 
         cy.get('app-release-details').contains('v9.0.1');
-        cy.get('app-release-details').contains('CVE-2025-66516', { timeout: 10000 });
+        cy.get('app-release-details').contains('CVE-2024-0001', { timeout: 10000 });
       });
     });
 

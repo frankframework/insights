@@ -26,18 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest(
-        properties = {
-            "spring.datasource.url=jdbc:h2:mem:security-test-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-            "spring.datasource.username=sa",
-            "spring.datasource.password=",
-            "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-            "spring.jpa.hibernate.ddl-auto=create-drop",
-            "spring.flyway.enabled=false",
-            "spring.security.oauth2.client.registration.github.client-id=dummy-client-id",
-            "spring.security.oauth2.client.registration.github.client-secret=dummy-client-secret",
-            "server.servlet.session.cookie.http-only=true"
-        })
+@SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("local-seed")
 public class SecurityConfigIntegrationTest {

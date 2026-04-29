@@ -250,7 +250,6 @@ describe('Release Roadmap End-to-End Tests', () => {
     it('should filter out milestones not relevant to the current month', () => {
       cy.get('button[title="Go to today"]').click();
 
-      // Navigate 24 months forward — well past all seed data milestone dates
       for (let i = 0; i < 24; i++) {
         cy.get('button[title="Next month"]').click();
       }

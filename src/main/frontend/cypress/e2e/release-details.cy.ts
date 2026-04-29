@@ -46,8 +46,6 @@ describe('Release Details Page Journey', () => {
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
-    // The "Important Issues" tab only appears when business values are loaded.
-    // If they are absent the issues component is already shown directly.
     cy.get('body').then(($body) => {
       if ($body.find('button.view-tab').length > 0) {
         cy.contains('button.view-tab', 'Important Issues', { timeout: 5000 }).click({ force: true });
