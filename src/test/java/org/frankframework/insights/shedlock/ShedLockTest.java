@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sql.DataSource;
 import net.javacrumbs.shedlock.core.LockAssert;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
@@ -139,24 +138,6 @@ public class ShedLockTest {
                 assertInstanceOf(InterruptedException.class, e.getCause());
             }
         }
-    }
-
-    @Test
-    public void should_ReturnTrue_when_RefreshTriggeredWithNoRunningJob() throws Exception {
-        boolean completed = systemDataInitializer.triggerRefresh();
-        assertTrue(completed, "Should return true when no job is currently running");
-    }
-
-    @Test
-    public void should_ReturnFalse_when_JobAlreadyRunning() throws Exception {
-        AtomicBoolean isJobRunning = new AtomicBoolean(true);
-        java.lang.reflect.Field field = SystemDataInitializer.class.getDeclaredField("isJobRunning");
-        field.setAccessible(true);
-        field.set(systemDataInitializer, isJobRunning);
-
-        boolean completed = systemDataInitializer.triggerRefresh();
-
-        assertFalse(completed, "Should return false when a job is already running");
     }
 
     @Test

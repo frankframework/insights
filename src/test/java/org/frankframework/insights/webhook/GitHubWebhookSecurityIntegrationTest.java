@@ -18,18 +18,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-/**
- * Integration tests that verify the webhook endpoint's security configuration
- * through the full Spring Security filter chain.
- *
- * <p>These tests complement {@link GitHubWebhookControllerTest} (unit-level) by exercising the
- * real {@link org.frankframework.insights.common.configuration.SecurityConfig}:
- * <ul>
- *   <li>The endpoint is reachable without a CSRF token (CSRF is disabled for {@code /api/webhooks/**})</li>
- *   <li>The endpoint is reachable without an OAuth2 session (it is {@code permitAll})</li>
- *   <li>An invalid signature is still rejected by the application (not by Spring Security)</li>
- * </ul>
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("local-seed")
@@ -37,8 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 public class GitHubWebhookSecurityIntegrationTest {
 
     private static final String TEST_SECRET = "test-secret";
-    private static final String RELEASE_PUBLISHED_PAYLOAD =
-            "{\"action\":\"published\",\"release\":{\"tag_name\":\"v9.0\"}}";
+    private static final String RELEASE_PUBLISHED_PAYLOAD = "{\"action\":\"published\"}";
 
     @Autowired
     private MockMvc mockMvc;

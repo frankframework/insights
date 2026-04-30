@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/webhooks")
 public class GitHubWebhookController {
-
     private static final String HMAC_ALGORITHM = "HmacSHA256";
     private static final String SIGNATURE_PREFIX = "sha256=";
     private static final String EVENT_RELEASE = "release";
@@ -41,7 +40,7 @@ public class GitHubWebhookController {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody byte[] body) {
 
-        if (!StringUtils.hasText(webhookSecret)) {
+        if (isWebhookSecretMissing()) {
             log.error("Webhook Error: insights.webhook.secret is empty in application properties.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Server missing webhook secret configuration");
@@ -54,7 +53,7 @@ public class GitHubWebhookController {
 
         log.debug("Received verified GitHub event: {}", event);
 
-        if (!EVENT_RELEASE.equals(event)) {
+        if (isIgnoredEvent(event)) {
             return ResponseEntity.ok("Event ignored: " + event);
         }
 
@@ -100,5 +99,13 @@ public class GitHubWebhookController {
             log.error("Signature calculation failed", e);
             return false;
         }
+    }
+
+    private boolean isWebhookSecretMissing() {
+        return !StringUtils.hasText(webhookSecret);
+    }
+
+    private boolean isIgnoredEvent(String event) {
+        return !EVENT_RELEASE.equals(event);
     }
 }

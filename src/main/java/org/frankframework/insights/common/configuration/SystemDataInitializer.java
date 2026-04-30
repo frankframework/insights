@@ -25,8 +25,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Configuration
 @Slf4j
 public class SystemDataInitializer implements CommandLineRunner {
-    private final AtomicBoolean isJobRunning = new AtomicBoolean(false);
-    private final AtomicBoolean pendingRefresh = new AtomicBoolean(false);
+    protected final AtomicBoolean isJobRunning = new AtomicBoolean(false);
+    protected final AtomicBoolean pendingRefresh = new AtomicBoolean(false);
 
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
@@ -41,7 +41,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final VulnerabilityService vulnerabilityService;
 
     @Value("${data.fetch-enabled}")
-    private boolean dataFetchEnabled;
+    protected boolean dataFetchEnabled;
 
     public SystemDataInitializer(
             GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
@@ -111,7 +111,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Schedules an async data refresh triggered by a GitHub release webhook.
+     * Schedules a data refresh triggered by a GitHub release webhook.
      * If a job is already running the refresh is queued and will execute immediately after.
      */
     @Async
@@ -130,8 +130,8 @@ public class SystemDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Runs the webhook-triggered refresh work: statistics, conditional full inject if new releases
-     * are detected, and an unscanned vulnerability scan.
+     * Runs the webhook-triggered refresh. inject data if new releases
+     * are detected.
      */
     private void doWebhookRefresh(String context) {
         if (!dataFetchEnabled) {
@@ -230,7 +230,7 @@ public class SystemDataInitializer implements CommandLineRunner {
 
     /**
      * Injects all GitHub data into the database. Shared by the daily job and the API-triggered refresh.
-     * Does NOT scan vulnerabilities — callers decide which scan strategy to use.
+     * Does not scan vulnerabilities
      */
     private void injectAllGitHubData() throws Exception {
         log.info("Start injecting all GitHub data");

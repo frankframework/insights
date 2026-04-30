@@ -3,8 +3,6 @@ package org.frankframework.insights.common.configuration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.lang.reflect.Field;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
@@ -76,6 +74,8 @@ public class SystemDataInitializerTest {
                 releaseService,
                 releaseArtifactService,
                 vulnerabilityService);
+
+        systemDataInitializer.dataFetchEnabled = true;
     }
 
     @Test
@@ -188,7 +188,6 @@ public class SystemDataInitializerTest {
         reset(labelService);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(null);
-        // Lock must have been released — a second call should proceed
         systemDataInitializer.triggerRefresh();
         verify(vulnerabilityService, times(2)).scanUnscannedReleasesOnly();
     }
@@ -207,18 +206,86 @@ public class SystemDataInitializerTest {
         reset(vulnerabilityService);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(null);
-        // Lock must have been released — a second call should proceed
         systemDataInitializer.triggerRefresh();
         verify(vulnerabilityService).scanUnscannedReleasesOnly();
+    }
+
+    @Test
+    public void triggerRefresh_whenJobAlreadyRunning_setsPendingRefreshFlag() {
+        setJobRunning(true);
+
+        systemDataInitializer.triggerRefresh();
+
+        assertTrue(systemDataInitializer.pendingRefresh.get());
+    }
+
+    @Test
+    public void triggerRefresh_whenCompleted_leavesPendingRefreshFalse() throws Exception {
+        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsWithReleaseCount(3));
+
+        systemDataInitializer.triggerRefresh();
+
+        assertFalse(systemDataInitializer.pendingRefresh.get());
+    }
+
+    @Test
+    public void run_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() throws Exception {
+        systemDataInitializer.pendingRefresh.set(true);
+        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsWithReleaseCount(3));
+
+        systemDataInitializer.run();
+
+        assertFalse(systemDataInitializer.pendingRefresh.get());
+    }
+
+    @Test
+    public void dailyJob_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() throws Exception {
+        systemDataInitializer.pendingRefresh.set(true);
+        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
+        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
+                .thenReturn(statsWithReleaseCount(3));
+
+        systemDataInitializer.dailyJob();
+
+        assertFalse(systemDataInitializer.pendingRefresh.get());
+    }
+
+    @Test
+    public void run_whenJobAlreadyRunning_skipsAllWork() {
+        setJobRunning(true);
+
+        systemDataInitializer.run();
+
+        verifyNoInteractions(gitHubRepositoryStatisticsService, labelService, vulnerabilityService);
+    }
+
+    @Test
+    public void dailyJob_whenJobAlreadyRunning_skipsAllWork() {
+        setJobRunning(true);
+
+        systemDataInitializer.dailyJob();
+
+        verifyNoInteractions(gitHubRepositoryStatisticsService, labelService, vulnerabilityService);
+    }
+
+    @Test
+    public void triggerRefresh_whenDataFetchDisabled_skipsAllWork() {
+        systemDataInitializer.dataFetchEnabled = false;
+
+        systemDataInitializer.triggerRefresh();
+
+        verifyNoInteractions(releaseService, labelService, vulnerabilityService);
     }
 
     private static GitHubRepositoryStatisticsDTO statsWithReleaseCount(int count) {
         return new GitHubRepositoryStatisticsDTO(null, null, null, new GitHubTotalCountDTO(count));
     }
 
-    private void setJobRunning(boolean value) throws Exception {
-        Field field = SystemDataInitializer.class.getDeclaredField("isJobRunning");
-        field.setAccessible(true);
-        ((AtomicBoolean) field.get(systemDataInitializer)).set(value);
+    private void setJobRunning(boolean value) {
+        systemDataInitializer.isJobRunning.set(value);
     }
 }
