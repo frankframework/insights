@@ -5,6 +5,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.frankframework.insights.businessvalue.BusinessValue;
 import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
@@ -87,6 +88,8 @@ public class IssueService {
                     issueDTOS.stream().collect(Collectors.toMap(IssueDTO::id, Function.identity()));
 
             Set<Issue> issuesWithMilestones = assignTypesAndMilestonesToIssues(issues, issueDTOMap);
+
+            restoreBusinessValueLinks(issuesWithMilestones);
 
             Set<Issue> savedIssues = saveIssues(issuesWithMilestones);
 
@@ -234,6 +237,27 @@ public class IssueService {
         }
 
         return Collections.emptyList();
+    }
+
+    /**
+     * Re-applies existing businessValue links to freshly-mapped issues before saving.
+     * This method looks up which issues already have a businessValue in the database
+     * and carries those links over.
+     */
+    private void restoreBusinessValueLinks(Set<Issue> issues) {
+        Set<String> ids = issues.stream().map(Issue::getId).collect(Collectors.toSet());
+        Map<String, BusinessValue> existingLinks = issueRepository.findAllByIdInAndBusinessValueIsNotNull(ids).stream()
+                .collect(Collectors.toMap(Issue::getId, Issue::getBusinessValue));
+
+        if (existingLinks.isEmpty()) {
+            return;
+        }
+
+        issues.stream()
+                .filter(issue -> existingLinks.containsKey(issue.getId()))
+                .forEach(issue -> issue.setBusinessValue(existingLinks.get(issue.getId())));
+
+        log.info("Restored {} business value link(s) on re-injected issues", existingLinks.size());
     }
 
     /**

@@ -44,7 +44,8 @@ public class InsightsApplication {
         ClassPathResource index = new ClassPathResource("frontend/index.html");
         RequestPredicate spaPredicate = path("/api/**")
                 .or(path("/error"))
-                .or(pathExtension(extension -> !extension.isBlank() && !extension.chars().allMatch(Character::isDigit)))
+                .or(pathExtension(
+                        extension -> !extension.isBlank() && !extension.chars().allMatch(Character::isDigit)))
                 .negate();
 
         return route().resource(spaPredicate, index).build();
