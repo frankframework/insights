@@ -11,13 +11,35 @@
         }
       </div>
       <div class="header-details">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          [href]="'https://github.com/frankframework/frankframework/releases/tag/' + release.tagName"
-        >
-          {{ release.name }}
-        </a>
+        <div class="version-nav">
+          @if (previousRelease()) {
+            <button
+              class="version-nav-btn"
+              [title]="'Go to ' + previousRelease()!.name"
+              (click)="navigateToRelease(previousRelease())"
+            >
+              {{ previousRelease()!.name }}
+            </button>
+            <span class="version-sep">&lt;</span>
+          }
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            [href]="'https://github.com/frankframework/frankframework/releases/tag/' + release.tagName"
+          >
+            {{ release.name }}
+          </a>
+          @if (nextRelease()) {
+            <span class="version-sep">&gt;</span>
+            <button
+              class="version-nav-btn"
+              [title]="'Go to ' + nextRelease()!.name"
+              (click)="navigateToRelease(nextRelease())"
+            >
+              {{ nextRelease()!.name }}
+            </button>
+          }
+        </div>
         <span>{{ release.publishedAt | date: 'longDate' }}</span>
       </div>
     </header>
@@ -28,7 +50,6 @@
           @if (highlightedLabels === null && releaseIssues === null && !businessValues) {
             <div class="no-new-features">
               <p>No new features found towards previous release.</p>
-              <p>Please try again later.</p>
             </div>
           } @else {
             @if (highlightedLabels) {
