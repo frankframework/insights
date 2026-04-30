@@ -3,9 +3,9 @@
   tabindex="0"
   role="button"
   aria-label="Close modal"
-  (click)="close()"
-  (keydown.enter)="close()"
-  (keydown.space)="close()"
+  (click)="closeOnBackdropClick && close()"
+  (keydown.enter)="closeOnBackdropClick && close()"
+  (keydown.space)="closeOnBackdropClick && close()"
 >
   <div
     #modalContent
