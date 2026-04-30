@@ -16,10 +16,11 @@ import org.frankframework.insights.pullrequest.PullRequestService;
 import org.frankframework.insights.release.ReleaseArtifactService;
 import org.frankframework.insights.release.ReleaseService;
 import org.frankframework.insights.vulnerability.VulnerabilityService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
@@ -39,6 +40,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final ReleaseService releaseService;
     private final ReleaseArtifactService releaseArtifactService;
     private final VulnerabilityService vulnerabilityService;
+    private final TaskExecutor taskExecutor;
 
     @Value("${data.fetch-enabled}")
     protected boolean dataFetchEnabled;
@@ -54,7 +56,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             PullRequestService pullRequestService,
             ReleaseService releaseService,
             ReleaseArtifactService releaseArtifactService,
-            VulnerabilityService vulnerabilityService) {
+            VulnerabilityService vulnerabilityService,
+            @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelService = labelService;
         this.milestoneService = milestoneService;
@@ -66,6 +69,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.releaseService = releaseService;
         this.releaseArtifactService = releaseArtifactService;
         this.vulnerabilityService = vulnerabilityService;
+        this.taskExecutor = taskExecutor;
     }
 
     /**
@@ -114,19 +118,20 @@ public class SystemDataInitializer implements CommandLineRunner {
      * Schedules a data refresh triggered by a GitHub release webhook.
      * If a job is already running the refresh is queued and will execute immediately after.
      */
-    @Async
     public void triggerRefresh() {
-        if (!isJobRunning.compareAndSet(false, true)) {
-            log.info("Refresh requested but a job is already running; queuing for after current job");
-            pendingRefresh.set(true);
-            return;
-        }
-        try {
-            doWebhookRefresh("webhook trigger");
-        } finally {
-            isJobRunning.set(false);
-            drainPendingRefresh();
-        }
+        taskExecutor.execute(() -> {
+            if (!isJobRunning.compareAndSet(false, true)) {
+                log.info("Refresh requested but a job is already running; queuing for after current job");
+                pendingRefresh.set(true);
+                return;
+            }
+            try {
+                doWebhookRefresh("webhook trigger");
+            } finally {
+                isJobRunning.set(false);
+                drainPendingRefresh();
+            }
+        });
     }
 
     /**
@@ -140,30 +145,30 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
         log.info("Webhook-triggered data refresh started ({})", context);
 
-		scanForDataInjection(context);
+        scanForDataInjection(context);
         scanVulnerabilitiesForNewReleases();
 
         log.info("Webhook-triggered data refresh completed ({})", context);
     }
 
-	private void scanForDataInjection(String context) {
-		try {
-			fetchGitHubStatistics();
-			if (hasNewReleasesOnGitHub()) {
-				injectAllGitHubData();
-			}
-		} catch (Exception e) {
-			log.error("Webhook-triggered data inject failed ({})", context, e);
-		}
-	}
+    private void scanForDataInjection(String context) {
+        try {
+            fetchGitHubStatistics();
+            if (hasNewReleasesOnGitHub()) {
+                injectAllGitHubData();
+            }
+        } catch (Exception e) {
+            log.error("Webhook-triggered data inject failed ({})", context, e);
+        }
+    }
 
-	private void scanVulnerabilitiesForNewReleases() {
-		try {
-			vulnerabilityService.scanUnscannedReleasesOnly();
-		} catch (Exception e) {
-			log.error("Error scanning vulnerabilities for new releases", e);
-		}
-	}
+    private void scanVulnerabilitiesForNewReleases() {
+        try {
+            vulnerabilityService.scanUnscannedReleasesOnly();
+        } catch (Exception e) {
+            log.error("Error scanning vulnerabilities for new releases", e);
+        }
+    }
 
     /**
      * Compares the release count stored in the database against the count reported by GitHub.

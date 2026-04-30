@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("production")
@@ -73,6 +74,9 @@ public class ShedLockProductionTest {
     @Mock
     private VulnerabilityService vulnerabilityService;
 
+    @Mock
+    private TaskExecutor taskExecutor;
+
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
@@ -88,7 +92,8 @@ public class ShedLockProductionTest {
                 pullRequestService,
                 releaseService,
                 releaseArtifactService,
-                vulnerabilityService);
+                vulnerabilityService,
+                taskExecutor);
 
         Field field = SystemDataInitializer.class.getDeclaredField("dataFetchEnabled");
         field.setAccessible(true);

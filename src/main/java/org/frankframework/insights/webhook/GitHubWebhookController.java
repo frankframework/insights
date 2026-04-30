@@ -77,13 +77,13 @@ public class GitHubWebhookController {
         return ResponseEntity.accepted().body("Refresh scheduled");
     }
 
-	private void scheduleRefresh() {
-		try {
-			systemDataInitializer.triggerRefresh();
-		} catch (Exception e) {
-			log.error("Failed to schedule data refresh", e);
-		}
-	}
+    private void scheduleRefresh() {
+        try {
+            systemDataInitializer.triggerRefresh();
+        } catch (Exception e) {
+            log.error("Failed to schedule data refresh", e);
+        }
+    }
 
     private String parseAction(byte[] body) throws Exception {
         return objectMapper.readTree(body).path("action").asText();

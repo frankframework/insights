@@ -31,8 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 public class GitHubWebhookControllerTest {
 
     private static final String TEST_SECRET = "test-secret";
-    private static final String RELEASE_PUBLISHED_PAYLOAD =
-            "{\"action\":\"published\"}";
+    private static final String RELEASE_PUBLISHED_PAYLOAD = "{\"action\":\"published\"}";
 
     @Autowired
     private MockMvc mockMvc;

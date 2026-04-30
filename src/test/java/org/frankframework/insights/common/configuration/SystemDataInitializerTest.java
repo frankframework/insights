@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 
 @ExtendWith(MockitoExtension.class)
 public class SystemDataInitializerTest {
@@ -58,6 +60,8 @@ public class SystemDataInitializerTest {
     @Mock
     private VulnerabilityService vulnerabilityService;
 
+    private final TaskExecutor taskExecutor = new SyncTaskExecutor();
+
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
@@ -73,13 +77,14 @@ public class SystemDataInitializerTest {
                 pullRequestService,
                 releaseService,
                 releaseArtifactService,
-                vulnerabilityService);
+                vulnerabilityService,
+                taskExecutor);
 
         systemDataInitializer.dataFetchEnabled = true;
     }
 
     @Test
-    public void triggerRefresh_whenNoJobRunning_startsWork() throws Exception {
+    public void triggerRefresh_whenNoJobRunning_startsWork() {
         when(releaseService.getStoredReleaseCount()).thenReturn(0L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(null);
@@ -90,7 +95,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void triggerRefresh_whenJobAlreadyRunning_queuesRefreshWithoutRunningImmediately() throws Exception {
+    public void triggerRefresh_whenJobAlreadyRunning_queuesRefreshWithoutRunningImmediately() {
         setJobRunning(true);
 
         systemDataInitializer.triggerRefresh();
@@ -153,7 +158,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void triggerRefresh_alwaysScansUnscannedReleases_evenWhenInjectSkipped() throws Exception {
+    public void triggerRefresh_alwaysScansUnscannedReleases_evenWhenInjectSkipped() {
         when(releaseService.getStoredReleaseCount()).thenReturn(3L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(statsWithReleaseCount(3));
@@ -165,7 +170,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void triggerRefresh_alwaysScansUnscannedReleases_afterFullInject() throws Exception {
+    public void triggerRefresh_alwaysScansUnscannedReleases_afterFullInject() {
         when(releaseService.getStoredReleaseCount()).thenReturn(4L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(statsWithReleaseCount(5));
@@ -193,7 +198,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void triggerRefresh_whenScanThrows_logsErrorAndResetsLock() throws Exception {
+    public void triggerRefresh_whenScanThrows_logsErrorAndResetsLock() {
         when(releaseService.getStoredReleaseCount()).thenReturn(3L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(statsWithReleaseCount(3));
@@ -220,7 +225,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void triggerRefresh_whenCompleted_leavesPendingRefreshFalse() throws Exception {
+    public void triggerRefresh_whenCompleted_leavesPendingRefreshFalse() {
         when(releaseService.getStoredReleaseCount()).thenReturn(3L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
                 .thenReturn(statsWithReleaseCount(3));
@@ -231,7 +236,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void run_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() throws Exception {
+    public void run_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
         systemDataInitializer.pendingRefresh.set(true);
         when(releaseService.getStoredReleaseCount()).thenReturn(3L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
@@ -243,7 +248,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void dailyJob_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() throws Exception {
+    public void dailyJob_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
         systemDataInitializer.pendingRefresh.set(true);
         when(releaseService.getStoredReleaseCount()).thenReturn(3L);
         when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
