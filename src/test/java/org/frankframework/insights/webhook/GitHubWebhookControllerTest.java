@@ -1,9 +1,7 @@
 package org.frankframework.insights.webhook;
 
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,17 +12,15 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.TestSecurityConfig;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(
@@ -36,26 +32,13 @@ public class GitHubWebhookControllerTest {
 
     private static final String TEST_SECRET = "test-secret";
     private static final String RELEASE_PUBLISHED_PAYLOAD =
-            "{\"action\":\"published\",\"release\":{\"tag_name\":\"v9.0\"}}";
+            "{\"action\":\"published\"}";
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Autowired
+    @MockitoBean
     private SystemDataInitializer systemDataInitializer;
-
-    @TestConfiguration
-    static class MockConfig {
-        @Bean
-        public SystemDataInitializer systemDataInitializer() {
-            return mock(SystemDataInitializer.class);
-        }
-    }
-
-    @BeforeEach
-    public void resetMocks() {
-        reset(systemDataInitializer);
-    }
 
     @Test
     public void handleWebhook_whenReleasePublished_triggersRefreshAndReturns202() throws Exception {

@@ -139,17 +139,31 @@ public class SystemDataInitializer implements CommandLineRunner {
             return;
         }
         log.info("Webhook-triggered data refresh started ({})", context);
-        try {
-            fetchGitHubStatistics();
-            if (hasNewReleasesOnGitHub()) {
-                injectAllGitHubData();
-            }
-            vulnerabilityService.scanUnscannedReleasesOnly();
-            log.info("Webhook-triggered data refresh completed ({})", context);
-        } catch (Exception e) {
-            log.error("Webhook-triggered data refresh failed ({})", context, e);
-        }
+
+		scanForDataInjection(context);
+        scanVulnerabilitiesForNewReleases();
+
+        log.info("Webhook-triggered data refresh completed ({})", context);
     }
+
+	private void scanForDataInjection(String context) {
+		try {
+			fetchGitHubStatistics();
+			if (hasNewReleasesOnGitHub()) {
+				injectAllGitHubData();
+			}
+		} catch (Exception e) {
+			log.error("Webhook-triggered data inject failed ({})", context, e);
+		}
+	}
+
+	private void scanVulnerabilitiesForNewReleases() {
+		try {
+			vulnerabilityService.scanUnscannedReleasesOnly();
+		} catch (Exception e) {
+			log.error("Error scanning vulnerabilities for new releases", e);
+		}
+	}
 
     /**
      * Compares the release count stored in the database against the count reported by GitHub.

@@ -1,6 +1,5 @@
 package org.frankframework.insights.webhook;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -62,22 +61,32 @@ public class GitHubWebhookController {
 
     private ResponseEntity<String> handleReleaseEvent(byte[] body) {
         try {
-            JsonNode payload = objectMapper.readTree(body);
-            String action = payload.path("action").asText();
+            String action = parseAction(body);
 
             if (!ACTION_PUBLISHED.equals(action)) {
                 log.debug("Ignored release action: {}", action);
                 return ResponseEntity.ok("Action ignored: " + action);
             }
-
-            log.info("Release published — scheduling data refresh");
-            systemDataInitializer.triggerRefresh();
-            return ResponseEntity.accepted().body("Refresh scheduled");
-
         } catch (Exception e) {
             log.error("Failed to process webhook JSON payload", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON payload");
         }
+
+        scheduleRefresh();
+
+        return ResponseEntity.accepted().body("Refresh scheduled");
+    }
+
+	private void scheduleRefresh() {
+		try {
+			systemDataInitializer.triggerRefresh();
+		} catch (Exception e) {
+			log.error("Failed to schedule data refresh", e);
+		}
+	}
+
+    private String parseAction(byte[] body) throws Exception {
+        return objectMapper.readTree(body).path("action").asText();
     }
 
     private boolean isValidSignature(String signature, byte[] body) {
