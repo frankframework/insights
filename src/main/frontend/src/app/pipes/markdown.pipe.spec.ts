@@ -24,7 +24,7 @@ describe('MarkdownPipe', () => {
     });
 
     it('returns empty string for undefined', () => {
-      expect(pipe.transform(undefined)).toBe('');
+      expect(pipe.transform(undefined)).toBe('');  // eslint-disable-line unicorn/no-useless-undefined
     });
 
     it('returns empty string for empty string', () => {
@@ -33,7 +33,7 @@ describe('MarkdownPipe', () => {
 
     it('does not call the sanitizer for empty input', () => {
       pipe.transform(null);
-      pipe.transform(undefined);
+      pipe.transform(undefined); // eslint-disable-line unicorn/no-useless-undefined
       pipe.transform('');
 
       expect(bypassSpy).not.toHaveBeenCalled();
