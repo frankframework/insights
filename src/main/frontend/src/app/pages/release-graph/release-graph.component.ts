@@ -73,6 +73,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private wheelListener: ((event: WheelEvent) => void) | null = null;
   private touchStartListener: ((event: TouchEvent) => void) | null = null;
   private touchMoveListener: ((event: TouchEvent) => void) | null = null;
+  private svgReadyObserver: ResizeObserver | null = null;
 
   private releaseService = inject(ReleaseService);
   private nodeService = inject(ReleaseNodeService);
@@ -139,6 +140,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
     this.removeNonPassiveEventListeners();
+    this.svgReadyObserver?.disconnect();
   }
 
   public toggleNightlies(): void {
@@ -841,12 +843,29 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  private waitForSvgReady(callback: () => void, attempts = 0): void {
-    if (this.svgElement?.nativeElement?.clientWidth > 0) {
-      callback();
-    } else if (attempts < 100) {
-      setTimeout(() => this.waitForSvgReady(callback, attempts + 1), 50);
+  private waitForSvgReady(callback: () => void): void {
+    const svg = this.svgElement?.nativeElement;
+
+    if (!svg) {
+      requestAnimationFrame(() => this.waitForSvgReady(callback));
+      return;
     }
+
+    if (svg.clientWidth > 0) {
+      requestAnimationFrame(() => callback());
+      return;
+    }
+
+    this.svgReadyObserver?.disconnect();
+    this.svgReadyObserver = new ResizeObserver(() => {
+      if (svg.clientWidth > 0) {
+        this.svgReadyObserver!.disconnect();
+        this.svgReadyObserver = null;
+        requestAnimationFrame(() => callback());
+      }
+    });
+
+    this.svgReadyObserver.observe(svg);
   }
 
   private attachNonPassiveEventListeners(): void {
