@@ -40,6 +40,10 @@ public class IssueTypeService {
      * @throws IssueTypeInjectionException if an error occurs during the injection process
      */
     public void injectIssueTypes() throws IssueTypeInjectionException {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO() == null) {
+            throw new IssueTypeInjectionException("GitHub repository statistics are not available", null);
+        }
+
         if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubIssueTypeCount()
                 == issueTypeRepository.count()) {
             log.info("Issue types already found in the in database");

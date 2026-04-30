@@ -58,6 +58,10 @@ public class LabelService {
      * @throws LabelInjectionException if an error occurs during the injection process.
      */
     public void injectLabels() throws LabelInjectionException {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO() == null) {
+            throw new LabelInjectionException("GitHub repository statistics are not available", null);
+        }
+
         if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO().getGitHubLabelCount()
                 == labelRepository.count()) {
             log.info("Labels already found in the in database");

@@ -48,6 +48,10 @@ public class BranchService {
      * @throws BranchInjectionException if an error occurs during the injection process
      */
     public void injectBranches() throws BranchInjectionException {
+        if (gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO() == null) {
+            throw new BranchInjectionException("GitHub repository statistics are not available", null);
+        }
+
         if (gitHubRepositoryStatisticsService
                         .getGitHubRepositoryStatisticsDTO()
                         .getGitHubBranchCount(branchProtectionRegexes)

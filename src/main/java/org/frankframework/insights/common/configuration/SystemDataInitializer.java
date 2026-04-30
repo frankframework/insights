@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
+import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
@@ -18,12 +19,14 @@ import org.frankframework.insights.vulnerability.VulnerabilityService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 @Slf4j
 public class SystemDataInitializer implements CommandLineRunner {
     private final AtomicBoolean isJobRunning = new AtomicBoolean(false);
+    private final AtomicBoolean pendingRefresh = new AtomicBoolean(false);
 
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelService labelService;
@@ -83,6 +86,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             initializeSystemData();
         } finally {
             isJobRunning.set(false);
+            drainPendingRefresh();
         }
     }
 
@@ -102,6 +106,87 @@ public class SystemDataInitializer implements CommandLineRunner {
             initializeSystemData();
         } finally {
             isJobRunning.set(false);
+            drainPendingRefresh();
+        }
+    }
+
+    /**
+     * Schedules an async data refresh triggered by a GitHub release webhook.
+     * If a job is already running the refresh is queued and will execute immediately after.
+     */
+    @Async
+    public void triggerRefresh() {
+        if (!isJobRunning.compareAndSet(false, true)) {
+            log.info("Refresh requested but a job is already running; queuing for after current job");
+            pendingRefresh.set(true);
+            return;
+        }
+        try {
+            doWebhookRefresh("webhook trigger");
+        } finally {
+            isJobRunning.set(false);
+            drainPendingRefresh();
+        }
+    }
+
+    /**
+     * Runs the webhook-triggered refresh work: statistics, conditional full inject if new releases
+     * are detected, and an unscanned vulnerability scan.
+     */
+    private void doWebhookRefresh(String context) {
+        if (!dataFetchEnabled) {
+            log.info("Skipping webhook refresh: data fetch is disabled.");
+            return;
+        }
+        log.info("Webhook-triggered data refresh started ({})", context);
+        try {
+            fetchGitHubStatistics();
+            if (hasNewReleasesOnGitHub()) {
+                injectAllGitHubData();
+            }
+            vulnerabilityService.scanUnscannedReleasesOnly();
+            log.info("Webhook-triggered data refresh completed ({})", context);
+        } catch (Exception e) {
+            log.error("Webhook-triggered data refresh failed ({})", context, e);
+        }
+    }
+
+    /**
+     * Compares the release count stored in the database against the count reported by GitHub.
+     */
+    private boolean hasNewReleasesOnGitHub() {
+        long databaseReleaseCount = releaseService.getStoredReleaseCount();
+
+        GitHubRepositoryStatisticsDTO statsDto = gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO();
+        int githubReleaseCount = statsDto != null ? statsDto.getGitHubReleaseCount() : -1;
+
+        boolean hasNew = githubReleaseCount < 0 || databaseReleaseCount != githubReleaseCount;
+
+        if (hasNew) {
+            log.info(
+                    "New releases detected (DB: {}, GitHub: {}). Running full data inject.",
+                    databaseReleaseCount,
+                    githubReleaseCount);
+        } else {
+            log.info("Release count unchanged ({}). Skipping full inject.", databaseReleaseCount);
+        }
+        return hasNew;
+    }
+
+    /**
+     * If a webhook refresh was queued while a scheduled job was running, execute it now.
+     */
+    private void drainPendingRefresh() {
+        while (pendingRefresh.compareAndSet(true, false)) {
+            if (!isJobRunning.compareAndSet(false, true)) {
+                pendingRefresh.set(true);
+                return;
+            }
+            try {
+                doWebhookRefresh("queued after scheduled job");
+            } finally {
+                isJobRunning.set(false);
+            }
         }
     }
 
@@ -133,26 +218,31 @@ public class SystemDataInitializer implements CommandLineRunner {
                 return;
             }
 
-            log.info("Start fetching all GitHub data");
-            labelService.injectLabels();
-            milestoneService.injectMilestones();
-            issueTypeService.injectIssueTypes();
-            issueProjectItemsService.injectIssueProjectItems();
-            branchService.injectBranches();
-            issueService.injectIssues();
-            pullRequestService.injectBranchPullRequests();
-            releaseService.injectReleases();
-            log.info("Done fetching all GitHub data");
+            injectAllGitHubData();
 
-            log.info("Cleaning up obsolete release artifacts");
-            releaseArtifactService.deleteObsoleteReleaseArtifacts();
-
-            log.info("Start fetching vulnerability data");
+            log.info("Start fetching vulnerability data for all releases");
             vulnerabilityService.scanAndSaveVulnerabilitiesForAllReleases();
-
             log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
         }
+    }
+
+    /**
+     * Injects all GitHub data into the database. Shared by the daily job and the API-triggered refresh.
+     * Does NOT scan vulnerabilities — callers decide which scan strategy to use.
+     */
+    private void injectAllGitHubData() throws Exception {
+        log.info("Start injecting all GitHub data");
+        labelService.injectLabels();
+        milestoneService.injectMilestones();
+        issueTypeService.injectIssueTypes();
+        issueProjectItemsService.injectIssueProjectItems();
+        branchService.injectBranches();
+        issueService.injectIssues();
+        pullRequestService.injectBranchPullRequests();
+        releaseService.injectReleases();
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+        log.info("Done injecting all GitHub data");
     }
 }
