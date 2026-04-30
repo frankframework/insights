@@ -240,9 +240,9 @@ public class IssueService {
     }
 
     /**
-     * Re-applies existing businessValue links to freshly-mapped issues before saving.
+     * Re-applies existing businessValue links to newly mapped issues before saving.
      * This method looks up which issues already have a businessValue in the database
-     * and carries those links over.
+     * and carries those links over to the new fetched issues.
      */
     private void restoreBusinessValueLinks(Set<Issue> issues) {
         Set<String> ids = issues.stream().map(Issue::getId).collect(Collectors.toSet());
