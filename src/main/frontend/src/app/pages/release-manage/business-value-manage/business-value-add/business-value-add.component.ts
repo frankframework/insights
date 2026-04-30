@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { BusinessValue, BusinessValueService } from '../../../../services/business-value.service';
+import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-business-value-add',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [CommonModule, FormsModule, ModalComponent, MarkdownPipe],
   templateUrl: './business-value-add.component.html',
   styleUrl: './business-value-add.component.scss',
 })
@@ -20,6 +21,7 @@ export class BusinessValueAddComponent {
 
   public name = signal<string>('');
   public description = signal<string>('');
+  public descriptionPreview = signal<boolean>(false);
   public isSaving = signal<boolean>(false);
   public errorMessage = signal<string>('');
 

@@ -1,11 +1,12 @@
 import { Component, input, Output, EventEmitter, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../../services/business-value.service';
+import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-business-value-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MarkdownPipe],
   templateUrl: './business-value-panel.component.html',
   styleUrl: './business-value-panel.component.scss',
 })
