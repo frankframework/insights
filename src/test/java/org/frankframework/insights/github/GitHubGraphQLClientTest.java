@@ -63,7 +63,7 @@ public class GitHubGraphQLClientTest {
 
     @Test
     public void getRepositoryStatistics_Success_ReturnsStatistics() throws GitHubGraphQLClientException {
-        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null);
+        GitHubRepositoryStatisticsDTO stats = new GitHubRepositoryStatisticsDTO(null, null, null, null);
         when(httpGraphQlClient
                         .documentName(GitHubQueryConstants.REPOSITORY_STATISTICS.getDocumentName())
                         .variables(anyMap())

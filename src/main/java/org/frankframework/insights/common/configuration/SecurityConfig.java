@@ -1,11 +1,6 @@
 package org.frankframework.insights.common.configuration;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import org.frankframework.insights.authentication.OAuth2LoginFailureHandler;
 import org.frankframework.insights.authentication.OAuth2LoginSuccessHandler;
 import org.frankframework.insights.user.UserRepository;
@@ -22,11 +17,9 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -64,6 +57,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/auth/user", "/api/business-value/**", "/api/vulnerabilities/**")
                         .authenticated()
+                        .requestMatchers("/api/webhooks/**")
+                        .permitAll()
                         .anyRequest()
                         .permitAll())
                 .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(userService))
@@ -81,7 +76,9 @@ public class SecurityConfig {
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID", "SECURE-XSRF-TOKEN", "XSRF-TOKEN")
                         .permitAll())
-                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository()).csrfTokenRequestHandler(requestHandler))
+                .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository())
+                        .csrfTokenRequestHandler(requestHandler)
+                        .ignoringRequestMatchers("/api/webhooks/**"))
                 .addFilterAfter(new CsrfCookieFilter(csrfCookieSecure), CsrfFilter.class)
                 .headers(headers -> headers.contentSecurityPolicy(csp ->
                                 csp.policyDirectives(buildCspDirectives()).reportOnly())
@@ -119,33 +116,5 @@ public class SecurityConfig {
                 "frame-ancestors 'none'",
                 "base-uri 'self'",
                 "form-action 'self'");
-    }
-
-    private static class CsrfCookieFilter extends OncePerRequestFilter {
-        private final boolean isSecure;
-
-        public CsrfCookieFilter(boolean isSecure) {
-            this.isSecure = isSecure;
-        }
-
-        @Override
-        protected void doFilterInternal(
-                HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-                throws ServletException, IOException {
-
-            CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-
-            if (csrfToken != null) {
-                response.setHeader("X-XSRF-TOKEN", csrfToken.getToken());
-
-                Cookie cookie = new Cookie("XSRF-TOKEN", csrfToken.getToken());
-                cookie.setPath("/");
-                cookie.setSecure(isSecure);
-                cookie.setHttpOnly(false);
-                response.addCookie(cookie);
-            }
-
-            filterChain.doFilter(request, response);
-        }
     }
 }

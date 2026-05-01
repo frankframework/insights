@@ -2,6 +2,7 @@ package org.frankframework.insights.common.configuration;
 
 import static org.mockito.Mockito.mock;
 
+import net.javacrumbs.shedlock.core.LockProvider;
 import org.frankframework.insights.common.ratelimit.RateLimitInterceptor;
 import org.frankframework.insights.ratelimit.RateLimitService;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -22,6 +23,11 @@ public class TestSecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
         return http.build();
+    }
+
+    @Bean
+    public LockProvider lockProvider() {
+        return mock(LockProvider.class);
     }
 
     @Bean

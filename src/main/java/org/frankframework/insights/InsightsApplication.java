@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.servlet.function.RequestPredicate;
@@ -18,7 +19,8 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableSchedulerLock(defaultLockAtMostFor = "PT2H")
+@EnableAsync
+@EnableSchedulerLock(defaultLockAtMostFor = "PT2H", proxyTargetClass = true)
 @ConfigurationPropertiesScan
 @EnableWebSecurity
 public class InsightsApplication {

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.TaskExecutor;
 
 @ExtendWith(MockitoExtension.class)
 public class ShedLockTest {
@@ -68,6 +69,9 @@ public class ShedLockTest {
     @Mock
     private VulnerabilityService vulnerabilityService;
 
+    @Mock
+    private TaskExecutor taskExecutor;
+
     private SystemDataInitializer systemDataInitializer;
 
     @BeforeEach
@@ -83,7 +87,8 @@ public class ShedLockTest {
                 pullRequestService,
                 releaseService,
                 releaseArtifactService,
-                vulnerabilityService);
+                vulnerabilityService,
+                taskExecutor);
 
         LockAssert.TestHelper.makeAllAssertsPass(true);
     }
