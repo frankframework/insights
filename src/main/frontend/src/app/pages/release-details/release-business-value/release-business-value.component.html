@@ -9,7 +9,7 @@
       @for (businessValue of businessValues; track businessValue.id) {
         <li class="business-value-item" (click)="openBusinessValueModal(businessValue)">
           <div class="business-value-title">{{ businessValue.title }}</div>
-          <div class="business-value-description">{{ businessValue.description }}</div>
+          <div class="business-value-description" [innerHTML]="businessValue.description | markdown"></div>
           <div class="view-issues-hint">
             <svg
               width="14"
