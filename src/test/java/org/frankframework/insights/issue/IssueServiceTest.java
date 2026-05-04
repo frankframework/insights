@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import org.frankframework.insights.businessvalue.BusinessValue;
 import org.frankframework.insights.common.client.graphql.GraphQLNodeDTO;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
@@ -173,6 +174,7 @@ public class IssueServiceTest {
             throws GitHubGraphQLClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dto1, dto2);
 
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
 
@@ -203,6 +205,7 @@ public class IssueServiceTest {
     @Test
     public void injectIssues_mapsPriorityAndPointsFromProjectItems()
             throws GitHubGraphQLClientException, IssueInjectionException {
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(issueProjectItemsService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
@@ -217,6 +220,7 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_handlesMissingPriorityMappingGracefully() throws GitHubGraphQLClientException {
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(issueProjectItemsService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dtoSub));
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
@@ -227,6 +231,7 @@ public class IssueServiceTest {
 
     @Test
     public void injectIssues_handlesFieldValuesWithNullNode() throws GitHubGraphQLClientException {
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
         when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -238,6 +243,7 @@ public class IssueServiceTest {
     public void injectIssues_assignsSubIssues() throws GitHubGraphQLClientException, IssueInjectionException {
         Set<IssueDTO> DTOs = Set.of(dtoSub, dto2);
 
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(DTOs);
         when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
         when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
@@ -376,5 +382,78 @@ public class IssueServiceTest {
         assertEquals(2, result.size());
         assertEquals(issue1, result.get("i1"));
         assertEquals(issue2, result.get("i2"));
+    }
+
+    @Test
+    public void injectIssues_preservesExistingBusinessValueLink() throws Exception {
+        BusinessValue bv = new BusinessValue();
+        bv.setTitle("My BV");
+
+        Issue dbIssue1 = new Issue();
+        dbIssue1.setId("i1");
+        dbIssue1.setBusinessValue(bv);
+
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
+        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(Set.of("i1")))
+                .thenReturn(List.of(dbIssue1));
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+
+        issueService.injectIssues();
+
+        assertEquals(bv, issue1.getBusinessValue());
+    }
+
+    @Test
+    public void injectIssues_doesNotSetBusinessValueForNewIssues() throws Exception {
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto2));
+        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(Set.of("i2")))
+                .thenReturn(Collections.emptyList());
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+
+        issueService.injectIssues();
+
+        assertNull(issue2.getBusinessValue());
+    }
+
+    @Test
+    public void injectIssues_preservesLinksForSomeIssuesButNotOthers() throws Exception {
+        BusinessValue bv = new BusinessValue();
+        bv.setTitle("BV for issue1");
+
+        Issue dbIssue1 = new Issue();
+        dbIssue1.setId("i1");
+        dbIssue1.setBusinessValue(bv);
+
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1, dto2));
+        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(Set.of("i1", "i2")))
+                .thenReturn(List.of(dbIssue1));
+        when(milestoneService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
+        when(issueTypeService.getAllIssueTypesMap()).thenReturn(Collections.emptyMap());
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+        when(labelService.getAllLabelsMap()).thenReturn(Collections.emptyMap());
+
+        issueService.injectIssues();
+
+        assertEquals(bv, issue1.getBusinessValue());
+        assertNull(issue2.getBusinessValue());
+    }
+
+    @Test
+    public void injectIssues_handlesNoIssuesWithBusinessValues() throws Exception {
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
+        when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto2));
+        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
+        when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
+
+        assertDoesNotThrow(() -> issueService.injectIssues());
+        assertNull(issue2.getBusinessValue());
     }
 }

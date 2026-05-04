@@ -4,7 +4,7 @@
       <div class="business-value-details">
         <section class="description-section">
           <h3>Description</h3>
-          <p class="description-text">{{ businessValue()!.description }}</p>
+          <div class="description-text" [innerHTML]="businessValue()!.description | markdown"></div>
         </section>
 
         <section class="issues-section">

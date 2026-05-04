@@ -1,5 +1,6 @@
 package org.frankframework.insights.issue;
 
+import java.util.List;
 import java.util.Set;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,4 +27,6 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
     Set<Issue> findDistinctByMilestoneId(String milestoneId);
 
     Set<Issue> findIssuesByIssueTypeNameAndMilestoneIsNull(String typeName);
+
+    List<Issue> findAllByIdInAndBusinessValueIsNotNull(Set<String> ids);
 }

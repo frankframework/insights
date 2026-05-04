@@ -1,4 +1,4 @@
-<app-modal title="Edit Business Value" (closed)="close()">
+<app-modal title="Edit Business Value" [closeOnBackdropClick]="false" (closed)="close()">
   <div class="form-container">
     @if (errorMessage()) {
       <div class="error-message">
@@ -22,18 +22,44 @@
     </div>
 
     <div class="form-group">
-      <label for="bv-description">Description <span class="required">*</span></label>
-      <textarea
-        id="bv-description"
-        class="form-textarea"
-        placeholder="Enter business value description"
-        rows="4"
-        [value]="description()"
-        [disabled]="isSaving()"
-        (input)="updateDescription($event)"
-        (click)="$event.stopPropagation()"
-        (keydown)="$event.stopPropagation()"
-      ></textarea>
+      <div class="field-header">
+        <label for="bv-description">Description <span class="required">*</span></label>
+        <div class="md-toggle">
+          <button
+            type="button"
+            class="md-toggle-btn"
+            [class.active]="!descriptionPreview()"
+            (click)="descriptionPreview.set(false)"
+            (keydown)="$event.stopPropagation()"
+          >
+            Write
+          </button>
+          <button
+            type="button"
+            class="md-toggle-btn"
+            [class.active]="descriptionPreview()"
+            (click)="descriptionPreview.set(true)"
+            (keydown)="$event.stopPropagation()"
+          >
+            Preview
+          </button>
+        </div>
+      </div>
+      @if (descriptionPreview()) {
+        <div class="md-preview" [innerHTML]="description() | markdown"></div>
+      } @else {
+        <textarea
+          id="bv-description"
+          class="form-textarea"
+          placeholder="Enter business value description (markdown supported)"
+          rows="4"
+          [value]="description()"
+          [disabled]="isSaving()"
+          (input)="updateDescription($event)"
+          (click)="$event.stopPropagation()"
+          (keydown)="$event.stopPropagation()"
+        ></textarea>
+      }
     </div>
 
     <div class="form-actions">

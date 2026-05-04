@@ -1,6 +1,7 @@
 describe('Application Routing', () => {
   beforeEach(() => {
     cy.visit('/');
+    cy.get('app-loader', { timeout: 30000 }).should('not.exist');
     cy.dismissReleaseCatalogusModal();
     cy.get('app-header').find('li').contains('Roadmap').click();
   });

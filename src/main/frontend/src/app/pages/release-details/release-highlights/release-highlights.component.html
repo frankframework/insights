@@ -1,31 +1,21 @@
 <div class="highlight-pie">
-  <div class="highlight-info-container">
-    <h4 class="highlight-title">Highlights</h4>
-    @for (item of highlightLegendItems; track item.label) {
-      <div class="highlight-label">
-        <span class="highlight-dot" [style.background]="item.color"></span>
-        <p>{{ item.label }}</p>
-      </div>
-    }
-  </div>
-  <div class="chart-container">
-    <div class="highlight-donut-chart-wrapper">
-      <canvas
-        baseChart
-        class="highlight-donut-chart"
-        [data]="doughnutChartData"
-        [options]="doughnutChartOptions"
-        [type]="'doughnut'"
-        [plugins]="doughnutChartPlugins"
-      >
-      </canvas>
+  <div class="chart-legends">
+    <div class="chart-legend">
+      @if (hasHighlightRing) {
+        <p class="legend-title">Issue types</p>
+      }
+      @for (item of legendItems; track item.label) {
+        <div class="legend-item">
+          <span class="legend-color" [style.background]="item.color"></span>
+          <span class="legend-label">{{ item.label }}</span>
+          <span class="legend-count">({{ item.count }})</span>
+        </div>
+      }
     </div>
-    <div class="chart-legends">
+    @if (hasHighlightRing) {
       <div class="chart-legend">
-        @if (hasHighlightRing) {
-          <p class="legend-title">Issue types</p>
-        }
-        @for (item of legendItems; track item.label) {
+        <p class="legend-title">Highlights</p>
+        @for (item of highlightLegendItems; track item.label) {
           <div class="legend-item">
             <span class="legend-color" [style.background]="item.color"></span>
             <span class="legend-label">{{ item.label }}</span>
@@ -33,18 +23,17 @@
           </div>
         }
       </div>
-      @if (hasHighlightRing) {
-        <div class="chart-legend">
-          <p class="legend-title">Highlights</p>
-          @for (item of highlightLegendItems; track item.label) {
-            <div class="legend-item">
-              <span class="legend-color" [style.background]="item.color"></span>
-              <span class="legend-label">{{ item.label }}</span>
-              <span class="legend-count">({{ item.count }})</span>
-            </div>
-          }
-        </div>
-      }
-    </div>
+    }
+  </div>
+  <div class="highlight-donut-chart-wrapper">
+    <canvas
+      baseChart
+      class="highlight-donut-chart"
+      [data]="doughnutChartData"
+      [options]="doughnutChartOptions"
+      [type]="'doughnut'"
+      [plugins]="doughnutChartPlugins"
+    >
+    </canvas>
   </div>
 </div>

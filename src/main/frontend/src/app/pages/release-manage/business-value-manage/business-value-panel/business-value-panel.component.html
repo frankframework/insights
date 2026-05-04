@@ -122,7 +122,7 @@
 
           <div class="item-content">
             @if (businessValue.description) {
-              <p class="description">{{ businessValue.description }}</p>
+              <div class="description" [innerHTML]="businessValue.description | markdown"></div>
             }
             <div class="item-meta">
               <span class="issue-count">

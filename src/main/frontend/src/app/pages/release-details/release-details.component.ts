@@ -42,6 +42,10 @@ export class ReleaseDetailsComponent implements OnInit {
   public activeView = signal<'business-value' | 'issues'>('issues');
   public authService = inject(AuthService);
 
+  public previousRelease = signal<Release | null>(null);
+  public nextRelease = signal<Release | null>(null);
+  public branchReleases = signal<Release[]>([]);
+
   private router = inject(Router);
   private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
@@ -60,7 +64,10 @@ export class ReleaseDetailsComponent implements OnInit {
             return of(null);
           }
           this.isLoading = true;
-          return this.releaseService.getReleaseById(releaseId).pipe(
+          return forkJoin({
+            release: this.releaseService.getReleaseById(releaseId),
+            allReleases: this.releaseService.getAllReleases().pipe(catchError(() => of([]))),
+          }).pipe(
             catchError((error) => {
               console.error('Failed to load release:', error);
               this.isLoading = false;
@@ -69,10 +76,11 @@ export class ReleaseDetailsComponent implements OnInit {
           );
         }),
       )
-      .subscribe((release) => {
-        if (release) {
-          this.release = release;
-          this.fetchData(release.id);
+      .subscribe((result) => {
+        if (result) {
+          this.release = result.release;
+          this.computeBranchNavigation(result.release, result.allReleases);
+          this.fetchData(result.release.id);
         }
       });
   }
@@ -84,6 +92,34 @@ export class ReleaseDetailsComponent implements OnInit {
 
   public setActiveView(view: 'business-value' | 'issues'): void {
     this.activeView.set(view);
+  }
+
+  public navigateToRelease(release: Release | null): void {
+    if (!release) return;
+    const identifier = release.tagName.replace(/^release\//, '');
+    const queryParameters = this.graphStateService.getGraphQueryParams();
+    this.router.navigate(['/graph', identifier], { queryParams: queryParameters });
+  }
+
+  private isNightly(release: Release): boolean {
+    return release.tagName.replace(/^release\//, '').includes('nightly');
+  }
+
+  private computeBranchNavigation(release: Release, allReleases: Release[]): void {
+    const sorted = allReleases
+      .filter((r) => r.branch.name === release.branch.name)
+      .toSorted((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
+
+    const filtered = sorted.filter((r, index_) => {
+      if (!this.isNightly(r)) return true;
+      return !sorted.slice(index_ + 1).some((next) => !this.isNightly(next));
+    });
+
+    const index = filtered.findIndex((r) => r.id === release.id);
+
+    this.branchReleases.set(filtered);
+    this.previousRelease.set(index > 0 ? filtered[index - 1] : null);
+    this.nextRelease.set(index < filtered.length - 1 ? filtered[index + 1] : null);
   }
 
   private fetchData(releaseId: string): void {

@@ -35,6 +35,10 @@ export interface BranchLifecycle {
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
+  private static readonly HEADER_HEIGHT_PX: number = 90;
+  private static readonly QUARTER_LABEL_FONT_SIZE: number = 14;
+  private static readonly QUARTER_LINE_GAP_PX: number = 12;
+  private static readonly SVG_LINE_OVERFLOW_PX: number = 100;
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
@@ -48,6 +52,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   public quarterMarkers: QuarterMarker[] = [];
   public branchLifecycles: BranchLifecycle[] = [];
   public currentTimeX = 0;
+  public svgLineTopY = -90;
+  public svgLineBottomY = 1000;
+  public svgLabelY = -105;
+  public svgChevronY = -90;
   public showNotFoundError = false;
   public showNightlies = false;
   public showExtendedSupport = false;
@@ -73,6 +81,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private wheelListener: ((event: WheelEvent) => void) | null = null;
   private touchStartListener: ((event: TouchEvent) => void) | null = null;
   private touchMoveListener: ((event: TouchEvent) => void) | null = null;
+  private svgReadyObserver: ResizeObserver | null = null;
 
   private releaseService = inject(ReleaseService);
   private nodeService = inject(ReleaseNodeService);
@@ -139,6 +148,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy(): void {
     this.routerSubscription?.unsubscribe();
     this.removeNonPassiveEventListeners();
+    this.svgReadyObserver?.disconnect();
   }
 
   public toggleNightlies(): void {
@@ -656,6 +666,16 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.minTranslateX = W - maxX * this.scale - W * 0.45;
     this.translateX = this.minTranslateX + W * 0.1;
 
+    const headerBottom = ReleaseGraphComponent.HEADER_HEIGHT_PX;
+    const labelFontSize = ReleaseGraphComponent.QUARTER_LABEL_FONT_SIZE;
+    const lineGap = ReleaseGraphComponent.QUARTER_LINE_GAP_PX;
+    const lineOverflow = ReleaseGraphComponent.SVG_LINE_OVERFLOW_PX;
+
+    this.svgLabelY = (headerBottom - this.translateY) / this.scale;
+    this.svgLineTopY = (headerBottom + lineGap - this.translateY) / this.scale + labelFontSize;
+    this.svgChevronY = (headerBottom - this.translateY) / this.scale;
+    this.svgLineBottomY = (H + lineOverflow - this.translateY) / this.scale;
+
     return `0 0 ${W} ${H}`;
   }
 
@@ -842,13 +862,28 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private waitForSvgReady(callback: () => void): void {
-    requestAnimationFrame(() => {
-      if (this.svgElement?.nativeElement?.clientWidth > 0) {
-        callback();
-      } else {
-        this.waitForSvgReady(callback);
+    const svg = this.svgElement?.nativeElement;
+
+    if (!svg) {
+      requestAnimationFrame(() => this.waitForSvgReady(callback));
+      return;
+    }
+
+    if (svg.clientWidth > 0) {
+      requestAnimationFrame(() => callback());
+      return;
+    }
+
+    this.svgReadyObserver?.disconnect();
+    this.svgReadyObserver = new ResizeObserver(() => {
+      if (svg.clientWidth > 0) {
+        this.svgReadyObserver!.disconnect();
+        this.svgReadyObserver = null;
+        requestAnimationFrame(() => callback());
       }
     });
+
+    this.svgReadyObserver.observe(svg);
   }
 
   private attachNonPassiveEventListeners(): void {

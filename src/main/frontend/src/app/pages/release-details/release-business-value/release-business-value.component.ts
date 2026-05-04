@@ -2,11 +2,12 @@ import { Component, Input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../services/business-value.service';
 import { ReleaseBusinessValueModalComponent } from '../release-business-value-modal/release-business-value-modal.component';
+import { MarkdownPipe } from '../../../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-release-business-value',
   standalone: true,
-  imports: [CommonModule, ReleaseBusinessValueModalComponent],
+  imports: [CommonModule, ReleaseBusinessValueModalComponent, MarkdownPipe],
   templateUrl: './release-business-value.component.html',
   styleUrl: './release-business-value.component.scss',
 })
