@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.frankframework.insights.common.configuration.MapperConfiguration;
 import org.frankframework.insights.common.configuration.SystemDataInitializer;
 import org.frankframework.insights.common.configuration.TestSecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(
         controllers = GitHubWebhookController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class, OAuth2ClientAutoConfiguration.class})
-@Import(TestSecurityConfig.class)
+@Import({TestSecurityConfig.class, MapperConfiguration.class})
 @TestPropertySource(properties = "insights.webhook.secret=test-secret")
 public class GitHubWebhookControllerTest {
 
