@@ -3,21 +3,20 @@
 	"extends": ["config:recommended"],
 	"labels": ["Dependencies"],
 	"ignoreDeps": ["pnpm"],
-	"postUpgradeTasks": {
-		"commands": ["pnpm install --lockfile-only"],
-		"fileFilters": ["pnpm-lock.yaml", "**/package.json"],
-		"executionMode": "branch"
+	"lockFileMaintenance": {
+		"enabled": true,
+		"schedule": ["before 5am on monday"]
 	},
 	"packageRules": [
 		{
 			"matchManagers": ["dockerfile"],
 			"addLabels": ["Docker"],
-			"schedule": ["* 7 * * 1"]
+			"schedule": ["before 9am on monday"]
 		},
 		{
 			"matchManagers": ["maven"],
 			"addLabels": ["Java"],
-			"schedule": ["* 7 * * 1"]
+			"schedule": ["before 9am on monday"]
 		},
 		{
 			"matchManagers": ["npm"],
@@ -28,7 +27,7 @@
 			"matchManagers": ["npm"],
 			"rangeStrategy": "bump",
 			"addLabels": ["JavaScript"],
-			"schedule": ["* 7 1-7 * 1"]
+			"schedule": ["before 9am on monday"]
 		},
 		{
 			"matchManagers": ["npm"],

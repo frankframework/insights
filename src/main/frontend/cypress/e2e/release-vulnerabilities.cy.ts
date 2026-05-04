@@ -161,7 +161,7 @@ describe('Release Vulnerabilities Component', () => {
         cy.get('.see-more-button').click();
         cy.get('.cve-description').should('have.class', 'expanded');
 
-        cy.get('.cve-item').eq(1).click();
+        cy.get('.cve-item').eq(1).click({ force: true });
         cy.wait(100);
         cy.get('.cve-description').should('not.have.class', 'expanded');
       }

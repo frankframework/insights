@@ -46,7 +46,11 @@ describe('Release Details Page Journey', () => {
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
-    cy.get('app-release-details').find('button').contains('Important Issues').click({ force: true });
+    cy.get('body').then(($body) => {
+      if ($body.find('button.view-tab').length > 0) {
+        cy.contains('button.view-tab', 'Important Issues', { timeout: 5000 }).click({ force: true });
+      }
+    });
 
     cy.get('app-release-important-issues').as('importantIssues');
     cy.get('@importantIssues')

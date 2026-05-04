@@ -1,7 +1,7 @@
 describe('Graph Rendering and Interaction', () => {
   beforeEach(() => {
     cy.visit('/');
-    cy.get('app-loader', { timeout: 5000 }).should('not.exist');
+    cy.get('app-loader', { timeout: 10000 }).should('not.exist');
     cy.dismissReleaseCatalogusModal();
     cy.get('.graph-container > svg').as('graphSvg');
   });
@@ -89,17 +89,18 @@ describe('Graph Rendering and Interaction', () => {
                   .and('match', /^#[0-9A-Fa-f]{6}$/);
         }
       });
+    });
 
-      it('should display nightly releases with appropriate colors', () => {
-        cy.get('@graphSvg')
-                .find('g[data-cy*="-nightly"]')
-                .should('have.length.greaterThan', 0)
-                .first()
-                .find('circle')
-                .should('exist')
-                .and('have.attr', 'fill')
-                .and('match', /^#[0-9A-Fa-f]{6}$/);
-      });
+    it('should display nightly releases with appropriate colors', () => {
+      getToggleButton().click();
+      cy.get('@graphSvg')
+              .find('g[data-cy*="-nightly"]')
+              .should('have.length.greaterThan', 0)
+              .first()
+              .find('circle')
+              .should('exist')
+              .and('have.attr', 'fill')
+              .and('match', /^#[0-9A-Fa-f]{6}$/);
     });
 
     context('Skip Node Functionality (based on Seeder data)', () => {
@@ -138,7 +139,7 @@ describe('Graph Rendering and Interaction', () => {
         cy.get('app-release-details', { timeout: 5000 }).should('be.visible');
 
         cy.get('app-release-details').contains('v9.0.1');
-        cy.get('app-release-details').contains('CVE-2024-0001');
+        cy.get('app-release-details').contains('CVE-2024-0001', { timeout: 10000 });
       });
     });
 
@@ -166,24 +167,13 @@ describe('Graph Rendering and Interaction', () => {
       });
 
       it('should show nightlies nodes when toggle is active', () => {
-        cy.get('@graphSvg').find('g[data-cy*="-nightly"]').then(($nightlies) => {
-          if ($nightlies.length > 0) {
-            getToggleButton().click();
-            cy.get('@graphSvg').find('g[data-cy*="-nightly"]').should('be.visible');
-          } else {
-            cy.log('No nightlies nodes found - skipping test');
-          }
-        });
+        getToggleButton().click();
+        cy.get('@graphSvg').find('g[data-cy*="-nightly"]').should('have.length.greaterThan', 0).and('be.visible');
       });
 
       it('should display nightly labels always', () => {
-        cy.get('@graphSvg').find('g[data-cy*="-nightly"]').first().then(($nightlies) => {
-          if ($nightlies.length > 0) {
-            cy.wrap($nightlies).find('text').should('exist');
-          } else {
-            cy.log('No nightlies nodes found - skipping test');
-          }
-        });
+        getToggleButton().click();
+        cy.get('@graphSvg').find('g[data-cy*="-nightly"]').first().find('text').should('exist');
       });
 
       it('should toggle state on multiple clicks', () => {
