@@ -7,7 +7,8 @@ import java.util.regex.Pattern;
 public record GitHubRepositoryStatisticsDTO(
         @JsonProperty("labels") GitHubTotalCountDTO labels,
         @JsonProperty("issueTypes") GitHubTotalCountDTO issueTypes,
-        @JsonProperty("refs") GitHubRefsDTO branches) {
+        @JsonProperty("refs") GitHubRefsDTO branches,
+        @JsonProperty("releases") GitHubTotalCountDTO releases) {
 
     public int getGitHubLabelCount() {
         return labels.totalCount();
@@ -15,6 +16,10 @@ public record GitHubRepositoryStatisticsDTO(
 
     public int getGitHubIssueTypeCount() {
         return issueTypes.totalCount();
+    }
+
+    public int getGitHubReleaseCount() {
+        return releases != null ? releases.totalCount() : -1;
     }
 
     public int getGitHubBranchCount(List<String> branchProtectionRegexes) {

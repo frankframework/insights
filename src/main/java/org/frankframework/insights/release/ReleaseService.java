@@ -413,6 +413,10 @@ public class ReleaseService {
         return mapper.toDTO(release, ReleaseResponse.class);
     }
 
+    public long getStoredReleaseCount() {
+        return releaseRepository.count();
+    }
+
     /**
      * Checks if a release with the given ID exists in the database.
      * @param releaseId the ID of the release to check
