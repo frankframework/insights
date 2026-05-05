@@ -1,19 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { DomSanitizer } from '@angular/platform-browser';
 import DOMPurify from 'dompurify';
 import { MarkdownPipe } from './markdown.pipe';
 
 describe('MarkdownPipe', () => {
   let pipe: MarkdownPipe;
-  let bypassSpy: jasmine.Spy;
 
   beforeEach(() => {
-    bypassSpy = jasmine.createSpy('bypassSecurityTrustHtml').and.callFake((html: string) => html);
-
-    TestBed.configureTestingModule({
-      providers: [{ provide: DomSanitizer, useValue: { bypassSecurityTrustHtml: bypassSpy } }],
-    });
-
+    TestBed.configureTestingModule({});
     pipe = TestBed.runInInjectionContext(() => new MarkdownPipe());
   });
 
@@ -32,12 +25,15 @@ describe('MarkdownPipe', () => {
       expect(pipe.transform('')).toBe('');
     });
 
-    it('does not call the sanitizer for empty input', () => {
+    it('does not call DOMPurify for empty input', () => {
+      const purify = spyOn(DOMPurify, 'sanitize');
+
       pipe.transform(null);
       pipe.transform(undefined); // eslint-disable-line unicorn/no-useless-undefined
       pipe.transform('');
 
-      expect(bypassSpy).not.toHaveBeenCalled();
+       
+      expect(purify).not.toHaveBeenCalled();
     });
   });
 
@@ -85,19 +81,11 @@ describe('MarkdownPipe', () => {
   });
 
   describe('sanitization', () => {
-    it('passes the rendered HTML through bypassSecurityTrustHtml', () => {
-      pipe.transform('hello');
-
-      expect(bypassSpy).toHaveBeenCalledOnceWith(jasmine.stringContaining('<p>hello</p>'));
-    });
-
-    it('passes DOMPurify-sanitized HTML to bypassSecurityTrustHtml', () => {
+    it('passes rendered HTML through DOMPurify', () => {
       const purify = spyOn(DOMPurify, 'sanitize').and.callThrough();
       pipe.transform('hello');
 
-      // eslint-disable-next-line jasmine/prefer-toHaveBeenCalledWith
-      expect(purify).toHaveBeenCalled();
-      expect(bypassSpy).toHaveBeenCalledWith(purify.calls.mostRecent().returnValue);
+      expect(purify).toHaveBeenCalledWith(jasmine.stringContaining('<p>hello</p>'), jasmine.anything());
     });
 
     it('strips <script> tags from the output', () => {

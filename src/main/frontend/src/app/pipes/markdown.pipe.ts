@@ -1,5 +1,4 @@
-import { Pipe, PipeTransform, inject } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Pipe, PipeTransform } from '@angular/core';
 import DOMPurify, { Config as DOMPurifyConfig } from 'dompurify';
 import { marked } from 'marked';
 
@@ -12,12 +11,9 @@ const DOMPURIFY_CONFIG: DOMPurifyConfig = {
 
 @Pipe({ name: 'markdown', standalone: true })
 export class MarkdownPipe implements PipeTransform {
-  private sanitizer = inject(DomSanitizer);
-
-  transform(value: string | null | undefined): SafeHtml {
+  transform(value: string | null | undefined): string {
     if (!value) return '';
     const raw = (marked(value) as string).replaceAll('<a ', '<a target="_blank" rel="noopener noreferrer" ');
-    const sanitized = DOMPurify.sanitize(raw, DOMPURIFY_CONFIG);
-    return this.sanitizer.bypassSecurityTrustHtml(sanitized);
+    return DOMPurify.sanitize(raw, DOMPURIFY_CONFIG);
   }
 }
