@@ -21,7 +21,6 @@ export class BusinessValueDuplicateComponent {
 
   public searchQuery = signal<string>('');
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   public filteredReleases = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return this.releases;
