@@ -1,18 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { DomSanitizer } from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 import { MarkdownPipe } from './markdown.pipe';
 
 describe('MarkdownPipe', () => {
   let pipe: MarkdownPipe;
-  let bypassSpy: jasmine.Spy;
 
   beforeEach(() => {
-    bypassSpy = jasmine.createSpy('bypassSecurityTrustHtml').and.callFake((html: string) => html);
-
-    TestBed.configureTestingModule({
-      providers: [{ provide: DomSanitizer, useValue: { bypassSecurityTrustHtml: bypassSpy } }],
-    });
-
+    TestBed.configureTestingModule({});
     pipe = TestBed.runInInjectionContext(() => new MarkdownPipe());
   });
 
@@ -31,12 +25,15 @@ describe('MarkdownPipe', () => {
       expect(pipe.transform('')).toBe('');
     });
 
-    it('does not call the sanitizer for empty input', () => {
+    it('does not call DOMPurify for empty input', () => {
+      const purify = spyOn(DOMPurify, 'sanitize');
+
       pipe.transform(null);
       pipe.transform(undefined); // eslint-disable-line unicorn/no-useless-undefined
       pipe.transform('');
 
-      expect(bypassSpy).not.toHaveBeenCalled();
+       
+      expect(purify).not.toHaveBeenCalled();
     });
   });
 
@@ -84,10 +81,30 @@ describe('MarkdownPipe', () => {
   });
 
   describe('sanitization', () => {
-    it('passes the rendered HTML through bypassSecurityTrustHtml', () => {
+    it('passes rendered HTML through DOMPurify', () => {
+      const purify = spyOn(DOMPurify, 'sanitize').and.callThrough();
       pipe.transform('hello');
 
-      expect(bypassSpy).toHaveBeenCalledOnceWith(jasmine.stringContaining('<p>hello</p>'));
+      expect(purify).toHaveBeenCalledWith(jasmine.stringContaining('<p>hello</p>'), jasmine.anything());
+    });
+
+    it('strips <script> tags from the output', () => {
+      const result = render('hello <script>alert(1)</script> world');
+
+      expect(result).not.toContain('<script>');
+      expect(result).not.toContain('alert(1)');
+    });
+
+    it('strips inline event handlers', () => {
+      const result = render('<b onclick="alert(1)">hello</b>');
+
+      expect(result).not.toContain('onclick');
+    });
+
+    it('strips javascript: URLs', () => {
+      const result = render('[xss](javascript:alert(1))');
+
+      expect(result).not.toContain('javascript:');
     });
   });
 });
