@@ -24,13 +24,15 @@ public class GitHubWebhookController {
 
     private final SystemDataInitializer systemDataInitializer;
     private final ObjectMapper objectMapper;
+    private final String webhookSecret;
 
-    @Value("${insights.webhook.secret:}")
-    private String webhookSecret;
-
-    public GitHubWebhookController(SystemDataInitializer systemDataInitializer, ObjectMapper objectMapper) {
+    public GitHubWebhookController(
+            SystemDataInitializer systemDataInitializer,
+            ObjectMapper objectMapper,
+            @Value("${insights.webhook.secret:}") String webhookSecret) {
         this.systemDataInitializer = systemDataInitializer;
         this.objectMapper = objectMapper;
+        this.webhookSecret = webhookSecret.trim();
     }
 
     @PostMapping("/github")
@@ -39,20 +41,32 @@ public class GitHubWebhookController {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody byte[] body) {
 
+        log.info(
+                "Received GitHub webhook: event='{}', body={} bytes, signature={}",
+                event,
+                body.length,
+                signature != null ? signature : "<missing>");
+
         if (isWebhookSecretMissing()) {
-            log.error("Webhook Error: insights.webhook.secret is empty in application properties.");
+            log.error("Webhook rejected: insights.webhook.secret is not configured on the server");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Server missing webhook secret configuration");
         }
 
         if (!isValidSignature(signature, body)) {
-            log.warn("GitHub webhook rejected: invalid or missing X-Hub-Signature-256. Provided: {}", signature);
+            log.warn(
+                    "Webhook rejected: signature mismatch or missing header."
+                            + " Received='{}', body={} bytes, configured secret length={}",
+                    signature,
+                    body.length,
+                    webhookSecret.length());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Signature");
         }
 
-        log.debug("Received verified GitHub event: {}", event);
+        log.info("Webhook signature verified. Processing event='{}'", event);
 
         if (isIgnoredEvent(event)) {
+            log.debug("Ignored non-release event: '{}'", event);
             return ResponseEntity.ok("Event ignored: " + event);
         }
 
@@ -62,16 +76,18 @@ public class GitHubWebhookController {
     private ResponseEntity<String> handleReleaseEvent(byte[] body) {
         try {
             String action = parseAction(body);
+            log.info("Release event received with action='{}'", action);
 
             if (!ACTION_PUBLISHED.equals(action)) {
-                log.debug("Ignored release action: {}", action);
+                log.debug("Ignored release action='{}' (only '{}' triggers a refresh)", action, ACTION_PUBLISHED);
                 return ResponseEntity.ok("Action ignored: " + action);
             }
         } catch (Exception e) {
-            log.error("Failed to process webhook JSON payload", e);
+            log.error("Failed to parse webhook JSON payload", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON payload");
         }
 
+        log.info("Release published — scheduling data refresh");
         scheduleRefresh();
 
         return ResponseEntity.accepted().body("Refresh scheduled");
@@ -80,8 +96,9 @@ public class GitHubWebhookController {
     private void scheduleRefresh() {
         try {
             systemDataInitializer.triggerRefresh();
+            log.info("Data refresh triggered successfully");
         } catch (Exception e) {
-            log.error("Failed to schedule data refresh", e);
+            log.error("Failed to trigger data refresh", e);
         }
     }
 
@@ -90,7 +107,15 @@ public class GitHubWebhookController {
     }
 
     private boolean isValidSignature(String signature, byte[] body) {
-        if (signature == null || !signature.startsWith(SIGNATURE_PREFIX)) {
+        if (signature == null) {
+            log.warn("Signature validation failed: X-Hub-Signature-256 header is missing");
+            return false;
+        }
+        if (!signature.startsWith(SIGNATURE_PREFIX)) {
+            log.warn(
+                    "Signature validation failed: header does not start with '{}', got '{}'",
+                    SIGNATURE_PREFIX,
+                    signature);
             return false;
         }
         try {
@@ -100,12 +125,24 @@ public class GitHubWebhookController {
             mac.init(signingKey);
 
             byte[] expectedHash = mac.doFinal(body);
+            String expectedHashHex = HexFormat.of().formatHex(expectedHash);
             String actualHashHex = signature.substring(SIGNATURE_PREFIX.length());
             byte[] actualHash = HexFormat.of().parseHex(actualHashHex);
 
-            return java.security.MessageDigest.isEqual(expectedHash, actualHash);
+            boolean valid = java.security.MessageDigest.isEqual(expectedHash, actualHash);
+            if (!valid) {
+                log.warn(
+                        "Signature validation failed: HMAC mismatch."
+                                + " Expected sha256={}, received sha256={}, body={} bytes, secret length={}",
+                        expectedHashHex,
+                        actualHashHex,
+                        body.length,
+                        webhookSecret.length());
+            }
+
+            return valid;
         } catch (Exception e) {
-            log.error("Signature calculation failed", e);
+            log.error("Signature validation failed: exception during HMAC computation", e);
             return false;
         }
     }

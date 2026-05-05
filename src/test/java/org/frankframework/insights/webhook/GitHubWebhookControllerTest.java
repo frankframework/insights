@@ -138,6 +138,48 @@ public class GitHubWebhookControllerTest {
         verify(systemDataInitializer, never()).triggerRefresh();
     }
 
+    @Test
+    public void handleWebhook_withFullGitHubReleasePayload_triggersRefreshAndReturns202() throws Exception {
+        String fullPayload =
+                """
+                {
+                  "action": "published",
+                  "release": {
+                    "url": "https://api.github.com/repos/frankframework/insights/releases/1",
+                    "tag_name": "v9.0.0",
+                    "name": "v9.0.0",
+                    "draft": false,
+                    "prerelease": false,
+                    "created_at": "2026-05-05T09:00:00Z",
+                    "published_at": "2026-05-05T09:00:00Z",
+                    "body": "**Full Changelog**: https://github.com/frankframework/insights/commits/v9.0.0"
+                  },
+                  "repository": {
+                    "id": 123456,
+                    "name": "insights",
+                    "full_name": "frankframework/insights",
+                    "private": false,
+                    "default_branch": "main"
+                  },
+                  "sender": {
+                    "login": "frankframework",
+                    "id": 9876543,
+                    "type": "Organization"
+                  }
+                }
+                """;
+        byte[] body = fullPayload.getBytes(StandardCharsets.UTF_8);
+
+        mockMvc.perform(post("/api/webhooks/github")
+                        .header("X-GitHub-Event", "release")
+                        .header("X-Hub-Signature-256", sign(body))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isAccepted());
+
+        verify(systemDataInitializer).triggerRefresh();
+    }
+
     private static String sign(byte[] body) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(TEST_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
