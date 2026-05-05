@@ -21,7 +21,6 @@ export class BusinessValuePanelComponent {
   public selectedBusinessValue = input<BusinessValue | null>(null);
   public businessValueSearchQuery = signal<string>('');
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   public filteredBusinessValues = computed(() => {
     const query = this.businessValueSearchQuery().toLowerCase().trim();
     let values = this.businessValues();

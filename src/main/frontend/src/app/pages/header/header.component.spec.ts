@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HeaderComponent } from './header.component';
 import { AuthService, User } from '../../services/auth.service';
 import { provideRouter } from '@angular/router';
@@ -6,14 +6,12 @@ import { of } from 'rxjs';
 import { signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { LocationService } from '../../services/location.service';
-import { VersionService, BuildInfo } from '../../services/version.service';
 import { GraphStateService } from '../../services/graph-state.service';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
   let fixture: ComponentFixture<HeaderComponent>;
   let mockLocationService: jasmine.SpyObj<LocationService>;
-  let mockVersionService: jasmine.SpyObj<VersionService>;
   let mockGraphStateService: jasmine.SpyObj<GraphStateService>;
   let mockAuthService: {
     currentUser: WritableSignal<User | null>;
@@ -33,11 +31,6 @@ describe('HeaderComponent', () => {
     isFrankFrameworkMember: true,
   };
 
-  const mockBuildInfo: BuildInfo = {
-    version: '0.0.1',
-    time: '2026-01-21T12:00:00Z',
-  };
-
   beforeEach(async () => {
     mockAuthService = {
       currentUser: signal<User | null>(null),
@@ -50,8 +43,6 @@ describe('HeaderComponent', () => {
       clearError: jasmine.createSpy('clearError'),
     };
     mockLocationService = jasmine.createSpyObj('LocationService', ['navigateTo', 'reload']);
-    mockVersionService = jasmine.createSpyObj('VersionService', ['getBuildInformation']);
-    mockVersionService.getBuildInformation.and.returnValue(of(mockBuildInfo));
     mockGraphStateService = jasmine.createSpyObj('GraphStateService', [
       'getShowExtendedSupport',
       'saveExtendedForOAuth',
@@ -68,7 +59,6 @@ describe('HeaderComponent', () => {
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: LocationService, useValue: mockLocationService },
-        { provide: VersionService, useValue: mockVersionService },
         { provide: GraphStateService, useValue: mockGraphStateService },
         provideRouter([]),
       ],
@@ -119,15 +109,6 @@ describe('HeaderComponent', () => {
 
       expect(title.nativeElement.textContent).toBe('Insights');
     });
-
-    it('should display build version from VersionService', fakeAsync(() => {
-      tick();
-      fixture.detectChanges();
-      const versionBadge = fixture.debugElement.query(By.css('.build-info'));
-
-      expect(versionBadge).toBeTruthy();
-      expect(versionBadge.nativeElement.textContent).toContain('1');
-    }));
   });
 
   describe('Authentication Section - Not Authenticated', () => {

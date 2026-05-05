@@ -24,7 +24,6 @@ export class BusinessValueEditComponent {
   public isSaving = signal<boolean>(false);
   public errorMessage = signal<string>('');
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   public isFormValidAndChanged = computed<boolean>(() => {
     const currentName = this.name().trim();
     const currentDescription = this.description().trim();

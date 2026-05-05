@@ -47,7 +47,6 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
     return options;
   });
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   public sortedAndFilteredIssues = computed(() => {
     const issues = this.issuesSignal();
     if (!issues) return [];

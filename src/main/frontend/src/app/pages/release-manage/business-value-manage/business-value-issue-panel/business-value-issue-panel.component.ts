@@ -28,7 +28,6 @@ export class BusinessValueIssuePanelComponent {
 
   public issueSearchQuery = signal<string>('');
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   public sortedIssues = computed(() => {
     const issues = [...this.issuesWithSelection()];
     const selectedBV = this.selectedBusinessValue();

@@ -1,16 +1,14 @@
 import { Component, inject, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { NgOptimizedImage, AsyncPipe, DatePipe } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
-import { BuildInfo, VersionService } from '../../services/version.service';
-import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, AsyncPipe, DatePipe],
+  imports: [NgOptimizedImage, RouterLink, RouterLinkActive],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
@@ -18,7 +16,6 @@ export class HeaderComponent {
   public authService = inject(AuthService);
   public showUserMenu = false;
   public graphStateService: GraphStateService = inject(GraphStateService);
-  public buildInfo$: Observable<BuildInfo | null> = inject(VersionService).getBuildInformation();
 
   private locationService = inject(LocationService);
 
@@ -51,10 +48,6 @@ export class HeaderComponent {
 
   public onDismissError(): void {
     this.authService.clearError();
-  }
-
-  public formatVersion(version: string): string {
-    return version ? version.replace(/^0\.0\./, '') : '';
   }
 
   private closeUserMenu(): void {
