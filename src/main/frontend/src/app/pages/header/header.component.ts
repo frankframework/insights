@@ -1,6 +1,6 @@
 import { Component, inject, HostListener } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { NgOptimizedImage, AsyncPipe } from '@angular/common';
+import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
@@ -8,7 +8,7 @@ import { GraphStateService } from '../../services/graph-state.service';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, AsyncPipe],
+  imports: [NgOptimizedImage, RouterLink, RouterLinkActive],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })
