@@ -53,7 +53,6 @@ export class BusinessValueManageComponent implements OnInit {
   public isDuplicating = signal<boolean>(false);
   public duplicateErrorMessage = signal<string>('');
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   public hasChanges = computed(() => this.hasIssueChanges());
 
   private route = inject(ActivatedRoute);

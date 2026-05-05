@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { DomSanitizer } from '@angular/platform-browser';
+import DOMPurify from 'dompurify';
 import { MarkdownPipe } from './markdown.pipe';
 
 describe('MarkdownPipe', () => {
@@ -88,6 +89,34 @@ describe('MarkdownPipe', () => {
       pipe.transform('hello');
 
       expect(bypassSpy).toHaveBeenCalledOnceWith(jasmine.stringContaining('<p>hello</p>'));
+    });
+
+    it('passes DOMPurify-sanitized HTML to bypassSecurityTrustHtml', () => {
+      const purify = spyOn(DOMPurify, 'sanitize').and.callThrough();
+      pipe.transform('hello');
+
+      // eslint-disable-next-line jasmine/prefer-toHaveBeenCalledWith
+      expect(purify).toHaveBeenCalled();
+      expect(bypassSpy).toHaveBeenCalledWith(purify.calls.mostRecent().returnValue);
+    });
+
+    it('strips <script> tags from the output', () => {
+      const result = render('hello <script>alert(1)</script> world');
+
+      expect(result).not.toContain('<script>');
+      expect(result).not.toContain('alert(1)');
+    });
+
+    it('strips inline event handlers', () => {
+      const result = render('<b onclick="alert(1)">hello</b>');
+
+      expect(result).not.toContain('onclick');
+    });
+
+    it('strips javascript: URLs', () => {
+      const result = render('[xss](javascript:alert(1))');
+
+      expect(result).not.toContain('javascript:');
     });
   });
 });
