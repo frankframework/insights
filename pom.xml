@@ -49,7 +49,7 @@
 		<java.version>25</java.version>
 		<junit.bom.version>6.0.1</junit.bom.version>
 		<lombok.version>1.18.42</lombok.version>
-		<postgresql.version>42.7.8</postgresql.version>
+		<postgresql.version>42.7.11</postgresql.version>
 		<h2.version>2.4.240</h2.version>
 		<spring.shedlock>7.0.0</spring.shedlock>
 		<spotless.version>3.0.0</spotless.version>
