@@ -7,6 +7,7 @@ import { ReleaseManageComponent } from './pages/release-manage/release-manage.co
 import { BusinessValueManageComponent } from './pages/release-manage/business-value-manage/business-value-manage.component';
 import { VulnerabilityImpactManageComponent } from './pages/release-manage/vulnerability-impact-manage/vulnerability-impact-manage.component';
 import { FrankFrameworkMemberGuard } from './guards/frankframework-member.guard';
+import { CveOverviewComponent } from './pages/cve-overview/cve-overview.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'graph', pathMatch: 'full' },
@@ -18,6 +19,7 @@ export const routes: Routes = [
     ],
   },
   { path: 'roadmap', component: ReleaseRoadmapComponent },
+  { path: 'cve-overview', component: CveOverviewComponent },
   {
     path: 'release-manage/:id',
     canActivate: [FrankFrameworkMemberGuard],
