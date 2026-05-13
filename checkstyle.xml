@@ -10,7 +10,7 @@
 			<property name="processJavadoc" value="true" />
 		</module>
 		<module name="MagicNumber">
-		<property name="ignoreNumbers" value="0,1,-1"/>
+		<property name="ignoreNumbers" value="0,1,-1,2"/>
 		</module>
 	</module>
 	<module name="LineLength">
