@@ -13,7 +13,7 @@ describe('PriorityLabelPipe', () => {
     });
 
     it('returns Not assessed for undefined', () => {
-      expect(pipe.transform()).toBe('Not assessed');
+      expect(pipe.transform(undefined)).toBe('Not assessed');  // eslint-disable-line unicorn/no-useless-undefined
     });
   });
 

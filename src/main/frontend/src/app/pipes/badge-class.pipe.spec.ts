@@ -13,7 +13,7 @@ describe('BadgeClassPipe', () => {
     });
 
     it('returns badge-none for undefined', () => {
-      expect(pipe.transform()).toBe('badge-none');
+      expect(pipe.transform(undefined)).toBe('badge-none');  // eslint-disable-line unicorn/no-useless-undefined
     });
   });
 
