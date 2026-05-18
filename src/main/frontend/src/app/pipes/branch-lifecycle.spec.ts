@@ -1,12 +1,12 @@
 import { isBranchMaintained } from './branch-lifecycle';
 
-describe('isBranchMaintained', () => {
-  const monthsAgo = (n: number): Date => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - n);
-    return d;
-  };
+const monthsAgo = (n: number): Date => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - n);
+  return d;
+};
 
+describe('isBranchMaintained', () => {
   describe('special branch names always maintained', () => {
     it('master is always maintained', () => {
       expect(isBranchMaintained('master', monthsAgo(24))).toBeTrue();
@@ -45,6 +45,7 @@ describe('isBranchMaintained', () => {
     it('minor branch 1 day old is maintained', () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
+
       expect(isBranchMaintained('release/8.3', yesterday)).toBeTrue();
     });
   });
@@ -71,6 +72,7 @@ describe('isBranchMaintained', () => {
     it('strips release/ prefix correctly', () => {
       const result7_8_with = isBranchMaintained('release/7.8', monthsAgo(3));
       const result7_8_without = isBranchMaintained('7.8', monthsAgo(3));
+
       expect(result7_8_with).toBe(result7_8_without);
     });
 
@@ -92,11 +94,13 @@ describe('isBranchMaintained', () => {
   describe('date input types', () => {
     it('accepts a Date object', () => {
       const date = monthsAgo(3);
+
       expect(isBranchMaintained('release/8.1', date)).toBeTrue();
     });
 
     it('accepts an ISO date string', () => {
       const isoString = monthsAgo(3).toISOString();
+
       expect(isBranchMaintained('release/8.1', isoString)).toBeTrue();
     });
   });

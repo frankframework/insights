@@ -13,7 +13,7 @@ describe('BadgeClassPipe', () => {
     });
 
     it('returns badge-none for undefined', () => {
-      expect(pipe.transform(undefined)).toBe('badge-none');
+      expect(pipe.transform()).toBe('badge-none');
     });
   });
 
@@ -66,15 +66,15 @@ describe('BadgeClassPipe', () => {
 
   describe('numeric impact score inputs', () => {
     it('returns badge-critical for score >= 7.5', () => {
-      expect(pipe.transform(10.0)).toBe('badge-critical');
+      expect(pipe.transform(10)).toBe('badge-critical');
       expect(pipe.transform(9.8)).toBe('badge-critical');
       expect(pipe.transform(7.5)).toBe('badge-critical');
     });
 
     it('returns badge-high for score >= 5 and < 7.5', () => {
       expect(pipe.transform(7.4)).toBe('badge-high');
-      expect(pipe.transform(5.0)).toBe('badge-high');
-      expect(pipe.transform(6.0)).toBe('badge-high');
+      expect(pipe.transform(5)).toBe('badge-high');
+      expect(pipe.transform(6)).toBe('badge-high');
     });
 
     it('returns badge-medium for score >= 2.5 and < 5', () => {
@@ -86,7 +86,7 @@ describe('BadgeClassPipe', () => {
     it('returns badge-low for score < 2.5', () => {
       expect(pipe.transform(2.4)).toBe('badge-low');
       expect(pipe.transform(0)).toBe('badge-low');
-      expect(pipe.transform(1.0)).toBe('badge-low');
+      expect(pipe.transform(1)).toBe('badge-low');
     });
 
     it('boundary: exactly 7.5 is badge-critical', () => {
@@ -94,7 +94,7 @@ describe('BadgeClassPipe', () => {
     });
 
     it('boundary: exactly 5.0 is badge-high', () => {
-      expect(pipe.transform(5.0)).toBe('badge-high');
+      expect(pipe.transform(5)).toBe('badge-high');
     });
 
     it('boundary: exactly 2.5 is badge-medium', () => {

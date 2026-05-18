@@ -19,6 +19,7 @@ describe('parseVersion', () => {
 
   it('returns [0] for fully non-numeric string', () => {
     const result = parseVersion('master');
+
     expect(result[0]).toBe(0);
   });
 
@@ -72,6 +73,7 @@ describe('sortVersionsAsc', () => {
     const original = ['9.0', '7.8', '8.1'];
     const copy = [...original];
     sortVersionsAsc(original);
+
     expect(original).toEqual(copy);
   });
 
@@ -85,12 +87,14 @@ describe('sortVersionsAsc', () => {
 
   it('handles many branches in the right order', () => {
     const input = ['9.1', '7.0', '8.0', '7.7', '9.0', '8.1', '7.8'];
+
     expect(sortVersionsAsc(input)).toEqual(['7.0', '7.7', '7.8', '8.0', '8.1', '9.0', '9.1']);
   });
 
   it('sorts versions with v prefix', () => {
     const result = sortVersionsAsc(['v9.0', 'v7.8', 'v8.1']);
+
     expect(result[0]).toContain('7');
-    expect(result[result.length - 1]).toContain('9');
+    expect(result.at(-1)).toContain('9');
   });
 });

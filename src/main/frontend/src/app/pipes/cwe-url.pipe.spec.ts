@@ -48,6 +48,7 @@ describe('CweUrlPipe', () => {
 
     it('uses first number found when multiple numbers present', () => {
       const result = pipe.transform('CWE-79-and-89');
+
       expect(result).toBe('https://cwe.mitre.org/data/definitions/79.html');
     });
   });
