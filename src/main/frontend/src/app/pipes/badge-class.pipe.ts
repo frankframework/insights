@@ -1,12 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 /**
- * Maps a CVSS severity string ('CRITICAL', 'HIGH', …) or an impact score (number)
+ * Maps a CVSS severity string ('CRITICAL', 'HIGH', etc) or an impact score (number)
  * to a shared badge CSS class: badge-critical | badge-high | badge-medium | badge-low | badge-none.
- *
- * Usage:
- *   <span class="badge" [ngClass]="'CRITICAL' | badgeClass">CRITICAL</span>
- *   <span class="badge" [ngClass]="7.5 | badgeClass">Critical</span>
  */
 @Pipe({ name: 'badgeClass', standalone: true, pure: true })
 export class BadgeClassPipe implements PipeTransform {
