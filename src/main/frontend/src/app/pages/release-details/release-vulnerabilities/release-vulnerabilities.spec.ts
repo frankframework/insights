@@ -11,6 +11,7 @@ describe('ReleaseVulnerabilities', () => {
   const mockVulnerabilities: Vulnerability[] = [
     {
       cveId: 'CVE-2024-0001',
+      title: 'title',
       severity: VulnerabilitySeverities.CRITICAL,
       cvssScore: 9.8,
       description: 'Critical vulnerability with a very long description that should trigger the see more button because it exceeds six lines of text when rendered in the UI component with normal font size and line height settings.',
@@ -18,6 +19,7 @@ describe('ReleaseVulnerabilities', () => {
     },
     {
       cveId: 'CVE-2024-0002',
+      title: 'title',
       severity: VulnerabilitySeverities.HIGH,
       cvssScore: 7.5,
       description: 'High severity vulnerability',
@@ -25,6 +27,7 @@ describe('ReleaseVulnerabilities', () => {
     },
     {
       cveId: 'CVE-2024-0003',
+      title: 'title',
       severity: VulnerabilitySeverities.MEDIUM,
       cvssScore: 5,
       description: 'Medium severity vulnerability',
@@ -32,6 +35,7 @@ describe('ReleaseVulnerabilities', () => {
     },
     {
       cveId: 'CVE-2024-0004',
+      title: 'title',
       severity: VulnerabilitySeverities.LOW,
       cvssScore: 2.1,
       description: 'Low severity vulnerability',
@@ -39,6 +43,7 @@ describe('ReleaseVulnerabilities', () => {
     },
     {
       cveId: 'CVE-2024-0005',
+      title: 'title',
       severity: VulnerabilitySeverities.CRITICAL,
       cvssScore: 10,
       description: 'Another critical vulnerability',
@@ -199,6 +204,7 @@ describe('ReleaseVulnerabilities', () => {
     it('should handle vulnerability with no CWEs', () => {
       const vulnNoCwe: Vulnerability = {
         cveId: 'CVE-2024-9999',
+        title: 'title',
         severity: VulnerabilitySeverities.HIGH,
         cvssScore: 8,
         description: 'No CWEs',
@@ -213,6 +219,7 @@ describe('ReleaseVulnerabilities', () => {
     it('should handle vulnerability with empty description', () => {
       const vulnNoDesc: Vulnerability = {
         cveId: 'CVE-2024-8888',
+        title: 'title',
         severity: VulnerabilitySeverities.MEDIUM,
         cvssScore: 5.5,
         description: '',
@@ -227,6 +234,7 @@ describe('ReleaseVulnerabilities', () => {
     it('should handle vulnerability with very long CVE ID', () => {
       const vulnLongId: Vulnerability = {
         cveId: 'CVE-2024-0001-VERY-LONG-IDENTIFIER-WITH-EXTRA-TEXT',
+        title: 'title',
         severity: VulnerabilitySeverities.LOW,
         cvssScore: 3,
         description: 'Test',
@@ -250,6 +258,7 @@ describe('ReleaseVulnerabilities', () => {
       component.vulnerabilities = [
         {
           cveId: 'CVE-2024-1111',
+          title: 'title',
           severity: VulnerabilitySeverities.HIGH,
           cvssScore: 7.5,
           description: 'Duplicate 1',
@@ -257,6 +266,7 @@ describe('ReleaseVulnerabilities', () => {
         },
         {
           cveId: 'CVE-2024-2222',
+          title: 'title',
           severity: VulnerabilitySeverities.HIGH,
           cvssScore: 7.5,
           description: 'Duplicate 2',
