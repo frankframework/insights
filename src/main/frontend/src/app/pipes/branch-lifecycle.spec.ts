@@ -1,9 +1,9 @@
 import { isBranchMaintained } from './branch-lifecycle';
 
-const monthsAgo = (n: number): Date => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - n);
-  return d;
+const monthsAgo = (numberOfMonths: number): Date => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - numberOfMonths);
+  return date;
 };
 
 describe('isBranchMaintained', () => {

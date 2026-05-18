@@ -60,8 +60,6 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/auth/user", "/api/business-value/**", "/api/vulnerabilities/**")
                         .authenticated()
-                        .requestMatchers("/api/webhooks/**")
-                        .permitAll()
                         .anyRequest()
                         .permitAll())
                 .oauth2Login(oauth2 -> oauth2.userInfoEndpoint(userInfo -> userInfo.userService(userService))
