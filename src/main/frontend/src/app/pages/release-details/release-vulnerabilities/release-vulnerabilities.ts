@@ -46,7 +46,8 @@ export class ReleaseVulnerabilities implements OnChanges {
     return `severity-${severity.toLowerCase()}`;
   }
 
-  public formatCvssScore(score: number): string {
+  public formatCvssScore(score: number | null): string {
+    if (score === null) return '—';
     return score % 1 === 0 ? score.toString() : score.toFixed(1);
   }
 
@@ -58,7 +59,7 @@ export class ReleaseVulnerabilities implements OnChanges {
         return orderA - orderB;
       }
 
-      return b.cvssScore - a.cvssScore;
+      return (b.cvssScore ?? 0) - (a.cvssScore ?? 0);
     });
   }
 }

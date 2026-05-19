@@ -28,6 +28,7 @@ const mockIssues: Issue[] = [{ id: 'issue-1', number: 123, title: 'Test Issue', 
 const mockVulnerabilities: Vulnerability[] = [
   {
     cveId: 'CVE-2024-0001',
+    title: 'title',
     severity: VulnerabilitySeverities.CRITICAL,
     cvssScore: 9.8,
     description: 'Critical vulnerability',
