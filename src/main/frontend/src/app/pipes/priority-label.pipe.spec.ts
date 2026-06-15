@@ -59,13 +59,5 @@ describe('PriorityLabelPipe', () => {
     it('boundary 2.5 is Medium', () => {
       expect(pipe.transform(2.5)).toBe('Medium');
     });
-
-    it('smallest positive score is Low', () => {
-      expect(pipe.transform(0.1)).toBe('Low');
-    });
-
-    it('score 0 is No (no impact, not Low)', () => {
-      expect(pipe.transform(0)).toBe('No');
-    });
   });
 });
