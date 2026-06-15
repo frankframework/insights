@@ -120,7 +120,7 @@ describe('HeaderComponent', () => {
     });
 
     it('should display login button', () => {
-      const loginButton = fixture.debugElement.query(By.css('.github-login-btn'));
+      const loginButton = fixture.debugElement.query(By.css('app-pill-button'));
 
       expect(loginButton).toBeTruthy();
     });
@@ -133,7 +133,7 @@ describe('HeaderComponent', () => {
 
     it('should call onLoginWithGitHub when login button is clicked', () => {
       spyOn(component, 'onLoginWithGitHub');
-      const loginButton = fixture.debugElement.query(By.css('.github-login-btn'));
+      const loginButton = fixture.debugElement.query(By.css('app-pill-button button'));
       loginButton.nativeElement.click();
 
       expect(component.onLoginWithGitHub).toHaveBeenCalledWith();
@@ -142,7 +142,7 @@ describe('HeaderComponent', () => {
     it('should disable login button when loading', () => {
       mockAuthService.isLoading.set(true);
       fixture.detectChanges();
-      const loginButton = fixture.debugElement.query(By.css('.github-login-btn'));
+      const loginButton = fixture.debugElement.query(By.css('app-pill-button button'));
 
       expect(loginButton.nativeElement.disabled).toBe(true);
     });
@@ -163,7 +163,7 @@ describe('HeaderComponent', () => {
     });
 
     it('should not display login button', () => {
-      const loginButton = fixture.debugElement.query(By.css('.github-login-btn'));
+      const loginButton = fixture.debugElement.query(By.css('app-pill-button'));
 
       expect(loginButton).toBeFalsy();
     });

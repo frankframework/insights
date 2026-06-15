@@ -76,35 +76,10 @@
     margin-left: auto;
     display: flex;
     align-items: center;
-    padding-right: 2.5rem;
+    padding-right: 2rem;
 
-    .github-login-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: white;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      padding: 8px;
-      transition: background-color 0.2s;
-
-      svg {
-        display: block;
-      }
-
-      &:hover:not(:disabled) {
-        background-color: #f6f8fa;
-      }
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .spinner {
-        animation: spin 1s linear infinite;
-      }
+    .github-pill-button {
+      margin-top: 0.25rem;
     }
 
     .user-profile {
@@ -282,14 +257,5 @@
         font-size: 0.85rem;
       }
     }
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
   }
 }

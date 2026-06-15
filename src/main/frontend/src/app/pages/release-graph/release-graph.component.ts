@@ -10,7 +10,7 @@ import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 import { AuthService } from '../../services/auth.service';
 import { GraphStateService } from '../../services/graph-state.service';
-import { NgStyle } from '@angular/common';
+import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -31,7 +31,7 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, NgStyle],
+  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;

@@ -1,16 +1,4 @@
-<button
-  class="release-btn"
-  type="button"
-  title="Show release info"
-  aria-label="Show release info"
-  [ngStyle]="{
-    right: isSmallScreen ? 'auto' : this.authService.isAuthenticated() ? '12.5rem' : '6.5rem',
-    left: isSmallScreen ? '1.25rem' : 'auto',
-  }"
-  (click)="toggleModal()"
->
-  <img src="assets/icons/info-button.svg" alt="" width="36" height="36" />
-</button>
+<app-pill-button icon="help" label="Legend" tooltip="Show legend and release info" (clicked)="toggleModal()" />
 
 @if (modalOpen) {
   <app-modal [title]="'Release Support'" [hideScrollBar]="true" (closed)="toggleModal()">
