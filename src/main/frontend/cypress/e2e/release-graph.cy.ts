@@ -10,15 +10,7 @@ describe('Graph Rendering and Interaction', () => {
     cy.get(nodeCySelector).click({ force: true });
   };
 
-  const getToggleButton = () => {
-    return cy.get('body').then(($body) => {
-      if ($body.find('.nightly-toggle-mobile:visible').length > 0) {
-        return cy.get('.nightly-toggle-mobile');
-      } else {
-        return cy.get('.nightly-toggle');
-      }
-    });
-  };
+  const getToggleButton = () => cy.get('.nightly-toggle button');
 
   context('Initial State', () => {
     it('should display the main UI components', () => {
@@ -51,7 +43,7 @@ describe('Graph Rendering and Interaction', () => {
         }
       });
 
-      cy.get('button[aria-label="Show release info"]').should('be.visible').click();
+      cy.get('app-release-catalogus').contains('button', 'Legend').should('be.visible').click();
       cy.get('app-modal').should('be.visible').as('infoModal');
       cy.get('@infoModal').contains('h2', 'Release Support');
       cy.get('@infoModal').find('button[aria-label="Close modal"]').click();
@@ -157,7 +149,7 @@ describe('Graph Rendering and Interaction', () => {
 
     context('Nightly Toggle Functionality', () => {
       it('should display the nightly toggle button', () => {
-        cy.get('.nightly-toggle-mobile, .nightly-toggle').filter(':visible').should('have.length', 1);
+        cy.get('.nightly-toggle button').filter(':visible').should('have.length', 1);
       });
 
       it('should toggle nightlies on click', () => {
