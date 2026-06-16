@@ -116,8 +116,6 @@ export class AuthService {
     this.authError.set(null);
     this.setSessionFlag(false);
 
-    // Reload the current page so the user stays where they are after logging out.
-    // Member-only pages bounce to the landing page via their route guard.
     this.locationService.navigateTo(globalThis.location.pathname + globalThis.location.search);
   }
 
