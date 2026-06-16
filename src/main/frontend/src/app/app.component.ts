@@ -40,6 +40,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const returnUrl = this.authService.consumeReturnUrl();
     const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
     const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
 
@@ -50,6 +51,11 @@ export class AppComponent implements OnInit {
         }
       },
     });
+
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl, { replaceUrl: true });
+      return;
+    }
 
     this.route.queryParams.subscribe((parameters) => {
       const currentUrl = this.router.url;

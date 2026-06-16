@@ -195,7 +195,7 @@ describe('ReleaseManageComponent', () => {
     card.click();
     fixture.detectChanges();
 
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/release-manage', '123', 'vulnerabilities']);
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/vulnerabilities/manage']);
   });
 
   it('should close section and return to overview when close button is clicked', () => {
