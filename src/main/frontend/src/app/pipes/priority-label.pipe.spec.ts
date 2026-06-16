@@ -36,10 +36,14 @@ describe('PriorityLabelPipe', () => {
       expect(pipe.transform(3.5)).toBe('Medium');
     });
 
-    it('returns Low for score < 2.5', () => {
+    it('returns Low for score > 0 and < 2.5', () => {
       expect(pipe.transform(2.4)).toBe('Low');
-      expect(pipe.transform(0)).toBe('Low');
       expect(pipe.transform(1)).toBe('Low');
+      expect(pipe.transform(0.1)).toBe('Low');
+    });
+
+    it('returns No for score 0 (no impact)', () => {
+      expect(pipe.transform(0)).toBe('No');
     });
   });
 
@@ -54,10 +58,6 @@ describe('PriorityLabelPipe', () => {
 
     it('boundary 2.5 is Medium', () => {
       expect(pipe.transform(2.5)).toBe('Medium');
-    });
-
-    it('score 0 is Low', () => {
-      expect(pipe.transform(0)).toBe('Low');
     });
   });
 });
