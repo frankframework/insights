@@ -1,0 +1,98 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+
+.control-pill {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  height: 36px;
+  border-radius: 18px;
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  padding: 6px 14px 6px 10px;
+
+  .pill-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    background-color: #6c757d;
+    transition: background-color 0.2s ease-in-out;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+
+    &.pill-icon--moon {
+      mask-image: url('./icons/moon.svg');
+    }
+
+    &.pill-icon--help {
+      mask-image: url('./icons/help.svg');
+    }
+
+    &.pill-icon--github {
+      mask-image: url('./icons/github.svg');
+    }
+
+    &.pill-icon--spinner {
+      mask-image: url('./icons/spinner.svg');
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  .toggle-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+    transition: color 0.2s ease-in-out;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &.active {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    box-shadow: 0 3px 6px rgba(30, 58, 138, 0.3);
+
+    .pill-icon {
+      background-color: #ffffff;
+    }
+
+    .toggle-label {
+      color: #ffffff;
+    }
+
+    &:hover {
+      background-color: #1d3680;
+      border-color: #1d3680;
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

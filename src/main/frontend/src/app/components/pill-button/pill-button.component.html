@@ -1,0 +1,11 @@
+<button
+  type="button"
+  class="control-pill"
+  [class.active]="active"
+  [disabled]="disabled || loading"
+  [attr.title]="tooltip || null"
+  (click)="clicked.emit()"
+>
+  <span aria-hidden="true" [class]="'pill-icon pill-icon--' + (loading ? 'spinner' : icon)"></span>
+  <span class="toggle-label">{{ label }}</span>
+</button>

@@ -30,75 +30,27 @@
     display: none;
   }
 
-  .nightly-toggle {
+  .graph-controls {
     position: fixed;
     top: 1.5rem;
+    right: 8.5rem;
     z-index: 25;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    height: 36px;
-    border-radius: 18px;
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-    padding: 6px 14px 6px 10px;
+    gap: 0.75rem;
+
+    &.with-profile {
+      right: 12rem;
+    }
 
     @media (max-width: 991px) {
-      top: auto;
-      bottom: 1.5rem;
-      right: 5rem !important;
-    }
-
-    .moon-icon {
-      width: 20px;
-      height: 20px;
-      fill: #6c757d;
-      transition: all 0.2s ease-in-out;
-      flex-shrink: 0;
-    }
-
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: #495057;
-      white-space: nowrap;
-      transition: color 0.2s ease-in-out;
-    }
-
-    &:hover {
-      background-color: #f8f9fa;
-      border-color: #ced4da;
-      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
-    }
-
-    &:active {
-      transform: scale(0.98);
-    }
-
-    &.active {
-      background-color: #1e3a8a;
-      border-color: #1e3a8a;
-      box-shadow: 0 3px 6px rgba(30, 58, 138, 0.3);
-
-      .moon-icon {
-        fill: #ffffff;
-
-        path {
-          stroke: #ffffff;
-        }
-      }
-
-      .toggle-label {
-        color: #ffffff;
-      }
-
-      &:hover {
-        background-color: #1d3680;
-        border-color: #1d3680;
+      &,
+      &.with-profile {
+        top: auto;
+        bottom: 1.5rem;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
       }
     }
   }
