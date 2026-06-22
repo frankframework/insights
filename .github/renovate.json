@@ -9,6 +9,12 @@
 	},
 	"packageRules": [
 		{
+			"matchManagers": ["github-actions"],
+			"groupName": "CI Dependencies",
+			"addLabels": ["CI"],
+			"schedule": ["before 9am on monday"]
+		},
+		{
 			"matchManagers": ["dockerfile"],
 			"addLabels": ["Docker"],
 			"schedule": ["before 9am on monday"]
@@ -32,7 +38,9 @@
 		{
 			"matchManagers": ["npm"],
 			"matchPackagePatterns": ["^@angular", "^typescript$"],
-			"groupName": "Angular"
+			"groupName": "Angular",
+			"addLabels": ["Angular", "JavaScript"],
+			"schedule": ["before 9am on monday"] 
 		}
 	]
 }
