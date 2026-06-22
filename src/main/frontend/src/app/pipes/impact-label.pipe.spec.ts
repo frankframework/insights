@@ -1,10 +1,10 @@
-import { PriorityLabelPipe } from './priority-label.pipe';
+import { ImpactLabelPipe } from './impact-label.pipe';
 
-describe('PriorityLabelPipe', () => {
-  let pipe: PriorityLabelPipe;
+describe('ImpactLabelPipe', () => {
+  let pipe: ImpactLabelPipe;
 
   beforeEach(() => {
-    pipe = new PriorityLabelPipe();
+    pipe = new ImpactLabelPipe();
   });
 
   describe('null / undefined inputs (not assessed)', () => {
