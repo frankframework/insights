@@ -8,19 +8,11 @@ import { Pipe, PipeTransform } from '@angular/core';
 @Pipe({ name: 'impactLabel', standalone: true, pure: true })
 export class ImpactLabelPipe implements PipeTransform {
   transform(score: number | null | undefined): string {
-    return getImpactLabel(score);
+    if (score === null || score === undefined) return 'Not assessed';
+    if (score >= 7.5) return 'Critical';
+    if (score >= 5) return 'High';
+    if (score >= 2.5) return 'Medium';
+    if (score > 0) return 'Low';
+    return 'No';
   }
-}
-
-/**
- * Single source of truth for impact labels. Maps an impact score to a
- * readable label, shared by templates and typescript code.
- */
-export function getImpactLabel(impactScore: number | null | undefined): string {
-  if (impactScore === null || impactScore === undefined) return 'Not assessed';
-  if (impactScore >= 7.5) return 'Critical';
-  if (impactScore >= 5) return 'High';
-  if (impactScore >= 2.5) return 'Medium';
-  if (impactScore > 0) return 'Low';
-  return 'No';
 }
