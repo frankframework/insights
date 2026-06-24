@@ -1,38 +1,205 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["config:recommended"],
-	"labels": ["Dependencies"],
-	"ignoreDeps": ["pnpm"],
+	"extends": [
+		"config:recommended",
+		"helpers:pinGitHubActionDigests",
+		":configMigration",
+		"security:minimumReleaseAgeNpm"
+	],
+	"labels": [
+		"Dependencies"
+	],
+	"ignoreDeps": [
+		"pnpm"
+	],
+	"dependencyDashboard": true,
+	"rebaseWhen": "conflicted",
+	"rangeStrategy": "bump",
+	"commitMessageTopic": "{{depName}}",
+	"commitMessageAction": "Update",
+	"commitMessageExtra": "to {{#if isMajor}}v{{newMajor}}{{else}}v{{newVersion}}{{/if}}",
+	"commitMessageSuffix": "",
 	"lockFileMaintenance": {
 		"enabled": true,
-		"schedule": ["before 5am on monday"]
+		"schedule": [
+			"before 5am on monday"
+		]
 	},
 	"packageRules": [
 		{
-			"matchManagers": ["dockerfile"],
-			"addLabels": ["Docker"],
-			"schedule": ["before 9am on monday"]
+			"description": "Tag safe (non-major) updates so they can be auto-merged by CI automation",
+			"matchUpdateTypes": [
+				"minor",
+				"patch",
+				"pin",
+				"digest"
+			],
+			"addLabels": [
+				"automerge"
+			]
 		},
 		{
-			"matchManagers": ["maven"],
-			"addLabels": ["Java"],
-			"schedule": ["before 9am on monday"]
-		},
-		{
-			"matchManagers": ["npm"],
-			"matchDepTypes": ["peerDependencies"],
+			"description": "Never raise PRs for npm peerDependencies",
+			"matchManagers": [
+				"npm"
+			],
+			"matchDepTypes": [
+				"peerDependencies"
+			],
 			"enabled": false
 		},
 		{
-			"matchManagers": ["npm"],
-			"rangeStrategy": "bump",
-			"addLabels": ["JavaScript"],
-			"schedule": ["before 9am on monday"]
+			"description": "Catch-all npm minor/patch updates - grouped, weekly, with a supply-chain cool-off",
+			"matchManagers": [
+				"npm"
+			],
+			"matchUpdateTypes": [
+				"minor",
+				"patch"
+			],
+			"groupName": "npm-dependencies",
+			"addLabels": [
+				"JavaScript"
+			],
+			"schedule": [
+				"before 6am on monday"
+			],
+			"minimumReleaseAge": "5 days"
 		},
 		{
-			"matchManagers": ["npm"],
-			"matchPackagePatterns": ["^@angular", "^typescript$"],
-			"groupName": "Angular"
+			"description": "ESLint & Prettier tooling",
+			"matchManagers": [
+				"npm"
+			],
+			"groupName": "Linting",
+			"matchPackageNames": [
+				"/eslint/",
+				"/prettier/"
+			],
+			"addLabels": [
+				"JavaScript"
+			],
+			"schedule": [
+				"before 6am on monday"
+			],
+			"minimumReleaseAge": "5 days"
+		},
+		{
+			"description": "Cypress end-to-end tooling",
+			"matchManagers": [
+				"npm"
+			],
+			"groupName": "Cypress",
+			"matchPackageNames": [
+				"cypress",
+				"/^cypress-/",
+				"mocha",
+				"/^mochawesome/"
+			],
+			"addLabels": [
+				"JavaScript"
+			],
+			"schedule": [
+				"before 6am on monday"
+			],
+			"minimumReleaseAge": "5 days"
+		},
+		{
+			"description": "Angular - keep core framework, devkit, CLI, build, eslint plugins & zone.js in lock-step (listed after Linting so @angular-eslint/* lands here)",
+			"matchManagers": [
+				"npm"
+			],
+			"groupName": "Angular",
+			"matchPackageNames": [
+				"/^@angular\\//",
+				"/^@angular-devkit\\//",
+				"/^@angular-eslint\\//",
+				"angular-eslint",
+				"zone.js"
+			],
+			"addLabels": [
+				"JavaScript",
+				"Angular"
+			],
+			"schedule": [
+				"before 6am on monday"
+			],
+			"minimumReleaseAge": "5 days"
+		},
+		{
+			"description": "Maven (incl. wrapper) - daily early morning, Java label, supply-chain cool-off",
+			"matchManagers": [
+				"maven",
+				"maven-wrapper"
+			],
+			"schedule": [
+				"* 0-6 * * *"
+			],
+			"addLabels": [
+				"Java"
+			],
+			"minimumReleaseAge": "5 days"
+		},
+		{
+			"description": "Group Maven patch updates into a single PR",
+			"matchManagers": [
+				"maven"
+			],
+			"matchUpdateTypes": [
+				"patch"
+			],
+			"groupName": "maven-dependencies"
+		},
+		{
+			"description": "Spring Boot / Framework / GraphQL - update together, split minor vs patch",
+			"matchManagers": [
+				"maven"
+			],
+			"groupName": "Spring",
+			"matchPackageNames": [
+				"/^org\\.springframework/"
+			],
+			"separateMinorPatch": true
+		},
+		{
+			"description": "Container base images - daily early morning, grouped",
+			"matchManagers": [
+				"dockerfile",
+				"docker-compose"
+			],
+			"schedule": [
+				"* 0-6 * * *"
+			],
+			"addLabels": [
+				"Docker"
+			],
+			"groupName": "Docker"
+		},
+		{
+			"description": "GitHub Actions - weekly, single grouped PR, pinned to commit digests",
+			"matchManagers": [
+				"github-actions"
+			],
+			"schedule": [
+				"before 6am on monday"
+			],
+			"addLabels": [
+				"CI/CD"
+			],
+			"groupName": "github-actions",
+			"separateMajorMinor": false,
+			"minimumReleaseAge": "7 days"
 		}
-	]
+	],
+	"vulnerabilityAlerts": {
+		"enabled": true,
+		"labels": [
+			"Security",
+			"Dependencies"
+		],
+		"addLabels": [
+			"CVE"
+		]
+	},
+	"osvVulnerabilityAlerts": true
 }

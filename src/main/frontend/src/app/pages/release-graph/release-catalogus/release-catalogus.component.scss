@@ -1,20 +1,6 @@
-.release-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  box-shadow: none;
-  cursor: pointer;
-  position: fixed;
-  z-index: 25;
-
-  @media (min-width: 999px) {
-    top: 1.5rem;
-  }
-
-  @media (max-width: 992px) {
-    bottom: 1.25rem;
-  }
+:host {
+  display: inline-flex;
+  align-items: center;
 }
 
 .release-modal-content {

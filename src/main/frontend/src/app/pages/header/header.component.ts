@@ -4,11 +4,12 @@ import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
+import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [NgOptimizedImage, RouterLink, RouterLinkActive],
+  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })

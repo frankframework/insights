@@ -107,20 +107,18 @@
       </g>
     </svg>
 
-    <button
-      class="nightly-toggle"
-      title="Toggle Nightly Releases"
-      [class.active]="showNightlies"
-      [ngStyle]="{
-        right: authService.isAuthenticated() && authService.currentUser()?.isFrankFrameworkMember ? '16rem' : '10.5rem',
-      }"
-      (click)="toggleNightlies()"
-    >
-      <svg viewBox="0 0 24 24" class="moon-icon">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-      </svg>
-      <span class="toggle-label">Show nightly</span>
-    </button>
+    <div class="graph-controls" [class.with-profile]="authService.isAuthenticated()">
+      <app-pill-button
+        class="nightly-toggle"
+        icon="moon"
+        label="Show nightlies"
+        tooltip="Toggle all nightly releases"
+        [active]="showNightlies"
+        (clicked)="toggleNightlies()"
+      />
+
+      <app-release-catalogus [showExtendedSupport]="showExtendedSupport" />
+    </div>
 
     <div class="branch-labels-sticky">
       @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
@@ -132,8 +130,6 @@
         </div>
       }
     </div>
-
-    <app-release-catalogus [showExtendedSupport]="showExtendedSupport" />
 
     @if (dataForSkipModal) {
       <app-skipped-versions-modal
