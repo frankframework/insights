@@ -28,7 +28,7 @@
     "dompurify": "^3.4.11",
     "marked": "^18.0.5",
     "ng2-charts": "^10.0.0",
-    "ngx-markdown": "^21.2.0",
+    "ngx-markdown": "^22.0.0",
     "rxjs": "~7.8.2",
     "tslib": "^2.8.1",
     "zone.js": "~0.16.1"
