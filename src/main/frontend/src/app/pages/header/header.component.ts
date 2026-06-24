@@ -1,5 +1,5 @@
 import { Component, inject, HostListener } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
@@ -19,6 +19,7 @@ export class HeaderComponent {
   public graphStateService: GraphStateService = inject(GraphStateService);
 
   private locationService = inject(LocationService);
+  private router = inject(Router);
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
@@ -33,6 +34,7 @@ export class HeaderComponent {
   public onLoginWithGitHub(): void {
     this.authService.setLoading(true);
     this.authService.setPendingAuth();
+    this.rememberReturnUrl();
     this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
     this.graphStateService.saveNightlyForOAuth(this.graphStateService.getShowNightlies());
     this.locationService.navigateTo('/oauth2/authorization/github');
@@ -53,5 +55,19 @@ export class HeaderComponent {
 
   private closeUserMenu(): void {
     this.showUserMenu = false;
+  }
+
+  /**
+   * Remember the current page so the user is returned here after login. The graph/root
+   * page is the OAuth default landing (and restores its own view state), so skip it.
+   */
+  private rememberReturnUrl(): void {
+    const currentUrl = this.router.url;
+    const path = currentUrl.split('?')[0];
+    const isDefaultLanding = path === '' || path === '/' || path.startsWith('/graph');
+
+    if (!isDefaultLanding) {
+      this.authService.saveReturnUrl(currentUrl);
+    }
   }
 }

@@ -21,12 +21,16 @@ export const routes: Routes = [
   { path: 'roadmap', component: ReleaseRoadmapComponent },
   { path: 'cve-overview', component: CveOverviewComponent },
   {
+    path: 'vulnerabilities/manage',
+    component: VulnerabilityImpactManageComponent,
+    canActivate: [FrankFrameworkMemberGuard],
+  },
+  {
     path: 'release-manage/:id',
     canActivate: [FrankFrameworkMemberGuard],
     children: [
       { path: '', component: ReleaseManageComponent },
       { path: 'business-values', component: BusinessValueManageComponent },
-      { path: 'vulnerabilities', component: VulnerabilityImpactManageComponent },
     ],
   },
   { path: 'not-found', component: NotFoundComponent },

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HeaderComponent } from './header.component';
 import { AuthService, User } from '../../services/auth.service';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
@@ -20,6 +20,7 @@ describe('HeaderComponent', () => {
     isLoading: WritableSignal<boolean>;
     setLoading: jasmine.Spy;
     setPendingAuth: jasmine.Spy;
+    saveReturnUrl: jasmine.Spy;
     logout: jasmine.Spy;
     clearError: jasmine.Spy;
   };
@@ -39,6 +40,7 @@ describe('HeaderComponent', () => {
       isLoading: signal<boolean>(false),
       setLoading: jasmine.createSpy('setLoading'),
       setPendingAuth: jasmine.createSpy('setPendingAuth'),
+      saveReturnUrl: jasmine.createSpy('saveReturnUrl'),
       logout: jasmine.createSpy('logout').and.returnValue(of()),
       clearError: jasmine.createSpy('clearError'),
     };
@@ -226,6 +228,21 @@ describe('HeaderComponent', () => {
       expect(mockGraphStateService.getShowNightlies).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveNightlyForOAuth).toHaveBeenCalledWith(false);
       expect(mockLocationService.navigateTo).toHaveBeenCalledWith('/oauth2/authorization/github');
+    });
+
+    it('onLoginWithGitHub should not remember the default graph/root landing page', () => {
+      component.onLoginWithGitHub();
+
+      expect(mockAuthService.saveReturnUrl).not.toHaveBeenCalled();
+    });
+
+    it('onLoginWithGitHub should remember a non-default page as the return URL', () => {
+      const router = TestBed.inject(Router);
+      spyOnProperty(router, 'url', 'get').and.returnValue('/cve-overview');
+
+      component.onLoginWithGitHub();
+
+      expect(mockAuthService.saveReturnUrl).toHaveBeenCalledWith('/cve-overview');
     });
 
     it('onDismissError should call authService.clearError', () => {

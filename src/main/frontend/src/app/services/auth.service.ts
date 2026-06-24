@@ -4,7 +4,6 @@ import { Observable, catchError, of } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
-import { GraphStateService } from './graph-state.service';
 
 export interface User {
   githubId: number;
@@ -29,10 +28,10 @@ export class AuthService {
   public isLoading: WritableSignal<boolean> = signal<boolean>(false);
 
   private readonly SESSION_KEY: string = 'auth_session';
+  private readonly RETURN_URL_KEY: string = 'auth_return_url';
   private readonly http: HttpClient = inject(HttpClient);
   private readonly appService: AppService = inject(AppService);
   private readonly locationService: LocationService = inject(LocationService);
-  private readonly graphStateService: GraphStateService = inject(GraphStateService);
 
   /**
    * Check authentication status by calling the backend
@@ -80,6 +79,23 @@ export class AuthService {
     this.setSessionFlag(true);
   }
 
+  /**
+   * Remember the in-app URL the user started the login from, so they can be returned
+   * there after the OAuth round-trip (the backend otherwise lands on the default page).
+   */
+  public saveReturnUrl(url: string): void {
+    localStorage.setItem(this.RETURN_URL_KEY, url);
+  }
+
+  /**
+   * Read and clear the saved return URL. Returns null when no login redirect is pending.
+   */
+  public consumeReturnUrl(): string | null {
+    const url = localStorage.getItem(this.RETURN_URL_KEY);
+    localStorage.removeItem(this.RETURN_URL_KEY);
+    return url;
+  }
+
   public logout(): Observable<ArrayBuffer> {
     this.isLoading.set(true);
     return this.http.post<ArrayBuffer>(this.appService.createAPIUrl('auth/logout'), null).pipe(
@@ -100,10 +116,7 @@ export class AuthService {
     this.authError.set(null);
     this.setSessionFlag(false);
 
-    const queryParameters = this.graphStateService.getGraphQueryParams();
-    const queryString =
-      Object.keys(queryParameters).length > 0 ? `?${new URLSearchParams(queryParameters).toString()}` : '';
-    this.locationService.navigateTo(`/${queryString}`);
+    this.locationService.navigateTo(globalThis.location.pathname + globalThis.location.search);
   }
 
   /**

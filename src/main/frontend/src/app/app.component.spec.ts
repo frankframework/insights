@@ -18,7 +18,9 @@ class MockRouterOutletComponent {}
 
 class MockRouter {
   public events = new Subject<NavigationStart | NavigationEnd | NavigationCancel | NavigationError>();
+  public url = '/';
   navigate: jasmine.Spy | undefined;
+  navigateByUrl: jasmine.Spy | undefined;
 }
 
 class MockActivatedRoute {
@@ -46,6 +48,9 @@ describe('AppComponent', () => {
     component = fixture.componentInstance;
     router = TestBed.inject(Router) as unknown as MockRouter;
     router.navigate = jasmine.createSpy('navigate').and.resolveTo(true);
+    router.navigateByUrl = jasmine.createSpy('navigateByUrl').and.resolveTo(true);
+    // eslint-disable-next-line no-undef
+    localStorage.removeItem('auth_return_url');
   });
 
   it('should create the app', () => {
@@ -58,6 +63,25 @@ describe('AppComponent', () => {
 
   it('should have loading set to false initially', () => {
     expect(component.loading).toBe(false);
+  });
+
+  describe('OAuth return URL handling', () => {
+    it('redirects to the saved return URL on init and clears it', () => {
+      // eslint-disable-next-line no-undef
+      localStorage.setItem('auth_return_url', '/cve-overview');
+
+      fixture.detectChanges();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/cve-overview', { replaceUrl: true });
+      // eslint-disable-next-line no-undef
+      expect(localStorage.getItem('auth_return_url')).toBeNull();
+    });
+
+    it('does not redirect when no return URL is saved', () => {
+      fixture.detectChanges();
+
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 
   describe('Router Events Handling', () => {

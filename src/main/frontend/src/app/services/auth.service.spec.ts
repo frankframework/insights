@@ -5,7 +5,6 @@ import { Observable } from 'rxjs';
 import { AuthService, User, ErrorResponse } from './auth.service';
 import { AppService } from '../app.service';
 import { LocationService } from './location.service';
-import { GraphStateService } from './graph-state.service';
 
 class MockHttpInterceptor implements HttpInterceptor {
   intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
@@ -21,7 +20,6 @@ describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
   let mockLocationService: jasmine.SpyObj<LocationService>;
-  let mockGraphStateService: jasmine.SpyObj<GraphStateService>;
 
   const mockUser: User = {
     githubId: 123,
@@ -32,15 +30,12 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     mockLocationService = jasmine.createSpyObj('LocationService', ['navigateTo', 'reload']);
-    mockGraphStateService = jasmine.createSpyObj('GraphStateService', ['getGraphQueryParams']);
-    mockGraphStateService.getGraphQueryParams.and.returnValue({});
 
     TestBed.configureTestingModule({
       providers: [
         AuthService,
         AppService,
         { provide: LocationService, useValue: mockLocationService },
-        { provide: GraphStateService, useValue: mockGraphStateService },
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
         {
@@ -121,6 +116,49 @@ describe('AuthService', () => {
 
       const request = httpMock.expectOne((request_) => request_.url.includes('auth/user'));
       request.flush(errorResponse, { status: 403, statusText: 'Forbidden' });
+    });
+  });
+
+  describe('return URL', () => {
+    it('should save the return URL to localStorage', () => {
+      service.saveReturnUrl('/cve-overview');
+
+      // eslint-disable-next-line no-undef
+      expect(localStorage.getItem('auth_return_url')).toBe('/cve-overview');
+    });
+
+    it('should consume and clear the saved return URL', () => {
+      service.saveReturnUrl('/cve-overview');
+
+      const url = service.consumeReturnUrl();
+
+      expect(url).toBe('/cve-overview');
+      // eslint-disable-next-line no-undef
+      expect(localStorage.getItem('auth_return_url')).toBeNull();
+    });
+
+    it('should return null when no return URL is saved', () => {
+      expect(service.consumeReturnUrl()).toBeNull();
+    });
+  });
+
+  describe('logout()', () => {
+    it('should clear auth state and reload the current page', () => {
+      // eslint-disable-next-line no-undef
+      localStorage.setItem('auth_session', 'true');
+
+      const expectedUrl = globalThis.location.pathname + globalThis.location.search;
+
+      service.logout().subscribe();
+
+      const request = httpMock.expectOne((request_) => request_.url.includes('auth/logout'));
+      request.flush({});
+
+      expect(service.isAuthenticated()).toBe(false);
+      expect(service.currentUser()).toBeNull();
+      // eslint-disable-next-line no-undef
+      expect(localStorage.getItem('auth_session')).toBeNull();
+      expect(mockLocationService.navigateTo).toHaveBeenCalledWith(expectedUrl);
     });
   });
 
