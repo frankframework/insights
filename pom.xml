@@ -48,14 +48,14 @@
 		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>25</java.version>
 		<junit.bom.version>6.0.1</junit.bom.version>
-		<lombok.version>1.18.42</lombok.version>
+		<lombok.version>1.18.46</lombok.version>
 		<postgresql.version>42.7.11</postgresql.version>
 		<h2.version>2.4.240</h2.version>
 		<spring.shedlock>7.0.0</spring.shedlock>
 		<spotless.version>3.0.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<puppycrawl.tools.version>12.1.2</puppycrawl.tools.version>
-		<jacoco.version>0.8.14</jacoco.version>
+		<jacoco.version>0.8.15</jacoco.version>
 		<maven.model.version>4.0.0-rc-4</maven.model.version>
 		<maven.resolver.supplier.version>1.9.24</maven.resolver.supplier.version>
 		<bucket4j.version>8.10.1</bucket4j.version>
@@ -234,7 +234,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.6.2</version>
+				<version>3.6.3</version>
 				<executions>
 					<execution>
 						<id>pnpm install</id>
