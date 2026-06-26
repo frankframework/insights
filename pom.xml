@@ -52,7 +52,7 @@
 		<postgresql.version>42.7.11</postgresql.version>
 		<h2.version>2.4.240</h2.version>
 		<spring.shedlock>7.0.0</spring.shedlock>
-		<spotless.version>3.0.0</spotless.version>
+		<spotless.version>3.7.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
 		<puppycrawl.tools.version>12.1.2</puppycrawl.tools.version>
 		<jacoco.version>0.8.15</jacoco.version>
