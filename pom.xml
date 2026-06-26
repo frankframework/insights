@@ -47,7 +47,7 @@
 	<properties>
 		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>25</java.version>
-		<junit.bom.version>6.0.1</junit.bom.version>
+		<junit.bom.version>6.1.0</junit.bom.version>
 		<lombok.version>1.18.46</lombok.version>
 		<postgresql.version>42.7.11</postgresql.version>
 		<h2.version>2.4.240</h2.version>
