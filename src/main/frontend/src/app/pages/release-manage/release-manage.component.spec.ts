@@ -70,7 +70,7 @@ describe('ReleaseManageComponent', () => {
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl']);
 
     mockReleaseService.getReleaseById.and.returnValue(of(mockRelease));
     mockIssueService.getIssuesByReleaseId.and.returnValue(of([]));
@@ -185,7 +185,7 @@ describe('ReleaseManageComponent', () => {
     card.click();
     fixture.detectChanges();
 
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/release-manage', '123', 'business-values']);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/release-manage/123/business-values');
   });
 
   it('should navigate to vulnerabilities when vulnerabilities card is clicked', () => {
@@ -195,7 +195,7 @@ describe('ReleaseManageComponent', () => {
     card.click();
     fixture.detectChanges();
 
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/vulnerabilities/manage']);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/vulnerabilities/manage');
   });
 
   it('should close section and return to overview when close button is clicked', () => {
@@ -216,14 +216,14 @@ describe('ReleaseManageComponent', () => {
   it('should navigate back to graph with release ID when goBack is called', () => {
     component.goBack();
 
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', '123']);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/graph/123');
   });
 
   it('should navigate back to general graph if release is null', () => {
     component.release.set(null);
     component.goBack();
 
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph']);
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/graph');
   });
 
   it('should navigate to not-found on fetch error', () => {
