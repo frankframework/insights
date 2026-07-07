@@ -10,11 +10,18 @@ import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
 import { catchError, finalize, of } from 'rxjs';
 import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
+import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.directive';
 
 @Component({
   selector: 'app-release-manage',
   standalone: true,
-  imports: [CommonModule, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
+  imports: [
+    CommonModule,
+    ReleaseBusinessValueComponent,
+    ReleaseImportantIssuesComponent,
+    ReleaseVulnerabilities,
+    NavigateNewTabDirective,
+  ],
   templateUrl: './release-manage.component.html',
   styleUrl: './release-manage.component.scss',
 })
@@ -42,26 +49,27 @@ export class ReleaseManageComponent implements OnInit {
   }
 
   public goBack(): void {
-    const releaseId = this.release()?.id;
-    if (releaseId) {
-      this.router.navigate(['/graph', releaseId]);
-    } else {
-      this.router.navigate(['/graph']);
-    }
+    this.router.navigateByUrl(this.backLink());
   }
 
   public openSection(section: 'business-value' | 'vulnerabilities'): void {
-    if (section === 'vulnerabilities') {
-      this.router.navigate(['/vulnerabilities/manage']);
-      return;
-    }
+    const link = section === 'vulnerabilities' ? this.vulnerabilitiesLink() : this.businessValueLink();
+    if (!link) return;
+    this.router.navigateByUrl(link);
+  }
 
+  public backLink(): string {
     const releaseId = this.release()?.id;
-    if (!releaseId) return;
+    return releaseId ? `/graph/${releaseId}` : '/graph';
+  }
 
-    if (section === 'business-value') {
-      this.router.navigate(['/release-manage', releaseId, 'business-values']);
-    }
+  public businessValueLink(): string {
+    const releaseId = this.release()?.id;
+    return releaseId ? `/release-manage/${releaseId}/business-values` : '';
+  }
+
+  public vulnerabilitiesLink(): string {
+    return '/vulnerabilities/manage';
   }
 
   public closeSection(): void {

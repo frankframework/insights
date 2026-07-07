@@ -5,11 +5,12 @@ import { AuthService } from '../../services/auth.service';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
 import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
+import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.directive';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent],
+  imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent, NavigateNewTabDirective],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
 })

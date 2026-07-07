@@ -79,6 +79,8 @@
             (click)="openReleaseNodeDetails(releaseNode.id)"
             (touchend)="handleNodeTouchEnd($event, releaseNode)"
             (touchcancel)="handleNodeTouchEnd($event, releaseNode)"
+            [ffNewTab]="releaseNodeLink(releaseNode.id)"
+            [ffNewTabQuery]="graphQueryParams()"
           >
             @if (releaseNode.isMiniNode) {
               <circle r="6" fill="#999" />
@@ -115,6 +117,7 @@
         tooltip="Toggle all nightly releases"
         [active]="showNightlies"
         (clicked)="toggleNightlies()"
+        [ffNewTabToggle]="['nightly']"
       />
 
       <app-release-catalogus [showExtendedSupport]="showExtendedSupport" />

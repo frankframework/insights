@@ -2,7 +2,12 @@
   @if (!isLoading && release) {
     <header class="release-details-header">
       <div class="header-actions">
-        <button class="back-button" (click)="goBack()">
+        <button
+          class="back-button"
+          (click)="goBack()"
+          [ffNewTab]="graphLink()"
+          [ffNewTabQuery]="graphQueryParams()"
+        >
           <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
           Back
         </button>
@@ -17,6 +22,8 @@
               class="version-nav-btn"
               [title]="'Go to ' + previousRelease()!.name"
               (click)="navigateToRelease(previousRelease())"
+              [ffNewTab]="releaseGraphLink(previousRelease())"
+              [ffNewTabQuery]="graphQueryParams()"
             >
               {{ previousRelease()!.name }}
             </button>
@@ -35,6 +42,8 @@
               class="version-nav-btn"
               [title]="'Go to ' + nextRelease()!.name"
               (click)="navigateToRelease(nextRelease())"
+              [ffNewTab]="releaseGraphLink(nextRelease())"
+              [ffNewTabQuery]="graphQueryParams()"
             >
               {{ nextRelease()!.name }}
             </button>

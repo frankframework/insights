@@ -4,13 +4,14 @@ import { catchError, map, of } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Params, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 import { AuthService } from '../../services/auth.service';
 import { GraphStateService } from '../../services/graph-state.service';
 import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
+import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.directive';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -31,7 +32,13 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent],
+  imports: [
+    LoaderComponent,
+    ReleaseCatalogusComponent,
+    ReleaseSkippedVersions,
+    PillButtonComponent,
+    NavigateNewTabDirective,
+  ],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
@@ -289,10 +296,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public openReleaseNodeDetails(releaseNodeId: string): void {
+    const tree = this.router.parseUrl(this.releaseNodeLink(releaseNodeId));
+    tree.queryParams = { ...tree.queryParams, ...this.graphQueryParams() };
+    this.router.navigateByUrl(tree);
+  }
+
+  public releaseNodeLink(releaseNodeId: string): string {
     const release = this.releases.find((r) => r.id === releaseNodeId);
     const identifier = (release?.tagName ?? releaseNodeId).replace(/^release\//, '');
-    const queryParameters = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph', identifier], { queryParams: queryParameters });
+    return `/graph/${identifier}`;
+  }
+
+  public graphQueryParams(): Params {
+    return this.graphStateService.getGraphQueryParams();
   }
 
   public openSkipNodeModal(skipNodeId: string): void {
