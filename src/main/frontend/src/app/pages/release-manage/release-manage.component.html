@@ -1,7 +1,7 @@
 <div class="release-manage-container">
   @if (!isLoading() && release()) {
     <header>
-      <button class="back-button" (click)="goBack()" [ffNewTab]="backLink()">
+      <button class="back-button" [ffNewTab]="backLink()" (click)="goBack()">
         <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
         Back
       </button>
@@ -34,10 +34,10 @@
                 class="section-card business-value-card"
                 role="button"
                 tabindex="0"
+                [ffNewTab]="businessValueLink()"
                 (click)="openSection('business-value')"
                 (keydown.enter)="openSection('business-value')"
                 (keydown.space)="openSection('business-value')"
-                [ffNewTab]="businessValueLink()"
               >
                 <div class="card-icon-wrapper">
                   <svg
@@ -92,10 +92,10 @@
                 class="section-card vulnerabilities-card"
                 role="button"
                 tabindex="0"
+                [ffNewTab]="vulnerabilitiesLink()"
                 (click)="openSection('vulnerabilities')"
                 (keydown.enter)="openSection('vulnerabilities')"
                 (keydown.space)="openSection('vulnerabilities')"
-                [ffNewTab]="vulnerabilitiesLink()"
               >
                 <div class="card-icon-wrapper">
                   <svg

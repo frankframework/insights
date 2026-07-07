@@ -5,6 +5,8 @@ import { Observable, of } from 'rxjs';
 import { FrankFrameworkMemberGuard } from './frankframework-member.guard';
 import { AuthService, User } from '../services/auth.service';
 
+const runGuard = () => TestBed.runInInjectionContext(() => FrankFrameworkMemberGuard({} as any, {} as any));
+
 describe('FrankFrameworkMemberGuard', () => {
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
@@ -32,8 +34,6 @@ describe('FrankFrameworkMemberGuard', () => {
     authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
   });
-
-  const runGuard = () => TestBed.runInInjectionContext(() => FrankFrameworkMemberGuard({} as any, {} as any));
 
   it('should allow access when user is a FrankFramework member', () => {
     authService.currentUser.set(mockUser);

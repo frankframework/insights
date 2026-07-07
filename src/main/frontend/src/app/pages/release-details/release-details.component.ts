@@ -43,6 +43,7 @@ export class ReleaseDetailsComponent implements OnInit {
   public isLoading = true;
   public activeView = signal<'business-value' | 'issues'>('issues');
   public authService = inject(AuthService);
+  public graphStateService = inject(GraphStateService);
 
   public previousRelease = signal<Release | null>(null);
   public nextRelease = signal<Release | null>(null);
@@ -55,7 +56,6 @@ export class ReleaseDetailsComponent implements OnInit {
   private vulnerabilityService = inject(VulnerabilityService);
   private businessValueService = inject(BusinessValueService);
   private route = inject(ActivatedRoute);
-  public graphStateService = inject(GraphStateService);
 
   ngOnInit(): void {
     this.route.paramMap

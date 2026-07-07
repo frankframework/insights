@@ -3,6 +3,7 @@ import { Location } from '@angular/common';
 import { Params, Router, RouterLink } from '@angular/router';
 
 @Directive({
+  // eslint-disable-next-line @angular-eslint/directive-selector
   selector: '[routerLink], [ffNewTab], [ffNewTabToggle]',
   standalone: true,
 })
