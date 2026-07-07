@@ -4,14 +4,13 @@ import { catchError, map, of } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
 import { ReleaseLink, ReleaseLinkService, SkipNode } from './release-link.service';
 import { LoaderComponent } from '../../components/loader/loader.component';
-import { ActivatedRoute, NavigationEnd, Params, Router } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Params, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ReleaseCatalogusComponent } from './release-catalogus/release-catalogus.component';
 import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipped-versions';
 import { AuthService } from '../../services/auth.service';
 import { GraphStateService } from '../../services/graph-state.service';
 import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
-import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.directive';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -32,13 +31,7 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  imports: [
-    LoaderComponent,
-    ReleaseCatalogusComponent,
-    ReleaseSkippedVersions,
-    PillButtonComponent,
-    NavigateNewTabDirective,
-  ],
+  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;

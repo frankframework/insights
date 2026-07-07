@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ReleaseManageComponent } from './release-manage.component';
 import { AuthService, User } from '../../services/auth.service';
@@ -42,6 +42,8 @@ describe('ReleaseManageComponent', () => {
   let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
   let mockRouter: jasmine.SpyObj<Router>;
 
+  const urlSerializer = new DefaultUrlSerializer();
+
   const mockBusinessValues: BusinessValue[] = [
     { id: 'bv-1', title: 'Business Value 1', description: 'Description 1', releaseId: 'bv-release-1', issues: [] },
   ];
@@ -70,7 +72,9 @@ describe('ReleaseManageComponent', () => {
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl', 'createUrlTree', 'serializeUrl']);
+    mockRouter.createUrlTree.and.callFake((commands: string[]) => urlSerializer.parse(commands.join('') || '/'));
+    mockRouter.serializeUrl.and.callFake((tree: UrlTree) => urlSerializer.serialize(tree));
 
     mockReleaseService.getReleaseById.and.returnValue(of(mockRelease));
     mockIssueService.getIssuesByReleaseId.and.returnValue(of([]));
@@ -178,24 +182,12 @@ describe('ReleaseManageComponent', () => {
     expect(vulnCard?.textContent).toContain('Vulnerabilities');
   });
 
-  it('should navigate to business values route when business value card is clicked', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const card = compiled.querySelector('.business-value-card') as HTMLElement;
-
-    card.click();
-    fixture.detectChanges();
-
-    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/release-manage/123/business-values');
+  it('should return the correct business value link', () => {
+    expect(component.businessValueLink()).toBe('/release-manage/123/business-values');
   });
 
-  it('should navigate to vulnerabilities when vulnerabilities card is clicked', () => {
-    const compiled = fixture.nativeElement as HTMLElement;
-    const card = compiled.querySelector('.vulnerabilities-card') as HTMLElement;
-
-    card.click();
-    fixture.detectChanges();
-
-    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/vulnerabilities/manage');
+  it('should return the correct vulnerabilities link', () => {
+    expect(component.vulnerabilitiesLink()).toBe('/vulnerabilities/manage');
   });
 
   it('should close section and return to overview when close button is clicked', () => {
@@ -213,17 +205,14 @@ describe('ReleaseManageComponent', () => {
     expect(compiled.querySelector('.management-sections')).toBeTruthy();
   });
 
-  it('should navigate back to graph with release ID when goBack is called', () => {
-    component.goBack();
-
-    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/graph/123');
+  it('should return back link with release ID', () => {
+    expect(component.backLink()).toBe('/graph/123');
   });
 
-  it('should navigate back to general graph if release is null', () => {
+  it('should return general graph link if release is null', () => {
     component.release.set(null);
-    component.goBack();
 
-    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith('/graph');
+    expect(component.backLink()).toBe('/graph');
   });
 
   it('should navigate to not-found on fetch error', () => {

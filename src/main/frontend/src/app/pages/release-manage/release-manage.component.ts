@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Release, ReleaseService } from '../../services/release.service';
 import { ReleaseBusinessValueComponent } from '../release-details/release-business-value/release-business-value.component';
@@ -10,17 +10,16 @@ import { Issue, IssueService } from '../../services/issue.service';
 import { Vulnerability, VulnerabilityService } from '../../services/vulnerability.service';
 import { catchError, finalize, of } from 'rxjs';
 import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
-import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.directive';
 
 @Component({
   selector: 'app-release-manage',
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     ReleaseBusinessValueComponent,
     ReleaseImportantIssuesComponent,
     ReleaseVulnerabilities,
-    NavigateNewTabDirective,
   ],
   templateUrl: './release-manage.component.html',
   styleUrl: './release-manage.component.scss',
@@ -46,16 +45,6 @@ export class ReleaseManageComponent implements OnInit {
     if (releaseId) {
       this.fetchReleaseData(releaseId);
     }
-  }
-
-  public goBack(): void {
-    this.router.navigateByUrl(this.backLink());
-  }
-
-  public openSection(section: 'business-value' | 'vulnerabilities'): void {
-    const link = section === 'vulnerabilities' ? this.vulnerabilitiesLink() : this.businessValueLink();
-    if (!link) return;
-    this.router.navigateByUrl(link);
   }
 
   public backLink(): string {

@@ -106,8 +106,10 @@ describe('ReleaseDetailsComponent', () => {
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl', 'parseUrl']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl', 'parseUrl', 'createUrlTree', 'serializeUrl']);
     mockRouter.parseUrl.and.callFake((url: string) => urlSerializer.parse(url));
+    mockRouter.createUrlTree.and.callFake((commands: string[]) => urlSerializer.parse(commands.join('') || '/'));
+    mockRouter.serializeUrl.and.callFake((tree: UrlTree) => urlSerializer.serialize(tree));
     mockGraphStateService = jasmine.createSpyObj('GraphStateService', ['getGraphQueryParams']);
     mockGraphStateService.getGraphQueryParams.and.returnValue({});
     mockReleaseService.getAllReleases.and.returnValue(of([mockRelease]).pipe(delay(0)));
@@ -402,13 +404,33 @@ describe('ReleaseDetailsComponent', () => {
     });
   });
 
-  describe('goBack', () => {
-    it('should navigate to /graph when goBack is called', () => {
-      component.goBack();
+  describe('releaseGraphLink', () => {
+    it('should return empty string when release is null', () => {
+      expect(component.releaseGraphLink(null)).toBe('');
+    });
 
-      const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
+    it('should strip release/ prefix from tagName', () => {
+      const releaseWithPrefix: Release = { ...mockReleaseNext, tagName: 'release/v1.1' };
 
-      expect(urlSerializer.serialize(tree)).toBe('/graph');
+      expect(component.releaseGraphLink(releaseWithPrefix)).toBe('/graph/v1.1');
+    });
+
+    it('should use tagName as-is when no release/ prefix', () => {
+      expect(component.releaseGraphLink(mockReleaseNext)).toBe(`/graph/${mockReleaseNext.tagName}`);
+    });
+  });
+
+  describe('graphQueryParams', () => {
+    it('should return current graph query params', () => {
+      mockGraphStateService.getGraphQueryParams.and.returnValue({ nightly: '' });
+
+      expect(component.graphQueryParams()).toEqual({ nightly: '' });
+    });
+
+    it('should return empty object when no params', () => {
+      mockGraphStateService.getGraphQueryParams.and.returnValue({});
+
+      expect(component.graphQueryParams()).toEqual({});
     });
   });
 
@@ -659,40 +681,6 @@ describe('ReleaseDetailsComponent', () => {
       expect(component.previousRelease()).toBeNull();
       expect(component.nextRelease()).toBeNull();
     }));
-  });
-
-  describe('navigateToRelease', () => {
-    it('should navigate stripping release/ prefix from tagName', () => {
-      const releaseWithPrefix: Release = { ...mockReleaseNext, tagName: 'release/v1.1' };
-      component.navigateToRelease(releaseWithPrefix);
-
-      const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
-
-      expect(urlSerializer.serialize(tree)).toBe('/graph/v1.1');
-    });
-
-    it('should navigate with tagName as-is when no release/ prefix', () => {
-      component.navigateToRelease(mockReleaseNext);
-
-      const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
-
-      expect(urlSerializer.serialize(tree)).toBe(`/graph/${mockReleaseNext.tagName}`);
-    });
-
-    it('should pass current graph query params when navigating', () => {
-      mockGraphStateService.getGraphQueryParams.and.returnValue({ nightly: '' });
-      component.navigateToRelease(mockReleaseNext);
-
-      const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
-
-      expect(urlSerializer.serialize(tree)).toBe(`/graph/${mockReleaseNext.tagName}?nightly=`);
-    });
-
-    it('should not navigate when release is null', () => {
-      component.navigateToRelease(null);
-
-      expect(mockRouter.navigateByUrl).not.toHaveBeenCalled();
-    });
   });
 
   describe('nightly filtering in branch navigation', () => {

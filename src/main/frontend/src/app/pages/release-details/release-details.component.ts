@@ -12,10 +12,9 @@ import { ReleaseHighlightsComponent } from './release-highlights/release-highlig
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
-import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.directive';
 
 @Component({
   selector: 'app-release-details',
@@ -24,7 +23,6 @@ import { NavigateNewTabDirective } from '../../directives/navigate-new-tab.direc
     CommonModule,
     FormsModule,
     RouterLink,
-    NavigateNewTabDirective,
     LoaderComponent,
     ReleaseHighlightsComponent,
     ReleaseImportantIssuesComponent,
@@ -49,7 +47,6 @@ export class ReleaseDetailsComponent implements OnInit {
   public nextRelease = signal<Release | null>(null);
   public branchReleases = signal<Release[]>([]);
 
-  private router = inject(Router);
   private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
@@ -87,21 +84,8 @@ export class ReleaseDetailsComponent implements OnInit {
       });
   }
 
-  public goBack(): void {
-    this.navigateToGraph(this.graphLink());
-  }
-
   public setActiveView(view: 'business-value' | 'issues'): void {
     this.activeView.set(view);
-  }
-
-  public navigateToRelease(release: Release | null): void {
-    const path = this.releaseGraphLink(release);
-    if (path) this.navigateToGraph(path);
-  }
-
-  public graphLink(): string {
-    return '/graph';
   }
 
   public releaseGraphLink(release: Release | null): string {
@@ -111,12 +95,6 @@ export class ReleaseDetailsComponent implements OnInit {
 
   public graphQueryParams(): Params {
     return this.graphStateService.getGraphQueryParams();
-  }
-
-  private navigateToGraph(path: string): void {
-    const tree = this.router.parseUrl(path);
-    tree.queryParams = { ...tree.queryParams, ...this.graphQueryParams() };
-    this.router.navigateByUrl(tree);
   }
 
   private isNightly(release: Release): boolean {

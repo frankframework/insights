@@ -2,26 +2,25 @@
   @if (!isLoading && release) {
     <header class="release-details-header">
       <div class="header-actions">
-        <button class="back-button" [ffNewTab]="graphLink()" [ffNewTabQuery]="graphQueryParams()" (click)="goBack()">
+        <a class="back-button" [routerLink]="['/graph']" [queryParams]="graphQueryParams()">
           <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
           Back
-        </button>
+        </a>
         @if (authService.currentUser()?.isFrankFrameworkMember) {
-          <button class="manage-button" [routerLink]="['/release-manage', release.id]">Manage</button>
+          <a class="manage-button" [routerLink]="['/release-manage', release.id]">Manage</a>
         }
       </div>
       <div class="header-details">
         <div class="version-nav">
           @if (previousRelease()) {
-            <button
+            <a
               class="version-nav-btn"
               [title]="'Go to ' + previousRelease()!.name"
-              [ffNewTab]="releaseGraphLink(previousRelease())"
-              [ffNewTabQuery]="graphQueryParams()"
-              (click)="navigateToRelease(previousRelease())"
+              [routerLink]="releaseGraphLink(previousRelease())"
+              [queryParams]="graphQueryParams()"
             >
               {{ previousRelease()!.name }}
-            </button>
+            </a>
             <span class="version-sep">&lt;</span>
           }
           <a
@@ -33,15 +32,14 @@
           </a>
           @if (nextRelease()) {
             <span class="version-sep">&gt;</span>
-            <button
+            <a
               class="version-nav-btn"
               [title]="'Go to ' + nextRelease()!.name"
-              [ffNewTab]="releaseGraphLink(nextRelease())"
-              [ffNewTabQuery]="graphQueryParams()"
-              (click)="navigateToRelease(nextRelease())"
+              [routerLink]="releaseGraphLink(nextRelease())"
+              [queryParams]="graphQueryParams()"
             >
               {{ nextRelease()!.name }}
-            </button>
+            </a>
           }
         </div>
         <span>{{ release.publishedAt | date: 'longDate' }}</span>

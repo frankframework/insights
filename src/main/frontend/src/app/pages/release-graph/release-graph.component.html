@@ -71,14 +71,13 @@
         }
 
         @for (releaseNode of visibleReleaseNodes; track releaseNode.id) {
-          <g
+          <a
             class="release-node"
             [class.mini-node]="releaseNode.isMiniNode"
             [attr.data-cy]="'node-' + releaseNode.label"
             [attr.transform]="'translate(' + releaseNode.position.x + ',' + releaseNode.position.y + ')'"
-            [ffNewTab]="releaseNodeLink(releaseNode.id)"
-            [ffNewTabQuery]="graphQueryParams()"
-            (click)="openReleaseNodeDetails(releaseNode.id)"
+            [routerLink]="releaseNodeLink(releaseNode.id)"
+            [queryParams]="graphQueryParams()"
             (touchend)="handleNodeTouchEnd($event, releaseNode)"
             (touchcancel)="handleNodeTouchEnd($event, releaseNode)"
           >
@@ -90,7 +89,7 @@
                 {{ releaseNode.label }}
               </text>
             }
-          </g>
+          </a>
         }
 
         @for (skipNode of skipNodes; track skipNode.id) {
@@ -116,7 +115,6 @@
         label="Show nightlies"
         tooltip="Toggle all nightly releases"
         [active]="showNightlies"
-        [ffNewTabToggle]="['nightly']"
         (clicked)="toggleNightlies()"
       />
 
