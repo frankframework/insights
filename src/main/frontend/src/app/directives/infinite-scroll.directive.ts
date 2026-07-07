@@ -11,12 +11,6 @@ import {
   afterNextRender,
 } from '@angular/core';
 
-/**
- * Attach to the sentinel element inside a scrollable list to enable infinite scroll.
- * Provide the scroll container via [scrollContainer] and bind [isLoading]/[isLastPage]
- * to gate emissions. Call scrollToTop() and checkAfterRender() from the host component's
- * ngOnChanges when the data list is replaced or extended.
- */
 @Directive({
   selector: '[appInfiniteScroll]',
   standalone: true,
