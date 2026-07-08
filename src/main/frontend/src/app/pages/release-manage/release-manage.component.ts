@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Release, ReleaseService } from '../../services/release.service';
 import { ReleaseBusinessValueComponent } from '../release-details/release-business-value/release-business-value.component';
@@ -14,7 +14,13 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
 @Component({
   selector: 'app-release-manage',
   standalone: true,
-  imports: [CommonModule, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ReleaseBusinessValueComponent,
+    ReleaseImportantIssuesComponent,
+    ReleaseVulnerabilities,
+  ],
   templateUrl: './release-manage.component.html',
   styleUrl: './release-manage.component.scss',
 })
@@ -41,27 +47,18 @@ export class ReleaseManageComponent implements OnInit {
     }
   }
 
-  public goBack(): void {
+  public backLink(): string {
     const releaseId = this.release()?.id;
-    if (releaseId) {
-      this.router.navigate(['/graph', releaseId]);
-    } else {
-      this.router.navigate(['/graph']);
-    }
+    return releaseId ? `/graph/${releaseId}` : '/graph';
   }
 
-  public openSection(section: 'business-value' | 'vulnerabilities'): void {
-    if (section === 'vulnerabilities') {
-      this.router.navigate(['/vulnerabilities/manage']);
-      return;
-    }
-
+  public businessValueLink(): string {
     const releaseId = this.release()?.id;
-    if (!releaseId) return;
+    return releaseId ? `/release-manage/${releaseId}/business-values` : '';
+  }
 
-    if (section === 'business-value') {
-      this.router.navigate(['/release-manage', releaseId, 'business-values']);
-    }
+  public vulnerabilitiesLink(): string {
+    return '/vulnerabilities/manage';
   }
 
   public closeSection(): void {

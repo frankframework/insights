@@ -26,12 +26,12 @@ describe('Graph Rendering and Interaction', () => {
         }
       });
 
-      cy.get('@graphSvg').find('g[data-cy^="node-"]').should('have.length.greaterThan', 5);
+      cy.get('@graphSvg').find('a[data-cy^="node-"]').should('have.length.greaterThan', 5);
       cy.get('@graphSvg').find('path[data-cy^="link-"]').should('have.length.greaterThan', 5);
     });
 
     it('should display releases on the graph', () => {
-      cy.get('@graphSvg').find('g[data-cy^="node-v"]').first().should('exist');
+      cy.get('@graphSvg').find('a[data-cy^="node-v"]').first().should('exist');
     });
   });
 
@@ -54,11 +54,11 @@ describe('Graph Rendering and Interaction', () => {
   context('Branch and Node Rendering (based on Seeder data)', () => {
     it('should render sub-branch nodes on different y-levels', () => {
       cy.get('body').then(($body) => {
-        const hasSubBranches = $body.find('g[data-cy^="node-"]').length > $body.find('g[data-cy^="node-"][transform*=",0)"]').length;
+        const hasSubBranches = $body.find('a[data-cy^="node-"]').length > $body.find('a[data-cy^="node-"][transform*=",0)"]').length;
 
         if (hasSubBranches) {
           cy.get('@graphSvg')
-                  .find('g[data-cy^="node-"]')
+                  .find('a[data-cy^="node-"]')
                   .filter((i, el) => {
                     const transform = el.getAttribute('transform');
                     const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
@@ -71,9 +71,9 @@ describe('Graph Rendering and Interaction', () => {
 
     it('should display snapshot releases with appropriate colors', () => {
       cy.get('body').then(($body) => {
-        if ($body.find('g[data-cy*="-snapshot"]').length > 0) {
+        if ($body.find('a[data-cy*="-snapshot"]').length > 0) {
           cy.get('@graphSvg')
-                  .find('g[data-cy*="-snapshot"]')
+                  .find('a[data-cy*="-snapshot"]')
                   .first()
                   .find('circle')
                   .should('exist')
@@ -86,7 +86,7 @@ describe('Graph Rendering and Interaction', () => {
     it('should display nightly releases with appropriate colors', () => {
       getToggleButton().click();
       cy.get('@graphSvg')
-              .find('g[data-cy*="-nightly"]')
+              .find('a[data-cy*="-nightly"]')
               .should('have.length.greaterThan', 0)
               .first()
               .find('circle')
@@ -160,12 +160,12 @@ describe('Graph Rendering and Interaction', () => {
 
       it('should show nightlies nodes when toggle is active', () => {
         getToggleButton().click();
-        cy.get('@graphSvg').find('g[data-cy*="-nightly"]').should('have.length.greaterThan', 0).and('be.visible');
+        cy.get('@graphSvg').find('a[data-cy*="-nightly"]').should('have.length.greaterThan', 0).and('be.visible');
       });
 
       it('should display nightly labels always', () => {
         getToggleButton().click();
-        cy.get('@graphSvg').find('g[data-cy*="-nightly"]').first().find('text').should('exist');
+        cy.get('@graphSvg').find('a[data-cy*="-nightly"]').first().find('text').should('exist');
       });
 
       it('should toggle state on multiple clicks', () => {
@@ -179,19 +179,19 @@ describe('Graph Rendering and Interaction', () => {
       it('should reduce visible nodes when nightlies are hidden', () => {
         let initialNodeCount: number;
 
-        cy.get('@graphSvg').find('g[data-cy^="node-"]').then(($nodes) => {
+        cy.get('@graphSvg').find('a[data-cy^="node-"]').then(($nodes) => {
           initialNodeCount = $nodes.length;
         });
 
         getToggleButton().click();
 
-        cy.get('@graphSvg').find('g[data-cy^="node-"]').should(($nodes) => {
+        cy.get('@graphSvg').find('a[data-cy^="node-"]').should(($nodes) => {
           expect($nodes.length).to.be.greaterThan(initialNodeCount);
         });
 
         getToggleButton().click();
 
-        cy.get('@graphSvg').find('g[data-cy^="node-"]').should(($nodes) => {
+        cy.get('@graphSvg').find('a[data-cy^="node-"]').should(($nodes) => {
           expect($nodes.length).to.equal(initialNodeCount);
         });
       });
@@ -220,7 +220,7 @@ describe('Graph Rendering and Interaction', () => {
         getToggleButton().should('not.have.class', 'active');
 
         cy.get('@graphSvg').then(($svg) => {
-          const nightlyNodes = $svg.find('g[data-cy*="-nightly"]');
+          const nightlyNodes = $svg.find('a[data-cy*="-nightly"]');
           if (nightlyNodes.length > 0) {
             nightlyNodes.each((idx, node) => {
               const transform = Cypress.$(node).attr('transform');

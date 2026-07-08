@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/router';
 import { Location } from '@angular/common';
 import { of, throwError, Subject } from 'rxjs';
 import { delay } from 'rxjs/operators';
@@ -84,6 +84,8 @@ const mockReleaseNightlyEnd: Release = {
   branch: { id: 'b1', name: 'master' },
 };
 
+const urlSerializer = new DefaultUrlSerializer();
+
 describe('ReleaseDetailsComponent', () => {
   let component: ReleaseDetailsComponent;
   let fixture: ComponentFixture<ReleaseDetailsComponent>;
@@ -104,7 +106,10 @@ describe('ReleaseDetailsComponent', () => {
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl', 'parseUrl', 'createUrlTree', 'serializeUrl']);
+    mockRouter.parseUrl.and.callFake((url: string) => urlSerializer.parse(url));
+    mockRouter.createUrlTree.and.callFake((commands: string[]) => urlSerializer.parse(commands.join('') || '/'));
+    mockRouter.serializeUrl.and.callFake((tree: UrlTree) => urlSerializer.serialize(tree));
     mockGraphStateService = jasmine.createSpyObj('GraphStateService', ['getGraphQueryParams']);
     mockGraphStateService.getGraphQueryParams.and.returnValue({});
     mockReleaseService.getAllReleases.and.returnValue(of([mockRelease]).pipe(delay(0)));
@@ -399,11 +404,33 @@ describe('ReleaseDetailsComponent', () => {
     });
   });
 
-  describe('goBack', () => {
-    it('should navigate to /graph when goBack is called', () => {
-      component.goBack();
+  describe('releaseGraphLink', () => {
+    it('should return empty string when release is null', () => {
+      expect(component.releaseGraphLink(null)).toBe('');
+    });
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph'], { queryParams: {} });
+    it('should strip release/ prefix from tagName', () => {
+      const releaseWithPrefix: Release = { ...mockReleaseNext, tagName: 'release/v1.1' };
+
+      expect(component.releaseGraphLink(releaseWithPrefix)).toBe('/graph/v1.1');
+    });
+
+    it('should use tagName as-is when no release/ prefix', () => {
+      expect(component.releaseGraphLink(mockReleaseNext)).toBe(`/graph/${mockReleaseNext.tagName}`);
+    });
+  });
+
+  describe('graphQueryParams', () => {
+    it('should return current graph query params', () => {
+      mockGraphStateService.getGraphQueryParams.and.returnValue({ nightly: '' });
+
+      expect(component.graphQueryParams()).toEqual({ nightly: '' });
+    });
+
+    it('should return empty object when no params', () => {
+      mockGraphStateService.getGraphQueryParams.and.returnValue({});
+
+      expect(component.graphQueryParams()).toEqual({});
     });
   });
 
@@ -654,36 +681,6 @@ describe('ReleaseDetailsComponent', () => {
       expect(component.previousRelease()).toBeNull();
       expect(component.nextRelease()).toBeNull();
     }));
-  });
-
-  describe('navigateToRelease', () => {
-    it('should navigate stripping release/ prefix from tagName', () => {
-      const releaseWithPrefix: Release = { ...mockReleaseNext, tagName: 'release/v1.1' };
-      component.navigateToRelease(releaseWithPrefix);
-
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'v1.1'], { queryParams: {} });
-    });
-
-    it('should navigate with tagName as-is when no release/ prefix', () => {
-      component.navigateToRelease(mockReleaseNext);
-
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', mockReleaseNext.tagName], { queryParams: {} });
-    });
-
-    it('should pass current graph query params when navigating', () => {
-      mockGraphStateService.getGraphQueryParams.and.returnValue({ nightly: '' });
-      component.navigateToRelease(mockReleaseNext);
-
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', mockReleaseNext.tagName], {
-        queryParams: { nightly: '' },
-      });
-    });
-
-    it('should not navigate when release is null', () => {
-      component.navigateToRelease(null);
-
-      expect(mockRouter.navigate).not.toHaveBeenCalled();
-    });
   });
 
   describe('nightly filtering in branch navigation', () => {
