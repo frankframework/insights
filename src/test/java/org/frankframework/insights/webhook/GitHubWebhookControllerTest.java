@@ -140,8 +140,7 @@ public class GitHubWebhookControllerTest {
 
     @Test
     public void handleWebhook_withFullGitHubReleasePayload_triggersRefreshAndReturns202() throws Exception {
-        String fullPayload =
-                """
+        String fullPayload = """
                 {
                   "action": "published",
                   "release": {

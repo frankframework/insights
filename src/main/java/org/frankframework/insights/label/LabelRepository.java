@@ -8,8 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LabelRepository extends JpaRepository<Label, String> {
-    @Query(
-            """
+    @Query("""
      SELECT il.label
      FROM IssueLabel il
      WHERE il.issue.id IN (

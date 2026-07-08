@@ -14,8 +14,7 @@ public interface IssueRepository extends JpaRepository<Issue, String> {
      * cases, a custom @Query is more readable and maintainable than a very long
      * derived method name.
      */
-    @Query(
-            """
+    @Query("""
    SELECT DISTINCT i
    FROM Issue i
    JOIN PullRequestIssue pri ON pri.issue = i

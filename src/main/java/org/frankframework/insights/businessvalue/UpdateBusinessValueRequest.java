@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Size;
 
 public record UpdateBusinessValueRequest(
         @NotBlank @Size(min = 1, max = MAX_TITLE_LENGTH) String title,
-        @NotBlank @Size(min = 1, max = MAX_DESCRIPTION_LENGTH) String description) {
+
+        @NotBlank @Size(min = 1, max = MAX_DESCRIPTION_LENGTH)
+        String description) {
 
     private static final int MAX_TITLE_LENGTH = 255;
     private static final int MAX_DESCRIPTION_LENGTH = 1000;
