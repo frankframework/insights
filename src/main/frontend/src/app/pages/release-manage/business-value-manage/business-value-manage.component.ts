@@ -62,11 +62,13 @@ export class BusinessValueManageComponent implements OnInit {
   private releaseService = inject(ReleaseService);
 
   private originalSelectedIssueIds = signal<Set<string>>(new Set());
+  private pendingBusinessValueId: string | null = null;
 
   ngOnInit(): void {
     const releaseId = this.route.snapshot.paramMap.get('id');
     if (releaseId) {
       this.releaseId.set(releaseId);
+      this.pendingBusinessValueId = this.route.snapshot.paramMap.get('businessValueId');
       this.fetchData(releaseId);
     }
   }
@@ -126,6 +128,7 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
+      this.location.go(`/release-manage/${this.releaseId()}/business-values`);
     }
 
     this.closeDeleteModal();
@@ -149,8 +152,10 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === businessValue.id) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
+      this.location.go(`/release-manage/${this.releaseId()}/business-values`);
     } else {
       this.selectedBusinessValue.set(businessValue);
+      this.location.go(`/release-manage/${this.releaseId()}/business-values/${businessValue.id}`);
       this.businessValueService.getBusinessValueById(businessValue.id).subscribe({
         next: (detailedBV) => {
           const updatedList = this.businessValues().map((bv) => (bv.id === detailedBV.id ? detailedBV : bv));
@@ -239,7 +244,12 @@ export class BusinessValueManageComponent implements OnInit {
       release: this.releaseService.getReleaseById(releaseId).pipe(catchError(() => of(null))),
       allReleases: this.releaseService.getAllReleases().pipe(catchError(() => of([]))),
     })
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+          this.applyDeepLinkedBusinessValue();
+        }),
+      )
       .subscribe(({ businessValues, issues, release, allReleases }) => {
         this.businessValues.set(businessValues);
         this.allIssues.set(issues ?? []);
@@ -263,6 +273,17 @@ export class BusinessValueManageComponent implements OnInit {
         }));
         this.issuesWithSelection.set(issuesWithSelection);
       });
+  }
+
+  private applyDeepLinkedBusinessValue(): void {
+    if (!this.pendingBusinessValueId) return;
+
+    const match = this.businessValues().find((businessValue) => businessValue.id === this.pendingBusinessValueId);
+
+    if (match) {
+      this.pendingBusinessValueId = null;
+      this.selectBusinessValue(match);
+    }
   }
 
   private updateIssueSelection(currentBusinessValue: BusinessValue): void {

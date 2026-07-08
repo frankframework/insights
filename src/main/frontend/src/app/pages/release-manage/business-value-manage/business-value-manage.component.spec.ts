@@ -79,7 +79,7 @@ describe('BusinessValueManageComponent', () => {
     ]);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getReleaseById', 'getAllReleases']);
-    mockLocation = jasmine.createSpyObj('Location', ['back']);
+    mockLocation = jasmine.createSpyObj('Location', ['back', 'go']);
 
     mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
     mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues));
@@ -96,7 +96,7 @@ describe('BusinessValueManageComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { paramMap: { get: () => 'release-123' } },
+            snapshot: { paramMap: { get: (key: string) => key === 'id' ? 'release-123' : null } },
           },
         },
         provideHttpClient(),
