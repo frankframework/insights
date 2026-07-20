@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
@@ -15,6 +15,7 @@ import {
   IssueWithSelection,
 } from './business-value-issue-panel/business-value-issue-panel.component';
 import { LoaderComponent } from '../../../components/loader/loader.component';
+import { ReleaseManageComponent } from '../release-manage.component';
 
 @Component({
   selector: 'app-business-value-manage',
@@ -56,7 +57,6 @@ export class BusinessValueManageComponent implements OnInit {
   public hasChanges = computed(() => this.hasIssueChanges());
 
   private route = inject(ActivatedRoute);
-  private location = inject(Location);
   private businessValueService = inject(BusinessValueService);
   private issueService = inject(IssueService);
   private releaseService = inject(ReleaseService);
@@ -64,6 +64,7 @@ export class BusinessValueManageComponent implements OnInit {
 
   private originalSelectedIssueIds = signal<Set<string>>(new Set());
   private pendingBusinessValueId: string | null = null;
+  private readonly businessValuesPath = 'business-values';
 
   ngOnInit(): void {
     const releaseId = this.route.snapshot.paramMap.get('id');
@@ -75,7 +76,7 @@ export class BusinessValueManageComponent implements OnInit {
   }
 
   public goBack(): void {
-    this.location.back();
+    this.router.navigate([ReleaseManageComponent.releaseManagePath, this.releaseId()]);
   }
 
   public toggleCreateForm(): void {
@@ -129,7 +130,7 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-      this.router.navigate(['/release-manage', this.releaseId(), 'business-values']);
+      this.router.navigate([ReleaseManageComponent.releaseManagePath, this.releaseId(), this.businessValuesPath]);
     }
 
     this.closeDeleteModal();
@@ -153,10 +154,15 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === businessValue.id) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-      this.router.navigate(['/release-manage', this.releaseId(), 'business-values']);
+      this.router.navigate([ReleaseManageComponent.releaseManagePath, this.releaseId(), this.businessValuesPath]);
     } else {
       this.selectedBusinessValue.set(businessValue);
-      this.router.navigate(['/release-manage', this.releaseId(), 'business-values', businessValue.id]);
+      this.router.navigate([
+        ReleaseManageComponent.releaseManagePath,
+        this.releaseId(),
+        this.businessValuesPath,
+        businessValue.id,
+      ]);
 
       this.businessValueService.getBusinessValueById(businessValue.id).subscribe({
         next: (detailedBV) => {

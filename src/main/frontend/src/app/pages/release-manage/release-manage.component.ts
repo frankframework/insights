@@ -19,6 +19,8 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
   styleUrl: './release-manage.component.scss',
 })
 export class ReleaseManageComponent implements OnInit {
+  public static readonly releaseManagePath = '/release-manage';
+
   public authService = inject(AuthService);
   public release = signal<Release | null>(null);
   public releaseIssues = signal<Issue[] | null>([]);
@@ -51,16 +53,13 @@ export class ReleaseManageComponent implements OnInit {
   }
 
   public openSection(section: 'business-value' | 'vulnerabilities'): void {
-    if (section === 'vulnerabilities') {
-      this.router.navigate(['/vulnerabilities/manage']);
-      return;
-    }
-
     const releaseId = this.release()?.id;
     if (!releaseId) return;
 
-    if (section === 'business-value') {
-      this.router.navigate(['/release-manage', releaseId, 'business-values']);
+    if (section === 'vulnerabilities') {
+      this.router.navigate(['/vulnerabilities/manage'], { queryParams: { releaseId: releaseId } });
+    } else if (section === 'business-value') {
+      this.router.navigate([ReleaseManageComponent.releaseManagePath, releaseId, 'business-values']);
     }
   }
 
