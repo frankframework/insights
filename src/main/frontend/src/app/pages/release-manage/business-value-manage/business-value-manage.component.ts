@@ -129,7 +129,7 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-      this.router.navigate([`/release-manage/${this.releaseId()}/business-values`]);
+      this.router.navigate(['/release-manage', this.releaseId(), 'business-values']);
     }
 
     this.closeDeleteModal();
@@ -153,10 +153,11 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === businessValue.id) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-      this.router.navigate([`/release-manage/${this.releaseId()}/business-values`]);
+      this.router.navigate(['/release-manage', this.releaseId(), 'business-values']);
     } else {
       this.selectedBusinessValue.set(businessValue);
-      this.router.navigate([`/release-manage/${this.releaseId()}/business-values/${businessValue.id}`]);
+      this.router.navigate(['/release-manage', this.releaseId(), 'business-values', businessValue.id]);
+
       this.businessValueService.getBusinessValueById(businessValue.id).subscribe({
         next: (detailedBV) => {
           const updatedList = this.businessValues().map((bv) => (bv.id === detailedBV.id ? detailedBV : bv));
