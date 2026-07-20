@@ -3,7 +3,7 @@ import { ReleaseGraphComponent } from './release-graph.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLinkService, SkipNode } from './release-link.service';
-import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { Router, NavigationEnd, ActivatedRoute, DefaultUrlSerializer, UrlTree } from '@angular/router';
 import { of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
 import { ElementRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
@@ -17,6 +17,7 @@ describe('ReleaseGraphComponent', () => {
   let mockLinkService: jasmine.SpyObj<ReleaseLinkService>;
   let routerEventsSubject: ReplaySubject<NavigationEnd>;
   let queryParametersSubject: BehaviorSubject<any>;
+  const urlSerializer = new DefaultUrlSerializer();
 
   const mockReleaseData: Record<string, Release[]> = {
     master: [{ id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), lastScanned: new Date(), branch: { id: 'b1', name: 'master' } }],
@@ -64,6 +65,8 @@ describe('ReleaseGraphComponent', () => {
       events: routerEventsSubject.asObservable(),
       url: '/graph',
       navigate: jasmine.createSpy('navigate'),
+      navigateByUrl: jasmine.createSpy('navigateByUrl'),
+      parseUrl: jasmine.createSpy('parseUrl').and.callFake((url: string) => urlSerializer.parse(url)),
     };
 
     const mockActivatedRoute = {
@@ -169,7 +172,9 @@ describe('ReleaseGraphComponent', () => {
 
       component.openReleaseNodeDetails('1');
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'v1'], { queryParams: {} });
+      const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
+
+      expect(urlSerializer.serialize(tree)).toBe('/graph/v1');
     });
 
     it('should fall back to node id when release is not found on openReleaseNodeDetails', () => {
@@ -177,7 +182,9 @@ describe('ReleaseGraphComponent', () => {
 
       component.openReleaseNodeDetails('unknown-id');
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'unknown-id'], { queryParams: {} });
+      const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
+
+      expect(urlSerializer.serialize(tree)).toBe('/graph/unknown-id');
     });
   });
 
@@ -336,7 +343,9 @@ describe('ReleaseGraphComponent', () => {
         component.onNodeTouchEnd(mockTouchEvent, '1');
 
         expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
-        expect(mockRouter.navigate).toHaveBeenCalledWith(['/graph', 'v1'], { queryParams: {} });
+        const tree = mockRouter.navigateByUrl.calls.mostRecent().args[0] as UrlTree;
+
+        expect(urlSerializer.serialize(tree)).toBe('/graph/v1');
       });
 
       it('should not open release node details when drag detected', () => {
@@ -345,7 +354,7 @@ describe('ReleaseGraphComponent', () => {
         component.onNodeTouchEnd(mockTouchEvent, 'release-123');
 
         expect(mockTouchEvent.stopPropagation).toHaveBeenCalledWith();
-        expect(mockRouter.navigate).not.toHaveBeenCalled();
+        expect(mockRouter.navigateByUrl).not.toHaveBeenCalled();
       });
     });
 

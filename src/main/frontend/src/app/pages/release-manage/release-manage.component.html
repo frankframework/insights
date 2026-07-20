@@ -1,10 +1,10 @@
 <div class="release-manage-container">
   @if (!isLoading() && release()) {
     <header>
-      <button class="back-button" (click)="goBack()">
+      <a class="back-button" [routerLink]="backLink()">
         <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
         Back
-      </button>
+      </a>
       <div class="header-details">
         <h1>{{ release()?.name }}</h1>
         <p class="subtitle">Release Management</p>
@@ -30,14 +30,7 @@
               <p class="section-group-subtitle">Only for {{ release()?.name }}</p>
             </div>
             <div class="management-sections">
-              <div
-                class="section-card business-value-card"
-                role="button"
-                tabindex="0"
-                (click)="openSection('business-value')"
-                (keydown.enter)="openSection('business-value')"
-                (keydown.space)="openSection('business-value')"
-              >
+              <a class="section-card business-value-card" [routerLink]="businessValueLink()">
                 <div class="card-icon-wrapper">
                   <svg
                     class="card-icon"
@@ -77,7 +70,7 @@
                     </span>
                   </div>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
 
@@ -87,14 +80,7 @@
               <p class="section-group-subtitle">Applies to all releases</p>
             </div>
             <div class="management-sections">
-              <div
-                class="section-card vulnerabilities-card"
-                role="button"
-                tabindex="0"
-                (click)="openSection('vulnerabilities')"
-                (keydown.enter)="openSection('vulnerabilities')"
-                (keydown.space)="openSection('vulnerabilities')"
-              >
+              <a class="section-card vulnerabilities-card" [routerLink]="vulnerabilitiesLink()">
                 <div class="card-icon-wrapper">
                   <svg
                     class="card-icon"
@@ -129,7 +115,7 @@
                     </span>
                   </div>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>

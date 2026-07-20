@@ -12,7 +12,7 @@ import { ReleaseHighlightsComponent } from './release-highlights/release-highlig
 import { ReleaseImportantIssuesComponent } from './release-important-issues/release-important-issues.component';
 import { ReleaseBusinessValueComponent } from './release-business-value/release-business-value.component';
 import { ReleaseVulnerabilities } from './release-vulnerabilities/release-vulnerabilities';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { BusinessValue, BusinessValueService } from '../../services/business-value.service';
 
@@ -41,19 +41,18 @@ export class ReleaseDetailsComponent implements OnInit {
   public isLoading = true;
   public activeView = signal<'business-value' | 'issues'>('issues');
   public authService = inject(AuthService);
+  public graphStateService = inject(GraphStateService);
 
   public previousRelease = signal<Release | null>(null);
   public nextRelease = signal<Release | null>(null);
   public branchReleases = signal<Release[]>([]);
 
-  private router = inject(Router);
   private releaseService = inject(ReleaseService);
   private labelService = inject(LabelService);
   private issueService = inject(IssueService);
   private vulnerabilityService = inject(VulnerabilityService);
   private businessValueService = inject(BusinessValueService);
   private route = inject(ActivatedRoute);
-  private graphStateService = inject(GraphStateService);
 
   ngOnInit(): void {
     this.route.paramMap
@@ -85,20 +84,17 @@ export class ReleaseDetailsComponent implements OnInit {
       });
   }
 
-  public goBack(): void {
-    const queryParameters = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph'], { queryParams: queryParameters });
-  }
-
   public setActiveView(view: 'business-value' | 'issues'): void {
     this.activeView.set(view);
   }
 
-  public navigateToRelease(release: Release | null): void {
-    if (!release) return;
-    const identifier = release.tagName.replace(/^release\//, '');
-    const queryParameters = this.graphStateService.getGraphQueryParams();
-    this.router.navigate(['/graph', identifier], { queryParams: queryParameters });
+  public releaseGraphLink(release: Release | null): string {
+    if (!release) return '';
+    return `/graph/${release.tagName.replace(/^release\//, '')}`;
+  }
+
+  public graphQueryParams(): Params {
+    return this.graphStateService.getGraphQueryParams();
   }
 
   private isNightly(release: Release): boolean {

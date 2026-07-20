@@ -1,0 +1,60 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  min-width: 64px;
+}
+
+.stat-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+:host(.priority-card.badge-critical) {
+  background: #fff1f2;
+  border-color: #fecdd3;
+
+  .stat-value {
+    color: #be123c;
+  }
+}
+
+:host(.priority-card.badge-high) {
+  background: #fff7ed;
+  border-color: #fed7aa;
+
+  .stat-value {
+    color: #c2410c;
+  }
+}
+
+:host(.priority-card.badge-medium) {
+  background: #fefce8;
+  border-color: #fef08a;
+
+  .stat-value {
+    color: #a16207;
+  }
+}
+
+:host(.priority-card.badge-low) {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+
+  .stat-value {
+    color: #1d4ed8;
+  }
+}

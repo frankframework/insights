@@ -8,7 +8,8 @@ public record GitHubRefsDTO(@JsonProperty("nodes") List<GitHubBranchNodeDTO> nod
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record GitHubBranchNodeDTO(
-            @JsonProperty("name") String name, @JsonProperty("target") GitHubTargetDTO target) {}
+            @JsonProperty("name") String name,
+            @JsonProperty("target") GitHubTargetDTO target) {}
 
     public record GitHubTargetDTO(@JsonProperty("history") GitHubTotalCountDTO history) {}
 }

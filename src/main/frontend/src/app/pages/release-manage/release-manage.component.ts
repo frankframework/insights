@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Release, ReleaseService } from '../../services/release.service';
 import { ReleaseBusinessValueComponent } from '../release-details/release-business-value/release-business-value.component';
@@ -14,7 +14,13 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
 @Component({
   selector: 'app-release-manage',
   standalone: true,
-  imports: [CommonModule, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ReleaseBusinessValueComponent,
+    ReleaseImportantIssuesComponent,
+    ReleaseVulnerabilities,
+  ],
   templateUrl: './release-manage.component.html',
   styleUrl: './release-manage.component.scss',
 })
@@ -43,24 +49,22 @@ export class ReleaseManageComponent implements OnInit {
     }
   }
 
-  public goBack(): void {
+  public backLink(): string {
     const releaseId = this.release()?.id;
-    if (releaseId) {
-      this.router.navigate(['/graph', releaseId]);
-    } else {
-      this.router.navigate(['/graph']);
-    }
+    return releaseId ? `/graph/${releaseId}` : '/graph';
   }
 
-  public openSection(section: 'business-value' | 'vulnerabilities'): void {
+  public businessValueLink(): string {
     const releaseId = this.release()?.id;
-    if (!releaseId) return;
+    return releaseId ? `/release-manage/${releaseId}/business-values` : '';
+  }
 
-    if (section === 'vulnerabilities') {
-      this.router.navigate(['/vulnerabilities/manage'], { queryParams: { releaseId: releaseId } });
-    } else if (section === 'business-value') {
-      this.router.navigate([ReleaseManageComponent.releaseManagePath, releaseId, 'business-values']);
-    }
+  public vulnerabilitiesLink(): string {
+    return '/vulnerabilities/manage';
+  }
+
+  public vulnerabilitiesLinkQueryParams(): { releaseId: string | null } {
+    return { releaseId: this.release()?.id ?? null };
   }
 
   public closeSection(): void {
@@ -71,58 +75,58 @@ export class ReleaseManageComponent implements OnInit {
     this.isLoading.set(true);
 
     this.releaseService
-      .getReleaseById(releaseId)
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: (release) => {
-          this.release.set(release);
-          this.fetchIssues(releaseId);
-          this.fetchVulnerabilities(releaseId);
-          this.fetchBusinessValue(releaseId);
-        },
-        error: () => this.router.navigate(['/not-found']),
-      });
+            .getReleaseById(releaseId)
+            .pipe(finalize(() => this.isLoading.set(false)))
+            .subscribe({
+              next: (release) => {
+                this.release.set(release);
+                this.fetchIssues(releaseId);
+                this.fetchVulnerabilities(releaseId);
+                this.fetchBusinessValue(releaseId);
+              },
+              error: () => this.router.navigate(['/not-found']),
+            });
   }
 
   private fetchIssues(releaseId: string): void {
     this.issueService
-      .getIssuesByReleaseId(releaseId)
-      .pipe(
-        catchError(() => {
-          this.releaseIssues.set(null);
-          return of();
-        }),
-      )
-      .subscribe((issues) => {
-        this.releaseIssues.set(issues);
-      });
+            .getIssuesByReleaseId(releaseId)
+            .pipe(
+                    catchError(() => {
+                      this.releaseIssues.set(null);
+                      return of();
+                    }),
+            )
+            .subscribe((issues) => {
+              this.releaseIssues.set(issues);
+            });
   }
 
   private fetchVulnerabilities(releaseId: string): void {
     this.vulnerabilityService
-      .getVulnerabilitiesByReleaseId(releaseId)
-      .pipe(
-        catchError(() => {
-          this.vulnerabilities.set(null);
-          return of();
-        }),
-      )
-      .subscribe((vulnerabilities) => {
-        this.vulnerabilities.set(vulnerabilities);
-      });
+            .getVulnerabilitiesByReleaseId(releaseId)
+            .pipe(
+                    catchError(() => {
+                      this.vulnerabilities.set(null);
+                      return of();
+                    }),
+            )
+            .subscribe((vulnerabilities) => {
+              this.vulnerabilities.set(vulnerabilities);
+            });
   }
 
   private fetchBusinessValue(releaseId: string): void {
     this.businessValueService
-      .getBusinessValuesByReleaseId(releaseId)
-      .pipe(
-        catchError(() => {
-          this.businessValues.set(null);
-          return of();
-        }),
-      )
-      .subscribe((values) => {
-        this.businessValues.set(values);
-      });
+            .getBusinessValuesByReleaseId(releaseId)
+            .pipe(
+                    catchError(() => {
+                      this.businessValues.set(null);
+                      return of();
+                    }),
+            )
+            .subscribe((values) => {
+              this.businessValues.set(values);
+            });
   }
 }

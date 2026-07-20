@@ -28,6 +28,7 @@
       cursor: pointer;
       transition: all 0.2s ease;
       flex-shrink: 0;
+      text-decoration: none;
 
       &:hover {
         background: #f9fafb;
@@ -186,6 +187,8 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    text-decoration: none;
+    color: inherit;
 
     &:hover {
       border-color: #c7d2fe;
