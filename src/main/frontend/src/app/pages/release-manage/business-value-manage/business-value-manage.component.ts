@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
 import { Release, ReleaseService } from '../../../services/release.service';
@@ -60,6 +60,7 @@ export class BusinessValueManageComponent implements OnInit {
   private businessValueService = inject(BusinessValueService);
   private issueService = inject(IssueService);
   private releaseService = inject(ReleaseService);
+  private router = inject(Router);
 
   private originalSelectedIssueIds = signal<Set<string>>(new Set());
   private pendingBusinessValueId: string | null = null;
@@ -128,7 +129,7 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-      this.location.go(`/release-manage/${this.releaseId()}/business-values`);
+      this.router.navigate([`/release-manage/${this.releaseId()}/business-values`]);
     }
 
     this.closeDeleteModal();
@@ -152,10 +153,10 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === businessValue.id) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
-      this.location.go(`/release-manage/${this.releaseId()}/business-values`);
+      this.router.navigate([`/release-manage/${this.releaseId()}/business-values`]);
     } else {
       this.selectedBusinessValue.set(businessValue);
-      this.location.go(`/release-manage/${this.releaseId()}/business-values/${businessValue.id}`);
+      this.router.navigate([`/release-manage/${this.releaseId()}/business-values/${businessValue.id}`]);
       this.businessValueService.getBusinessValueById(businessValue.id).subscribe({
         next: (detailedBV) => {
           const updatedList = this.businessValues().map((bv) => (bv.id === detailedBV.id ? detailedBV : bv));
