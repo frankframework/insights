@@ -1,3 +1,6 @@
+// The source this logic is based on is: https://www.first.org/cvss/v3-1/specification-document#Scoring
+// Here you can see all the metric equations and values that are being used in the original calculator which are now used inside our calculate functions.
+
 export type CvssMetricKey = 'AV' | 'AC' | 'PR' | 'UI' | 'S' | 'C' | 'I' | 'A';
 
 export interface CvssMetricOption {
