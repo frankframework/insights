@@ -47,9 +47,9 @@
 	<properties>
 		<revision>0.0.1-SNAPSHOT</revision>
 		<java.version>25</java.version>
-		<junit.bom.version>6.1.1</junit.bom.version>
+		<junit.bom.version>6.1.2</junit.bom.version>
 		<lombok.version>1.18.46</lombok.version>
-		<postgresql.version>42.7.12</postgresql.version>
+		<postgresql.version>42.7.13</postgresql.version>
 		<h2.version>2.4.240</h2.version>
 		<spring.shedlock>7.7.0</spring.shedlock>
 		<spotless.version>3.8.0</spotless.version>
