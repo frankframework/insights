@@ -2,18 +2,28 @@ package org.frankframework.insights.release;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -32,7 +42,7 @@ public class ReleaseArtifactServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() {
-        releaseArtifactService = new ReleaseArtifactService(tempDir.toString(), releaseRepository);
+        releaseArtifactService = Mockito.spy(new ReleaseArtifactService(tempDir.toString(), releaseRepository));
     }
 
     private Release createRelease(String name, String tagName) {
@@ -40,6 +50,78 @@ public class ReleaseArtifactServiceIntegrationTest {
         release.setName(name);
         release.setTagName(tagName);
         return release;
+    }
+
+    private byte[] createValidZipBytes() throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry("test.txt"));
+            zos.write("hello world".getBytes());
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenCorruptFileInCache_shouldRedownloadAndReplace() throws Exception {
+        String tagName = "v8.0.5";
+        Path corruptZip = tempDir.resolve("v8.0.5.zip");
+        Files.writeString(corruptZip, "this is not a zip file");
+
+        InputStream mockStream = new ByteArrayInputStream(createValidZipBytes());
+        doReturn(mockStream).when(releaseArtifactService).openDownloadStream(any());
+
+        Path downloaded = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertTrue(Files.exists(downloaded), "Downloaded zip should exist");
+        assertTrue(releaseArtifactService.isValidZip(downloaded), "Re-downloaded zip should be valid");
+        assertFalse(
+                Files.exists(tempDir.resolve("v8.0.5.zip.tmp")), "Temp file should not remain after a successful move");
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenDownloadIsCorrupt_shouldThrowAndCleanUpTempFile() throws Exception {
+        String tagName = "v8.0.6";
+        Path zip = tempDir.resolve("v8.0.6.zip");
+        Path tempZip = tempDir.resolve("v8.0.6.zip.tmp");
+
+        InputStream corruptStream = new ByteArrayInputStream("bad download".getBytes());
+        doReturn(corruptStream).when(releaseArtifactService).openDownloadStream(any());
+
+        assertThrows(IOException.class, () -> releaseArtifactService.downloadReleaseZipToPvc(tagName));
+
+        assertFalse(Files.exists(tempZip), "Temporary download file should be cleaned up on failure");
+        assertFalse(Files.exists(zip), "Invalid download should never be cached under its final name");
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_whenOrphanedTempFilesExist_shouldDeleteThem() throws IOException {
+        Path orphanedTemp = tempDir.resolve("v8.0.5.zip.tmp");
+        Path validZip = tempDir.resolve("v8.0.0.zip");
+
+        Files.writeString(orphanedTemp, "leftover temp");
+        Files.writeString(validZip, "valid zip content");
+
+        Release validRelease = createRelease("8.0.0", "v8.0.0");
+        when(releaseRepository.findAll()).thenReturn(List.of(validRelease));
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        assertFalse(Files.exists(orphanedTemp), "Orphaned temp file should be deleted");
+        assertTrue(Files.exists(validZip), "Valid active zip should still exist");
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenValidZipAlreadyCached_shouldReturnItWithoutDownloading()
+            throws IOException, URISyntaxException {
+        String tagName = "v8.1.0";
+        Path zipPath = tempDir.resolve("v8.1.0.zip");
+        Files.write(zipPath, createValidZipBytes());
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(zipPath, result);
+        Mockito.verify(releaseArtifactService, Mockito.never()).openDownloadStream(any());
     }
 
     @Test

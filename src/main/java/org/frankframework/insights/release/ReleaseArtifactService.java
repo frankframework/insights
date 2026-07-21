@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipFile;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.util.TagNameSanitizer;
 import org.frankframework.insights.release.releasecleanup.FileTreeDeleter;
@@ -44,22 +46,54 @@ public class ReleaseArtifactService {
         Path zipPath = archiveDir.resolve(safeFileName);
 
         if (Files.exists(zipPath)) {
-            return zipPath;
+            if (isValidZip(zipPath)) {
+                return zipPath;
+            }
+            log.warn(
+                    "Cached ZIP for {} is corrupt (likely a truncated download), re-downloading: {}", tagName, zipPath);
+            Files.deleteIfExists(zipPath);
         }
 
         log.info("ZIP not found op storage, downloading: {}", tagName);
         String url = String.format(GITHUB_ZIP_URL_FORMAT, tagName);
-        try (InputStream in = new URI(url).toURL().openStream()) {
-            Files.copy(in, zipPath, StandardCopyOption.REPLACE_EXISTING);
+        Path tempZipPath = archiveDir.resolve(safeFileName + ".tmp");
+        try (InputStream in = openDownloadStream(url)) {
+            Files.copy(in, tempZipPath, StandardCopyOption.REPLACE_EXISTING);
+
+            if (!isValidZip(tempZipPath)) {
+                throw new IOException("Downloaded ZIP for " + tagName + " is not a valid archive");
+            }
+
+            moveIntoPlace(tempZipPath, zipPath);
             log.info("ZIP succesfully downloading to storage: {}", zipPath);
         } catch (IOException | URISyntaxException e) {
             try {
-                Files.deleteIfExists(zipPath);
+                Files.deleteIfExists(tempZipPath);
             } catch (IOException ignored) {
             }
             throw new IOException("Could not download release ZIP for " + tagName, e);
         }
         return zipPath;
+    }
+
+    private void moveIntoPlace(Path tempZipPath, Path zipPath) throws IOException {
+        try {
+            Files.move(tempZipPath, zipPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tempZipPath, zipPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    protected InputStream openDownloadStream(String url) throws IOException, URISyntaxException {
+        return new URI(url).toURL().openStream();
+    }
+
+    protected boolean isValidZip(Path path) {
+        try (ZipFile ignored = new ZipFile(path.toFile())) {
+            return true;
+        } catch (IOException _) {
+            return false;
+        }
     }
 
     public void deleteObsoleteReleaseArtifacts() {
@@ -73,18 +107,19 @@ public class ReleaseArtifactService {
         try (Stream<Path> files = Files.list(dir)) {
             files.forEach(path -> {
                 String fileName = path.getFileName().toString();
-                if (fileName.endsWith(".zip")) {
-                    String tagName = fileName.replace(".zip", "");
-                    if (!activeReleaseTags.contains(tagName)) {
-                        try {
-                            log.info("Deletion of obsolete release artifact: {}", fileName);
-                            fileTreeDeleter.deleteTreeRecursively(path);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            log.error("Interrupted while deleting file: {}", fileName, e);
-                        } catch (Exception e) {
-                            log.error("Could not delete file: {}", fileName, e);
-                        }
+                boolean isOrphanedTempFile = fileName.endsWith(".tmp");
+                boolean isObsoleteZip =
+                        fileName.endsWith(".zip") && !activeReleaseTags.contains(fileName.replace(".zip", ""));
+
+                if (isOrphanedTempFile || isObsoleteZip) {
+                    try {
+                        log.info("Deletion of obsolete release artifact: {}", fileName);
+                        fileTreeDeleter.deleteTreeRecursively(path);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.error("Interrupted while deleting file: {}", fileName, e);
+                    } catch (Exception e) {
+                        log.error("Could not delete file: {}", fileName, e);
                     }
                 }
             });

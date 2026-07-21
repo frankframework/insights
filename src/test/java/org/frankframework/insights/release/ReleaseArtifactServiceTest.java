@@ -1,14 +1,21 @@
 package org.frankframework.insights.release;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -35,8 +42,9 @@ public class ReleaseArtifactServiceTest {
 
     @BeforeEach
     public void setUp() {
-        releaseArtifactService = new ReleaseArtifactService("/release-archive", releaseRepository);
+        releaseArtifactService = Mockito.spy(new ReleaseArtifactService("/release-archive", releaseRepository));
         mockedFiles = Mockito.mockStatic(Files.class);
+       Mockito.lenient().doReturn(true).when(releaseArtifactService).isValidZip(any());
     }
 
     @AfterEach
@@ -552,5 +560,102 @@ public class ReleaseArtifactServiceTest {
 
         Assertions.assertTrue(result.toString().endsWith(".zip"));
         Assertions.assertTrue(result.toString().contains(tagName));
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenValidZipAlreadyExists_shouldReturnExistingPath() throws IOException {
+        String tagName = "v7.8.0";
+        Path zipPath = ARCHIVE_DIR.resolve(tagName + ".zip");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        mockedFiles.when(() -> Files.exists(zipPath)).thenReturn(true);
+        doReturn(true).when(releaseArtifactService).isValidZip(zipPath);
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(zipPath, result);
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenCachedZipIsCorrupt_shouldDeleteAndRedownload() throws Exception {
+        String tagName = "v8.0.5";
+        Path zipPath = ARCHIVE_DIR.resolve(tagName + ".zip");
+        Path tempZipPath = ARCHIVE_DIR.resolve(tagName + ".zip.tmp");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        mockedFiles.when(() -> Files.exists(zipPath)).thenReturn(true);
+
+        doReturn(false).when(releaseArtifactService).isValidZip(zipPath);
+        doReturn(true).when(releaseArtifactService).isValidZip(tempZipPath);
+
+        InputStream dummyStream = new ByteArrayInputStream(new byte[] {1, 2, 3});
+        doReturn(dummyStream).when(releaseArtifactService).openDownloadStream(any());
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(zipPath, result);
+        mockedFiles.verify(() -> Files.deleteIfExists(zipPath));
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenDownloadedZipIsInvalid_shouldThrowAndCleanUpTempFile() throws Exception {
+        String tagName = "v8.0.6";
+        Path tempZipPath = ARCHIVE_DIR.resolve(tagName + ".zip.tmp");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+
+        InputStream dummyStream = new ByteArrayInputStream(new byte[] {1, 2, 3});
+        doReturn(dummyStream).when(releaseArtifactService).openDownloadStream(any());
+        doReturn(false).when(releaseArtifactService).isValidZip(tempZipPath);
+
+        assertThrows(IOException.class, () -> releaseArtifactService.downloadReleaseZipToPvc(tagName));
+        mockedFiles.verify(() -> Files.deleteIfExists(tempZipPath));
+    }
+
+    @Test
+    public void downloadReleaseZipToPvc_whenAtomicMoveUnsupported_shouldFallBackToPlainMove() throws Exception {
+        String tagName = "v8.0.7";
+        Path zipPath = ARCHIVE_DIR.resolve(tagName + ".zip");
+        Path tempZipPath = ARCHIVE_DIR.resolve(tagName + ".zip.tmp");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+
+        InputStream dummyStream = new ByteArrayInputStream(new byte[] {1, 2, 3});
+        doReturn(dummyStream).when(releaseArtifactService).openDownloadStream(any());
+        doReturn(true).when(releaseArtifactService).isValidZip(tempZipPath);
+
+        mockedFiles
+                .when(() -> Files.move(
+                        eq(tempZipPath),
+                        eq(zipPath),
+                        eq(StandardCopyOption.REPLACE_EXISTING),
+                        eq(StandardCopyOption.ATOMIC_MOVE)))
+                .thenThrow(new AtomicMoveNotSupportedException(
+                        tempZipPath.toString(), zipPath.toString(), "not supported on this filesystem"));
+        mockedFiles
+                .when(() -> Files.move(eq(tempZipPath), eq(zipPath), eq(StandardCopyOption.REPLACE_EXISTING)))
+                .thenReturn(zipPath);
+
+        Path result = releaseArtifactService.downloadReleaseZipToPvc(tagName);
+
+        assertEquals(zipPath, result);
+        mockedFiles.verify(() -> Files.move(eq(tempZipPath), eq(zipPath), eq(StandardCopyOption.REPLACE_EXISTING)));
+    }
+
+    @Test
+    public void deleteObsoleteReleaseArtifacts_whenOrphanedTempFileExists_shouldAttemptToDeleteIt() throws IOException {
+        Release release = createRelease("8.0.0", "v8.0.0");
+        List<Release> releases = List.of(release);
+
+        Path activeZip = ARCHIVE_DIR.resolve("v8.0.0.zip");
+        Path orphanedTempFile = ARCHIVE_DIR.resolve("v7.0.0.zip.tmp");
+
+        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
+        when(releaseRepository.findAll()).thenReturn(releases);
+        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.of(activeZip, orphanedTempFile));
+
+        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+
+        mockedFiles.verify(() -> Files.list(ARCHIVE_DIR));
     }
 }
