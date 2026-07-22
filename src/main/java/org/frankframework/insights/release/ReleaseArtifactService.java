@@ -79,7 +79,7 @@ public class ReleaseArtifactService {
     private void moveIntoPlace(Path tempZipPath, Path zipPath) throws IOException {
         try {
             Files.move(tempZipPath, zipPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
+        } catch (AtomicMoveNotSupportedException _) {
             Files.move(tempZipPath, zipPath, StandardCopyOption.REPLACE_EXISTING);
         }
     }
@@ -89,7 +89,7 @@ public class ReleaseArtifactService {
     }
 
     protected boolean isValidZip(Path path) {
-        try (ZipFile ignored = new ZipFile(path.toFile())) {
+        try (ZipFile _ = new ZipFile(path.toFile())) {
             return true;
         } catch (IOException _) {
             return false;

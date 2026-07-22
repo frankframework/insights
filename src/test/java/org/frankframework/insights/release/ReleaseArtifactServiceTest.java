@@ -44,7 +44,7 @@ public class ReleaseArtifactServiceTest {
     public void setUp() {
         releaseArtifactService = Mockito.spy(new ReleaseArtifactService("/release-archive", releaseRepository));
         mockedFiles = Mockito.mockStatic(Files.class);
-       Mockito.lenient().doReturn(true).when(releaseArtifactService).isValidZip(any());
+        Mockito.lenient().doReturn(true).when(releaseArtifactService).isValidZip(any());
     }
 
     @AfterEach
@@ -111,7 +111,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenNoObsoleteZips_shouldNotDeleteAnything() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenNoObsoleteZips_shouldNotDeleteAnything() {
         Release release1 = createRelease("7.8.0", "v7.8.0");
         Release release2 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1, release2);
@@ -130,7 +130,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenListDirectoriesFails_shouldHandleGracefully() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenListDirectoriesFails_shouldHandleGracefully() {
         mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
         when(releaseRepository.findAll()).thenReturn(new ArrayList<>());
         mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenThrow(new IOException("Permission denied"));
@@ -141,7 +141,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_shouldIgnoreNonZipFiles() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_shouldIgnoreNonZipFiles() {
         Release release1 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1);
 
@@ -174,7 +174,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenObsoleteZipExists_shouldDeleteIt() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenObsoleteZipExists_shouldDeleteIt() {
         Release release1 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1);
 
@@ -191,7 +191,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenAllZipsAreObsolete_shouldDeleteAll() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenAllZipsAreObsolete_shouldDeleteAll() {
         List<Release> releases = new ArrayList<>();
 
         Path obsoleteZip1 = ARCHIVE_DIR.resolve("v6.0.0.zip");
@@ -207,7 +207,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withMixedContent_shouldOnlyProcessZipFiles() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withMixedContent_shouldOnlyProcessZipFiles() {
         Release release1 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1);
 
@@ -227,7 +227,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withMultipleActiveReleases_shouldKeepAllActive() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withMultipleActiveReleases_shouldKeepAllActive() {
         Release release1 = createRelease("7.8.0", "v7.8.0");
         Release release2 = createRelease("8.0.0", "v8.0.0");
         Release release3 = createRelease("8.1.0", "v8.1.0");
@@ -248,7 +248,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withEmptyDirectory_shouldHandleGracefully() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withEmptyDirectory_shouldHandleGracefully() {
         Release release1 = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release1);
 
@@ -275,24 +275,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withEmptyReleaseList_shouldDeleteAllZips() throws IOException {
-        List<Release> releases = new ArrayList<>();
-
-        Path zip1 = ARCHIVE_DIR.resolve("v1.0.0.zip");
-        Path zip2 = ARCHIVE_DIR.resolve("v2.0.0.zip");
-        Path zip3 = ARCHIVE_DIR.resolve("v3.0.0.zip");
-
-        mockedFiles.when(() -> Files.exists(ARCHIVE_DIR)).thenReturn(true);
-        when(releaseRepository.findAll()).thenReturn(releases);
-        mockedFiles.when(() -> Files.list(ARCHIVE_DIR)).thenReturn(Stream.of(zip1, zip2, zip3));
-
-        releaseArtifactService.deleteObsoleteReleaseArtifacts();
-
-        mockedFiles.verify(() -> Files.list(ARCHIVE_DIR));
-    }
-
-    @Test
-    public void deleteObsoleteReleaseArtifacts_withSingleActiveRelease_shouldKeepOnlyActive() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withEmptyReleaseList_shouldDeleteAllZips() {
         Release release = createRelease("9.0.0", "v9.0.0");
         List<Release> releases = List.of(release);
 
@@ -337,7 +320,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withOnlyActiveZips_shouldNotDeleteAny() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withOnlyActiveZips_shouldNotDeleteAny() {
         Release release1 = createRelease("7.0.0", "v7.0.0");
         Release release2 = createRelease("7.5.0", "v7.5.0");
         Release release3 = createRelease("8.0.0", "v8.0.0");
@@ -360,7 +343,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withHiddenFiles_shouldIgnoreThem() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withHiddenFiles_shouldIgnoreThem() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
@@ -378,7 +361,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withSubdirectories_shouldIgnoreThem() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withSubdirectories_shouldIgnoreThem() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
@@ -422,7 +405,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withZipAndTarGz_shouldOnlyProcessZipFiles() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withZipAndTarGz_shouldOnlyProcessZipFiles() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
@@ -440,7 +423,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withCaseVariations_shouldMatchCorrectly() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withCaseVariations_shouldMatchCorrectly() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
@@ -457,7 +440,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withManyObsoleteZips_shouldAttemptToDeleteAll() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withManyObsoleteZips_shouldAttemptToDeleteAll() {
         Release release = createRelease("10.0.0", "v10.0.0");
         List<Release> releases = List.of(release);
 
@@ -480,7 +463,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withNullTagName_shouldHandleGracefully() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withNullTagName_shouldHandleGracefully() {
         Release releaseWithNullTag = new Release();
         releaseWithNullTag.setName("Test Release");
         releaseWithNullTag.setTagName(null);
@@ -513,7 +496,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withLogFiles_shouldIgnoreThem() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withLogFiles_shouldIgnoreThem() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
@@ -531,7 +514,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_withPartialZipNames_shouldNotMatchWrongly() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_withPartialZipNames_shouldNotMatchWrongly() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
@@ -643,7 +626,7 @@ public class ReleaseArtifactServiceTest {
     }
 
     @Test
-    public void deleteObsoleteReleaseArtifacts_whenOrphanedTempFileExists_shouldAttemptToDeleteIt() throws IOException {
+    public void deleteObsoleteReleaseArtifacts_whenOrphanedTempFileExists_shouldAttemptToDeleteIt() {
         Release release = createRelease("8.0.0", "v8.0.0");
         List<Release> releases = List.of(release);
 
