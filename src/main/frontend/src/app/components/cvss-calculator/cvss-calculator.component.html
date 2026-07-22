@@ -1,0 +1,81 @@
+<app-modal title="CVSS 3.1 Calculator" (closed)="close()">
+  <div class="cvss-calculator">
+    @if (referenceScore !== null) {
+      <p class="reference-note">
+        Original NVD score for reference: <strong>{{ referenceScore }}</strong>
+      </p>
+    }
+
+    <div class="vector-field">
+      <label for="cvssVectorInput">Paste a CVSS vector string (optional)</label>
+      <div class="vector-input-row">
+        <input
+          id="cvssVectorInput"
+          type="text"
+          class="vector-input"
+          placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          [(ngModel)]="vectorInput"
+          (keydown.enter)="applyVectorInput()"
+        />
+        <button type="button" class="load-btn" (click)="applyVectorInput()">Load</button>
+      </div>
+      @if (vectorError()) {
+        <span class="error-message">{{ vectorError() }}</span>
+      }
+    </div>
+
+    <div class="metrics-grid">
+      @for (metric of metrics; track metric.key) {
+        <div class="metric-group">
+          <span
+            class="metric-label"
+            tabindex="0"
+            (mouseenter)="showTooltip($event, metric.label, metric.description)"
+            (focus)="showTooltip($event, metric.label, metric.description)"
+            (mouseleave)="hideTooltip()"
+            (blur)="hideTooltip()"
+          >
+            {{ metric.label }}
+          </span>
+          <div class="metric-options">
+            @for (option of metric.options; track option.key) {
+              <button
+                type="button"
+                class="metric-option"
+                [class.active]="selection()[metric.key] === option.key"
+                (click)="selectMetric(metric.key, option.key)"
+                (mouseenter)="showTooltip($event, option.fullLabel, option.description)"
+                (focus)="showTooltip($event, option.fullLabel, option.description)"
+                (mouseleave)="hideTooltip()"
+                (blur)="hideTooltip()"
+              >
+                {{ option.fullLabel }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (activeTooltip(); as tooltip) {
+      <div class="floating-tooltip" role="tooltip" [style.top]="tooltip.top" [style.left]="tooltip.left">
+        <strong>{{ tooltip.title }}:</strong> {{ tooltip.description }}
+      </div>
+    }
+
+    <div class="result-row">
+      <div class="result-score" [attr.data-severity]="result()?.severity ?? 'Incomplete'">
+        <span class="score-value">{{ result()?.score ?? '—' }}</span>
+        <span class="score-severity">{{ result()?.severity ?? 'Incomplete' }}</span>
+      </div>
+      @if (currentVectorString()) {
+        <code class="result-vector">{{ currentVectorString() }}</code>
+      }
+    </div>
+
+    <div class="actions-row">
+      <button type="button" class="cancel-btn" (click)="close()">Cancel</button>
+      <button type="button" class="use-btn" [disabled]="!result()" (click)="useScore()">Use this score</button>
+    </div>
+  </div>
+</app-modal>
