@@ -18,3 +18,7 @@ export function compareVersions(a: string, b: string): number {
 export function sortVersionsAsc(versions: string[]): string[] {
   return [...versions].toSorted(compareVersions);
 }
+
+export function sortVersionsDesc(versions: string[]): string[] {
+  return [...versions].toSorted((a, b) => compareVersions(b, a));
+}
