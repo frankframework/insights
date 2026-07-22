@@ -25,6 +25,8 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
   styleUrl: './release-manage.component.scss',
 })
 export class ReleaseManageComponent implements OnInit {
+  public static readonly releaseManagePath = '/release-manage';
+
   public authService = inject(AuthService);
   public release = signal<Release | null>(null);
   public releaseIssues = signal<Issue[] | null>([]);
@@ -59,6 +61,10 @@ export class ReleaseManageComponent implements OnInit {
 
   public vulnerabilitiesLink(): string {
     return '/vulnerabilities/manage';
+  }
+
+  public vulnerabilitiesLinkQueryParams(): { releaseId: string | null } {
+    return { releaseId: this.release()?.id ?? null };
   }
 
   public closeSection(): void {

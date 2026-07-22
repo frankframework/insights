@@ -80,7 +80,11 @@
               <p class="section-group-subtitle">Applies to all releases</p>
             </div>
             <div class="management-sections">
-              <a class="section-card vulnerabilities-card" [routerLink]="vulnerabilitiesLink()">
+              <a
+                class="section-card vulnerabilities-card"
+                [routerLink]="vulnerabilitiesLink()"
+                [queryParams]="vulnerabilitiesLinkQueryParams()"
+              >
                 <div class="card-icon-wrapper">
                   <svg
                     class="card-icon"

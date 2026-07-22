@@ -20,8 +20,14 @@ export const routes: Routes = [
   },
   { path: 'roadmap', component: ReleaseRoadmapComponent },
   { path: 'cve-overview', component: CveOverviewComponent },
+  { path: 'cve-overview/:cveId', component: CveOverviewComponent },
   {
     path: 'vulnerabilities/manage',
+    component: VulnerabilityImpactManageComponent,
+    canActivate: [FrankFrameworkMemberGuard],
+  },
+  {
+    path: 'vulnerabilities/manage/:cveId',
     component: VulnerabilityImpactManageComponent,
     canActivate: [FrankFrameworkMemberGuard],
   },
@@ -31,6 +37,7 @@ export const routes: Routes = [
     children: [
       { path: '', component: ReleaseManageComponent },
       { path: 'business-values', component: BusinessValueManageComponent },
+      { path: 'business-values/:businessValueId', component: BusinessValueManageComponent },
     ],
   },
   { path: 'not-found', component: NotFoundComponent },

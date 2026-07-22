@@ -1,6 +1,5 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Location } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
@@ -68,7 +67,7 @@ describe('BusinessValueManageComponent', () => {
   let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
   let mockIssueService: jasmine.SpyObj<IssueService>;
   let mockReleaseService: jasmine.SpyObj<ReleaseService>;
-  let mockLocation: jasmine.SpyObj<Location>;
+  let mockRouter: jasmine.SpyObj<Router>;
 
   beforeEach(async () => {
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', [
@@ -79,7 +78,7 @@ describe('BusinessValueManageComponent', () => {
     ]);
     mockIssueService = jasmine.createSpyObj('IssueService', ['getIssuesByReleaseId']);
     mockReleaseService = jasmine.createSpyObj('ReleaseService', ['getReleaseById', 'getAllReleases']);
-    mockLocation = jasmine.createSpyObj('Location', ['back']);
+    mockRouter = jasmine.createSpyObj('Router', ['navigate']);
 
     mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(of(mockBusinessValues));
     mockIssueService.getIssuesByReleaseId.and.returnValue(of(mockIssues));
@@ -92,11 +91,11 @@ describe('BusinessValueManageComponent', () => {
         { provide: BusinessValueService, useValue: mockBusinessValueService },
         { provide: IssueService, useValue: mockIssueService },
         { provide: ReleaseService, useValue: mockReleaseService },
-        { provide: Location, useValue: mockLocation },
+        { provide: Router, useValue: mockRouter },
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { paramMap: { get: () => 'release-123' } },
+            snapshot: { paramMap: { get: (key: string) => key === 'id' ? 'release-123' : null } },
           },
         },
         provideHttpClient(),
@@ -304,10 +303,10 @@ describe('BusinessValueManageComponent', () => {
       expect(component.showCreateForm()).toBeTrue();
     });
 
-    it('should go back using location service', () => {
+    it('should go back to parent location with router', () => {
       component.goBack();
 
-      expect(mockLocation.back).toHaveBeenCalledWith();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(['/release-manage', 'release-123']);
     });
   });
 });

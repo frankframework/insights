@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
 import { Release, ReleaseService } from '../../../services/release.service';
@@ -15,6 +15,7 @@ import {
   IssueWithSelection,
 } from './business-value-issue-panel/business-value-issue-panel.component';
 import { LoaderComponent } from '../../../components/loader/loader.component';
+import { ReleaseManageComponent } from '../release-manage.component';
 
 @Component({
   selector: 'app-business-value-manage',
@@ -56,23 +57,26 @@ export class BusinessValueManageComponent implements OnInit {
   public hasChanges = computed(() => this.hasIssueChanges());
 
   private route = inject(ActivatedRoute);
-  private location = inject(Location);
   private businessValueService = inject(BusinessValueService);
   private issueService = inject(IssueService);
   private releaseService = inject(ReleaseService);
+  private router = inject(Router);
 
   private originalSelectedIssueIds = signal<Set<string>>(new Set());
+  private pendingBusinessValueId: string | null = null;
+  private readonly businessValuesPath = 'business-values';
 
   ngOnInit(): void {
     const releaseId = this.route.snapshot.paramMap.get('id');
     if (releaseId) {
       this.releaseId.set(releaseId);
+      this.pendingBusinessValueId = this.route.snapshot.paramMap.get('businessValueId');
       this.fetchData(releaseId);
     }
   }
 
   public goBack(): void {
-    this.location.back();
+    this.router.navigate([ReleaseManageComponent.releaseManagePath, this.releaseId()]);
   }
 
   public toggleCreateForm(): void {
@@ -126,6 +130,7 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === deletedId) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
+      this.router.navigate([ReleaseManageComponent.releaseManagePath, this.releaseId(), this.businessValuesPath]);
     }
 
     this.closeDeleteModal();
@@ -149,8 +154,16 @@ export class BusinessValueManageComponent implements OnInit {
     if (this.selectedBusinessValue()?.id === businessValue.id) {
       this.selectedBusinessValue.set(null);
       this.resetIssueSelection();
+      this.router.navigate([ReleaseManageComponent.releaseManagePath, this.releaseId(), this.businessValuesPath]);
     } else {
       this.selectedBusinessValue.set(businessValue);
+      this.router.navigate([
+        ReleaseManageComponent.releaseManagePath,
+        this.releaseId(),
+        this.businessValuesPath,
+        businessValue.id,
+      ]);
+
       this.businessValueService.getBusinessValueById(businessValue.id).subscribe({
         next: (detailedBV) => {
           const updatedList = this.businessValues().map((bv) => (bv.id === detailedBV.id ? detailedBV : bv));
@@ -239,7 +252,12 @@ export class BusinessValueManageComponent implements OnInit {
       release: this.releaseService.getReleaseById(releaseId).pipe(catchError(() => of(null))),
       allReleases: this.releaseService.getAllReleases().pipe(catchError(() => of([]))),
     })
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+          this.applyDeepLinkedBusinessValue();
+        }),
+      )
       .subscribe(({ businessValues, issues, release, allReleases }) => {
         this.businessValues.set(businessValues);
         this.allIssues.set(issues ?? []);
@@ -263,6 +281,17 @@ export class BusinessValueManageComponent implements OnInit {
         }));
         this.issuesWithSelection.set(issuesWithSelection);
       });
+  }
+
+  private applyDeepLinkedBusinessValue(): void {
+    if (!this.pendingBusinessValueId) return;
+
+    const match = this.businessValues().find((businessValue) => businessValue.id === this.pendingBusinessValueId);
+
+    if (match) {
+      this.pendingBusinessValueId = null;
+      this.selectBusinessValue(match);
+    }
   }
 
   private updateIssueSelection(currentBusinessValue: BusinessValue): void {
