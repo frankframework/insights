@@ -220,12 +220,12 @@ MERGE INTO vulnerability_cwes (vulnerability_cve_id, cwes) KEY(vulnerability_cve
 	('CVE-2024-0007', 'CWE-400'),
 	('CVE-2024-0008', 'CWE-276');
 
-MERGE INTO release_vulnerability (release_id, vulnerability_cve_id) KEY(release_id, vulnerability_cve_id) VALUES
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0001'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0002'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0003'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0004'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0005'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0006'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0007'),
-	('RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0008');
+MERGE INTO release_vulnerability (id, release_id, vulnerability_cve_id) KEY(id) VALUES
+	('11111111-1111-1111-1111-111111110001', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0001'),
+	('11111111-1111-1111-1111-111111110002', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0002'),
+	('11111111-1111-1111-1111-111111110003', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0003'),
+	('11111111-1111-1111-1111-111111110004', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0004'),
+	('11111111-1111-1111-1111-111111110005', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0005'),
+	('11111111-1111-1111-1111-111111110006', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0006'),
+	('11111111-1111-1111-1111-111111110007', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0007'),
+	('11111111-1111-1111-1111-111111110008', 'RE_kwDOAIg5ds4MnUo_', 'CVE-2024-0008');
