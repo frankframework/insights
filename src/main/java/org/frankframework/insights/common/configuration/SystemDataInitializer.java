@@ -151,6 +151,7 @@ public class SystemDataInitializer implements CommandLineRunner {
                     "Job lock has been held since {} (over {}); assuming the previous run hung and reclaiming it.",
                     startedAt,
                     STALE_JOB_THRESHOLD);
+            isJobRunning.set(true);
             jobStartedAt.set(Instant.now());
             return true;
         }
@@ -158,7 +159,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         return false;
     }
 
-    private void releaseJobLock() {
+    private synchronized void releaseJobLock() {
         isJobRunning.set(false);
         jobStartedAt.set(null);
     }
@@ -272,8 +273,8 @@ public class SystemDataInitializer implements CommandLineRunner {
     private void runInjectionStep(String stepName, InjectionStep step) {
         try {
             step.run();
-        } catch (Exception e) {
-            log.error("GitHub data injection step '{}' failed; continuing with remaining steps", stepName, e);
+        } catch (Exception exception) {
+            log.error("GitHub data injection step '{}' failed; continuing with remaining steps", stepName, exception);
         }
     }
 
