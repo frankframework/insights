@@ -1,4 +1,4 @@
-import { parseVersion, compareVersions, sortVersionsAsc } from './version-compare';
+import { parseVersion, compareVersions, sortVersionsAsc, sortVersionsDesc } from './version-compare';
 
 describe('parseVersion', () => {
   it('parses simple major.minor', () => {
@@ -96,5 +96,29 @@ describe('sortVersionsAsc', () => {
 
     expect(result[0]).toContain('7');
     expect(result.at(-1)).toContain('9');
+  });
+});
+
+describe('sortVersionsDesc', () => {
+  it('sorts a simple list descending', () => {
+    expect(sortVersionsDesc(['9.0', '7.8', '8.1'])).toEqual(['9.0', '8.1', '7.8']);
+  });
+
+  it('does not mutate the original array (desc)', () => {
+    const original = ['9.0', '7.8', '8.1'];
+    const copy = [...original];
+    sortVersionsDesc(original);
+
+    expect(original).toEqual(copy);
+  });
+
+  it('returns empty array for empty input (desc)', () => {
+    expect(sortVersionsDesc([])).toEqual([]);
+  });
+
+  it('handles many branches in the right order (desc)', () => {
+    const input = ['9.1', '7.0', '8.0', '7.7', '9.0', '8.1', '7.8'];
+
+    expect(sortVersionsDesc(input)).toEqual(['9.1', '9.0', '8.1', '8.0', '7.8', '7.7', '7.0']);
   });
 });
