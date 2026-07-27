@@ -1,11 +1,13 @@
 package org.frankframework.insights.common.configuration;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchService;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
-import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
@@ -26,7 +28,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Configuration
 @Slf4j
 public class SystemDataInitializer implements CommandLineRunner {
+    protected static final Duration STALE_JOB_THRESHOLD = Duration.ofHours(2);
+
     protected final AtomicBoolean isJobRunning = new AtomicBoolean(false);
+    protected final AtomicReference<Instant> jobStartedAt = new AtomicReference<>();
     protected final AtomicBoolean pendingRefresh = new AtomicBoolean(false);
 
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
@@ -79,7 +84,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     @Override
     @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
-        if (!isJobRunning.compareAndSet(false, true)) {
+        if (!tryAcquireJobLock()) {
             log.warn("Startup job skipped: another job is already running");
             return;
         }
@@ -89,7 +94,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             log.info("Startup: Fetching full system data");
             initializeSystemData();
         } finally {
-            isJobRunning.set(false);
+            releaseJobLock();
             drainPendingRefresh();
         }
     }
@@ -100,7 +105,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
-        if (!isJobRunning.compareAndSet(false, true)) {
+        if (!tryAcquireJobLock()) {
             log.warn("Daily job skipped: another job is already running");
             return;
         }
@@ -109,7 +114,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             fetchGitHubStatistics();
             initializeSystemData();
         } finally {
-            isJobRunning.set(false);
+            releaseJobLock();
             drainPendingRefresh();
         }
     }
@@ -120,7 +125,7 @@ public class SystemDataInitializer implements CommandLineRunner {
      */
     public void triggerRefresh() {
         taskExecutor.execute(() -> {
-            if (!isJobRunning.compareAndSet(false, true)) {
+            if (!tryAcquireJobLock()) {
                 log.info("Refresh requested but a job is already running; queuing for after current job");
                 pendingRefresh.set(true);
                 return;
@@ -128,15 +133,39 @@ public class SystemDataInitializer implements CommandLineRunner {
             try {
                 doWebhookRefresh("webhook trigger");
             } finally {
-                isJobRunning.set(false);
+                releaseJobLock();
                 drainPendingRefresh();
             }
         });
     }
 
+    private synchronized boolean tryAcquireJobLock() {
+        if (isJobRunning.compareAndSet(false, true)) {
+            jobStartedAt.set(Instant.now());
+            return true;
+        }
+
+        Instant startedAt = jobStartedAt.get();
+        if (startedAt != null && Duration.between(startedAt, Instant.now()).compareTo(STALE_JOB_THRESHOLD) > 0) {
+            log.error(
+                    "Job lock has been held since {} (over {}); assuming the previous run hung and reclaiming it.",
+                    startedAt,
+                    STALE_JOB_THRESHOLD);
+            isJobRunning.set(true);
+            jobStartedAt.set(Instant.now());
+            return true;
+        }
+
+        return false;
+    }
+
+    private synchronized void releaseJobLock() {
+        isJobRunning.set(false);
+        jobStartedAt.set(null);
+    }
+
     /**
-     * Runs the webhook-triggered refresh. inject data if new releases
-     * are detected.
+     * Runs the webhook-triggered refresh: injects all GitHub data, then scans any unscanned releases.
      */
     private void doWebhookRefresh(String context) {
         if (!dataFetchEnabled) {
@@ -154,9 +183,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private void scanForDataInjection(String context) {
         try {
             fetchGitHubStatistics();
-            if (hasNewReleasesOnGitHub()) {
-                injectAllGitHubData();
-            }
+            injectAllGitHubData();
         } catch (Exception e) {
             log.error("Webhook-triggered data inject failed ({})", context, e);
         }
@@ -171,40 +198,18 @@ public class SystemDataInitializer implements CommandLineRunner {
     }
 
     /**
-     * Compares the release count stored in the database against the count reported by GitHub.
-     */
-    private boolean hasNewReleasesOnGitHub() {
-        long databaseReleaseCount = releaseService.getStoredReleaseCount();
-
-        GitHubRepositoryStatisticsDTO statsDto = gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO();
-        int githubReleaseCount = statsDto != null ? statsDto.getGitHubReleaseCount() : -1;
-
-        boolean hasNew = githubReleaseCount < 0 || databaseReleaseCount != githubReleaseCount;
-
-        if (hasNew) {
-            log.info(
-                    "New releases detected (DB: {}, GitHub: {}). Running full data inject.",
-                    databaseReleaseCount,
-                    githubReleaseCount);
-        } else {
-            log.info("Release count unchanged ({}). Skipping full inject.", databaseReleaseCount);
-        }
-        return hasNew;
-    }
-
-    /**
      * If a webhook refresh was queued while a scheduled job was running, execute it now.
      */
     private void drainPendingRefresh() {
         while (pendingRefresh.compareAndSet(true, false)) {
-            if (!isJobRunning.compareAndSet(false, true)) {
+            if (!tryAcquireJobLock()) {
                 pendingRefresh.set(true);
                 return;
             }
             try {
                 doWebhookRefresh("queued after scheduled job");
             } finally {
-                isJobRunning.set(false);
+                releaseJobLock();
             }
         }
     }
@@ -249,19 +254,32 @@ public class SystemDataInitializer implements CommandLineRunner {
 
     /**
      * Injects all GitHub data into the database. Shared by the daily job and the API-triggered refresh.
-     * Does not scan vulnerabilities
+     * Does not scan vulnerabilities.
      */
-    private void injectAllGitHubData() throws Exception {
+    private void injectAllGitHubData() {
         log.info("Start injecting all GitHub data");
-        labelService.injectLabels();
-        milestoneService.injectMilestones();
-        issueTypeService.injectIssueTypes();
-        issueProjectItemsService.injectIssueProjectItems();
-        branchService.injectBranches();
-        issueService.injectIssues();
-        pullRequestService.injectBranchPullRequests();
-        releaseService.injectReleases();
-        releaseArtifactService.deleteObsoleteReleaseArtifacts();
+        runInjectionStep("labels", labelService::injectLabels);
+        runInjectionStep("milestones", milestoneService::injectMilestones);
+        runInjectionStep("issueTypes", issueTypeService::injectIssueTypes);
+        runInjectionStep("issueProjectItems", issueProjectItemsService::injectIssueProjectItems);
+        runInjectionStep("branches", branchService::injectBranches);
+        runInjectionStep("issues", issueService::injectIssues);
+        runInjectionStep("branchPullRequests", pullRequestService::injectBranchPullRequests);
+        runInjectionStep("releases", releaseService::injectReleases);
+        runInjectionStep("obsoleteReleaseArtifacts", releaseArtifactService::deleteObsoleteReleaseArtifacts);
         log.info("Done injecting all GitHub data");
+    }
+
+    private void runInjectionStep(String stepName, InjectionStep step) {
+        try {
+            step.run();
+        } catch (Exception exception) {
+            log.error("GitHub data injection step '{}' failed; continuing with remaining steps", stepName, exception);
+        }
+    }
+
+    @FunctionalInterface
+    private interface InjectionStep {
+        void run() throws Exception;
     }
 }

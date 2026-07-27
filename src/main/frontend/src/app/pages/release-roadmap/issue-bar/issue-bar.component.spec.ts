@@ -5,7 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { IssueBarComponent } from './issue-bar.component';
 import { Issue, IssuePriority, IssueState, IssueType } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
-import { TooltipService } from './tooltip/tooltip.service';
+import { TooltipService } from '../../../components/tooltip/tooltip.service';
 
 const EPIC_TYPE: IssueType = {
   id: 'epic-1',
@@ -318,7 +318,9 @@ describe('IssueBarComponent', () => {
       const issueLink = fixture.debugElement.query(By.css('.issue-bar'));
       issueLink.triggerEventHandler('mouseenter', null);
 
-      expect(mockTooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue);
+      expect(mockTooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue.title, [
+        { label: 'Points', value: '5' },
+      ]);
     });
 
     it('should call TooltipService.hide on mouseleave', () => {
