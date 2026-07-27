@@ -57,12 +57,6 @@
       }
     </div>
 
-    @if (activeTooltip(); as tooltip) {
-      <div class="floating-tooltip" role="tooltip" [style.top]="tooltip.top" [style.left]="tooltip.left">
-        <strong>{{ tooltip.title }}:</strong> {{ tooltip.description }}
-      </div>
-    }
-
     <div class="result-row">
       <div class="result-score" [attr.data-severity]="result()?.severity ?? 'Incomplete'">
         <span class="score-value">{{ result()?.score ?? '—' }}</span>

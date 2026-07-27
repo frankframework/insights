@@ -99,26 +99,6 @@
   width: fit-content;
 }
 
-.floating-tooltip {
-  position: fixed;
-  transform: translate(-50%, -100%);
-  z-index: 100;
-  width: max-content;
-  max-width: min(240px, calc(100vw - 2rem));
-  padding: 0.5rem 0.65rem;
-  border-radius: 6px;
-  background: #1f2937;
-  color: #f9fafb;
-  font-weight: 500;
-  font-size: 0.75rem;
-  text-align: left;
-  pointer-events: none;
-
-  strong {
-    color: #fff;
-  }
-}
-
 .metric-options {
   display: flex;
   flex-wrap: wrap;

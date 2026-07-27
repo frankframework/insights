@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   EventEmitter,
+  inject,
   Input,
   OnInit,
   Output,
@@ -12,6 +13,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../modal/modal.component';
+import { TooltipService } from '../tooltip/tooltip.service';
 import {
   calculateCvssScore,
   CVSS_METRICS,
@@ -21,13 +23,6 @@ import {
   parseVectorString,
   vectorToString,
 } from '../../pipes/cvss';
-
-export interface CvssTooltipState {
-  top: string;
-  left: string;
-  title: string;
-  description: string;
-}
 
 @Component({
   selector: 'app-cvss-calculator',
@@ -50,10 +45,10 @@ export class CvssCalculatorComponent implements OnInit {
 
   public selection: WritableSignal<CvssVector> = signal({});
 
-  public activeTooltip: WritableSignal<CvssTooltipState | null> = signal(null);
-
   public result: Signal<CvssResult | null> = computed(() => calculateCvssScore(this.selection()));
   public currentVectorString: Signal<string> = computed(() => vectorToString(this.selection()));
+
+  private tooltipService = inject(TooltipService);
 
   ngOnInit(): void {
     if (!this.referenceVector) return;
@@ -88,20 +83,11 @@ export class CvssCalculatorComponent implements OnInit {
   }
 
   public showTooltip(event: Event, title: string, description: string): void {
-    const target = event.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    const gap = 8;
-
-    this.activeTooltip.set({
-      top: `${rect.top - gap}px`,
-      left: `${rect.left + rect.width / 2}px`,
-      title,
-      description,
-    });
+    this.tooltipService.show(event.currentTarget as HTMLElement, title, [{ value: description }]);
   }
 
   public hideTooltip(): void {
-    this.activeTooltip.set(null);
+    this.tooltipService.hide();
   }
 
   public useScore(): void {

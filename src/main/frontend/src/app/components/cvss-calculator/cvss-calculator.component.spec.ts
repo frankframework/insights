@@ -1,13 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CvssCalculatorComponent } from './cvss-calculator.component';
+import { TooltipService } from '../tooltip/tooltip.service';
 
 describe('CvssCalculatorComponent', () => {
   let component: CvssCalculatorComponent;
   let fixture: ComponentFixture<CvssCalculatorComponent>;
+  let mockTooltipService: jasmine.SpyObj<TooltipService>;
 
   beforeEach(async () => {
+    mockTooltipService = jasmine.createSpyObj('TooltipService', ['show', 'hide']);
+
     await TestBed.configureTestingModule({
       imports: [CvssCalculatorComponent],
+      providers: [{ provide: TooltipService, useValue: mockTooltipService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CvssCalculatorComponent);
@@ -77,6 +82,23 @@ describe('CvssCalculatorComponent', () => {
     component.useScore();
 
     expect(emitSpy).not.toHaveBeenCalled();
+  });
+
+  it('should show a tooltip via the shared TooltipService', () => {
+    const target = document.createElement('span');
+    const event = { currentTarget: target } as unknown as Event;
+
+    component.showTooltip(event, 'Attack Vector', 'How the vulnerability is exploited');
+
+    expect(mockTooltipService.show).toHaveBeenCalledWith(target, 'Attack Vector', [
+      { value: 'How the vulnerability is exploited' },
+    ]);
+  });
+
+  it('should hide the tooltip via the shared TooltipService', () => {
+    component.hideTooltip();
+
+    expect(mockTooltipService.hide).toHaveBeenCalledWith();
   });
 
   it('should emit closed when close is called', () => {

@@ -2,7 +2,7 @@ import { Component, Input, OnInit, ElementRef, ViewChild, inject } from '@angula
 import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
-import { TooltipService } from './tooltip/tooltip.service';
+import { TooltipDetail, TooltipService } from '../../../components/tooltip/tooltip.service';
 import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../release-roadmap.component';
 
 @Component({
@@ -41,7 +41,15 @@ export class IssueBarComponent implements OnInit {
     }
 
     if (this.issueLinkRef) {
-      this.tooltipService.show(this.issueLinkRef.nativeElement, this.issue);
+      const details: TooltipDetail[] = [];
+      if (this.issue.issuePriority) {
+        details.push({ label: 'Priority', value: this.issue.issuePriority.name });
+      }
+      if (this.issue.points) {
+        details.push({ label: 'Points', value: `${this.issue.points}` });
+      }
+
+      this.tooltipService.show(this.issueLinkRef.nativeElement, this.issue.title, details);
     }
   }
 

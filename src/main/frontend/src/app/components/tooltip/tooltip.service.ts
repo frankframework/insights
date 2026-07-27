@@ -1,9 +1,14 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Issue } from '../../../../services/issue.service';
+
+export interface TooltipDetail {
+  label?: string;
+  value: string;
+}
 
 export interface TooltipData {
-  issue: Issue;
+  title: string;
+  details: TooltipDetail[];
   top: string;
   left: string;
 }
@@ -15,9 +20,9 @@ export class TooltipService {
   public tooltipSubject = new BehaviorSubject<TooltipData | null>(null);
   public readonly tooltipState$: Observable<TooltipData | null> = this.tooltipSubject.asObservable();
 
-  public show(hostElement: HTMLElement, issue: Issue): void {
+  public show(hostElement: HTMLElement, title: string, details: TooltipDetail[] = []): void {
     const position = this.calculatePosition(hostElement);
-    this.tooltipSubject.next({ issue, ...position });
+    this.tooltipSubject.next({ title, details, ...position });
   }
 
   public hide(): void {
