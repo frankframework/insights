@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "devDependencies": {
-    "cypress": "^15.18.1",
+    "cypress": "^15.19.0",
     "cypress-multi-reporters": "^2.0.5",
     "mocha": "^11.7.6",
     "mochawesome": "^7.1.4"
