@@ -1,0 +1,13 @@
+@if (tooltipState$ | async; as state) {
+  <div class="tooltip" [style.top]="state.top" [style.left]="state.left">
+    <h4 class="tooltip-title">{{ state.title }}</h4>
+    @for (detail of state.details; track detail.value) {
+      <p class="tooltip-detail">
+        @if (detail.label) {
+          <strong>{{ detail.label }}:</strong>
+        }
+        {{ detail.value }}
+      </p>
+    }
+  </div>
+}
