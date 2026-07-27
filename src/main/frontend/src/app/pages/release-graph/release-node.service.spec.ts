@@ -188,25 +188,19 @@ describe('ReleaseNodeService', () => {
       const positionedMap = service.calculateReleaseCoordinates(structuredData);
       const branchOrder = [...positionedMap.keys()].filter((b) => b !== MASTER_BRANCH_NAME);
 
-      expect(branchOrder).toEqual(['release/9.0', 'release/8.4']);
+      expect(branchOrder).toEqual(['release/9.0', 'release/8.4', 'release/7.2']);
     });
 
-    it('should keep the latest LTS (major x.0) branch even if it has no nightly and is past support window', () => {
+    it('should keep only the latest 2 major branches, and among the rest only the most recently unsupported one', () => {
       const branches: Record<string, any> = {
         master: { id: 'b-master', name: MASTER_BRANCH_NAME },
         b90: { id: 'b-90', name: 'release/9.0' },
         b80: { id: 'b-80', name: 'release/8.0' },
+        b70: { id: 'b-70', name: 'release/7.0' },
+        b60: { id: 'b-60', name: 'release/6.0' },
       };
 
       const releases: Release[] = [
-        {
-          id: 'master-nightly',
-          name: 'v9.4.0-20251108.042330 (nightly)',
-          publishedAt: new Date('2025-06-10T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: branches['master'],
-          tagName: 'release/9.4-nightly',
-        },
         {
           id: '9.0-anchor',
           name: 'v9.0.0',
@@ -224,12 +218,20 @@ describe('ReleaseNodeService', () => {
           tagName: 'release/v8.0.0',
         },
         {
-          id: '8.0-node-1',
-          name: 'v8.0.1',
-          publishedAt: new Date('2023-02-01T10:00:00Z'),
+          id: '7.0-anchor',
+          name: 'v7.0.0',
+          publishedAt: new Date('2022-01-01T10:00:00Z'),
           lastScanned: new Date(),
-          branch: branches['b80'],
-          tagName: 'release/v8.0.1',
+          branch: branches['b70'],
+          tagName: 'release/v7.0.0',
+        },
+        {
+          id: '6.0-anchor',
+          name: 'v6.0.0',
+          publishedAt: new Date('2020-01-01T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: branches['b60'],
+          tagName: 'release/v6.0.0',
         },
       ];
 
@@ -237,7 +239,31 @@ describe('ReleaseNodeService', () => {
       const positionedMap = service.calculateReleaseCoordinates(structured);
       const branchOrder = [...positionedMap.keys()].filter((b) => b !== MASTER_BRANCH_NAME);
 
-      expect(branchOrder).toContain('release/8.0');
+      expect(branchOrder).toEqual(['release/9.0', 'release/8.0', 'release/7.0']);
+    });
+
+    it('should keep the only existing unsupported branch visible when nothing else competes for the showcase slot', () => {
+      const branches: Record<string, any> = {
+        master: { id: 'b-master', name: MASTER_BRANCH_NAME },
+        b75: { id: 'b-75', name: 'release/7.5' },
+      };
+
+      const releases: Release[] = [
+        {
+          id: '7.5-anchor',
+          name: 'v7.5.0',
+          publishedAt: new Date('2015-01-01T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: branches['b75'],
+          tagName: 'release/v7.5.0',
+        },
+      ];
+
+      const structured = service.structureReleaseData(releases);
+      const positionedMap = service.calculateReleaseCoordinates(structured);
+      const branchOrder = [...positionedMap.keys()].filter((branch) => branch !== MASTER_BRANCH_NAME);
+
+      expect(branchOrder).toContain('release/7.5');
     });
 
     it('should position master nodes on Y=0 axis', () => {
