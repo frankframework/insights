@@ -64,7 +64,7 @@ export class ReleaseNodeService {
 
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly PIXELS_PER_QUARTER: number = 200;
-  private static readonly KEEP_LATEST_LTS_COUNT: number = 3;
+  private static readonly KEEP_LATEST_LTS_COUNT: number = 2;
 
   public timelineScale: TimelineScale | null = null;
 
