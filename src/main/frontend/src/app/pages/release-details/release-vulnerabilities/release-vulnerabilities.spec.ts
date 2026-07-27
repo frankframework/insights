@@ -109,6 +109,30 @@ describe('ReleaseVulnerabilities', () => {
       expect(component.selectedVulnerability).toBeNull();
     });
 
+    it('should show "Not yet scanned" when there are no vulnerabilities and lastScanned is null', () => {
+      component.vulnerabilities = [];
+      component.lastScanned = null;
+      component.ngOnChanges();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+
+      expect(text).toContain('Not yet scanned.');
+      expect(text).not.toContain('No vulnerabilities found for this release.');
+    });
+
+    it('should show "No vulnerabilities found" when there are no vulnerabilities but lastScanned is set', () => {
+      component.vulnerabilities = [];
+      component.lastScanned = new Date('2024-01-01');
+      component.ngOnChanges();
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+
+      expect(text).toContain('No vulnerabilities found for this release.');
+      expect(text).not.toContain('Not yet scanned.');
+    });
+
     it('should handle single vulnerability', () => {
       component.vulnerabilities = [mockVulnerabilities[0]];
       component.ngOnChanges();
