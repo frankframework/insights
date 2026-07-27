@@ -9,13 +9,13 @@ const LANGUAGE_BY_PURL_TYPE: Record<string, { label: string; domain: 'frontend' 
   npm: { label: 'TypeScript (npm)', domain: 'frontend' },
 };
 
-export function extractPurlType(purl: string | null | undefined): string | null {
+export function extractPurlType(purl?: string | null): string | null {
   if (!purl) return null;
   const match = /^pkg:([^/]+)\//.exec(purl);
   return match ? match[1].toLowerCase() : null;
 }
 
-export function languageFromPurl(purl: string | null | undefined): LanguageInfo | null {
+export function languageFromPurl(purl?: string | null): LanguageInfo | null {
   const type = extractPurlType(purl);
   if (!type) return null;
 
