@@ -3,10 +3,10 @@ package org.frankframework.insights.common.configuration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.time.Duration;
+import java.time.Instant;
 import org.frankframework.insights.branch.BranchService;
-import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsDTO;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
-import org.frankframework.insights.github.graphql.GitHubTotalCountDTO;
 import org.frankframework.insights.issue.IssueService;
 import org.frankframework.insights.issueprojects.IssueProjectItemsService;
 import org.frankframework.insights.issuetype.IssueTypeService;
@@ -85,44 +85,23 @@ public class SystemDataInitializerTest {
 
     @Test
     public void triggerRefresh_whenNoJobRunning_startsWork() {
-        when(releaseService.getStoredReleaseCount()).thenReturn(0L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(null);
-
         systemDataInitializer.triggerRefresh();
 
         verify(vulnerabilityService).scanUnscannedReleasesOnly();
     }
 
     @Test
-    public void triggerRefresh_whenJobAlreadyRunning_queuesRefreshWithoutRunningImmediately() {
+    public void triggerRefresh_whenJobAlreadyRunning_queuesRefreshWithoutRunningImmediately() throws Exception {
         setJobRunning(true);
 
         systemDataInitializer.triggerRefresh();
 
-        verify(releaseService, never()).getStoredReleaseCount();
+        verify(releaseService, never()).injectReleases();
         verify(vulnerabilityService, never()).scanUnscannedReleasesOnly();
     }
 
     @Test
-    public void triggerRefresh_whenGitHubAndDbCountMatch_skipsFullInject() throws Exception {
-        when(releaseService.getStoredReleaseCount()).thenReturn(5L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(5));
-
-        systemDataInitializer.triggerRefresh();
-
-        verify(labelService, never()).injectLabels();
-        verify(milestoneService, never()).injectMilestones();
-        verify(releaseService, never()).injectReleases();
-    }
-
-    @Test
-    public void triggerRefresh_whenGitHubCountHigherThanDb_runsFullInject() throws Exception {
-        when(releaseService.getStoredReleaseCount()).thenReturn(4L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(5));
-
+    public void triggerRefresh_alwaysRunsFullInject() throws Exception {
         systemDataInitializer.triggerRefresh();
 
         verify(labelService).injectLabels();
@@ -136,45 +115,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void triggerRefresh_whenStatsDtoIsNull_treatsAsNewReleasesAndRunsFullInject() throws Exception {
-        when(releaseService.getStoredReleaseCount()).thenReturn(5L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(null);
-
-        systemDataInitializer.triggerRefresh();
-
-        verify(labelService).injectLabels();
-    }
-
-    @Test
-    public void triggerRefresh_whenReleasesFieldInDtoIsNull_treatsAsNewReleasesAndRunsFullInject() throws Exception {
-        when(releaseService.getStoredReleaseCount()).thenReturn(5L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(new GitHubRepositoryStatisticsDTO(null, null, null, null));
-
-        systemDataInitializer.triggerRefresh();
-
-        verify(labelService).injectLabels();
-    }
-
-    @Test
-    public void triggerRefresh_alwaysScansUnscannedReleases_evenWhenInjectSkipped() {
-        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(3));
-
-        systemDataInitializer.triggerRefresh();
-
-        verify(vulnerabilityService).scanUnscannedReleasesOnly();
-        verify(vulnerabilityService, never()).scanAndSaveVulnerabilitiesForAllReleases();
-    }
-
-    @Test
-    public void triggerRefresh_alwaysScansUnscannedReleases_afterFullInject() {
-        when(releaseService.getStoredReleaseCount()).thenReturn(4L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(5));
-
+    public void triggerRefresh_alwaysScansUnscannedReleasesOnly_notFullRescan() {
         systemDataInitializer.triggerRefresh();
 
         verify(vulnerabilityService).scanUnscannedReleasesOnly();
@@ -183,25 +124,41 @@ public class SystemDataInitializerTest {
 
     @Test
     public void triggerRefresh_whenInjectThrows_logsErrorAndResetsLock() throws Exception {
-        when(releaseService.getStoredReleaseCount()).thenReturn(4L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(5));
         doThrow(new RuntimeException("GitHub unreachable")).when(labelService).injectLabels();
 
         systemDataInitializer.triggerRefresh();
 
         reset(labelService);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(null);
         systemDataInitializer.triggerRefresh();
         verify(vulnerabilityService, times(2)).scanUnscannedReleasesOnly();
     }
 
     @Test
+    public void triggerRefresh_whenEarlierStepThrows_laterStepsIncludingReleaseInjectionStillRun() throws Exception {
+        doThrow(new RuntimeException("GitHub unreachable")).when(labelService).injectLabels();
+
+        systemDataInitializer.triggerRefresh();
+
+        verify(milestoneService).injectMilestones();
+        verify(branchService).injectBranches();
+        verify(releaseService).injectReleases();
+        verify(releaseArtifactService).deleteObsoleteReleaseArtifacts();
+        verify(vulnerabilityService).scanUnscannedReleasesOnly();
+    }
+
+    @Test
+    public void triggerRefresh_whenReleaseInjectionItselfThrows_laterStepsStillRunAndScanStillHappens()
+            throws Exception {
+        doThrow(new RuntimeException("GitHub unreachable")).when(releaseService).injectReleases();
+
+        systemDataInitializer.triggerRefresh();
+
+        verify(releaseArtifactService).deleteObsoleteReleaseArtifacts();
+        verify(vulnerabilityService).scanUnscannedReleasesOnly();
+    }
+
+    @Test
     public void triggerRefresh_whenScanThrows_logsErrorAndResetsLock() {
-        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(3));
         doThrow(new RuntimeException("Trivy unavailable"))
                 .when(vulnerabilityService)
                 .scanUnscannedReleasesOnly();
@@ -209,10 +166,32 @@ public class SystemDataInitializerTest {
         systemDataInitializer.triggerRefresh();
 
         reset(vulnerabilityService);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(null);
         systemDataInitializer.triggerRefresh();
         verify(vulnerabilityService).scanUnscannedReleasesOnly();
+    }
+
+    @Test
+    public void triggerRefresh_whenLockHeldLongerThanStaleThreshold_reclaimsLockAndRuns() {
+        setJobRunning(true);
+        systemDataInitializer.jobStartedAt.set(
+                Instant.now().minus(SystemDataInitializer.STALE_JOB_THRESHOLD).minus(Duration.ofMinutes(1)));
+
+        systemDataInitializer.triggerRefresh();
+
+        verify(vulnerabilityService).scanUnscannedReleasesOnly();
+        assertFalse(systemDataInitializer.pendingRefresh.get());
+    }
+
+    @Test
+    public void triggerRefresh_whenLockHeldWithinStaleThreshold_staysQueued() {
+        setJobRunning(true);
+        systemDataInitializer.jobStartedAt.set(
+                Instant.now().minus(SystemDataInitializer.STALE_JOB_THRESHOLD).plus(Duration.ofMinutes(1)));
+
+        systemDataInitializer.triggerRefresh();
+
+        verify(vulnerabilityService, never()).scanUnscannedReleasesOnly();
+        assertTrue(systemDataInitializer.pendingRefresh.get());
     }
 
     @Test
@@ -226,10 +205,6 @@ public class SystemDataInitializerTest {
 
     @Test
     public void triggerRefresh_whenCompleted_leavesPendingRefreshFalse() {
-        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(3));
-
         systemDataInitializer.triggerRefresh();
 
         assertFalse(systemDataInitializer.pendingRefresh.get());
@@ -238,9 +213,6 @@ public class SystemDataInitializerTest {
     @Test
     public void run_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
         systemDataInitializer.pendingRefresh.set(true);
-        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(3));
 
         systemDataInitializer.run();
 
@@ -250,9 +222,6 @@ public class SystemDataInitializerTest {
     @Test
     public void dailyJob_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
         systemDataInitializer.pendingRefresh.set(true);
-        when(releaseService.getStoredReleaseCount()).thenReturn(3L);
-        when(gitHubRepositoryStatisticsService.getGitHubRepositoryStatisticsDTO())
-                .thenReturn(statsWithReleaseCount(3));
 
         systemDataInitializer.dailyJob();
 
@@ -284,10 +253,6 @@ public class SystemDataInitializerTest {
         systemDataInitializer.triggerRefresh();
 
         verifyNoInteractions(releaseService, labelService, vulnerabilityService);
-    }
-
-    private static GitHubRepositoryStatisticsDTO statsWithReleaseCount(int count) {
-        return new GitHubRepositoryStatisticsDTO(null, null, null, new GitHubTotalCountDTO(count));
     }
 
     private void setJobRunning(boolean value) {

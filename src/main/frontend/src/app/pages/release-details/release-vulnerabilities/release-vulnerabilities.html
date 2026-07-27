@@ -15,7 +15,11 @@
     </header>
 
     @if (sortedVulnerabilities.length === 0) {
-      <p class="no-vulnerabilities">No vulnerabilities found for this release.</p>
+      @if (lastScanned) {
+        <p class="no-vulnerabilities">No vulnerabilities found for this release.</p>
+      } @else {
+        <p class="no-vulnerabilities">Not yet scanned.</p>
+      }
     } @else {
       @for (vulnerability of sortedVulnerabilities; track vulnerability.cveId) {
         <div
