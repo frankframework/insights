@@ -71,10 +71,11 @@ export class ReleaseNodeService {
 
   public structureReleaseData(releases: Release[], includeRanges: IncludeRange[] = []): Map<string, ReleaseNode[]>[] {
     const hydratedReleases = this.hydrateReleases(releases);
+    const branchOriginDates = this.captureBranchOriginDates(hydratedReleases);
     const groupedByBranch = this.prepareGroupedReleases(hydratedReleases, includeRanges);
 
     const filteredNodes = this.processMasterBranch(groupedByBranch, includeRanges);
-    const branchMaps = this.processBranchReleases(groupedByBranch, filteredNodes);
+    const branchMaps = this.processBranchReleases(groupedByBranch, filteredNodes, branchOriginDates);
 
     this.sortByNightlyAndDate(filteredNodes, (node) => node.label);
 
@@ -205,6 +206,18 @@ export class ReleaseNodeService {
     }));
   }
 
+  private captureBranchOriginDates(hydratedReleases: (Release & { publishedAt: Date })[]): Map<string, Date> {
+    const originDates = new Map<string, Date>();
+    for (const release of hydratedReleases) {
+      const branchName = release.branch.name;
+      const existing = originDates.get(branchName);
+      if (!existing || release.publishedAt < existing) {
+        originDates.set(branchName, release.publishedAt);
+      }
+    }
+    return originDates;
+  }
+
   private prepareGroupedReleases(
     hydratedReleases: (Release & { publishedAt: Date })[],
     includeRanges: IncludeRange[],
@@ -305,6 +318,7 @@ export class ReleaseNodeService {
   private processBranchReleases(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
     filteredNodes: ReleaseNode[],
+    branchOriginDates: Map<string, Date>,
   ): Map<string, ReleaseNode[]>[] {
     const branchMaps: Map<string, ReleaseNode[]>[] = [];
 
@@ -312,7 +326,8 @@ export class ReleaseNodeService {
       if (branchReleases.length === 0) continue;
 
       const branchNodes = this.createReleaseNodes(branchReleases);
-      const miniNode = this.createMiniNode(branchNodes[0], branchName);
+      const originDate = branchOriginDates.get(branchName) ?? branchNodes[0].publishedAt;
+      const miniNode = this.createMiniNode(branchNodes[0], branchName, originDate);
 
       filteredNodes.push(miniNode);
       branchMaps.push(new Map([[branchName, branchNodes]]));
@@ -321,12 +336,12 @@ export class ReleaseNodeService {
     return branchMaps;
   }
 
-  private createMiniNode(firstBranchNode: ReleaseNode, branchName: string): ReleaseNode {
+  private createMiniNode(firstBranchNode: ReleaseNode, branchName: string, originDate: Date): ReleaseNode {
     return {
       id: `mini-${firstBranchNode.id}`,
       label: '',
       branch: ReleaseNodeService.GITHUB_MASTER_BRANCH,
-      publishedAt: firstBranchNode.publishedAt,
+      publishedAt: originDate,
       color: '',
       position: { x: 0, y: 0 },
       isMiniNode: true,
@@ -820,9 +835,7 @@ export class ReleaseNodeService {
     }
 
     const MINI_NODE_OFFSET = 40;
-    if (nodes.length > 0) {
-      miniNode.position.x = nodes[0].position.x - MINI_NODE_OFFSET;
-    }
+    miniNode.position.x = this.calculateXPositionFromDate(miniNode.publishedAt, this.timelineScale) - MINI_NODE_OFFSET;
   }
 
   /**
