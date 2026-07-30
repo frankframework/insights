@@ -239,54 +239,37 @@ export class ReleaseNodeService {
       return;
     }
 
-    const protectedBranches = this.findLatestMajorBranchNames([...groupedByBranch.keys()]);
+    const protectedMajors = this.findProtectedMajors([...groupedByBranch.keys()]);
 
     for (const [branchName, releases] of groupedByBranch.entries()) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
 
-      if (this.isBranchCurrentlyActive(branchName, releases, protectedBranches)) continue;
+      const whitelistedReleases = releases.filter((release) => this.isReleaseIncluded(release, includeRanges));
+      const isWhitelisted = whitelistedReleases.length > 0;
+      const isCurrentMajorFamily = this.isBranchInCurrentMajorFamily(branchName, protectedMajors);
 
-      const includedReleases = releases.filter((release) => this.isReleaseIncluded(release, includeRanges));
-
-      if (includedReleases.length === 0) {
+      if (isWhitelisted) {
+        groupedByBranch.set(branchName, whitelistedReleases);
+      } else if (!isCurrentMajorFamily) {
         groupedByBranch.delete(branchName);
-      } else {
-        groupedByBranch.set(branchName, includedReleases);
       }
     }
   }
 
-  private isBranchCurrentlyActive(
-    branchName: string,
-    releases: (Release & { publishedAt: Date })[],
-    protectedBranches: Set<string>,
-  ): boolean {
-    if (protectedBranches.has(branchName)) return true;
-    if (releases.length === 0) return true;
-
-    const latestByDate = releases.reduce((previous, current) =>
-      previous.publishedAt > current.publishedAt ? previous : current,
-    );
-
-    if (this.isNightlyRelease(latestByDate.name)) return true;
-
-    let rootRelease = releases.find((release) => release.name.endsWith('.0') || release.tagName.endsWith('.0'));
-    if (!rootRelease) {
-      rootRelease = releases.reduce((previous, current) =>
-        previous.publishedAt < current.publishedAt ? previous : current,
-      );
+  private findProtectedMajors(branchNames: string[]): Set<number> {
+    const protectedBranches = this.findLatestMajorBranchNames(branchNames);
+    const majors = new Set<number>();
+    for (const name of protectedBranches) {
+      const version = this.getVersionFromBranchName(name);
+      if (version) majors.add(version.major);
     }
 
-    const rootNode: ReleaseNode = {
-      id: rootRelease.id,
-      label: this.transformNodeLabel(rootRelease),
-      branch: rootRelease.branch.name,
-      publishedAt: rootRelease.publishedAt,
-      position: { x: 0, y: 0 },
-      color: '',
-    };
+    return majors;
+  }
 
-    return !this.isUnsupported(rootNode);
+  private isBranchInCurrentMajorFamily(branchName: string, protectedMajors: Set<number>): boolean {
+    const version = this.getVersionFromBranchName(branchName);
+    return version !== null && protectedMajors.has(version.major);
   }
 
   private isReleaseIncluded(release: Release, includeRanges: IncludeRange[]): boolean {

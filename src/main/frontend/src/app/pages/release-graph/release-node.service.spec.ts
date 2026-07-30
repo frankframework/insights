@@ -197,7 +197,7 @@ describe('ReleaseNodeService', () => {
     it('should drop branches that are not whitelisted', () => {
       const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, parseIncludeRanges('7.2')));
 
-      expect(branchNames).not.toContain('release/9.0');
+      expect(branchNames).toContain('release/9.0');
       expect(branchNames).not.toContain('release/8.4');
     });
 
