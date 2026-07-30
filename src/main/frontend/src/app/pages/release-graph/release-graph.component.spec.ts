@@ -8,6 +8,7 @@ import { of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
 import { ElementRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { parseIncludeRanges } from '../../pipes/release-include';
 
 describe('ReleaseGraphComponent', () => {
   let component: ReleaseGraphComponent;
@@ -146,7 +147,7 @@ describe('ReleaseGraphComponent', () => {
       expect(component.releases).toEqual(mockReleases);
       expect(component.releaseNodes).toEqual(mockNodes);
       expect(component.allLinks).toEqual(mockLinks);
-      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases);
+      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases, []);
     });
 
     it('should handle API errors gracefully', () => {
@@ -412,6 +413,115 @@ describe('ReleaseGraphComponent', () => {
       fixture.detectChanges();
 
       expect(component.quarterMarkers).toEqual([]);
+    });
+  });
+
+  describe('Include Releases Functionality', () => {
+    it('should have no included releases by default', () => {
+      fixture.detectChanges();
+
+      expect(component.includedReleases).toEqual([]);
+    });
+
+    it('should read the include parameter from the url', () => {
+      fixture.detectChanges();
+      queryParametersSubject.next({ include: '7.0-9.3.2' });
+
+      expect(component.includedReleases).toEqual(parseIncludeRanges('7.0-9.3.2'));
+    });
+
+    it('should rebuild the graph with the included releases when the parameter changes', () => {
+      fixture.detectChanges();
+      mockNodeService.structureReleaseData.calls.reset();
+
+      queryParametersSubject.next({ include: '7.1' });
+
+      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases, parseIncludeRanges('7.1'));
+    });
+
+    it('should not rebuild the graph when the include parameter is unchanged', () => {
+      fixture.detectChanges();
+      queryParametersSubject.next({ include: '7.1' });
+      mockNodeService.structureReleaseData.calls.reset();
+
+      queryParametersSubject.next({ include: '7.1' });
+
+      expect(mockNodeService.structureReleaseData).not.toHaveBeenCalled();
+    });
+
+    it('should merge a requested range into the url parameter', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      fixture.detectChanges();
+      queryParametersSubject.next({ include: '8.0' });
+
+      component.onIncludeRequested(parseIncludeRanges('8.3'));
+
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], {
+        queryParams: { include: '8.0,8.3' },
+        replaceUrl: true,
+      });
+    });
+
+    it('should widen the url parameter when a requested range overlaps', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      fixture.detectChanges();
+      queryParametersSubject.next({ include: '7.0-9.3.2' });
+
+      component.onIncludeRequested(parseIncludeRanges('9.3'));
+
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], {
+        queryParams: { include: '7.0-9.3' },
+        replaceUrl: true,
+      });
+    });
+
+    it('should close the skip modal after including releases', () => {
+      fixture.detectChanges();
+      component.dataForSkipModal = { id: 'skip-1', x: 0, y: 0, skippedCount: 1, skippedVersions: [], label: '' };
+
+      component.onIncludeRequested(parseIncludeRanges('7.2'));
+
+      expect(component.dataForSkipModal).toBeNull();
+    });
+
+    it('should not blow up the scale when the whitelist leaves only the master row', () => {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      Object.defineProperty(svg, 'clientWidth', { get: () => 1000 });
+      Object.defineProperty(svg, 'clientHeight', { get: () => 800 });
+      component.svgElement = new ElementRef(svg);
+      (component as any).allLinks = [];
+
+      const masterOnlyNodes: ReleaseNode[] = [
+        { id: 'm1', label: 'v7.1', position: { x: 100, y: 0 }, branch: 'master', color: '', publishedAt: new Date() },
+        { id: 'm2', label: 'v7.2', position: { x: 300, y: 0 }, branch: 'master', color: '', publishedAt: new Date() },
+      ];
+
+      (component as any).calculateViewBox(masterOnlyNodes);
+
+      expect(component.scale).toBeLessThanOrEqual(2);
+    });
+
+    it('should drop the include parameter when cleared', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      fixture.detectChanges();
+      queryParametersSubject.next({ include: '7.1' });
+
+      component.clearIncludedReleases();
+
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], { queryParams: {}, replaceUrl: true });
+    });
+
+    it('should keep the nightly parameter when including releases', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+      fixture.detectChanges();
+      queryParametersSubject.next({ nightly: '' });
+
+      component.onIncludeRequested(parseIncludeRanges('7.1'));
+
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], {
+        queryParams: { nightly: '', include: '7.1' },
+        replaceUrl: true,
+      });
     });
   });
 

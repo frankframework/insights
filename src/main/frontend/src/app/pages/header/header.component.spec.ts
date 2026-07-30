@@ -50,10 +50,13 @@ describe('HeaderComponent', () => {
       'saveExtendedForOAuth',
       'getShowNightlies',
       'saveNightlyForOAuth',
+      'getIncludedReleases',
+      'saveIncludeForOAuth',
       'getGraphQueryParams',
     ]);
     mockGraphStateService.getShowExtendedSupport.and.returnValue(false);
     mockGraphStateService.getShowNightlies.and.returnValue(false);
+    mockGraphStateService.getIncludedReleases.and.returnValue([]);
     mockGraphStateService.getGraphQueryParams.and.returnValue({});
 
     await TestBed.configureTestingModule({

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { GraphStateService } from './graph-state.service';
+import { parseIncludeRanges } from '../pipes/release-include';
 
 describe('GraphStateService', () => {
   let service: GraphStateService;
@@ -52,6 +53,51 @@ describe('GraphStateService', () => {
       service.setShowExtendedSupport(true);
 
       expect(service.getGraphQueryParams()).toEqual({ extended: '' });
+    });
+
+    it('should return include param when releases are included', () => {
+      service.setIncludedReleases(parseIncludeRanges('7.0-9.3.2'));
+
+      expect(service.getGraphQueryParams()).toEqual({ include: '7.0-9.3.2' });
+    });
+  });
+
+  describe('setIncludedReleases', () => {
+    it('should initialize without included releases', () => {
+      expect(service.getIncludedReleases()).toEqual([]);
+    });
+
+    it('should update the included releases', () => {
+      const ranges = parseIncludeRanges('8.0,8.1,8.3');
+      service.setIncludedReleases(ranges);
+
+      expect(service.getIncludedReleases()).toEqual(ranges);
+    });
+  });
+
+  describe('include OAuth temporary storage', () => {
+    it('should save included releases to temporary localStorage', () => {
+      service.saveIncludeForOAuth(parseIncludeRanges('7.1-7.3'));
+
+      expect(globalThis.localStorage.getItem('oauth_temp_include')).toBe('7.1-7.3');
+    });
+
+    it('should clear temporary localStorage when nothing is included', () => {
+      globalThis.localStorage.setItem('oauth_temp_include', '7.1');
+      service.saveIncludeForOAuth([]);
+
+      expect(globalThis.localStorage.getItem('oauth_temp_include')).toBeNull();
+    });
+
+    it('should restore and clear the included releases', () => {
+      globalThis.localStorage.setItem('oauth_temp_include', '7.1-7.3');
+
+      expect(service.restoreAndClearOAuthInclude()).toEqual(parseIncludeRanges('7.1-7.3'));
+      expect(globalThis.localStorage.getItem('oauth_temp_include')).toBeNull();
+    });
+
+    it('should restore nothing when no include was stored', () => {
+      expect(service.restoreAndClearOAuthInclude()).toEqual([]);
     });
   });
 

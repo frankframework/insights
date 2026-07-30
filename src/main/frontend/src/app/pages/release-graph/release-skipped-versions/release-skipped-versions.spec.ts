@@ -4,6 +4,33 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseSkippedVersions } from './release-skipped-versions';
 import { SkipNode } from '../release-link.service';
 import { Release } from '../../../services/release.service';
+import { parseIncludeRanges } from '../../../pipes/release-include';
+
+const buildReleaseTree = (component: ReleaseSkippedVersions, versions: string[]): void => {
+  const skipNode: SkipNode = {
+    id: 'skip-1',
+    x: 100,
+    y: 0,
+    skippedCount: versions.length,
+    skippedVersions: versions,
+    label: `${versions.length} skipped`,
+  };
+
+  component.skipNode = skipNode;
+  component.releases = versions.map((version, index) => ({
+    id: `r${index}`,
+    name: version,
+    branch: { name: 'master' },
+    tagName: '',
+    publishedAt: new Date(),
+    lastScanned: new Date(),
+  }));
+
+  component.ngOnChanges({
+    skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
+    releases: { currentValue: component.releases, previousValue: [], firstChange: true, isFirstChange: () => true },
+  });
+};
 
 describe('ReleaseSkippedVersions', () => {
   let component: ReleaseSkippedVersions;
@@ -311,6 +338,101 @@ describe('ReleaseSkippedVersions', () => {
       });
 
       expect(component.releaseTree.length).toBe(0);
+    });
+  });
+
+  describe('including releases', () => {
+    it('should label the release lines it can include', () => {
+      buildReleaseTree(component, ['v7.1.0', 'v7.2.0', 'v7.3.0']);
+
+      expect(component.includeLabel).toBe('7.1,7.2,7.3');
+    });
+
+    it('should label a single release line', () => {
+      buildReleaseTree(component, ['v7.1.0', 'v7.1.1']);
+
+      expect(component.includeLabel).toBe('7.1');
+    });
+
+    it('should emit a release line per skipped root release', () => {
+      spyOn(component.includeRequested, 'emit');
+      buildReleaseTree(component, ['v7.1.0', 'v7.2.0']);
+
+      component.includeReleases();
+
+      expect(component.includeRequested.emit).toHaveBeenCalledWith(parseIncludeRanges('7.1,7.2'));
+    });
+
+    it('should emit every patch of a release line, not only the listed ones', () => {
+      spyOn(component.includeRequested, 'emit');
+      buildReleaseTree(component, ['v7.1.0', 'v7.1.2']);
+
+      component.includeReleases();
+
+      expect(component.includeRequested.emit).toHaveBeenCalledWith(parseIncludeRanges('7.1'));
+    });
+
+    it('should not emit when there is nothing to include', () => {
+      spyOn(component.includeRequested, 'emit');
+
+      component.includeReleases();
+
+      expect(component.includeRequested.emit).not.toHaveBeenCalled();
+    });
+
+    it('should add to pendingRanges instead of emitting when a single version is included', () => {
+      spyOn(component.includeRequested, 'emit');
+
+      component.includeVersion('v9.3.2');
+
+      expect(component.includeRequested.emit).not.toHaveBeenCalled();
+      expect(component.isVersionPending('v9.3.2')).toBeTrue();
+    });
+
+    it('should emit pending ranges when applyPendingIncludes is called', () => {
+      spyOn(component.includeRequested, 'emit');
+
+      component.includeVersion('v9.3.2');
+      component.applyPendingIncludes();
+
+      expect(component.includeRequested.emit).toHaveBeenCalledWith(parseIncludeRanges('9.3.2'));
+    });
+
+    it('should not emit for a version without a version number', () => {
+      spyOn(component.includeRequested, 'emit');
+
+      component.includeVersion('master');
+
+      expect(component.includeRequested.emit).not.toHaveBeenCalled();
+      expect(component.hasPending).toBeFalse();
+    });
+
+    it('should report already included when the whitelist covers every release line', () => {
+      buildReleaseTree(component, ['v7.1.0', 'v7.2.0']);
+      component.includedReleases = parseIncludeRanges('7.0-8.0');
+
+      expect(component.isAlreadyIncluded).toBeTrue();
+    });
+
+    it('should not report already included when a release line falls outside the whitelist', () => {
+      buildReleaseTree(component, ['v7.1.0', 'v9.0.0']);
+      component.includedReleases = parseIncludeRanges('7.0-8.0');
+
+      expect(component.isAlreadyIncluded).toBeFalse();
+    });
+
+    it('should not report already included when only part of a release line is whitelisted', () => {
+      buildReleaseTree(component, ['v7.1.0', 'v7.1.5']);
+      component.includedReleases = parseIncludeRanges('7.1.0-7.1.2');
+
+      expect(component.isAlreadyIncluded).toBeFalse();
+    });
+
+    it('should report a single version as included when the whitelist covers it', () => {
+      component.includedReleases = parseIncludeRanges('9.3');
+
+      expect(component.isVersionIncluded('v9.3.2')).toBeTrue();
+      expect(component.isVersionIncluded('v9.4.0')).toBeFalse();
     });
   });
 });

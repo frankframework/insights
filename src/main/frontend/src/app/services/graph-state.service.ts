@@ -1,4 +1,5 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
+import { IncludeRange, parseIncludeRanges, serializeIncludeRanges } from '../pipes/release-include';
 
 @Injectable({
   providedIn: 'root',
@@ -6,8 +7,10 @@ import { Injectable, signal, WritableSignal } from '@angular/core';
 export class GraphStateService {
   private static readonly OAUTH_TEMP_KEY: string = 'oauth_temp_extended';
   private static readonly OAUTH_TEMP_NIGHTLY_KEY: string = 'oauth_temp_nightly';
+  private static readonly OAUTH_TEMP_INCLUDE_KEY: string = 'oauth_temp_include';
   private showExtendedSupport: WritableSignal<boolean> = signal<boolean>(false);
   private showNightlies: WritableSignal<boolean> = signal<boolean>(false);
+  private includedReleases: WritableSignal<IncludeRange[]> = signal<IncludeRange[]>([]);
 
   public getShowExtendedSupport(): boolean {
     return this.showExtendedSupport();
@@ -25,11 +28,38 @@ export class GraphStateService {
     this.showNightlies.set(value);
   }
 
+  public getIncludedReleases(): IncludeRange[] {
+    return this.includedReleases();
+  }
+
+  public setIncludedReleases(ranges: IncludeRange[]): void {
+    this.includedReleases.set(ranges);
+  }
+
   public getGraphQueryParams(): Record<string, string> {
     const parameters: Record<string, string> = {};
     if (this.showExtendedSupport()) parameters['extended'] = '';
     if (this.showNightlies()) parameters['nightly'] = '';
+
+    const includedReleases = serializeIncludeRanges(this.includedReleases());
+    if (includedReleases) parameters['include'] = includedReleases;
+
     return parameters;
+  }
+
+  public saveIncludeForOAuth(ranges: IncludeRange[]): void {
+    const serialized = serializeIncludeRanges(ranges);
+    if (serialized) {
+      localStorage.setItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY, serialized);
+    } else {
+      localStorage.removeItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY);
+    }
+  }
+
+  public restoreAndClearOAuthInclude(): IncludeRange[] {
+    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY);
+    localStorage.removeItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY);
+    return parseIncludeRanges(stored);
   }
 
   public saveNightlyForOAuth(value: boolean): void {

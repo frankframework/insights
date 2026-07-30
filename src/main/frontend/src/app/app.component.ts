@@ -14,6 +14,7 @@ import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
 import { GraphStateService } from './services/graph-state.service';
+import { parseIncludeRanges, serializeIncludeRanges } from './pipes/release-include';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +44,7 @@ export class AppComponent implements OnInit {
     const returnUrl = this.authService.consumeReturnUrl();
     const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
     const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
+    const wasIncluded = this.graphStateService.restoreAndClearOAuthInclude();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -61,13 +63,17 @@ export class AppComponent implements OnInit {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if ((wasExtended || wasNightly) && isGraphRoute) {
+      if ((wasExtended || wasNightly || wasIncluded.length > 0) && isGraphRoute) {
         const queryParameters: Record<string, string> = {};
         if (wasExtended) queryParameters['extended'] = '';
         if (wasNightly) queryParameters['nightly'] = '';
 
+        const includedReleases = serializeIncludeRanges(wasIncluded);
+        if (includedReleases) queryParameters['include'] = includedReleases;
+
         this.graphStateService.setShowExtendedSupport(wasExtended);
         this.graphStateService.setShowNightlies(wasNightly);
+        this.graphStateService.setIncludedReleases(wasIncluded);
         this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
         return;
       }
@@ -75,6 +81,7 @@ export class AppComponent implements OnInit {
       if (isGraphRoute) {
         this.graphStateService.setShowExtendedSupport(parameters['extended'] !== undefined);
         this.graphStateService.setShowNightlies(parameters['nightly'] !== undefined);
+        this.graphStateService.setIncludedReleases(parseIncludeRanges(parameters['include']));
       }
     });
   }

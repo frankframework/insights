@@ -109,6 +109,15 @@
     </svg>
 
     <div class="graph-controls" [class.with-profile]="authService.isAuthenticated()">
+      @if (includedReleases.length > 0) {
+        <app-pill-button
+          icon="list"
+          label="All releases"
+          tooltip="Remove filter and show all releases"
+          (clicked)="clearIncludedReleases()"
+        />
+      }
+
       <app-pill-button
         class="nightly-toggle"
         icon="moon"
@@ -136,8 +145,10 @@
       <app-skipped-versions-modal
         [skipNode]="dataForSkipModal"
         [releases]="releases"
+        [includedReleases]="includedReleases"
         (closed)="closeSkipNodeModal()"
         (versionClicked)="onSkippedVersionClick($event)"
+        (includeRequested)="onIncludeRequested($event)"
       />
     }
   }

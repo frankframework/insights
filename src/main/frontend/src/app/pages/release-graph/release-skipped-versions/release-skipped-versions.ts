@@ -4,6 +4,14 @@ import { ModalComponent } from '../../../components/modal/modal.component';
 import { Release } from '../../../services/release.service';
 import { SkipNode } from '../release-link.service';
 import { ReleaseNode, ReleaseNodeService } from '../release-node.service';
+import {
+  areRangesIncluded,
+  createExactVersionRanges,
+  createReleaseLineRanges,
+  IncludeRange,
+  mergeIncludeRanges,
+  serializeIncludeRanges,
+} from '../../../pipes/release-include';
 
 interface ReleaseTreeNode {
   release: Release | null;
@@ -22,21 +30,68 @@ interface ReleaseTreeNode {
 export class ReleaseSkippedVersions implements OnChanges {
   @Input() skipNode: SkipNode | null = null;
   @Input() releases: Release[] = [];
+  @Input() includedReleases: IncludeRange[] = [];
   @Output() closed = new EventEmitter<void>();
   @Output() versionClicked = new EventEmitter<string>();
+  @Output() includeRequested = new EventEmitter<IncludeRange[]>();
 
   public releaseTree: ReleaseTreeNode[] = [];
+  public pendingRanges: IncludeRange[] = [];
 
   private nodeService = inject(ReleaseNodeService);
 
+  public get includableRanges(): IncludeRange[] {
+    return createReleaseLineRanges(this.releaseTree.map((node) => node.version));
+  }
+
+  public get includeLabel(): string {
+    return serializeIncludeRanges(this.includableRanges);
+  }
+
+  public get isAlreadyIncluded(): boolean {
+    return areRangesIncluded(this.includedReleases, this.includableRanges);
+  }
+
+  public get hasPending(): boolean {
+    return this.pendingRanges.length > 0;
+  }
+
+  public isVersionIncluded(version: string): boolean {
+    return areRangesIncluded(this.includedReleases, createExactVersionRanges([version]));
+  }
+
+  public isVersionPending(version: string): boolean {
+    return areRangesIncluded(this.pendingRanges, createExactVersionRanges([version]));
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['skipNode'] || changes['releases']) && this.skipNode && this.releases.length > 0) {
+      this.pendingRanges = [];
       this.structureSkippedReleases();
     }
   }
 
   public onVersionClick(version: string): void {
     this.versionClicked.emit(version);
+  }
+
+  public includeReleases(): void {
+    const ranges = this.includableRanges;
+    if (ranges.length === 0) return;
+
+    this.includeRequested.emit(ranges);
+  }
+
+  public includeVersion(version: string): void {
+    const ranges = createExactVersionRanges([version]);
+    if (ranges.length === 0) return;
+
+    this.pendingRanges = mergeIncludeRanges(this.pendingRanges, ranges);
+  }
+
+  public applyPendingIncludes(): void {
+    if (this.pendingRanges.length === 0) return;
+    this.includeRequested.emit(this.pendingRanges);
   }
 
   public closeModal(): void {
