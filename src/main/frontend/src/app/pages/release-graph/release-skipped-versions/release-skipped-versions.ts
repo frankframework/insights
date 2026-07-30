@@ -89,6 +89,24 @@ export class ReleaseSkippedVersions implements OnChanges {
     this.pendingRanges = mergeIncludeRanges(this.pendingRanges, ranges);
   }
 
+  public removeFromPending(version: string): void {
+    const ranges = createExactVersionRanges([version]);
+    if (ranges.length === 0) return;
+
+    this.pendingRanges = this.pendingRanges.filter(
+      (r) =>
+        !ranges.some(
+          (rem) =>
+            rem.from.major === r.from.major &&
+            rem.from.minor === r.from.minor &&
+            rem.from.patch === r.from.patch &&
+            rem.to.major === r.to.major &&
+            rem.to.minor === r.to.minor &&
+            rem.to.patch === r.to.patch,
+        ),
+    );
+  }
+
   public applyPendingIncludes(): void {
     if (this.pendingRanges.length === 0) return;
     this.includeRequested.emit(this.pendingRanges);

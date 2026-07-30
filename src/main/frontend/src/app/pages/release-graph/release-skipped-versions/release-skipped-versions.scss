@@ -87,7 +87,24 @@ p {
   &.pending {
     border-color: #0f766e;
     color: #0f766e;
-    cursor: default;
+
+    .pending-undo {
+      display: none;
+    }
+
+    &:hover {
+      border-color: #dc2626;
+      color: #dc2626;
+      background-color: #fff5f5;
+
+      .pending-label {
+        display: none;
+      }
+
+      .pending-undo {
+        display: inline;
+      }
+    }
   }
 }
 

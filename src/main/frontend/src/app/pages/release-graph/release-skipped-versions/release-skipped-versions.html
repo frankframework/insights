@@ -21,19 +21,25 @@
               type="button"
               class="include-version-button"
               [class.pending]="isVersionPending(node.version)"
-              [disabled]="isVersionIncluded(node.version) || isVersionPending(node.version)"
+              [disabled]="isVersionIncluded(node.version)"
               [attr.title]="
                 isVersionIncluded(node.version)
                   ? node.version + ' is already shown in the graph'
                   : isVersionPending(node.version)
-                    ? node.version + ' will be included when you click Apply'
+                    ? 'Click to remove ' + node.version + ' from pending'
                     : 'Show only ' + node.version + ' in the graph'
               "
-              (click)="$event.stopPropagation(); includeVersion(node.version)"
+              (click)="
+                $event.stopPropagation();
+                isVersionPending(node.version) ? removeFromPending(node.version) : includeVersion(node.version)
+              "
             >
-              {{
-                isVersionIncluded(node.version) ? 'included' : isVersionPending(node.version) ? 'pending…' : '+ include'
-              }}
+              @if (isVersionPending(node.version)) {
+                <span class="pending-label">pending…</span>
+                <span class="pending-undo">× undo</span>
+              } @else {
+                {{ isVersionIncluded(node.version) ? 'included' : '+ include' }}
+              }
             </button>
           </div>
           @if (node.patches.length > 0) {
@@ -50,19 +56,25 @@
                   type="button"
                   class="include-version-button"
                   [class.pending]="isVersionPending(patch.name)"
-                  [disabled]="isVersionIncluded(patch.name) || isVersionPending(patch.name)"
+                  [disabled]="isVersionIncluded(patch.name)"
                   [attr.title]="
                     isVersionIncluded(patch.name)
                       ? patch.name + ' is already shown in the graph'
                       : isVersionPending(patch.name)
-                        ? patch.name + ' will be included when you click Apply'
+                        ? 'Click to remove ' + patch.name + ' from pending'
                         : 'Show only ' + patch.name + ' in the graph'
                   "
-                  (click)="$event.stopPropagation(); includeVersion(patch.name)"
+                  (click)="
+                    $event.stopPropagation();
+                    isVersionPending(patch.name) ? removeFromPending(patch.name) : includeVersion(patch.name)
+                  "
                 >
-                  {{
-                    isVersionIncluded(patch.name) ? 'included' : isVersionPending(patch.name) ? 'pending…' : '+ include'
-                  }}
+                  @if (isVersionPending(patch.name)) {
+                    <span class="pending-label">pending…</span>
+                    <span class="pending-undo">× undo</span>
+                  } @else {
+                    {{ isVersionIncluded(patch.name) ? 'included' : '+ include' }}
+                  }
                 </button>
               </div>
             }
