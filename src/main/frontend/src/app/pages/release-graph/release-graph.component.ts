@@ -40,13 +40,19 @@ export interface BranchLifecycle {
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
-  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
+  private static readonly MAX_GRAPH_NAVIGATION_PADDING: number = 55;
+  private static readonly NAV_PADDING_FULL_ROWS: number = 6;
+  private static readonly NAV_PADDING_ZERO_ROWS: number = 20;
   private static readonly HEADER_HEIGHT_PX: number = 90;
   private static readonly QUARTER_LABEL_FONT_SIZE: number = 14;
   private static readonly QUARTER_LINE_GAP_PX: number = 12;
   private static readonly SVG_LINE_OVERFLOW_PX: number = 100;
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
   private static readonly MAX_GRAPH_SCALE: number = 2;
+  private static readonly GRAPH_HEIGHT_FILL: number = 0.85;
+  private static readonly SCROLL_MARGIN_LEFT: number = 0.2;
+  private static readonly SCROLL_MARGIN_RIGHT: number = 0.45;
+  private static readonly INITIAL_SCROLL_OFFSET: number = 0.1;
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
@@ -704,17 +710,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     const maxY = Math.max(...ys);
     const graphH = maxY - minY;
 
-    const contentHeightProportion = 0.65;
-    const targetHeight = H * contentHeightProportion;
+    const navPadding = this.calculateNavPadding(ys);
+
+    const availableH = H - ReleaseGraphComponent.HEADER_HEIGHT_PX - navPadding;
+    const targetHeight = availableH * ReleaseGraphComponent.GRAPH_HEIGHT_FILL;
 
     this.scale = Math.min(targetHeight / Math.max(graphH, 1), ReleaseGraphComponent.MAX_GRAPH_SCALE);
     const scaledGraphH = graphH * this.scale;
-    const topPadding = (H - scaledGraphH) / 2;
-    this.translateY = -minY * this.scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING;
+    const topPadding = (availableH - scaledGraphH) / 2 + ReleaseGraphComponent.HEADER_HEIGHT_PX;
+    this.translateY = -minY * this.scale + topPadding + navPadding;
 
-    this.maxTranslateX = -minX * this.scale + W * 0.2;
-    this.minTranslateX = W - maxX * this.scale - W * 0.45;
-    this.translateX = this.minTranslateX + W * 0.1;
+    this.maxTranslateX = -minX * this.scale + W * ReleaseGraphComponent.SCROLL_MARGIN_LEFT;
+    this.minTranslateX = W - maxX * this.scale - W * ReleaseGraphComponent.SCROLL_MARGIN_RIGHT;
+    this.translateX = this.minTranslateX + W * ReleaseGraphComponent.INITIAL_SCROLL_OFFSET;
 
     const headerBottom = ReleaseGraphComponent.HEADER_HEIGHT_PX;
     const labelFontSize = ReleaseGraphComponent.QUARTER_LABEL_FONT_SIZE;
@@ -727,6 +735,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.svgLineBottomY = (H + lineOverflow - this.translateY) / this.scale;
 
     return `0 0 ${W} ${H}`;
+  }
+
+  private calculateNavPadding(ys: number[]): number {
+    const rowCount = new Set(ys).size;
+    const t = Math.min(
+      1,
+      Math.max(
+        0,
+        (rowCount - ReleaseGraphComponent.NAV_PADDING_FULL_ROWS) /
+          (ReleaseGraphComponent.NAV_PADDING_ZERO_ROWS - ReleaseGraphComponent.NAV_PADDING_FULL_ROWS),
+      ),
+    );
+    return Math.round(ReleaseGraphComponent.MAX_GRAPH_NAVIGATION_PADDING * (1 - t));
   }
 
   private calculateBranchLifecycles(releaseNodeMap: Map<string, ReleaseNode[]>): BranchLifecycle[] {

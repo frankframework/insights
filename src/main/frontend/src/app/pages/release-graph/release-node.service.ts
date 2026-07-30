@@ -251,12 +251,17 @@ export class ReleaseNodeService {
     if (protectedBranches.has(branchName)) return true;
     if (releases.length === 0) return true;
 
-    const latestByDate = releases.reduce((previous, current) => (previous.publishedAt > current.publishedAt ? previous : current));
+    const latestByDate = releases.reduce((previous, current) =>
+      previous.publishedAt > current.publishedAt ? previous : current,
+    );
+
     if (this.isNightlyRelease(latestByDate.name)) return true;
 
     let rootRelease = releases.find((release) => release.name.endsWith('.0') || release.tagName.endsWith('.0'));
     if (!rootRelease) {
-      rootRelease = releases.reduce((previous, current) => (previous.publishedAt < current.publishedAt ? previous : current));
+      rootRelease = releases.reduce((previous, current) =>
+        previous.publishedAt < current.publishedAt ? previous : current,
+      );
     }
 
     const rootNode: ReleaseNode = {
