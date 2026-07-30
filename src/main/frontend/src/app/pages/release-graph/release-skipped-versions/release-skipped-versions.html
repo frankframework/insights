@@ -17,30 +17,13 @@
             } @else if (node.type === 'minor') {
               <span class="version-type-badge minor">MINOR</span>
             }
-            <button
-              type="button"
-              class="include-version-button"
-              [class.pending]="isVersionPending(node.version)"
-              [disabled]="isVersionIncluded(node.version)"
-              [attr.title]="
-                isVersionIncluded(node.version)
-                  ? node.version + ' is already shown in the graph'
-                  : isVersionPending(node.version)
-                    ? 'Click to remove ' + node.version + ' from pending'
-                    : 'Show only ' + node.version + ' in the graph'
-              "
-              (click)="
-                $event.stopPropagation();
-                isVersionPending(node.version) ? removeFromPending(node.version) : includeVersion(node.version)
-              "
-            >
-              @if (isVersionPending(node.version)) {
-                <span class="pending-label">pending…</span>
-                <span class="pending-undo">× undo</span>
-              } @else {
-                {{ isVersionIncluded(node.version) ? 'included' : '+ include' }}
-              }
-            </button>
+            <app-include-version-button
+              [version]="node.version"
+              [included]="isVersionIncluded(node.version)"
+              [pending]="isVersionPending(node.version)"
+              (include)="includeVersion(node.version)"
+              (remove)="removeFromPending(node.version)"
+            />
           </div>
           @if (node.patches.length > 0) {
             @for (patch of node.patches; track patch.id) {
@@ -52,30 +35,13 @@
                 <span class="patch-indent">└─</span>
                 <span>{{ patch.name.startsWith('v') ? patch.name : 'v' + patch.name }}</span>
                 <span class="version-type-badge patch">PATCH</span>
-                <button
-                  type="button"
-                  class="include-version-button"
-                  [class.pending]="isVersionPending(patch.name)"
-                  [disabled]="isVersionIncluded(patch.name)"
-                  [attr.title]="
-                    isVersionIncluded(patch.name)
-                      ? patch.name + ' is already shown in the graph'
-                      : isVersionPending(patch.name)
-                        ? 'Click to remove ' + patch.name + ' from pending'
-                        : 'Show only ' + patch.name + ' in the graph'
-                  "
-                  (click)="
-                    $event.stopPropagation();
-                    isVersionPending(patch.name) ? removeFromPending(patch.name) : includeVersion(patch.name)
-                  "
-                >
-                  @if (isVersionPending(patch.name)) {
-                    <span class="pending-label">pending…</span>
-                    <span class="pending-undo">× undo</span>
-                  } @else {
-                    {{ isVersionIncluded(patch.name) ? 'included' : '+ include' }}
-                  }
-                </button>
+                <app-include-version-button
+                  [version]="patch.name"
+                  [included]="isVersionIncluded(patch.name)"
+                  [pending]="isVersionPending(patch.name)"
+                  (include)="includeVersion(patch.name)"
+                  (remove)="removeFromPending(patch.name)"
+                />
               </div>
             }
           }
@@ -84,41 +50,13 @@
     </div>
 
     @if (releaseTree.length > 0) {
-      <div class="include-actions">
-        @if (hasPending) {
-          <button
-            type="button"
-            class="include-button apply-button"
-            title="Apply pending includes and reload the graph"
-            (click)="applyPendingIncludes()"
-          >
-            Apply {{ pendingRanges.length === 1 ? '1 pending release' : pendingRanges.length + ' pending releases' }}
-          </button>
-        }
-        <button
-          type="button"
-          class="include-button"
-          [disabled]="isAlreadyIncluded"
-          [attr.title]="
-            isAlreadyIncluded
-              ? 'These release lines are already shown in the graph'
-              : 'Adds ?include=' + includeLabel + ' to the URL and draws these release lines'
-          "
-          (click)="includeReleases()"
-        >
-          {{
-            isAlreadyIncluded
-              ? 'Already included'
-              : includableRanges.length > 3
-                ? 'Include all these releases in graph'
-                : 'Include ' + includeLabel + ' in graph'
-          }}
-        </button>
-        <span class="include-hint">
-          The graph then shows only the included releases, with master as reference. The URL accepts any range, for
-          example <code>include=7.0-9.3.2</code> or <code>include=8.0,8.1,8.3</code>.
-        </span>
-      </div>
+      <app-include-actions
+        [includableRanges]="includableRanges"
+        [pendingCount]="pendingRanges.length"
+        [alreadyIncluded]="isAlreadyIncluded"
+        (includeAll)="includeReleases()"
+        (applyPending)="applyPendingIncludes()"
+      />
     }
   </app-modal>
 }

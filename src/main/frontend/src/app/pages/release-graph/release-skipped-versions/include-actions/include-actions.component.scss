@@ -1,0 +1,55 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.include-button {
+  align-self: flex-start;
+  padding: 0.5rem 1rem;
+  border: 1px solid #1e3a8a;
+  border-radius: 18px;
+  background-color: #1e3a8a;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover:not(:disabled) {
+    background-color: #1d3680;
+    border-color: #1d3680;
+  }
+
+  &:disabled {
+    background-color: #ffffff;
+    border-color: #dee2e6;
+    color: #6c757d;
+    cursor: not-allowed;
+  }
+
+  &.apply-button {
+    background-color: #0f766e;
+    border-color: #0f766e;
+
+    &:hover:not(:disabled) {
+      background-color: #0d6460;
+      border-color: #0d6460;
+    }
+  }
+}
+
+.include-hint {
+  font-size: 0.8rem;
+  color: #6c757d;
+
+  code {
+    font-family: monospace;
+    background-color: #f1f3f5;
+    padding: 0.05rem 0.25rem;
+    border-radius: 0.2rem;
+  }
+}

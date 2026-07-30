@@ -181,10 +181,6 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
   }
 
-  /**
-   * Adds the release lines of a skip node to the include whitelist and reflects that in the URL,
-   * which in turn rebuilds the graph.
-   */
   public onIncludeRequested(ranges: IncludeRange[]): void {
     this.closeSkipNodeModal();
     this.navigateWithIncludedReleases(mergeIncludeRanges(this.includedReleases, ranges));

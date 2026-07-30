@@ -1,0 +1,29 @@
+@if (pendingCount > 0) {
+  <button
+    type="button"
+    class="include-button apply-button"
+    title="Apply pending includes and reload the graph"
+    (click)="applyPending.emit()"
+  >
+    Apply {{ pendingLabel }}
+  </button>
+}
+
+<button
+  type="button"
+  class="include-button"
+  [disabled]="alreadyIncluded"
+  [attr.title]="
+    alreadyIncluded
+      ? 'These release lines are already shown in the graph'
+      : 'Adds ?include=' + includeLabel + ' to the URL and draws these release lines'
+  "
+  (click)="includeAll.emit()"
+>
+  {{ includeButtonLabel }}
+</button>
+
+<span class="include-hint">
+  The graph then shows only the included releases, with master as reference. The URL accepts any range, for example
+  <code>include=7.0-9.3.2</code> or <code>include=8.0,8.1,8.3</code>.
+</span>

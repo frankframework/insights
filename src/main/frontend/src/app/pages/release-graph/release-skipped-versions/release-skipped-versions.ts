@@ -12,6 +12,8 @@ import {
   mergeIncludeRanges,
   serializeIncludeRanges,
 } from '../../../pipes/release-include';
+import { IncludeVersionButtonComponent } from './include-version-button/include-version-button.component';
+import { IncludeActionsComponent } from './include-actions/include-actions.component';
 
 interface ReleaseTreeNode {
   release: Release | null;
@@ -23,7 +25,7 @@ interface ReleaseTreeNode {
 @Component({
   selector: 'app-skipped-versions-modal',
   standalone: true,
-  imports: [CommonModule, ModalComponent],
+  imports: [CommonModule, ModalComponent, IncludeVersionButtonComponent, IncludeActionsComponent],
   templateUrl: './release-skipped-versions.html',
   styleUrls: ['./release-skipped-versions.scss'],
 })
