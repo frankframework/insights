@@ -226,8 +226,12 @@ export class ReleaseNodeService {
       return;
     }
 
+    const protectedBranches = this.findLatestMajorBranchNames([...groupedByBranch.keys()]);
+
     for (const [branchName, releases] of groupedByBranch.entries()) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
+
+      if (this.isBranchCurrentlyActive(branchName, releases, protectedBranches)) continue;
 
       const includedReleases = releases.filter((release) => this.isReleaseIncluded(release, includeRanges));
 
@@ -237,6 +241,34 @@ export class ReleaseNodeService {
         groupedByBranch.set(branchName, includedReleases);
       }
     }
+  }
+
+  private isBranchCurrentlyActive(
+    branchName: string,
+    releases: (Release & { publishedAt: Date })[],
+    protectedBranches: Set<string>,
+  ): boolean {
+    if (protectedBranches.has(branchName)) return true;
+    if (releases.length === 0) return true;
+
+    const latestByDate = releases.reduce((previous, current) => (previous.publishedAt > current.publishedAt ? previous : current));
+    if (this.isNightlyRelease(latestByDate.name)) return true;
+
+    let rootRelease = releases.find((release) => release.name.endsWith('.0') || release.tagName.endsWith('.0'));
+    if (!rootRelease) {
+      rootRelease = releases.reduce((previous, current) => (previous.publishedAt < current.publishedAt ? previous : current));
+    }
+
+    const rootNode: ReleaseNode = {
+      id: rootRelease.id,
+      label: this.transformNodeLabel(rootRelease),
+      branch: rootRelease.branch.name,
+      publishedAt: rootRelease.publishedAt,
+      position: { x: 0, y: 0 },
+      color: '',
+    };
+
+    return !this.isUnsupported(rootNode);
   }
 
   private isReleaseIncluded(release: Release, includeRanges: IncludeRange[]): boolean {
