@@ -35,7 +35,7 @@ export class HeaderComponent {
     this.authService.setLoading(true);
     this.authService.setPendingAuth();
     this.rememberReturnUrl();
-    this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
+    this.graphStateService.saveExtendedForOAuth(this.graphStateService.getExtendedSupportLevel());
     this.graphStateService.saveNightlyForOAuth(this.graphStateService.getShowNightlies());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }
