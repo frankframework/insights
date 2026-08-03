@@ -65,7 +65,7 @@ export class ReleaseNodeService {
 
   private static readonly GITHUB_MASTER_BRANCH: string = 'master';
   private static readonly PIXELS_PER_QUARTER: number = 200;
-  private static readonly KEEP_LATEST_LTS_COUNT: number = 3;
+  private static readonly KEEP_LATEST_LTS_COUNT: number = 2;
 
   public timelineScale: TimelineScale | null = null;
 
@@ -561,58 +561,66 @@ export class ReleaseNodeService {
     return new Set(majorBranches.map((b) => b.name));
   }
 
-  /**
-   * Removes branches that are historically dead.
-   * Logic:
-   * 1. If it has an active Nightly -> KEEP (Active development).
-   * 2. The latest N major version (x.0) branches are always kept regardless of support status.
-   * 3. If NO Nightly -> Check the SUPPORT status of the BRANCH ROOT (the .0 release).
-   * If the .0 release is unsupported, the whole branch is considered historical/skipped,
-   * even if a recent patch was released.
-   */
   private pruneHistoricalBranchesWithoutNightly(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
   ): void {
-    const protectedBranches = this.findLatestMajorBranchNames([...groupedByBranch.keys()]);
+    const protectedMajors = this.findLatestMajorBranchNames([...groupedByBranch.keys()]);
+    const candidates = this.collectUnsupportedPruneCandidates(groupedByBranch, protectedMajors);
+    const showcaseBranch = this.findMostRecentlyUnsupportedBranchName(candidates);
 
-    for (const [branchName, releases] of groupedByBranch.entries()) {
-      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) {
-        continue;
-      }
-
-      if (protectedBranches.has(branchName)) continue;
-
-      if (releases.length === 0) continue;
-
-      const latestByDate = releases.reduce((previous, current) =>
-        previous.publishedAt > current.publishedAt ? previous : current,
-      );
-
-      if (this.isNightlyRelease(latestByDate.name)) {
-        continue;
-      }
-
-      let rootRelease = releases.find((r) => r.name.endsWith('.0') || r.tagName.endsWith('.0'));
-
-      if (!rootRelease) {
-        rootRelease = releases.reduce((previous, current) =>
-          previous.publishedAt < current.publishedAt ? previous : current,
-        );
-      }
-
-      const rootNode: ReleaseNode = {
-        id: rootRelease.id,
-        label: this.transformNodeLabel(rootRelease),
-        branch: rootRelease.branch.name,
-        publishedAt: rootRelease.publishedAt,
-        position: { x: 0, y: 0 },
-        color: '',
-      };
-
-      if (this.isUnsupported(rootNode)) {
+    for (const { branchName } of candidates) {
+      if (branchName !== showcaseBranch) {
         groupedByBranch.delete(branchName);
       }
     }
+  }
+
+  private collectUnsupportedPruneCandidates(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+    protectedMajors: Set<string>,
+  ): { branchName: string; rootRelease: ReleaseNode }[] {
+    const candidates: { branchName: string; rootRelease: ReleaseNode }[] = [];
+
+    for (const [branchName, releases] of groupedByBranch.entries()) {
+      if (!this.isPruneEligibleBranch(branchName, releases, protectedMajors)) continue;
+
+      const rootNode = this.buildBranchRootNode(releases);
+      if (this.isUnsupported(rootNode)) {
+        candidates.push({ branchName, rootRelease: rootNode });
+      }
+    }
+
+    return candidates;
+  }
+
+  private isPruneEligibleBranch(
+    branchName: string,
+    releases: (Release & { publishedAt: Date })[],
+    protectedMajors: Set<string>,
+  ): boolean {
+    if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) return false;
+    if (protectedMajors.has(branchName)) return false;
+
+    return releases.length > 0;
+  }
+
+  private buildBranchRootNode(releases: (Release & { publishedAt: Date })[]): ReleaseNode {
+    let rootRelease = releases.find((release) => release.name.endsWith('.0') || release.tagName.endsWith('.0'));
+
+    if (!rootRelease) {
+      rootRelease = releases.reduce((previous, current) =>
+        previous.publishedAt < current.publishedAt ? previous : current,
+      );
+    }
+
+    return {
+      id: rootRelease.id,
+      label: this.transformNodeLabel(rootRelease),
+      branch: rootRelease.branch.name,
+      publishedAt: rootRelease.publishedAt,
+      position: { x: 0, y: 0 },
+      color: '',
+    };
   }
 
   /**
@@ -1030,6 +1038,24 @@ export class ReleaseNodeService {
     if (!supportDates) return true;
 
     return new Date() > supportDates.securitySupportEnd;
+  }
+
+  private findMostRecentlyUnsupportedBranchName(
+    candidates: { branchName: string; rootRelease: ReleaseNode }[],
+  ): string | null {
+    const now = new Date();
+    let mostRecent: { branchName: string; end: Date } | null = null;
+
+    for (const { branchName, rootRelease } of candidates) {
+      const supportDates = this.getSupportEndDates(rootRelease);
+      if (!supportDates || supportDates.securitySupportEnd > now) continue;
+
+      if (!mostRecent || supportDates.securitySupportEnd > mostRecent.end) {
+        mostRecent = { branchName, end: supportDates.securitySupportEnd };
+      }
+    }
+
+    return mostRecent?.branchName ?? null;
   }
 
   private getSupportEndDates(release: ReleaseNode): SupportDates | null {
