@@ -199,9 +199,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public resetRange(): void {
-    const queryParameters = { ...this.graphStateService.getGraphQueryParams() };
-    delete queryParameters['range'];
-    this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
+    this.navigateWithRanges(this.defaultRanges);
   }
 
   public onMouseDown(event: MouseEvent): void {

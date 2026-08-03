@@ -70,6 +70,9 @@ export class ReleaseSkippedVersions implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['releaseRanges']) {
+      this.pendingVersions = this.pendingVersions.filter((v) => !this.isVersionIncluded(v));
+    }
     if ((changes['skipNode'] || changes['releases']) && this.skipNode && this.releases.length > 0) {
       this.pendingVersions = [];
       this.structureSkippedReleases();

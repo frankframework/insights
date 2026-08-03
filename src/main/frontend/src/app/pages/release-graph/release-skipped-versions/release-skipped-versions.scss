@@ -4,30 +4,6 @@ p {
   padding-block: 0.25rem;
 }
 
-.include-version-button {
-  margin-left: auto;
-  padding: 0.1rem 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 0.75rem;
-  background-color: #ffffff;
-  color: #495057;
-  font-size: 0.7rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-
-  &:hover:not(:disabled) {
-    border-color: #1e3a8a;
-    color: #1e3a8a;
-  }
-
-  &:disabled {
-    border-color: #e9ecef;
-    color: #adb5bd;
-    cursor: not-allowed;
-  }
-}
 
 .skipped-versions-list {
   max-height: 60vh;

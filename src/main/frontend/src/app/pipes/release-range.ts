@@ -27,7 +27,7 @@ const MAJOR_KEY_SPACE = SEGMENT_SPACE * SEGMENT_SPACE;
 const OPENING_BRACKETS = new Set(['[', '(']);
 const CLOSING_BRACKETS = new Set([']', ')']);
 const VERSION_TOKEN_PATTERN = /^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?$/i;
-const VERSION_NAME_PATTERN = /^v?(\d+)\.(\d+)(?:\.(\d+))?/i;
+const VERSION_NAME_PATTERN = /^v?(\d+)\.(\d+)(?:\.(\d+))?$/i;
 
 interface ParseFailure {
   error: string;

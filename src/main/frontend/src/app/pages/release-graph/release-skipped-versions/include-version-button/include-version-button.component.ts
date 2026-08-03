@@ -17,7 +17,7 @@ export class IncludeVersionButtonComponent {
   public get title(): string {
     if (this.included) return `${this.version} is already shown in the graph`;
     if (this.pending) return `Click to remove ${this.version} from pending`;
-    return `Show only ${this.version} in the graph`;
+    return `Include ${this.version} in the graph`;
   }
 
   public onClick(event: Event): void {

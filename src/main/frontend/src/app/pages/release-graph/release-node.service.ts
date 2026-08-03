@@ -360,7 +360,7 @@ export class ReleaseNodeService {
   }
 
   private toReleaseLineKey(line: ReleaseLine): number {
-    return line.major * 1000 + line.minor;
+    return line.major * 100_000 + line.minor;
   }
 
   private processBranchReleases(
