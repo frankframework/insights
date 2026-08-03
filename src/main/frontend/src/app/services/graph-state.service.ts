@@ -1,5 +1,5 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
-import { IncludeRange, parseIncludeRanges, serializeIncludeRanges } from '../pipes/release-include';
+import { parseVersionRanges, serializeVersionRanges, VersionRange } from '../pipes/release-range';
 
 @Injectable({
   providedIn: 'root',
@@ -7,10 +7,10 @@ import { IncludeRange, parseIncludeRanges, serializeIncludeRanges } from '../pip
 export class GraphStateService {
   private static readonly OAUTH_TEMP_KEY: string = 'oauth_temp_extended';
   private static readonly OAUTH_TEMP_NIGHTLY_KEY: string = 'oauth_temp_nightly';
-  private static readonly OAUTH_TEMP_INCLUDE_KEY: string = 'oauth_temp_include';
+  private static readonly OAUTH_TEMP_RANGE_KEY: string = 'oauth_temp_range';
   private showExtendedSupport: WritableSignal<boolean> = signal<boolean>(false);
   private showNightlies: WritableSignal<boolean> = signal<boolean>(false);
-  private includedReleases: WritableSignal<IncludeRange[]> = signal<IncludeRange[]>([]);
+  private releaseRanges: WritableSignal<VersionRange[]> = signal<VersionRange[]>([]);
 
   public getShowExtendedSupport(): boolean {
     return this.showExtendedSupport();
@@ -28,12 +28,12 @@ export class GraphStateService {
     this.showNightlies.set(value);
   }
 
-  public getIncludedReleases(): IncludeRange[] {
-    return this.includedReleases();
+  public getReleaseRanges(): VersionRange[] {
+    return this.releaseRanges();
   }
 
-  public setIncludedReleases(ranges: IncludeRange[]): void {
-    this.includedReleases.set(ranges);
+  public setReleaseRanges(ranges: VersionRange[]): void {
+    this.releaseRanges.set(ranges);
   }
 
   public getGraphQueryParams(): Record<string, string> {
@@ -41,25 +41,25 @@ export class GraphStateService {
     if (this.showExtendedSupport()) parameters['extended'] = '';
     if (this.showNightlies()) parameters['nightly'] = '';
 
-    const includedReleases = serializeIncludeRanges(this.includedReleases());
-    if (includedReleases) parameters['include'] = includedReleases;
+    const range = serializeVersionRanges(this.releaseRanges());
+    if (range) parameters['range'] = range;
 
     return parameters;
   }
 
-  public saveIncludeForOAuth(ranges: IncludeRange[]): void {
-    const serialized = serializeIncludeRanges(ranges);
+  public saveRangeForOAuth(ranges: VersionRange[]): void {
+    const serialized = serializeVersionRanges(ranges);
     if (serialized) {
-      localStorage.setItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY, serialized);
+      localStorage.setItem(GraphStateService.OAUTH_TEMP_RANGE_KEY, serialized);
     } else {
-      localStorage.removeItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY);
+      localStorage.removeItem(GraphStateService.OAUTH_TEMP_RANGE_KEY);
     }
   }
 
-  public restoreAndClearOAuthInclude(): IncludeRange[] {
-    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY);
-    localStorage.removeItem(GraphStateService.OAUTH_TEMP_INCLUDE_KEY);
-    return parseIncludeRanges(stored);
+  public restoreAndClearOAuthRange(): VersionRange[] {
+    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_RANGE_KEY);
+    localStorage.removeItem(GraphStateService.OAUTH_TEMP_RANGE_KEY);
+    return parseVersionRanges(stored).ranges;
   }
 
   public saveNightlyForOAuth(value: boolean): void {

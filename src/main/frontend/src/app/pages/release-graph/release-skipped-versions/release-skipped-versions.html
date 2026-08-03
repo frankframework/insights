@@ -52,7 +52,7 @@
     @if (releaseTree.length > 0) {
       <app-include-actions
         [includableRanges]="includableRanges"
-        [pendingCount]="pendingRanges.length"
+        [pendingCount]="pendingVersions.length"
         [alreadyIncluded]="isAlreadyIncluded"
         (includeAll)="includeReleases()"
         (applyPending)="applyPendingIncludes()"

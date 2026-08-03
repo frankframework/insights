@@ -1,6 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Release } from '../../services/release.service';
-import { IncludeRange, isVersionIncluded } from '../../pipes/release-include';
+import {
+  createLineRange,
+  createOpenEndedRange,
+  isVersionInRanges,
+  mergeVersionRanges,
+  VersionRange,
+} from '../../pipes/release-range';
 
 export interface Position {
   x: number;
@@ -59,6 +65,11 @@ interface SupportDates {
   securitySupportEnd: Date;
 }
 
+interface ReleaseLine {
+  major: number;
+  minor: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
   public static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
@@ -69,12 +80,12 @@ export class ReleaseNodeService {
 
   public timelineScale: TimelineScale | null = null;
 
-  public structureReleaseData(releases: Release[], includeRanges: IncludeRange[] = []): Map<string, ReleaseNode[]>[] {
+  public structureReleaseData(releases: Release[], ranges: VersionRange[] = []): Map<string, ReleaseNode[]>[] {
     const hydratedReleases = this.hydrateReleases(releases);
     const branchOriginDates = this.captureBranchOriginDates(hydratedReleases);
-    const groupedByBranch = this.prepareGroupedReleases(hydratedReleases, includeRanges);
+    const groupedByBranch = this.prepareGroupedReleases(hydratedReleases, ranges);
 
-    const filteredNodes = this.processMasterBranch(groupedByBranch, includeRanges);
+    const filteredNodes = this.processMasterBranch(groupedByBranch, ranges);
     const branchMaps = this.processBranchReleases(groupedByBranch, filteredNodes, branchOriginDates);
 
     this.sortByNightlyAndDate(filteredNodes, (node) => node.label);
@@ -83,10 +94,28 @@ export class ReleaseNodeService {
     return [masterMap, ...branchMaps];
   }
 
-  public calculateReleaseCoordinates(
-    structuredGroups: Map<string, ReleaseNode[]>[],
-    includeRanges: IncludeRange[] = [],
-  ): Map<string, ReleaseNode[]> {
+  public getDefaultRanges(releases: Release[]): VersionRange[] {
+    const hydratedReleases = this.hydrateReleases(releases);
+    const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
+    this.sortGroupedReleases(groupedByBranch);
+    this.removeDuplicateNightlies(groupedByBranch);
+    this.pruneHistoricalBranchesWithoutNightly(groupedByBranch);
+
+    const visibleLines = this.collectBranchReleaseLines(groupedByBranch);
+    const supportedLineKeys = this.collectSupportedLineKeys(hydratedReleases);
+    const openEndedLine = this.findOpenEndedLine(visibleLines, supportedLineKeys);
+
+    if (!openEndedLine) return [{ from: null, to: null }];
+
+    const openEndedKey = this.toReleaseLineKey(openEndedLine);
+    const lineRanges = visibleLines
+      .filter((line) => this.toReleaseLineKey(line) < openEndedKey)
+      .map((line) => createLineRange(line.major, line.minor));
+
+    return mergeVersionRanges(lineRanges, [createOpenEndedRange(openEndedLine.major, openEndedLine.minor)]);
+  }
+
+  public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
     if (structuredGroups.length === 0) {
       return new Map();
     }
@@ -108,7 +137,7 @@ export class ReleaseNodeService {
     ]);
 
     const branches = this.getSortedBranches(nodeMap);
-    this.positionBranches(branches, masterBranchNodes, positionedNodes, includeRanges);
+    this.positionBranches(branches, masterBranchNodes, positionedNodes);
 
     return positionedNodes;
   }
@@ -220,72 +249,118 @@ export class ReleaseNodeService {
 
   private prepareGroupedReleases(
     hydratedReleases: (Release & { publishedAt: Date })[],
-    includeRanges: IncludeRange[],
+    ranges: VersionRange[],
   ): Map<string, (Release & { publishedAt: Date })[]> {
     const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
     this.sortGroupedReleases(groupedByBranch);
     this.removeDuplicateNightlies(groupedByBranch);
-    this.applyBranchVisibility(groupedByBranch, includeRanges);
+    this.applyRangeVisibility(groupedByBranch, ranges);
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
     return groupedByBranch;
   }
 
-  private applyBranchVisibility(
+  private applyRangeVisibility(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
-    includeRanges: IncludeRange[],
+    ranges: VersionRange[],
   ): void {
-    if (includeRanges.length === 0) {
-      this.pruneHistoricalBranchesWithoutNightly(groupedByBranch);
-      return;
-    }
-
-    const naturallyActive = this.getNaturallyActiveBranchNames(groupedByBranch);
+    if (ranges.length === 0) return;
 
     for (const [branchName, releases] of groupedByBranch.entries()) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
-      if (naturallyActive.has(branchName)) continue;
 
-      const whitelisted = releases.filter((release) => this.isReleaseIncluded(release, includeRanges));
-      if (whitelisted.length > 0) {
-        groupedByBranch.set(branchName, whitelisted);
+      const releasesInRange = releases.filter((release) => this.isReleaseInRange(release, ranges));
+      if (releasesInRange.length > 0) {
+        groupedByBranch.set(branchName, releasesInRange);
       } else {
         groupedByBranch.delete(branchName);
       }
     }
   }
 
-  private getNaturallyActiveBranchNames(
-    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
-  ): Set<string> {
-    const clone = new Map(groupedByBranch);
-    this.pruneHistoricalBranchesWithoutNightly(clone);
-    return new Set(clone.keys());
+  private isReleaseInRange(release: Release, ranges: VersionRange[]): boolean {
+    return this.isVersionOfInRange(release.name, ranges);
   }
 
-  private isReleaseIncluded(release: Release, includeRanges: IncludeRange[]): boolean {
-    return this.isVersionOfIncluded(release.name, includeRanges);
+  private isNodeInRange(node: ReleaseNode, ranges: VersionRange[]): boolean {
+    return this.isVersionOfInRange(node.label, ranges);
   }
 
-  private isNodeIncluded(node: ReleaseNode, includeRanges: IncludeRange[]): boolean {
-    return this.isVersionOfIncluded(node.label, includeRanges);
-  }
-
-  private isVersionOfIncluded(label: string, includeRanges: IncludeRange[]): boolean {
+  private isVersionOfInRange(label: string, ranges: VersionRange[]): boolean {
     const versionInfo = this.getVersionInfo({ label } as ReleaseNode);
     if (!versionInfo) return false;
 
-    return isVersionIncluded(includeRanges, versionInfo.major, versionInfo.minor, versionInfo.patch);
+    return isVersionInRanges(ranges, versionInfo.major, versionInfo.minor, versionInfo.patch);
   }
 
   private processMasterBranch(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
-    includeRanges: IncludeRange[],
+    ranges: VersionRange[],
   ): ReleaseNode[] {
     const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     const nodes = this.createReleaseNodes(masterReleases);
-    const filteredNodes = this.filterUnsupportedMinorReleases(nodes, includeRanges);
+    const filteredNodes = this.filterMasterReleases(nodes, ranges);
     groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
     return filteredNodes;
+  }
+
+  private collectBranchReleaseLines(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): ReleaseLine[] {
+    const lines: ReleaseLine[] = [];
+
+    for (const [branchName, releases] of groupedByBranch.entries()) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH || releases.length === 0) continue;
+
+      const versionInfo = this.getVersionInfo(this.buildBranchRootNode(releases));
+      if (versionInfo) {
+        lines.push({ major: versionInfo.major, minor: versionInfo.minor });
+      }
+    }
+
+    return this.sortReleaseLines(lines);
+  }
+
+  private collectSupportedLineKeys(hydratedReleases: (Release & { publishedAt: Date })[]): Set<number> {
+    const releasesByLine = new Map<number, (Release & { publishedAt: Date })[]>();
+
+    for (const release of hydratedReleases) {
+      if (this.isNightlyRelease(release.name)) continue;
+
+      const versionInfo = this.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!versionInfo) continue;
+
+      const lineKey = this.toReleaseLineKey(versionInfo);
+      const lineReleases = releasesByLine.get(lineKey) ?? [];
+      lineReleases.push(release);
+      releasesByLine.set(lineKey, lineReleases);
+    }
+
+    const supportedLineKeys = new Set<number>();
+    for (const [lineKey, lineReleases] of releasesByLine.entries()) {
+      if (!this.isUnsupported(this.buildBranchRootNode(lineReleases))) {
+        supportedLineKeys.add(lineKey);
+      }
+    }
+
+    return supportedLineKeys;
+  }
+
+  private findOpenEndedLine(visibleLines: ReleaseLine[], supportedLineKeys: Set<number>): ReleaseLine | undefined {
+    let openEndedLine: ReleaseLine | undefined;
+
+    for (let index = visibleLines.length - 1; index >= 0; index--) {
+      if (!supportedLineKeys.has(this.toReleaseLineKey(visibleLines[index]))) break;
+      openEndedLine = visibleLines[index];
+    }
+
+    return openEndedLine ?? visibleLines.at(-1);
+  }
+
+  private sortReleaseLines(lines: ReleaseLine[]): ReleaseLine[] {
+    const uniqueLines = new Map(lines.map((line) => [this.toReleaseLineKey(line), line]));
+    return [...uniqueLines.values()].toSorted((a, b) => this.toReleaseLineKey(a) - this.toReleaseLineKey(b));
+  }
+
+  private toReleaseLineKey(line: ReleaseLine): number {
+    return line.major * 1000 + line.minor;
   }
 
   private processBranchReleases(
@@ -624,32 +699,25 @@ export class ReleaseNodeService {
   }
 
   /**
-   * Filters out unsupported minor releases from the master branch that don't have patch versions.
-   * These are versions like v6.1, v7.4 that should be hidden if they don't have supported patches.
-   * Release lines on the include whitelist are always kept, that is how a skipped release is
-   * brought back onto the master timeline.
+   * Trims the master timeline down to the ranges. Major releases and nightlies stay whatever the
+   * ranges say: they are the backbone every branch row hangs off. The rest, the minor releases
+   * like v6.1 or v7.4, is only drawn when a range asks for it.
    */
-  private filterUnsupportedMinorReleases(masterNodes: ReleaseNode[], includeRanges: IncludeRange[]): ReleaseNode[] {
+  private filterMasterReleases(masterNodes: ReleaseNode[], ranges: VersionRange[]): ReleaseNode[] {
     return masterNodes.filter((node) => {
       if (node.isMiniNode) {
         return true;
       }
 
-      const versionInfo = this.getVersionInfo(node);
-
       if (node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
         return true;
       }
 
-      if (versionInfo?.type === 'major') {
+      if (this.getVersionInfo(node)?.type === 'major') {
         return true;
       }
 
-      if (versionInfo?.type === 'minor') {
-        return this.isNodeIncluded(node, includeRanges) || !this.isUnsupported(node);
-      }
-
-      return true;
+      return this.isNodeInRange(node, ranges);
     });
   }
 
@@ -785,18 +853,11 @@ export class ReleaseNodeService {
     branches: [string, ReleaseNode[]][],
     masterNodes: ReleaseNode[],
     positionedNodes: Map<string, ReleaseNode[]>,
-    includeRanges: IncludeRange[],
   ): void {
     const Y_SPACING = 90;
     let yLevel = 1;
 
-    const hasIncludeWhitelist = includeRanges.length > 0;
-    const protectedBranches = this.findLatestMajorBranchNames(branches.map(([name]) => name));
-
     for (const [branchName, nodes] of branches) {
-      const isProtected = hasIncludeWhitelist || protectedBranches.has(branchName);
-      if (!isProtected && nodes.every((n) => this.isUnsupported(n))) continue;
-
       const miniNode = masterNodes.find((n) => n.originalBranch === branchName && n.isMiniNode);
       if (!miniNode) continue;
 

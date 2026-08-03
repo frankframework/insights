@@ -14,7 +14,7 @@ import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
 import { GraphStateService } from './services/graph-state.service';
-import { parseIncludeRanges, serializeIncludeRanges } from './pipes/release-include';
+import { parseVersionRanges, serializeVersionRanges } from './pipes/release-range';
 
 @Component({
   selector: 'app-root',
@@ -44,7 +44,7 @@ export class AppComponent implements OnInit {
     const returnUrl = this.authService.consumeReturnUrl();
     const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
     const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
-    const wasIncluded = this.graphStateService.restoreAndClearOAuthInclude();
+    const previousRanges = this.graphStateService.restoreAndClearOAuthRange();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -63,17 +63,17 @@ export class AppComponent implements OnInit {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if ((wasExtended || wasNightly || wasIncluded.length > 0) && isGraphRoute) {
+      if ((wasExtended || wasNightly || previousRanges.length > 0) && isGraphRoute) {
         const queryParameters: Record<string, string> = {};
         if (wasExtended) queryParameters['extended'] = '';
         if (wasNightly) queryParameters['nightly'] = '';
 
-        const includedReleases = serializeIncludeRanges(wasIncluded);
-        if (includedReleases) queryParameters['include'] = includedReleases;
+        const range = serializeVersionRanges(previousRanges);
+        if (range) queryParameters['range'] = range;
 
         this.graphStateService.setShowExtendedSupport(wasExtended);
         this.graphStateService.setShowNightlies(wasNightly);
-        this.graphStateService.setIncludedReleases(wasIncluded);
+        this.graphStateService.setReleaseRanges(previousRanges);
         this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
         return;
       }
@@ -81,7 +81,7 @@ export class AppComponent implements OnInit {
       if (isGraphRoute) {
         this.graphStateService.setShowExtendedSupport(parameters['extended'] !== undefined);
         this.graphStateService.setShowNightlies(parameters['nightly'] !== undefined);
-        this.graphStateService.setIncludedReleases(parseIncludeRanges(parameters['include']));
+        this.graphStateService.setReleaseRanges(parseVersionRanges(parameters['range']).ranges);
       }
     });
   }

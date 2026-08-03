@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { IncludeRange, serializeIncludeRanges } from '../../../../pipes/release-include';
+import { serializeVersionRanges, VersionRange } from '../../../../pipes/release-range';
 
 @Component({
   selector: 'app-include-actions',
@@ -9,14 +9,14 @@ import { IncludeRange, serializeIncludeRanges } from '../../../../pipes/release-
   styleUrl: './include-actions.component.scss',
 })
 export class IncludeActionsComponent {
-  @Input() includableRanges: IncludeRange[] = [];
+  @Input() includableRanges: VersionRange[] = [];
   @Input() pendingCount = 0;
   @Input() alreadyIncluded = false;
   @Output() includeAll = new EventEmitter<void>();
   @Output() applyPending = new EventEmitter<void>();
 
   public get includeLabel(): string {
-    return serializeIncludeRanges(this.includableRanges);
+    return serializeVersionRanges(this.includableRanges);
   }
 
   public get includeButtonLabel(): string {

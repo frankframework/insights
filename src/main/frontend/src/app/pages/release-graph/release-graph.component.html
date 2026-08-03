@@ -3,6 +3,14 @@
     <app-loader />
   } @else if (this.showNotFoundError) {
     <span class="error-message">Releases not found, please try again later.</span>
+  } @else if (rangeMessage) {
+    <div class="error-message" data-cy="range-message">
+      <p>{{ rangeMessage }}</p>
+      <p class="range-message-hint">
+        A range is written the Maven way, for example <code>{{ defaultRange }}</code> or <code>[8.0,9.0)</code>.
+      </p>
+      <button type="button" class="range-message-button" (click)="resetRange()">Back to the default range</button>
+    </div>
   } @else {
     <svg
       #svgElement
@@ -109,12 +117,12 @@
     </svg>
 
     <div class="graph-controls" [class.with-profile]="authService.isAuthenticated()">
-      @if (includedReleases.length > 0) {
+      @if (!isDefaultRange) {
         <app-pill-button
           icon="list"
-          label="All releases"
-          tooltip="Remove filter and show all releases"
-          (clicked)="clearIncludedReleases()"
+          label="Default range"
+          [tooltip]="'Back to ' + defaultRange"
+          (clicked)="resetRange()"
         />
       }
 
@@ -145,10 +153,10 @@
       <app-skipped-versions-modal
         [skipNode]="dataForSkipModal"
         [releases]="releases"
-        [includedReleases]="includedReleases"
+        [releaseRanges]="releaseRanges"
         (closed)="closeSkipNodeModal()"
         (versionClicked)="onSkippedVersionClick($event)"
-        (includeRequested)="onIncludeRequested($event)"
+        (rangeRequested)="onRangeRequested($event)"
       />
     }
   }

@@ -8,7 +8,9 @@ import { of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
 import { ElementRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { parseIncludeRanges } from '../../pipes/release-include';
+import { parseVersionRanges, VersionRange } from '../../pipes/release-range';
+
+const rangesOf = (specification: string): VersionRange[] => parseVersionRanges(specification).ranges;
 
 describe('ReleaseGraphComponent', () => {
   let component: ReleaseGraphComponent;
@@ -57,6 +59,7 @@ describe('ReleaseGraphComponent', () => {
       'assignReleaseColors',
       'applyMinimumSpacing',
       'getVersionInfo',
+      'getDefaultRanges',
     ]);
     mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
     routerEventsSubject = new ReplaySubject<NavigationEnd>(1);
@@ -65,7 +68,10 @@ describe('ReleaseGraphComponent', () => {
     const mockRouter = {
       events: routerEventsSubject.asObservable(),
       url: '/graph',
-      navigate: jasmine.createSpy('navigate'),
+      navigate: jasmine.createSpy('navigate').and.callFake((_commands: unknown[], extras: { queryParams: object }) => {
+        queryParametersSubject.next({ ...extras.queryParams });
+        return Promise.resolve(true);
+      }),
       navigateByUrl: jasmine.createSpy('navigateByUrl'),
       parseUrl: jasmine.createSpy('parseUrl').and.callFake((url: string) => urlSerializer.parse(url)),
     };
@@ -97,6 +103,7 @@ describe('ReleaseGraphComponent', () => {
     mockNodeService.timelineScale = mockTimelineScale;
     mockNodeService.applyMinimumSpacing.and.returnValue(mockNodes);
     mockNodeService.getVersionInfo.and.returnValue({ major: 1, minor: 0, patch: 0, type: 'major' });
+    mockNodeService.getDefaultRanges.and.returnValue(rangesOf('[1.0,)'));
     mockLinkService.createLinks.and.returnValue(mockLinks);
     mockLinkService.createSkipNodes.and.returnValue([]);
     mockLinkService.createSkipNodeLinks.and.returnValue([]);
@@ -147,7 +154,7 @@ describe('ReleaseGraphComponent', () => {
       expect(component.releases).toEqual(mockReleases);
       expect(component.releaseNodes).toEqual(mockNodes);
       expect(component.allLinks).toEqual(mockLinks);
-      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases, []);
+      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases, rangesOf('[1.0,)'));
     });
 
     it('should handle API errors gracefully', () => {
@@ -416,72 +423,125 @@ describe('ReleaseGraphComponent', () => {
     });
   });
 
-  describe('Include Releases Functionality', () => {
-    it('should have no included releases by default', () => {
+  describe('Release Range Functionality', () => {
+    it('should write the default range into the url when none is given', () => {
+      const mockRouter = TestBed.inject(Router) as any;
+
       fixture.detectChanges();
 
-      expect(component.includedReleases).toEqual([]);
+      expect(mockRouter.navigate).toHaveBeenCalledWith([], {
+        queryParams: { range: '[1.0,)' },
+        replaceUrl: true,
+      });
+
+      expect(component.releaseRanges).toEqual(rangesOf('[1.0,)'));
     });
 
-    it('should read the include parameter from the url', () => {
+    it('should read the range from the url', () => {
       fixture.detectChanges();
-      queryParametersSubject.next({ include: '7.0-9.3.2' });
+      queryParametersSubject.next({ range: '[1.0,9.3.2]' });
 
-      expect(component.includedReleases).toEqual(parseIncludeRanges('7.0-9.3.2'));
+      expect(component.releaseRanges).toEqual(rangesOf('[1.0,9.3.2]'));
     });
 
-    it('should rebuild the graph with the included releases when the parameter changes', () => {
+    it('should rebuild the graph when the range changes', () => {
       fixture.detectChanges();
       mockNodeService.structureReleaseData.calls.reset();
 
-      queryParametersSubject.next({ include: '7.1' });
+      queryParametersSubject.next({ range: '[1.0]' });
 
-      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases, parseIncludeRanges('7.1'));
+      expect(mockNodeService.structureReleaseData).toHaveBeenCalledWith(mockReleases, rangesOf('[1.0]'));
     });
 
-    it('should not rebuild the graph when the include parameter is unchanged', () => {
+    it('should not rebuild the graph when the range is unchanged', () => {
       fixture.detectChanges();
-      queryParametersSubject.next({ include: '7.1' });
+      queryParametersSubject.next({ range: '[1.0]' });
       mockNodeService.structureReleaseData.calls.reset();
 
-      queryParametersSubject.next({ include: '7.1' });
+      queryParametersSubject.next({ range: '[1.0]' });
 
       expect(mockNodeService.structureReleaseData).not.toHaveBeenCalled();
     });
 
-    it('should merge a requested range into the url parameter', () => {
+    it('should widen the range with a requested one', () => {
       const mockRouter = TestBed.inject(Router) as any;
       fixture.detectChanges();
-      queryParametersSubject.next({ include: '8.0' });
+      queryParametersSubject.next({ range: '[1.0]' });
 
-      component.onIncludeRequested(parseIncludeRanges('8.3'));
+      component.onRangeRequested(rangesOf('[8.3]'));
 
       expect(mockRouter.navigate).toHaveBeenCalledWith([], {
-        queryParams: { include: '8.0,8.3' },
+        queryParams: { range: '[1.0],[8.3]' },
         replaceUrl: true,
       });
     });
 
-    it('should widen the url parameter when a requested range overlaps', () => {
+    it('should fold a requested range into an overlapping one', () => {
       const mockRouter = TestBed.inject(Router) as any;
       fixture.detectChanges();
-      queryParametersSubject.next({ include: '7.0-9.3.2' });
+      queryParametersSubject.next({ range: '[1.0,9.3.2]' });
 
-      component.onIncludeRequested(parseIncludeRanges('9.3'));
+      component.onRangeRequested(rangesOf('[9.3]'));
 
       expect(mockRouter.navigate).toHaveBeenCalledWith([], {
-        queryParams: { include: '7.0-9.3' },
+        queryParams: { range: '[1.0,9.3]' },
         replaceUrl: true,
       });
     });
 
-    it('should close the skip modal after including releases', () => {
+    it('should close the skip modal after a range was requested', () => {
       fixture.detectChanges();
       component.dataForSkipModal = { id: 'skip-1', x: 0, y: 0, skippedCount: 1, skippedVersions: [], label: '' };
 
-      component.onIncludeRequested(parseIncludeRanges('7.2'));
+      component.onRangeRequested(rangesOf('[7.2]'));
 
       expect(component.dataForSkipModal).toBeNull();
+    });
+
+    it('should report an invalid range instead of drawing a graph', () => {
+      fixture.detectChanges();
+
+      queryParametersSubject.next({ range: '[9.0' });
+
+      expect(component.rangeMessage).toBe('"[9.0" is not a valid version range: it is missing a closing bracket.');
+      expect(component.releaseNodes).toEqual([]);
+      expect(component.isLoading).toBeFalse();
+    });
+
+    it('should report a range that no release falls into', () => {
+      fixture.detectChanges();
+
+      queryParametersSubject.next({ range: '[8.0]' });
+
+      expect(component.rangeMessage).toBe('No releases were found for [8.0].');
+      expect(component.releaseNodes).toEqual([]);
+    });
+
+    it('should draw the graph again once the range is valid', () => {
+      fixture.detectChanges();
+      queryParametersSubject.next({ range: '[9.0' });
+
+      queryParametersSubject.next({ range: '[1.0]' });
+
+      expect(component.rangeMessage).toBeNull();
+      expect(component.releaseNodes).toEqual(mockNodes);
+    });
+
+    it('should tell the default range apart from a range of its own', () => {
+      fixture.detectChanges();
+
+      expect(component.isDefaultRange).toBeTrue();
+
+      queryParametersSubject.next({ range: '[1.0]' });
+
+      expect(component.isDefaultRange).toBeFalse();
+    });
+
+    it('should keep the range on release detail links', () => {
+      fixture.detectChanges();
+      queryParametersSubject.next({ range: '[1.0]' });
+
+      expect(component.graphQueryParams()).toEqual({ range: '[1.0]' });
     });
 
     it('should not blow up the scale when the whitelist leaves only the master row', () => {
@@ -501,25 +561,26 @@ describe('ReleaseGraphComponent', () => {
       expect(component.scale).toBeLessThanOrEqual(2);
     });
 
-    it('should drop the include parameter when cleared', () => {
+    it('should drop the range from the url and land on the default one again', () => {
       const mockRouter = TestBed.inject(Router) as any;
       fixture.detectChanges();
-      queryParametersSubject.next({ include: '7.1' });
+      queryParametersSubject.next({ range: '[1.0]' });
 
-      component.clearIncludedReleases();
+      component.resetRange();
 
       expect(mockRouter.navigate).toHaveBeenCalledWith([], { queryParams: {}, replaceUrl: true });
+      expect(component.releaseRanges).toEqual(rangesOf('[1.0,)'));
     });
 
-    it('should keep the nightly parameter when including releases', () => {
+    it('should keep the nightly parameter when the range changes', () => {
       const mockRouter = TestBed.inject(Router) as any;
       fixture.detectChanges();
-      queryParametersSubject.next({ nightly: '' });
+      queryParametersSubject.next({ nightly: '', range: '[1.0]' });
 
-      component.onIncludeRequested(parseIncludeRanges('7.1'));
+      component.onRangeRequested(rangesOf('[7.1]'));
 
       expect(mockRouter.navigate).toHaveBeenCalledWith([], {
-        queryParams: { nightly: '', include: '7.1' },
+        queryParams: { nightly: '', range: '[1.0],[7.1]' },
         replaceUrl: true,
       });
     });

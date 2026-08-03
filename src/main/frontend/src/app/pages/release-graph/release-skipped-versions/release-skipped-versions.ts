@@ -5,13 +5,12 @@ import { Release } from '../../../services/release.service';
 import { SkipNode } from '../release-link.service';
 import { ReleaseNode, ReleaseNodeService } from '../release-node.service';
 import {
-  areRangesIncluded,
+  areRangesCovered,
   createExactVersionRanges,
   createReleaseLineRanges,
-  IncludeRange,
-  mergeIncludeRanges,
-  serializeIncludeRanges,
-} from '../../../pipes/release-include';
+  serializeVersionRanges,
+  VersionRange,
+} from '../../../pipes/release-range';
 import { IncludeVersionButtonComponent } from './include-version-button/include-version-button.component';
 import { IncludeActionsComponent } from './include-actions/include-actions.component';
 
@@ -32,43 +31,47 @@ interface ReleaseTreeNode {
 export class ReleaseSkippedVersions implements OnChanges {
   @Input() skipNode: SkipNode | null = null;
   @Input() releases: Release[] = [];
-  @Input() includedReleases: IncludeRange[] = [];
+  @Input() releaseRanges: VersionRange[] = [];
   @Output() closed = new EventEmitter<void>();
   @Output() versionClicked = new EventEmitter<string>();
-  @Output() includeRequested = new EventEmitter<IncludeRange[]>();
+  @Output() rangeRequested = new EventEmitter<VersionRange[]>();
 
   public releaseTree: ReleaseTreeNode[] = [];
-  public pendingRanges: IncludeRange[] = [];
+  public pendingVersions: string[] = [];
 
   private nodeService = inject(ReleaseNodeService);
 
-  public get includableRanges(): IncludeRange[] {
+  public get includableRanges(): VersionRange[] {
     return createReleaseLineRanges(this.releaseTree.map((node) => node.version));
   }
 
   public get includeLabel(): string {
-    return serializeIncludeRanges(this.includableRanges);
+    return serializeVersionRanges(this.includableRanges);
+  }
+
+  public get pendingRanges(): VersionRange[] {
+    return createExactVersionRanges(this.pendingVersions);
   }
 
   public get isAlreadyIncluded(): boolean {
-    return areRangesIncluded(this.includedReleases, this.includableRanges);
+    return areRangesCovered(this.releaseRanges, this.includableRanges);
   }
 
   public get hasPending(): boolean {
-    return this.pendingRanges.length > 0;
+    return this.pendingVersions.length > 0;
   }
 
   public isVersionIncluded(version: string): boolean {
-    return areRangesIncluded(this.includedReleases, createExactVersionRanges([version]));
+    return areRangesCovered(this.releaseRanges, createExactVersionRanges([version]));
   }
 
   public isVersionPending(version: string): boolean {
-    return areRangesIncluded(this.pendingRanges, createExactVersionRanges([version]));
+    return this.pendingVersions.includes(version);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['skipNode'] || changes['releases']) && this.skipNode && this.releases.length > 0) {
-      this.pendingRanges = [];
+      this.pendingVersions = [];
       this.structureSkippedReleases();
     }
   }
@@ -81,37 +84,25 @@ export class ReleaseSkippedVersions implements OnChanges {
     const ranges = this.includableRanges;
     if (ranges.length === 0) return;
 
-    this.includeRequested.emit(ranges);
+    this.rangeRequested.emit(ranges);
   }
 
   public includeVersion(version: string): void {
-    const ranges = createExactVersionRanges([version]);
-    if (ranges.length === 0) return;
+    const isRelease = createExactVersionRanges([version]).length > 0;
+    if (!isRelease || this.pendingVersions.includes(version)) return;
 
-    this.pendingRanges = mergeIncludeRanges(this.pendingRanges, ranges);
+    this.pendingVersions = [...this.pendingVersions, version];
   }
 
   public removeFromPending(version: string): void {
-    const ranges = createExactVersionRanges([version]);
-    if (ranges.length === 0) return;
-
-    this.pendingRanges = this.pendingRanges.filter(
-      (r) =>
-        !ranges.some(
-          (rem) =>
-            rem.from.major === r.from.major &&
-            rem.from.minor === r.from.minor &&
-            rem.from.patch === r.from.patch &&
-            rem.to.major === r.to.major &&
-            rem.to.minor === r.to.minor &&
-            rem.to.patch === r.to.patch,
-        ),
-    );
+    this.pendingVersions = this.pendingVersions.filter((pending) => pending !== version);
   }
 
   public applyPendingIncludes(): void {
-    if (this.pendingRanges.length === 0) return;
-    this.includeRequested.emit(this.pendingRanges);
+    const ranges = this.pendingRanges;
+    if (ranges.length === 0) return;
+
+    this.rangeRequested.emit(ranges);
   }
 
   public closeModal(): void {

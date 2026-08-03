@@ -16,7 +16,7 @@
   [attr.title]="
     alreadyIncluded
       ? 'These release lines are already shown in the graph'
-      : 'Adds ?include=' + includeLabel + ' to the URL and draws these release lines'
+      : 'Widens ?range= with ' + includeLabel + ' and draws these release lines'
   "
   (click)="includeAll.emit()"
 >
@@ -24,6 +24,6 @@
 </button>
 
 <span class="include-hint">
-  The graph then shows only the included releases, with master as reference. The URL accepts any range, for example
-  <code>include=7.0-9.3.2</code> or <code>include=8.0,8.1,8.3</code>.
+  The graph shows what <code>?range=</code> asks for, with master as reference. Ranges are written the Maven way, for
+  example <code>[9.0],[10.0,)</code> or <code>[7.0,9.3.2]</code>.
 </span>

@@ -12,11 +12,12 @@ import { AuthService } from '../../services/auth.service';
 import { GraphStateService } from '../../services/graph-state.service';
 import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
 import {
-  IncludeRange,
-  mergeIncludeRanges,
-  parseIncludeRanges,
-  serializeIncludeRanges,
-} from '../../pipes/release-include';
+  isVersionInRanges,
+  mergeVersionRanges,
+  parseVersionRanges,
+  serializeVersionRanges,
+  VersionRange,
+} from '../../pipes/release-range';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -72,7 +73,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   public showNotFoundError = false;
   public showNightlies = false;
   public showExtendedSupport = false;
-  public includedReleases: IncludeRange[] = [];
+  public releaseRanges: VersionRange[] = [];
+  public rangeMessage: string | null = null;
+  public defaultRange = '';
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -84,6 +87,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   protected authService = inject(AuthService);
 
+  private rangeParameter: string | undefined;
+  private defaultRanges: VersionRange[] = [];
   private lastPositionX = 0;
   private minTranslateX = 0;
   private maxTranslateX = 0;
@@ -103,6 +108,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private graphStateService = inject(GraphStateService);
+
+  public get currentRange(): string {
+    return serializeVersionRanges(this.releaseRanges);
+  }
+
+  public get isDefaultRange(): boolean {
+    return this.currentRange === this.defaultRange;
+  }
 
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
@@ -132,27 +145,26 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit(): void {
     this.isLoading = true;
-    this.getAllReleases();
 
     this.route.queryParams.subscribe((parameters) => {
       const wasExtended = this.showExtendedSupport;
-      const previousIncluded = serializeIncludeRanges(this.includedReleases);
+      const previousRange = this.rangeParameter;
 
       this.showExtendedSupport = parameters['extended'] !== undefined;
       this.showNightlies = parameters['nightly'] !== undefined;
-      this.includedReleases = parseIncludeRanges(parameters['include']);
+      this.rangeParameter = parameters['range'];
 
       this.graphStateService.setShowExtendedSupport(this.showExtendedSupport);
       this.graphStateService.setShowNightlies(this.showNightlies);
-      this.graphStateService.setIncludedReleases(this.includedReleases);
 
-      const includeChanged = previousIncluded !== serializeIncludeRanges(this.includedReleases);
+      const rangeChanged = previousRange !== this.rangeParameter;
 
-      if ((wasExtended !== this.showExtendedSupport || includeChanged) && this.releases.length > 0) {
-        const sortedGroups = this.nodeService.structureReleaseData(this.releases, this.includedReleases);
-        this.buildReleaseGraph(sortedGroups);
+      if ((wasExtended !== this.showExtendedSupport || rangeChanged) && this.releases.length > 0) {
+        this.applyRange();
       }
     });
+
+    this.getAllReleases();
 
     this.routerSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd && this.router.url.includes('/graph')) {
@@ -181,13 +193,15 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
   }
 
-  public onIncludeRequested(ranges: IncludeRange[]): void {
+  public onRangeRequested(ranges: VersionRange[]): void {
     this.closeSkipNodeModal();
-    this.navigateWithIncludedReleases(mergeIncludeRanges(this.includedReleases, ranges));
+    this.navigateWithRanges(mergeVersionRanges(this.releaseRanges, ranges));
   }
 
-  public clearIncludedReleases(): void {
-    this.navigateWithIncludedReleases([]);
+  public resetRange(): void {
+    const queryParameters = { ...this.graphStateService.getGraphQueryParams() };
+    delete queryParameters['range'];
+    this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
   }
 
   public onMouseDown(event: MouseEvent): void {
@@ -360,17 +374,60 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     return minor === 0;
   }
 
-  private navigateWithIncludedReleases(ranges: IncludeRange[]): void {
+  private navigateWithRanges(ranges: VersionRange[]): void {
     const queryParameters = { ...this.graphStateService.getGraphQueryParams() };
-    const includedReleases = serializeIncludeRanges(ranges);
+    const range = serializeVersionRanges(ranges);
 
-    if (includedReleases) {
-      queryParameters['include'] = includedReleases;
+    if (range) {
+      queryParameters['range'] = range;
     } else {
-      delete queryParameters['include'];
+      delete queryParameters['range'];
     }
 
     this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
+  }
+
+  private applyRange(): void {
+    if (!this.rangeParameter?.trim()) {
+      this.navigateWithRanges(this.defaultRanges);
+      return;
+    }
+
+    const previousMessage = this.rangeMessage;
+    const parsedRanges = parseVersionRanges(this.rangeParameter);
+
+    this.releaseRanges = parsedRanges.ranges;
+    this.rangeMessage = parsedRanges.error ?? this.describeEmptyRange(parsedRanges.ranges);
+    this.graphStateService.setReleaseRanges(this.releaseRanges);
+
+    if (this.rangeMessage) {
+      this.clearReleaseGraph();
+      return;
+    }
+
+    if (previousMessage) this.isLoading = true;
+
+    this.buildReleaseGraph(this.nodeService.structureReleaseData(this.releases, this.releaseRanges));
+  }
+
+  private describeEmptyRange(ranges: VersionRange[]): string | null {
+    const hasMatch = this.releases.some((release) => {
+      const versionInfo = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      return versionInfo !== null && isVersionInRanges(ranges, versionInfo.major, versionInfo.minor, versionInfo.patch);
+    });
+
+    return hasMatch ? null : `No releases were found for ${serializeVersionRanges(ranges)}.`;
+  }
+
+  private clearReleaseGraph(): void {
+    this.releaseNodes = [];
+    this.allLinks = [];
+    this.skipNodes = [];
+    this.branchLabels = [];
+    this.stickyBranchLabels = [];
+    this.branchLifecycles = [];
+    this.quarterMarkers = [];
+    this.isLoading = false;
   }
 
   private isNightlyNode(node: ReleaseNode): boolean {
@@ -451,13 +508,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
           this.checkReleaseGraphLoading();
           return;
         }
-        const sortedGroups = this.nodeService.structureReleaseData(releases, this.includedReleases);
-        this.buildReleaseGraph(sortedGroups);
+        this.defaultRanges = this.nodeService.getDefaultRanges(releases);
+        this.defaultRange = serializeVersionRanges(this.defaultRanges);
+        this.applyRange();
       });
   }
 
   private buildReleaseGraph(sortedGroups: Map<string, ReleaseNode[]>[]): void {
-    const releaseNodeMap = this.nodeService.calculateReleaseCoordinates(sortedGroups, this.includedReleases);
+    const releaseNodeMap = this.nodeService.calculateReleaseCoordinates(sortedGroups);
     this.nodeService.assignReleaseColors(releaseNodeMap);
 
     this.releaseNodes = [];

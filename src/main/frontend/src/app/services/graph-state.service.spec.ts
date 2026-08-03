@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { GraphStateService } from './graph-state.service';
-import { parseIncludeRanges } from '../pipes/release-include';
+import { parseVersionRanges, VersionRange } from '../pipes/release-range';
+
+const rangesOf = (specification: string): VersionRange[] => parseVersionRanges(specification).ranges;
 
 describe('GraphStateService', () => {
   let service: GraphStateService;
@@ -55,49 +57,49 @@ describe('GraphStateService', () => {
       expect(service.getGraphQueryParams()).toEqual({ extended: '' });
     });
 
-    it('should return include param when releases are included', () => {
-      service.setIncludedReleases(parseIncludeRanges('7.0-9.3.2'));
+    it('should return the range param when a range is set', () => {
+      service.setReleaseRanges(rangesOf('[7.0,9.3.2]'));
 
-      expect(service.getGraphQueryParams()).toEqual({ include: '7.0-9.3.2' });
+      expect(service.getGraphQueryParams()).toEqual({ range: '[7.0,9.3.2]' });
     });
   });
 
-  describe('setIncludedReleases', () => {
-    it('should initialize without included releases', () => {
-      expect(service.getIncludedReleases()).toEqual([]);
+  describe('setReleaseRanges', () => {
+    it('should initialize without a range', () => {
+      expect(service.getReleaseRanges()).toEqual([]);
     });
 
-    it('should update the included releases', () => {
-      const ranges = parseIncludeRanges('8.0,8.1,8.3');
-      service.setIncludedReleases(ranges);
+    it('should update the range', () => {
+      const ranges = rangesOf('[8.0],[8.3]');
+      service.setReleaseRanges(ranges);
 
-      expect(service.getIncludedReleases()).toEqual(ranges);
+      expect(service.getReleaseRanges()).toEqual(ranges);
     });
   });
 
-  describe('include OAuth temporary storage', () => {
-    it('should save included releases to temporary localStorage', () => {
-      service.saveIncludeForOAuth(parseIncludeRanges('7.1-7.3'));
+  describe('range OAuth temporary storage', () => {
+    it('should save the range to temporary localStorage', () => {
+      service.saveRangeForOAuth(rangesOf('[7.1,7.3]'));
 
-      expect(globalThis.localStorage.getItem('oauth_temp_include')).toBe('7.1-7.3');
+      expect(globalThis.localStorage.getItem('oauth_temp_range')).toBe('[7.1,7.3]');
     });
 
-    it('should clear temporary localStorage when nothing is included', () => {
-      globalThis.localStorage.setItem('oauth_temp_include', '7.1');
-      service.saveIncludeForOAuth([]);
+    it('should clear temporary localStorage when there is no range', () => {
+      globalThis.localStorage.setItem('oauth_temp_range', '[7.1]');
+      service.saveRangeForOAuth([]);
 
-      expect(globalThis.localStorage.getItem('oauth_temp_include')).toBeNull();
+      expect(globalThis.localStorage.getItem('oauth_temp_range')).toBeNull();
     });
 
-    it('should restore and clear the included releases', () => {
-      globalThis.localStorage.setItem('oauth_temp_include', '7.1-7.3');
+    it('should restore and clear the range', () => {
+      globalThis.localStorage.setItem('oauth_temp_range', '[7.1,7.3]');
 
-      expect(service.restoreAndClearOAuthInclude()).toEqual(parseIncludeRanges('7.1-7.3'));
-      expect(globalThis.localStorage.getItem('oauth_temp_include')).toBeNull();
+      expect(service.restoreAndClearOAuthRange()).toEqual(rangesOf('[7.1,7.3]'));
+      expect(globalThis.localStorage.getItem('oauth_temp_range')).toBeNull();
     });
 
-    it('should restore nothing when no include was stored', () => {
-      expect(service.restoreAndClearOAuthInclude()).toEqual([]);
+    it('should restore nothing when no range was stored', () => {
+      expect(service.restoreAndClearOAuthRange()).toEqual([]);
     });
   });
 
