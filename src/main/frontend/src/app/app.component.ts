@@ -41,8 +41,8 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     const returnUrl = this.authService.consumeReturnUrl();
-    const restoredExtendedLevel = this.graphStateService.restoreAndClearOAuthExtended();
-    const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
+    let restoredExtendedLevel = this.graphStateService.restoreAndClearOAuthExtended();
+    let wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -69,6 +69,8 @@ export class AppComponent implements OnInit {
         this.graphStateService.setExtendedSupportLevel(restoredExtendedLevel);
         this.graphStateService.setShowNightlies(wasNightly);
         this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
+        restoredExtendedLevel = 0;
+        wasNightly = false;
         return;
       }
 
