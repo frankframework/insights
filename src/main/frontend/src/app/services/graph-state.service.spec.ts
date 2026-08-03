@@ -104,9 +104,9 @@ describe('GraphStateService', () => {
   });
 
   describe('OAuth temporary storage', () => {
-    describe('saveExtendedForOAuth', () => {
+    describe('saveExtendedSupportLevelForOAuth', () => {
       it('should save the extended support level to temporary localStorage', () => {
-        service.saveExtendedForOAuth(2);
+        service.saveExtendedSupportLevelForOAuth(2);
 
         expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBe('2');
       });
@@ -114,24 +114,24 @@ describe('GraphStateService', () => {
       it('should remove temporary storage when saving level 0', () => {
         globalThis.localStorage.setItem('oauth_temp_extended', '2');
 
-        service.saveExtendedForOAuth(0);
+        service.saveExtendedSupportLevelForOAuth(0);
 
         expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull();
       });
 
       it('should not affect the in-memory state', () => {
         service.setExtendedSupportLevel(0);
-        service.saveExtendedForOAuth(2);
+        service.saveExtendedSupportLevelForOAuth(2);
 
         expect(service.getExtendedSupportLevel()).toBe(0);
       });
     });
 
-    describe('restoreAndClearOAuthExtended', () => {
+    describe('restoreAndClearOAuthExtendedSupportLevel', () => {
       it('should return the stored level', () => {
         globalThis.localStorage.setItem('oauth_temp_extended', '3');
 
-        const result = service.restoreAndClearOAuthExtended();
+        const result = service.restoreAndClearOAuthExtendedSupportLevel();
 
         expect(result).toBe(3);
       });
@@ -139,13 +139,13 @@ describe('GraphStateService', () => {
       it('should restore a legacy true value as a single extended window', () => {
         globalThis.localStorage.setItem('oauth_temp_extended', 'true');
 
-        const result = service.restoreAndClearOAuthExtended();
+        const result = service.restoreAndClearOAuthExtendedSupportLevel();
 
         expect(result).toBe(1);
       });
 
       it('should return 0 when temporary storage is empty', () => {
-        const result = service.restoreAndClearOAuthExtended();
+        const result = service.restoreAndClearOAuthExtendedSupportLevel();
 
         expect(result).toBe(0);
       });
@@ -153,13 +153,13 @@ describe('GraphStateService', () => {
       it('should clear temporary storage after restoring', () => {
         globalThis.localStorage.setItem('oauth_temp_extended', '2');
 
-        service.restoreAndClearOAuthExtended();
+        service.restoreAndClearOAuthExtendedSupportLevel();
 
         expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull();
       });
 
       it('should not throw when localStorage is empty', () => {
-        expect(() => service.restoreAndClearOAuthExtended()).not.toThrow();
+        expect(() => service.restoreAndClearOAuthExtendedSupportLevel()).not.toThrow();
       });
     });
   });
@@ -172,7 +172,7 @@ describe('GraphStateService', () => {
       expect(service.getExtendedSupportLevel()).toBe(2);
 
       // Step 2: User clicks login - save state temporarily
-      service.saveExtendedForOAuth(2);
+      service.saveExtendedSupportLevelForOAuth(2);
 
       expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBe('2');
 
@@ -182,7 +182,7 @@ describe('GraphStateService', () => {
       expect(service.getExtendedSupportLevel()).toBe(0);
 
       // Step 4: Restore from temp storage after OAuth redirect
-      const restoredLevel = service.restoreAndClearOAuthExtended();
+      const restoredLevel = service.restoreAndClearOAuthExtendedSupportLevel();
 
       expect(restoredLevel).toBe(2);
       expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull(); // cleaned up
@@ -198,12 +198,12 @@ describe('GraphStateService', () => {
       service.setExtendedSupportLevel(0);
 
       // Save state temporarily before OAuth
-      service.saveExtendedForOAuth(0);
+      service.saveExtendedSupportLevelForOAuth(0);
 
       expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull();
 
       // After OAuth redirect
-      const restoredLevel = service.restoreAndClearOAuthExtended();
+      const restoredLevel = service.restoreAndClearOAuthExtendedSupportLevel();
 
       expect(restoredLevel).toBe(0);
     });

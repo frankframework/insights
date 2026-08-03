@@ -6,7 +6,7 @@ import { Injectable, signal, WritableSignal } from '@angular/core';
 export class GraphStateService {
   public static readonly MAX_EXTENDED_SUPPORT_LEVEL: number = 3;
 
-  private static readonly OAUTH_TEMP_KEY: string = 'oauth_temp_extended';
+  private static readonly OAUTH_TEMP_EXTENDED_KEY: string = 'oauth_temp_extended';
   private static readonly OAUTH_TEMP_NIGHTLY_KEY: string = 'oauth_temp_nightly';
   private extendedSupportLevel: WritableSignal<number> = signal<number>(0);
   private showNightlies: WritableSignal<boolean> = signal<boolean>(false);
@@ -67,25 +67,25 @@ export class GraphStateService {
   }
 
   /**
-   * Save extended state temporarily for OAuth flow
+   * Save the extended support level temporarily for the OAuth flow
    * This is used before redirecting to OAuth to preserve state across page reload
    */
-  public saveExtendedForOAuth(level: number): void {
+  public saveExtendedSupportLevelForOAuth(level: number): void {
     const clampedLevel = GraphStateService.clampExtendedSupportLevel(level);
     if (clampedLevel > 0) {
-      localStorage.setItem(GraphStateService.OAUTH_TEMP_KEY, String(clampedLevel));
+      localStorage.setItem(GraphStateService.OAUTH_TEMP_EXTENDED_KEY, String(clampedLevel));
     } else {
-      localStorage.removeItem(GraphStateService.OAUTH_TEMP_KEY);
+      localStorage.removeItem(GraphStateService.OAUTH_TEMP_EXTENDED_KEY);
     }
   }
 
   /**
-   * Restore and clear temporary OAuth state
+   * Restore and clear the temporary OAuth extended support level
    * Returns the saved level and immediately removes the temp storage.
    */
-  public restoreAndClearOAuthExtended(): number {
-    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_KEY);
-    localStorage.removeItem(GraphStateService.OAUTH_TEMP_KEY);
+  public restoreAndClearOAuthExtendedSupportLevel(): number {
+    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_EXTENDED_KEY);
+    localStorage.removeItem(GraphStateService.OAUTH_TEMP_EXTENDED_KEY);
     return GraphStateService.parseExtendedSupportLevel(stored);
   }
 }
