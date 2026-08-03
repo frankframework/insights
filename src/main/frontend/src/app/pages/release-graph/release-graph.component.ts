@@ -199,7 +199,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public resetRange(): void {
-    this.navigateWithRanges(this.defaultRanges);
+    this.navigateWithRanges([]);
   }
 
   public onMouseDown(event: MouseEvent): void {
