@@ -182,32 +182,28 @@ describe('ReleaseNodeService', () => {
   });
 
   describe('include whitelist', () => {
-    it('should prune an end-of-life branch when no whitelist is given', () => {
-      const structuredData = service.structureReleaseData(mockReleases);
-
-      expect(branchNamesOf(structuredData)).not.toContain('release/7.2');
+    it('should prune a historical branch when no whitelist is given', () => {
+      expect(branchNamesOf(service.structureReleaseData(mockReleases))).not.toContain('release/7.2');
     });
 
-    it('should keep a whitelisted branch even though it is end-of-life', () => {
-      const structuredData = service.structureReleaseData(mockReleases, parseIncludeRanges('7.2'));
-
-      expect(branchNamesOf(structuredData)).toContain('release/7.2');
+    it('should add a historical branch when it matches the whitelist', () => {
+      expect(branchNamesOf(service.structureReleaseData(mockReleases, parseIncludeRanges('7.2')))).toContain('release/7.2');
     });
 
-    it('should drop branches that are not whitelisted', () => {
+    it('should keep naturally-active branches and drop unwhitelisted historical ones', () => {
       const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, parseIncludeRanges('7.2')));
 
       expect(branchNames).toContain('release/9.0');
       expect(branchNames).not.toContain('release/8.4');
     });
 
-    it('should always keep master as reference', () => {
-      const structuredData = service.structureReleaseData(mockReleases, parseIncludeRanges('7.2'));
+    it('should always keep master', () => {
+      const masterNodes = service.structureReleaseData(mockReleases, parseIncludeRanges('7.2'))[0].get(MASTER_BRANCH_NAME)!;
 
-      expect(structuredData[0].get(MASTER_BRANCH_NAME)!.length).toBeGreaterThan(0);
+      expect(masterNodes.length).toBeGreaterThan(0);
     });
 
-    it('should keep every branch covered by a range', () => {
+    it('should add every historical branch inside a range', () => {
       const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, parseIncludeRanges('7.0-9.0')));
 
       expect(branchNames).toContain('release/7.2');
@@ -215,7 +211,7 @@ describe('ReleaseNodeService', () => {
       expect(branchNames).toContain('release/9.0');
     });
 
-    it('should skip a release line that is left out of a list', () => {
+    it('should add only whitelisted historical branches and skip unlisted ones', () => {
       const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, parseIncludeRanges('7.2,9.0')));
 
       expect(branchNames).toContain('release/7.2');
@@ -223,28 +219,28 @@ describe('ReleaseNodeService', () => {
       expect(branchNames).not.toContain('release/8.4');
     });
 
-    it('should keep every patch of a whitelisted release line', () => {
-      const structuredData = service.structureReleaseData(mockReleases, parseIncludeRanges('9.0'));
-      const branchNodes = structuredData.find((map) => map.has('release/9.0'))!.get('release/9.0')!;
+    it('should not filter releases on a naturally-active branch', () => {
+      const branchNodes = service.structureReleaseData(mockReleases, parseIncludeRanges('9.0.0-9.0.1'))
+        .find((map) => map.has('release/9.0'))!.get('release/9.0')!;
 
-      expect(branchNodes.map((node) => node.id)).toEqual(['9.0-anchor', '9.0-node-1', '9.0-nightly']);
+      expect(branchNodes.map((n) => n.id)).toEqual(['9.0-anchor', '9.0-node-1', '9.0-nightly']);
     });
 
-    it('should cut a branch off at a patch bound', () => {
-      const structuredData = service.structureReleaseData(mockReleases, parseIncludeRanges('9.0.0-9.0.1'));
-      const branchNodes = structuredData.find((map) => map.has('release/9.0'))!.get('release/9.0')!;
+    it('should filter a historical branch to only its whitelisted patch releases', () => {
+      const branchNodes = service.structureReleaseData(mockReleases, parseIncludeRanges('7.2.0-7.2.0'))
+        .find((map) => map.has('release/7.2'))!.get('release/7.2')!;
 
-      expect(branchNodes.map((node) => node.id)).toEqual(['9.0-anchor', '9.0-node-1']);
+      expect(branchNodes.map((n) => n.id)).toEqual(['7.2-anchor']);
     });
 
-    it('should keep a single release for an exact version', () => {
-      const structuredData = service.structureReleaseData(mockReleases, parseIncludeRanges('9.0.1'));
-      const branchNodes = structuredData.find((map) => map.has('release/9.0'))!.get('release/9.0')!;
+    it('should include a single patch release when the whitelist is an exact version', () => {
+      const branchNodes = service.structureReleaseData(mockReleases, parseIncludeRanges('7.2.1'))
+        .find((map) => map.has('release/7.2'))!.get('release/7.2')!;
 
-      expect(branchNodes.map((node) => node.id)).toEqual(['9.0-node-1']);
+      expect(branchNodes.map((n) => n.id)).toEqual(['7.2-node-1']);
     });
 
-    it('should drop a branch whose releases all fall outside a patch bound', () => {
+    it('should drop a historical branch whose releases all fall outside the whitelist', () => {
       const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, parseIncludeRanges('9.0.0-9.0.1')));
 
       expect(branchNames).not.toContain('release/8.4');
@@ -252,55 +248,34 @@ describe('ReleaseNodeService', () => {
     });
 
     it('should hide an unsupported minor release on master by default', () => {
-      const releases = [
+      const releasesWithOldMinor = [
         ...mockReleases,
-        {
-          id: 'master-old-minor',
-          name: 'v6.1',
-          publishedAt: new Date('2021-01-20T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: { id: 'b-master', name: MASTER_BRANCH_NAME },
-          tagName: 'v6.1',
-        } as Release,
+        { id: 'master-old-minor', name: 'v6.1', publishedAt: new Date('2021-01-20T10:00:00Z'), lastScanned: new Date(), branch: { id: 'b-master', name: MASTER_BRANCH_NAME }, tagName: 'v6.1' } as Release,
       ];
+      const masterNodes = service.structureReleaseData(releasesWithOldMinor)[0].get(MASTER_BRANCH_NAME)!;
 
-      const masterNodes = service.structureReleaseData(releases)[0].get(MASTER_BRANCH_NAME)!;
-
-      expect(masterNodes.some((node) => node.id === 'master-old-minor')).toBeFalse();
+      expect(masterNodes.some((n) => n.id === 'master-old-minor')).toBeFalse();
     });
 
-    it('should bring a whitelisted minor release back onto the master timeline', () => {
-      const releases = [
+    it('should restore a whitelisted minor release onto the master timeline', () => {
+      const releasesWithOldMinor = [
         ...mockReleases,
-        {
-          id: 'master-old-minor',
-          name: 'v6.1',
-          publishedAt: new Date('2021-01-20T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: { id: 'b-master', name: MASTER_BRANCH_NAME },
-          tagName: 'v6.1',
-        } as Release,
+        { id: 'master-old-minor', name: 'v6.1', publishedAt: new Date('2021-01-20T10:00:00Z'), lastScanned: new Date(), branch: { id: 'b-master', name: MASTER_BRANCH_NAME }, tagName: 'v6.1' } as Release,
       ];
+      const masterNodes = service.structureReleaseData(releasesWithOldMinor, parseIncludeRanges('6.1'))[0].get(MASTER_BRANCH_NAME)!;
 
-      const structuredData = service.structureReleaseData(releases, parseIncludeRanges('6.1'));
-      const masterNodes = structuredData[0].get(MASTER_BRANCH_NAME)!;
-
-      expect(masterNodes.some((node) => node.id === 'master-old-minor')).toBeTrue();
+      expect(masterNodes.some((n) => n.id === 'master-old-minor')).toBeTrue();
     });
 
-    it('should position a whitelisted branch that is entirely unsupported', () => {
+    it('should position a whitelisted historical branch', () => {
       const includeRanges = parseIncludeRanges('7.2');
-      const structuredData = service.structureReleaseData(mockReleases, includeRanges);
-
-      const positionedMap = service.calculateReleaseCoordinates(structuredData, includeRanges);
+      const positionedMap = service.calculateReleaseCoordinates(service.structureReleaseData(mockReleases, includeRanges), includeRanges);
 
       expect([...positionedMap.keys()]).toContain('release/7.2');
     });
 
-    it('should not position an unsupported branch without a whitelist', () => {
-      const structuredData = service.structureReleaseData(mockReleases);
-
-      const positionedMap = service.calculateReleaseCoordinates(structuredData);
+    it('should not position a historical branch without a whitelist', () => {
+      const positionedMap = service.calculateReleaseCoordinates(service.structureReleaseData(mockReleases));
 
       expect([...positionedMap.keys()]).not.toContain('release/7.2');
     });

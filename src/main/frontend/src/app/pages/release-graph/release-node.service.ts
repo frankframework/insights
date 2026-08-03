@@ -239,37 +239,27 @@ export class ReleaseNodeService {
       return;
     }
 
-    const protectedMajors = this.findProtectedMajors([...groupedByBranch.keys()]);
+    const naturallyActive = this.getNaturallyActiveBranchNames(groupedByBranch);
 
     for (const [branchName, releases] of groupedByBranch.entries()) {
       if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
+      if (naturallyActive.has(branchName)) continue;
 
-      const whitelistedReleases = releases.filter((release) => this.isReleaseIncluded(release, includeRanges));
-      const isWhitelisted = whitelistedReleases.length > 0;
-      const isCurrentMajorFamily = this.isBranchInCurrentMajorFamily(branchName, protectedMajors);
-
-      if (isWhitelisted) {
-        groupedByBranch.set(branchName, whitelistedReleases);
-      } else if (!isCurrentMajorFamily) {
+      const whitelisted = releases.filter((release) => this.isReleaseIncluded(release, includeRanges));
+      if (whitelisted.length > 0) {
+        groupedByBranch.set(branchName, whitelisted);
+      } else {
         groupedByBranch.delete(branchName);
       }
     }
   }
 
-  private findProtectedMajors(branchNames: string[]): Set<number> {
-    const protectedBranches = this.findLatestMajorBranchNames(branchNames);
-    const majors = new Set<number>();
-    for (const name of protectedBranches) {
-      const version = this.getVersionFromBranchName(name);
-      if (version) majors.add(version.major);
-    }
-
-    return majors;
-  }
-
-  private isBranchInCurrentMajorFamily(branchName: string, protectedMajors: Set<number>): boolean {
-    const version = this.getVersionFromBranchName(branchName);
-    return version !== null && protectedMajors.has(version.major);
+  private getNaturallyActiveBranchNames(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+  ): Set<string> {
+    const clone = new Map(groupedByBranch);
+    this.pruneHistoricalBranchesWithoutNightly(clone);
+    return new Set(clone.keys());
   }
 
   private isReleaseIncluded(release: Release, includeRanges: IncludeRange[]): boolean {
