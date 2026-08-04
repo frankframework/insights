@@ -96,11 +96,11 @@ public class ReleaseService {
             deleteObsoleteReleases(releases);
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
-                    .filter(r -> r.getBranch() != null)
+                    .filter(release -> release.getBranch() != null)
                     .collect(Collectors.groupingBy(
                             Release::getBranch, Collectors.collectingAndThen(Collectors.toList(), list -> list.stream()
                                     .sorted(Comparator.comparing(Release::getPublishedAt))
-                                    .collect(Collectors.toList()))));
+                                    .toList())));
 
             Map<String, OffsetDateTime> earliestBetaRCDates =
                     buildEarliestBetaRCDatesMap(validReleaseDTOs, invalidReleaseDTOs);
