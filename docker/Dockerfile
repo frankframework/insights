@@ -1,4 +1,4 @@
-FROM aquasec/trivy:0.72.0 AS trivy-downloader
+FROM aquasec/trivy:0.73.0 AS trivy-downloader
 
 FROM eclipse-temurin:25.0.3_9-jre-jammy AS runner
 ARG GID=2000
