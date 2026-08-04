@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 
 @Component({
@@ -6,6 +6,7 @@ import { CommonModule, DatePipe } from '@angular/common';
   standalone: true,
   imports: [CommonModule, DatePipe],
   templateUrl: './timeline-header.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./timeline-header.component.scss'],
 })
 export class TimelineHeaderComponent {

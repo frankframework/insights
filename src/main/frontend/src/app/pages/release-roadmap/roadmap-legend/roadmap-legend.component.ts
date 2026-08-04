@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ISSUE_STATE_STYLES, IssueStateStyle } from '../release-roadmap.component';
+import { ISSUE_STATE_STYLES, IssueStateStyle } from '../roadmap.types';
 
 interface LegendItem {
   label: string;
@@ -11,6 +11,7 @@ interface LegendItem {
   selector: 'app-roadmap-legend',
   imports: [CommonModule],
   templateUrl: './roadmap-legend.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './roadmap-legend.component.scss',
 })
 export class RoadmapLegend {

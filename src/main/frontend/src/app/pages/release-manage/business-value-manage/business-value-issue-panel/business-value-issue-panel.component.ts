@@ -1,4 +1,4 @@
-import { Component, input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, input, Output, EventEmitter, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { Issue } from '../../../../services/issue.service';
@@ -15,6 +15,7 @@ export interface IssueWithSelection extends Issue {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './business-value-issue-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-issue-panel.component.scss',
 })
 export class BusinessValueIssuePanelComponent {

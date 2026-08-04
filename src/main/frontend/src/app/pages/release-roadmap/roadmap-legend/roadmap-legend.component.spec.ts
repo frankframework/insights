@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { RoadmapLegend } from './roadmap-legend.component';
-import { ISSUE_STATE_STYLES } from '../release-roadmap.component';
+import { ISSUE_STATE_STYLES } from '../roadmap.types';
 
 describe('RoadmapLegend', () => {
   let component: RoadmapLegend;
@@ -11,10 +11,7 @@ describe('RoadmapLegend', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RoadmapLegend],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RoadmapLegend);
@@ -29,7 +26,7 @@ describe('RoadmapLegend', () => {
   it('should initialize issue state items from ISSUE_STATE_STYLES', () => {
     expect(component.issueStateItems.length).toBe(Object.keys(ISSUE_STATE_STYLES).length);
 
-    const labels = component.issueStateItems.map(item => item.label);
+    const labels = component.issueStateItems.map((item) => item.label);
 
     expect(labels).toContain('Todo');
     expect(labels).toContain('On hold');
@@ -39,7 +36,7 @@ describe('RoadmapLegend', () => {
   });
 
   it('should set correct styles for issue state items', () => {
-    const todoItem = component.issueStateItems.find(item => item.label === 'Todo');
+    const todoItem = component.issueStateItems.find((item) => item.label === 'Todo');
 
     expect(todoItem).toBeDefined();
     expect(todoItem!.style['background-color']).toBe('#f0fdf4');
@@ -80,7 +77,7 @@ describe('RoadmapLegend', () => {
 
     expect(labels.length).toBe(component.issueStateItems.length);
 
-    const labelTexts = [...labels].map(label => label.textContent?.trim());
+    const labelTexts = [...labels].map((label) => label.textContent?.trim());
 
     expect(labelTexts).toContain('Todo');
     expect(labelTexts).toContain('On hold');

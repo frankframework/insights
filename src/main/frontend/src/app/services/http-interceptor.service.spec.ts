@@ -1,5 +1,5 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpClient, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HttpClient, HTTP_INTERCEPTORS, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -28,7 +28,7 @@ describe('HttpInterceptorService', () => {
           useClass: HttpInterceptorService,
           multi: true,
         },
-        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClient(withXhr(), withInterceptorsFromDi()),
         provideHttpClientTesting(),
       ],
     });
@@ -47,7 +47,7 @@ describe('HttpInterceptorService', () => {
 
   it('should logout and redirect on 401 Unauthorized error', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');
@@ -61,7 +61,7 @@ describe('HttpInterceptorService', () => {
 
   it('should logout and redirect on 403 Forbidden error', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');
@@ -75,7 +75,7 @@ describe('HttpInterceptorService', () => {
 
   it('should NOT logout on 500 Internal Server Error', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');
@@ -89,7 +89,7 @@ describe('HttpInterceptorService', () => {
 
   it('should NOT logout on 400 error (even with "invalid token" message)', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');
@@ -103,7 +103,7 @@ describe('HttpInterceptorService', () => {
 
   it('should NOT logout on other errors like 404', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');
@@ -117,7 +117,7 @@ describe('HttpInterceptorService', () => {
 
   it('should NOT logout on 429 rate limiting error', fakeAsync(() => {
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');
@@ -131,7 +131,7 @@ describe('HttpInterceptorService', () => {
 
   it('should NOT logout if request is to /auth/logout endpoint', fakeAsync(() => {
     httpClient.post('/api/auth/logout', {}).subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/auth/logout');
@@ -145,7 +145,7 @@ describe('HttpInterceptorService', () => {
 
   it('should NOT logout if request is to /auth/user endpoint', fakeAsync(() => {
     httpClient.get('/api/auth/user').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/auth/user');
@@ -161,7 +161,7 @@ describe('HttpInterceptorService', () => {
     authService.logout.and.returnValue(throwError(() => new Error('Logout failed')));
 
     httpClient.get('/api/data').subscribe({
-      error: () => {}
+      error: () => {},
     });
 
     const request = httpTestingController.expectOne('/api/data');

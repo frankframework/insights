@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 
 export type PillButtonIcon = 'moon' | 'help' | 'github';
 
@@ -7,6 +7,7 @@ export type PillButtonIcon = 'moon' | 'help' | 'github';
   standalone: true,
   imports: [],
   templateUrl: './pill-button.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './pill-button.component.scss',
 })
 export class PillButtonComponent {

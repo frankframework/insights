@@ -1,4 +1,13 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  inject,
+  AfterViewInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
 import { catchError, map, of } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
@@ -31,6 +40,7 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {

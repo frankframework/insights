@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
@@ -9,6 +9,7 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
   standalone: true,
   imports: [CommonModule, ModalComponent],
   templateUrl: './business-value-delete.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-delete.component.scss',
 })
 export class BusinessValueDeleteComponent {

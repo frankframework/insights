@@ -6,6 +6,7 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
   withXsrfConfiguration,
+  withXhr,
 } from '@angular/common/http';
 import { HttpInterceptorService } from './services/http-interceptor.service';
 
@@ -14,6 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(
+      withXhr(),
       withInterceptorsFromDi(),
       withXsrfConfiguration({
         cookieName: 'XSRF-TOKEN',

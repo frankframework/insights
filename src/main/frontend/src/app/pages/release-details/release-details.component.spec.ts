@@ -3,7 +3,7 @@ import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/
 import { Location } from '@angular/common';
 import { of, throwError, Subject } from 'rxjs';
 import { delay } from 'rxjs/operators';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseDetailsComponent } from './release-details.component';
 import { ReleaseService, Release } from '../../services/release.service';
@@ -106,7 +106,13 @@ describe('ReleaseDetailsComponent', () => {
     mockVulnerabilityService = jasmine.createSpyObj('VulnerabilityService', ['getVulnerabilitiesByReleaseId']);
     mockBusinessValueService = jasmine.createSpyObj('BusinessValueService', ['getBusinessValuesByReleaseId']);
     mockLocation = jasmine.createSpyObj('Location', ['back']);
-    mockRouter = jasmine.createSpyObj('Router', ['navigate', 'navigateByUrl', 'parseUrl', 'createUrlTree', 'serializeUrl']);
+    mockRouter = jasmine.createSpyObj('Router', [
+      'navigate',
+      'navigateByUrl',
+      'parseUrl',
+      'createUrlTree',
+      'serializeUrl',
+    ]);
     mockRouter.parseUrl.and.callFake((url: string) => urlSerializer.parse(url));
     mockRouter.createUrlTree.and.callFake((commands: string[]) => urlSerializer.parse(commands.join('') || '/'));
     mockRouter.serializeUrl.and.callFake((tree: UrlTree) => urlSerializer.serialize(tree));
@@ -132,7 +138,7 @@ describe('ReleaseDetailsComponent', () => {
         { provide: Router, useValue: mockRouter },
         { provide: GraphStateService, useValue: mockGraphStateService },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

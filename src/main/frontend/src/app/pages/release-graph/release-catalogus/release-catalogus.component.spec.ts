@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { By } from '@angular/platform-browser';
 
@@ -15,10 +15,7 @@ describe('ReleaseCatalogusComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ReleaseCatalogusComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
   });
 
@@ -98,9 +95,7 @@ describe('ReleaseCatalogusComponent', () => {
       component.modalOpen = true;
       fixture.detectChanges();
 
-      const extendedSupportElements = fixture.debugElement.queryAll(
-        By.css('.support-extended')
-      );
+      const extendedSupportElements = fixture.debugElement.queryAll(By.css('.support-extended'));
 
       expect(extendedSupportElements.length).toBe(0);
     });
@@ -110,9 +105,7 @@ describe('ReleaseCatalogusComponent', () => {
       component.modalOpen = true;
       fixture.detectChanges();
 
-      const extendedSupportElements = fixture.debugElement.queryAll(
-        By.css('.support-extended')
-      );
+      const extendedSupportElements = fixture.debugElement.queryAll(By.css('.support-extended'));
 
       expect(extendedSupportElements.length).toBe(1);
     });
@@ -146,7 +139,10 @@ describe('ReleaseCatalogusComponent', () => {
       const policyText = fixture.debugElement.query(By.css('.policy-text'));
 
       expect(policyText.nativeElement.textContent).toContain('30 months total support');
-      expect(policyText.nativeElement.textContent).toContain('6 months active + 18 months extended + 6 months security');
+      expect(policyText.nativeElement.textContent).toContain(
+        '6 months active + 18 months extended + 6 months security',
+      );
+
       expect(policyText.nativeElement.textContent).toContain('15 months');
       expect(policyText.nativeElement.textContent).toContain('3 months active + 9 months extended + 3 months security');
     });

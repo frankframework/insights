@@ -1,6 +1,6 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseBusinessValueModalComponent } from './release-business-value-modal.component';
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree-branch/issue-tree-branch.component';
 import { Issue } from '../../../services/issue.service';
@@ -8,7 +8,8 @@ import { Issue } from '../../../services/issue.service';
 @Component({
   selector: 'app-modal',
   standalone: true,
-  template: '<ng-content></ng-content>'
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '<ng-content></ng-content>',
 })
 class MockModalComponent {
   @Input() title: string = '';
@@ -18,7 +19,8 @@ class MockModalComponent {
 @Component({
   selector: 'app-issue-tree-branch',
   standalone: true,
-  template: ''
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
 })
 class MockIssueTreeBranchComponent {
   @Input() issue!: Issue;
@@ -40,13 +42,13 @@ describe('ReleaseBusinessValueModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ReleaseBusinessValueModalComponent]
+      imports: [ReleaseBusinessValueModalComponent],
     })
-            .overrideComponent(ReleaseBusinessValueModalComponent, {
-              remove: { imports: [ModalComponent, IssueTreeBranchComponent] },
-              add: { imports: [MockModalComponent, MockIssueTreeBranchComponent] }
-            })
-            .compileComponents();
+      .overrideComponent(ReleaseBusinessValueModalComponent, {
+        remove: { imports: [ModalComponent, IssueTreeBranchComponent] },
+        add: { imports: [MockModalComponent, MockIssueTreeBranchComponent] },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(ReleaseBusinessValueModalComponent);
     component = fixture.componentInstance;

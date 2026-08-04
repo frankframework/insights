@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, inject } from '@angular/core';
+import { Component, Input, OnChanges, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
@@ -13,6 +13,7 @@ Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
   standalone: true,
   imports: [BaseChartDirective],
   templateUrl: './release-highlights.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-highlights.component.scss',
 })
 export class ReleaseHighlightsComponent implements OnChanges {

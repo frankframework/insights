@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseVulnerabilities } from './release-vulnerabilities';
 import { Vulnerability, VulnerabilitySeverities } from '../../../services/vulnerability.service';
@@ -14,8 +14,9 @@ describe('ReleaseVulnerabilities', () => {
       title: 'title',
       severity: VulnerabilitySeverities.CRITICAL,
       cvssScore: 9.8,
-      description: 'Critical vulnerability with a very long description that should trigger the see more button because it exceeds six lines of text when rendered in the UI component with normal font size and line height settings.',
-      cwes: ['CWE-79', 'CWE-89']
+      description:
+        'Critical vulnerability with a very long description that should trigger the see more button because it exceeds six lines of text when rendered in the UI component with normal font size and line height settings.',
+      cwes: ['CWE-79', 'CWE-89'],
     },
     {
       cveId: 'CVE-2024-0002',
@@ -23,7 +24,7 @@ describe('ReleaseVulnerabilities', () => {
       severity: VulnerabilitySeverities.HIGH,
       cvssScore: 7.5,
       description: 'High severity vulnerability',
-      cwes: ['CWE-22']
+      cwes: ['CWE-22'],
     },
     {
       cveId: 'CVE-2024-0003',
@@ -31,7 +32,7 @@ describe('ReleaseVulnerabilities', () => {
       severity: VulnerabilitySeverities.MEDIUM,
       cvssScore: 5,
       description: 'Medium severity vulnerability',
-      cwes: []
+      cwes: [],
     },
     {
       cveId: 'CVE-2024-0004',
@@ -39,7 +40,7 @@ describe('ReleaseVulnerabilities', () => {
       severity: VulnerabilitySeverities.LOW,
       cvssScore: 2.1,
       description: 'Low severity vulnerability',
-      cwes: ['CWE-200']
+      cwes: ['CWE-200'],
     },
     {
       cveId: 'CVE-2024-0005',
@@ -47,17 +48,14 @@ describe('ReleaseVulnerabilities', () => {
       severity: VulnerabilitySeverities.CRITICAL,
       cvssScore: 10,
       description: 'Another critical vulnerability',
-      cwes: ['CWE-78']
-    }
+      cwes: ['CWE-78'],
+    },
   ];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseVulnerabilities],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseVulnerabilities);
@@ -94,7 +92,7 @@ describe('ReleaseVulnerabilities', () => {
       component.ngOnChanges();
 
       const criticalVulns = component.sortedVulnerabilities.filter(
-        v => v.severity === VulnerabilitySeverities.CRITICAL
+        (v) => v.severity === VulnerabilitySeverities.CRITICAL,
       );
 
       expect(criticalVulns[0].cvssScore).toBe(10);
@@ -232,7 +230,7 @@ describe('ReleaseVulnerabilities', () => {
         severity: VulnerabilitySeverities.HIGH,
         cvssScore: 8,
         description: 'No CWEs',
-        cwes: []
+        cwes: [],
       };
       component.vulnerabilities = [vulnNoCwe];
       component.ngOnChanges();
@@ -247,7 +245,7 @@ describe('ReleaseVulnerabilities', () => {
         severity: VulnerabilitySeverities.MEDIUM,
         cvssScore: 5.5,
         description: '',
-        cwes: ['CWE-79']
+        cwes: ['CWE-79'],
       };
       component.vulnerabilities = [vulnNoDesc];
       component.ngOnChanges();
@@ -262,7 +260,7 @@ describe('ReleaseVulnerabilities', () => {
         severity: VulnerabilitySeverities.LOW,
         cvssScore: 3,
         description: 'Test',
-        cwes: []
+        cwes: [],
       };
       component.vulnerabilities = [vulnLongId];
       component.ngOnChanges();
@@ -286,7 +284,7 @@ describe('ReleaseVulnerabilities', () => {
           severity: VulnerabilitySeverities.HIGH,
           cvssScore: 7.5,
           description: 'Duplicate 1',
-          cwes: []
+          cwes: [],
         },
         {
           cveId: 'CVE-2024-2222',
@@ -294,8 +292,8 @@ describe('ReleaseVulnerabilities', () => {
           severity: VulnerabilitySeverities.HIGH,
           cvssScore: 7.5,
           description: 'Duplicate 2',
-          cwes: []
-        }
+          cwes: [],
+        },
       ];
       component.ngOnChanges();
 
