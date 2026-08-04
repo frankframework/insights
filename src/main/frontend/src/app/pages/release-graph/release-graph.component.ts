@@ -11,6 +11,13 @@ import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipp
 import { AuthService } from '../../services/auth.service';
 import { GraphStateService } from '../../services/graph-state.service';
 import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
+import {
+  isVersionInRanges,
+  mergeVersionRanges,
+  parseVersionRanges,
+  serializeVersionRanges,
+  VersionRange,
+} from '../../pipes/release-range';
 
 export interface LifecyclePhase {
   type: 'supported';
@@ -34,12 +41,19 @@ export interface BranchLifecycle {
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
-  private static readonly RELEASE_GRAPH_NAVIGATION_PADDING: number = 55;
+  private static readonly MAX_GRAPH_NAVIGATION_PADDING: number = 55;
+  private static readonly NAV_PADDING_FULL_ROWS: number = 6;
+  private static readonly NAV_PADDING_ZERO_ROWS: number = 20;
   private static readonly HEADER_HEIGHT_PX: number = 90;
   private static readonly QUARTER_LABEL_FONT_SIZE: number = 14;
   private static readonly QUARTER_LINE_GAP_PX: number = 12;
   private static readonly SVG_LINE_OVERFLOW_PX: number = 100;
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
+  private static readonly MAX_GRAPH_SCALE: number = 2;
+  private static readonly GRAPH_HEIGHT_FILL: number = 0.85;
+  private static readonly SCROLL_MARGIN_LEFT: number = 0.2;
+  private static readonly SCROLL_MARGIN_RIGHT: number = 0.45;
+  private static readonly INITIAL_SCROLL_OFFSET: number = 0.1;
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
@@ -59,6 +73,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   public showNotFoundError = false;
   public showNightlies = false;
   public showExtendedSupport = false;
+  public releaseRanges: VersionRange[] = [];
+  public rangeMessage: string | null = null;
+  public defaultRange = '';
 
   public isLoading = true;
   public releases: Release[] = [];
@@ -70,6 +87,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   protected authService = inject(AuthService);
 
+  private rangeParameter: string | null = null;
+  private defaultRanges: VersionRange[] = [];
   private lastPositionX = 0;
   private minTranslateX = 0;
   private maxTranslateX = 0;
@@ -89,6 +108,14 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private graphStateService = inject(GraphStateService);
+
+  public get currentRange(): string {
+    return serializeVersionRanges(this.releaseRanges);
+  }
+
+  public get isDefaultRange(): boolean {
+    return this.currentRange === this.defaultRange;
+  }
 
   public get visibleReleaseNodes(): ReleaseNode[] {
     if (this.showNightlies) {
@@ -118,21 +145,26 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit(): void {
     this.isLoading = true;
-    this.getAllReleases();
 
-    this.route.queryParams.subscribe((parameters) => {
+    this.route.queryParamMap.subscribe((parameters) => {
       const wasExtended = this.showExtendedSupport;
-      this.showExtendedSupport = parameters['extended'] !== undefined;
-      this.showNightlies = parameters['nightly'] !== undefined;
+      const previousRange = this.rangeParameter;
+
+      this.showExtendedSupport = parameters.has('extended');
+      this.showNightlies = parameters.has('nightly');
+      this.rangeParameter = parameters.get('range');
 
       this.graphStateService.setShowExtendedSupport(this.showExtendedSupport);
       this.graphStateService.setShowNightlies(this.showNightlies);
 
-      if (wasExtended !== this.showExtendedSupport && this.releases.length > 0) {
-        const sortedGroups = this.nodeService.structureReleaseData(this.releases);
-        this.buildReleaseGraph(sortedGroups);
+      const rangeChanged = previousRange !== this.rangeParameter;
+
+      if ((wasExtended !== this.showExtendedSupport || rangeChanged) && this.releases.length > 0) {
+        this.applyRange();
       }
     });
+
+    this.getAllReleases();
 
     this.routerSubscription = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd && this.router.url.includes('/graph')) {
@@ -159,6 +191,15 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       queryParameters['nightly'] = '';
     }
     this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
+  }
+
+  public onRangeRequested(ranges: VersionRange[]): void {
+    this.closeSkipNodeModal();
+    this.navigateWithRanges(mergeVersionRanges(this.releaseRanges, ranges));
+  }
+
+  public resetRange(): void {
+    this.navigateWithRanges([]);
   }
 
   public onMouseDown(event: MouseEvent): void {
@@ -331,6 +372,62 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     return minor === 0;
   }
 
+  private navigateWithRanges(ranges: VersionRange[]): void {
+    const queryParameters = { ...this.graphStateService.getGraphQueryParams() };
+    const range = serializeVersionRanges(ranges);
+
+    if (range) {
+      queryParameters['range'] = range;
+    } else {
+      delete queryParameters['range'];
+    }
+
+    this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
+  }
+
+  private applyRange(): void {
+    if (!this.rangeParameter?.trim()) {
+      this.navigateWithRanges(this.defaultRanges);
+      return;
+    }
+
+    const previousMessage = this.rangeMessage;
+    const parsedRanges = parseVersionRanges(this.rangeParameter);
+
+    this.releaseRanges = parsedRanges.ranges;
+    this.rangeMessage = parsedRanges.error ?? this.describeEmptyRange(parsedRanges.ranges);
+    this.graphStateService.setReleaseRanges(this.releaseRanges);
+
+    if (this.rangeMessage) {
+      this.clearReleaseGraph();
+      return;
+    }
+
+    if (previousMessage) this.isLoading = true;
+
+    this.buildReleaseGraph(this.nodeService.structureReleaseData(this.releases, this.releaseRanges));
+  }
+
+  private describeEmptyRange(ranges: VersionRange[]): string | null {
+    const hasMatch = this.releases.some((release) => {
+      const versionInfo = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      return versionInfo !== null && isVersionInRanges(ranges, versionInfo.major, versionInfo.minor, versionInfo.patch);
+    });
+
+    return hasMatch ? null : `No releases were found for ${serializeVersionRanges(ranges)}.`;
+  }
+
+  private clearReleaseGraph(): void {
+    this.releaseNodes = [];
+    this.allLinks = [];
+    this.skipNodes = [];
+    this.branchLabels = [];
+    this.stickyBranchLabels = [];
+    this.branchLifecycles = [];
+    this.quarterMarkers = [];
+    this.isLoading = false;
+  }
+
   private isNightlyNode(node: ReleaseNode): boolean {
     if (node.isMiniNode) {
       return false;
@@ -409,8 +506,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
           this.checkReleaseGraphLoading();
           return;
         }
-        const sortedGroups = this.nodeService.structureReleaseData(releases);
-        this.buildReleaseGraph(sortedGroups);
+        this.defaultRanges = this.nodeService.getDefaultRanges(releases);
+        this.defaultRange = serializeVersionRanges(this.defaultRanges);
+        this.applyRange();
       });
   }
 
@@ -664,16 +762,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     const maxY = Math.max(...ys);
     const graphH = maxY - minY;
 
-    const contentHeightProportion = 0.65;
-    const targetHeight = H * contentHeightProportion;
-    this.scale = targetHeight / Math.max(graphH, 1);
-    const scaledGraphH = graphH * this.scale;
-    const topPadding = (H - scaledGraphH) / 2;
-    this.translateY = -minY * this.scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING;
+    const navPadding = this.calculateNavPadding(ys);
 
-    this.maxTranslateX = -minX * this.scale + W * 0.2;
-    this.minTranslateX = W - maxX * this.scale - W * 0.45;
-    this.translateX = this.minTranslateX + W * 0.1;
+    const availableH = H - ReleaseGraphComponent.HEADER_HEIGHT_PX - navPadding;
+    const targetHeight = availableH * ReleaseGraphComponent.GRAPH_HEIGHT_FILL;
+
+    this.scale = Math.min(targetHeight / Math.max(graphH, 1), ReleaseGraphComponent.MAX_GRAPH_SCALE);
+    const scaledGraphH = graphH * this.scale;
+    const topPadding = (availableH - scaledGraphH) / 2 + ReleaseGraphComponent.HEADER_HEIGHT_PX;
+    this.translateY = -minY * this.scale + topPadding + navPadding;
+
+    this.maxTranslateX = -minX * this.scale + W * ReleaseGraphComponent.SCROLL_MARGIN_LEFT;
+    this.minTranslateX = W - maxX * this.scale - W * ReleaseGraphComponent.SCROLL_MARGIN_RIGHT;
+    this.translateX = this.minTranslateX + W * ReleaseGraphComponent.INITIAL_SCROLL_OFFSET;
 
     const headerBottom = ReleaseGraphComponent.HEADER_HEIGHT_PX;
     const labelFontSize = ReleaseGraphComponent.QUARTER_LABEL_FONT_SIZE;
@@ -686,6 +787,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.svgLineBottomY = (H + lineOverflow - this.translateY) / this.scale;
 
     return `0 0 ${W} ${H}`;
+  }
+
+  private calculateNavPadding(ys: number[]): number {
+    const rowCount = new Set(ys).size;
+    const t = Math.min(
+      1,
+      Math.max(
+        0,
+        (rowCount - ReleaseGraphComponent.NAV_PADDING_FULL_ROWS) /
+          (ReleaseGraphComponent.NAV_PADDING_ZERO_ROWS - ReleaseGraphComponent.NAV_PADDING_FULL_ROWS),
+      ),
+    );
+    return Math.round(ReleaseGraphComponent.MAX_GRAPH_NAVIGATION_PADDING * (1 - t));
   }
 
   private calculateBranchLifecycles(releaseNodeMap: Map<string, ReleaseNode[]>): BranchLifecycle[] {

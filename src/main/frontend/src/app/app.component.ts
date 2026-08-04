@@ -14,6 +14,7 @@ import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
 import { GraphStateService } from './services/graph-state.service';
+import { parseVersionRanges, serializeVersionRanges } from './pipes/release-range';
 
 @Component({
   selector: 'app-root',
@@ -43,6 +44,7 @@ export class AppComponent implements OnInit {
     const returnUrl = this.authService.consumeReturnUrl();
     const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
     const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
+    const previousRanges = this.graphStateService.restoreAndClearOAuthRange();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -57,24 +59,29 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.route.queryParams.subscribe((parameters) => {
+    this.route.queryParamMap.subscribe((parameters) => {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if ((wasExtended || wasNightly) && isGraphRoute) {
+      if ((wasExtended || wasNightly || previousRanges.length > 0) && isGraphRoute) {
         const queryParameters: Record<string, string> = {};
         if (wasExtended) queryParameters['extended'] = '';
         if (wasNightly) queryParameters['nightly'] = '';
 
+        const range = serializeVersionRanges(previousRanges);
+        if (range) queryParameters['range'] = range;
+
         this.graphStateService.setShowExtendedSupport(wasExtended);
         this.graphStateService.setShowNightlies(wasNightly);
+        this.graphStateService.setReleaseRanges(previousRanges);
         this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
         return;
       }
 
       if (isGraphRoute) {
-        this.graphStateService.setShowExtendedSupport(parameters['extended'] !== undefined);
-        this.graphStateService.setShowNightlies(parameters['nightly'] !== undefined);
+        this.graphStateService.setShowExtendedSupport(parameters.has('extended'));
+        this.graphStateService.setShowNightlies(parameters.has('nightly'));
+        this.graphStateService.setReleaseRanges(parseVersionRanges(parameters.get('range')).ranges);
       }
     });
   }

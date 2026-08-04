@@ -3,8 +3,19 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseNode, ReleaseNodeService, SupportColors, TimelineScale } from './release-node.service';
 import { Branch, Release } from '../../services/release.service';
+import {
+  isVersionInRanges,
+  parseVersionRanges,
+  serializeVersionRanges,
+  VersionRange,
+} from '../../pipes/release-range';
 
 const MASTER_BRANCH_NAME = 'master';
+
+const branchNamesOf = (structuredData: Map<string, ReleaseNode[]>[]): string[] =>
+  structuredData.flatMap((map) => [...map.keys()]);
+
+const rangesOf = (specification: string): VersionRange[] => parseVersionRanges(specification).ranges;
 
 const createMockData = (): Release[] => {
   const branches: Record<string, Branch> = {
@@ -99,6 +110,106 @@ const createMockData = (): Release[] => {
   ];
 };
 
+const createMajorOnlyMockData = (): Release[] => {
+  const branches: Record<string, Branch> = {
+    b90: { id: 'b-90', name: 'release/9.0' },
+    b80: { id: 'b-80', name: 'release/8.0' },
+    b70: { id: 'b-70', name: 'release/7.0' },
+    b60: { id: 'b-60', name: 'release/6.0' },
+  };
+
+  return [
+    {
+      id: '9.0-anchor',
+      name: 'v9.0.0',
+      publishedAt: new Date('2025-01-10T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b90'],
+      tagName: 'release/v9.0.0',
+    },
+    {
+      id: '8.0-anchor',
+      name: 'v8.0.0',
+      publishedAt: new Date('2023-01-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b80'],
+      tagName: 'release/v8.0.0',
+    },
+    {
+      id: '7.0-anchor',
+      name: 'v7.0.0',
+      publishedAt: new Date('2022-01-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b70'],
+      tagName: 'release/v7.0.0',
+    },
+    {
+      id: '6.0-anchor',
+      name: 'v6.0.0',
+      publishedAt: new Date('2020-01-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b60'],
+      tagName: 'release/v6.0.0',
+    },
+  ];
+};
+
+const createMultiMajorMockData = (): Release[] => {
+  const branches: Record<string, Branch> = {
+    b110: { id: 'b-110', name: 'release/11.0' },
+    b100: { id: 'b-100', name: 'release/10.0' },
+    b104: { id: 'b-104', name: 'release/10.4' },
+    b102: { id: 'b-102', name: 'release/10.2' },
+  };
+
+  return [
+    {
+      id: '11.0-anchor',
+      name: 'v11.0.0',
+      publishedAt: new Date('2025-06-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b110'],
+      tagName: 'release/v11.0.0',
+    },
+    {
+      id: '10.0-anchor',
+      name: 'v10.0.0',
+      publishedAt: new Date('2025-01-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b100'],
+      tagName: 'release/v10.0.0',
+    },
+    {
+      id: '10.4-anchor',
+      name: 'v10.4.0',
+      publishedAt: new Date('2024-08-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b104'],
+      tagName: 'release/v10.4.0',
+    },
+    {
+      id: '10.2-anchor',
+      name: 'v10.2.0',
+      publishedAt: new Date('2024-06-01T10:00:00Z'),
+      lastScanned: new Date(),
+      branch: branches['b102'],
+      tagName: 'release/v10.2.0',
+    },
+  ];
+};
+
+const withOldMinorRelease = (releases: Release[]): Release[] => [
+  ...releases,
+  {
+    id: 'master-old-minor',
+    name: 'v6.1',
+    publishedAt: new Date('2021-01-20T10:00:00Z'),
+    lastScanned: new Date(),
+    branch: { id: 'b-master', name: MASTER_BRANCH_NAME },
+    tagName: 'v6.1',
+  },
+];
+
 describe('ReleaseNodeService', () => {
   let service: ReleaseNodeService;
   let mockReleases: Release[];
@@ -177,6 +288,172 @@ describe('ReleaseNodeService', () => {
     });
   });
 
+  describe('release ranges', () => {
+    it('should keep every branch when no range restricts the graph', () => {
+      const branchNames = branchNamesOf(service.structureReleaseData(mockReleases));
+
+      expect(branchNames).toContain('release/9.0');
+      expect(branchNames).toContain('release/8.4');
+      expect(branchNames).toContain('release/7.2');
+    });
+
+    it('should keep only the branches the range asks for', () => {
+      const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, rangesOf('[7.2],[9.0]')));
+
+      expect(branchNames).toContain('release/7.2');
+      expect(branchNames).toContain('release/9.0');
+      expect(branchNames).not.toContain('release/8.4');
+    });
+
+    it('should keep every branch inside a bounded range', () => {
+      const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, rangesOf('[7.0,9.0]')));
+
+      expect(branchNames).toContain('release/7.2');
+      expect(branchNames).toContain('release/8.4');
+      expect(branchNames).toContain('release/9.0');
+    });
+
+    it('should keep everything from an open ended range on', () => {
+      const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, rangesOf('[8.4,)')));
+
+      expect(branchNames).toContain('release/8.4');
+      expect(branchNames).toContain('release/9.0');
+      expect(branchNames).not.toContain('release/7.2');
+    });
+
+    it('should always keep master', () => {
+      const masterNodes = service.structureReleaseData(mockReleases, rangesOf('[7.2]'))[0].get(MASTER_BRANCH_NAME)!;
+
+      expect(masterNodes.length).toBeGreaterThan(0);
+    });
+
+    it('should drop a branch whose releases all fall outside the range', () => {
+      const branchNames = branchNamesOf(service.structureReleaseData(mockReleases, rangesOf('[9.0.0,9.0.1]')));
+
+      expect(branchNames).not.toContain('release/8.4');
+      expect(branchNames).not.toContain('release/7.2');
+    });
+
+    it('should filter a branch down to the releases inside the range', () => {
+      const branchNodes = service.structureReleaseData(mockReleases, rangesOf('[7.2.0]'))
+        .find((map) => map.has('release/7.2'))!.get('release/7.2')!;
+
+      expect(branchNodes.map((n) => n.id)).toEqual(['7.2-anchor']);
+    });
+
+    it('should keep a single patch release when the range pins that version', () => {
+      const branchNodes = service.structureReleaseData(mockReleases, rangesOf('[7.2.1]'))
+        .find((map) => map.has('release/7.2'))!.get('release/7.2')!;
+
+      expect(branchNodes.map((n) => n.id)).toEqual(['7.2-node-1']);
+    });
+
+    it('should keep the whole release line when the range pins the line', () => {
+      const branchNodes = service.structureReleaseData(mockReleases, rangesOf('[9.0]'))
+        .find((map) => map.has('release/9.0'))!.get('release/9.0')!;
+
+      expect(branchNodes.map((n) => n.id)).toEqual(['9.0-anchor', '9.0-node-1', '9.0-nightly']);
+    });
+
+    it('should hide a minor release on master that falls outside the range', () => {
+      const masterNodes = service.structureReleaseData(withOldMinorRelease(mockReleases), rangesOf('[9.0]'))[0]
+        .get(MASTER_BRANCH_NAME)!;
+
+      expect(masterNodes.some((n) => n.id === 'master-old-minor')).toBeFalse();
+    });
+
+    it('should draw a minor release on master that the range asks for', () => {
+      const masterNodes = service.structureReleaseData(withOldMinorRelease(mockReleases), rangesOf('[6.1],[9.0]'))[0]
+        .get(MASTER_BRANCH_NAME)!;
+
+      expect(masterNodes.some((n) => n.id === 'master-old-minor')).toBeTrue();
+    });
+
+    it('should keep the major releases on master whatever the range says', () => {
+      const masterNodes = service.structureReleaseData(mockReleases, rangesOf('[9.0]'))[0].get(MASTER_BRANCH_NAME)!;
+
+      expect(masterNodes.some((n) => n.id === 'master-1')).toBeTrue();
+      expect(masterNodes.some((n) => n.id === 'master-2')).toBeTrue();
+    });
+
+    it('should position every branch the range left in place', () => {
+      const ranges = rangesOf('[7.2]');
+      const positionedMap = service.calculateReleaseCoordinates(service.structureReleaseData(mockReleases, ranges));
+
+      expect([...positionedMap.keys()]).toEqual([MASTER_BRANCH_NAME, 'release/7.2']);
+    });
+  });
+
+  describe('getDefaultRanges', () => {
+    it('should pin the branches that fell out of support and leave the supported ones open ended', () => {
+      expect(serializeVersionRanges(service.getDefaultRanges(mockReleases))).toBe('[7.2],[8.4,)');
+    });
+
+    it('should keep the latest 2 major branches and the most recently unsupported one', () => {
+      expect(serializeVersionRanges(service.getDefaultRanges(createMajorOnlyMockData()))).toBe('[7.0],[8.0],[9.0,)');
+    });
+
+    it('should end open ended on the newest branch when nothing is supported anymore', () => {
+      const releases: Release[] = [
+        {
+          id: '7.5-anchor',
+          name: 'v7.5.0',
+          publishedAt: new Date('2015-01-01T10:00:00Z'),
+          lastScanned: new Date(),
+          branch: { id: 'b-75', name: 'release/7.5' },
+          tagName: 'release/v7.5.0',
+        },
+      ];
+
+      expect(serializeVersionRanges(service.getDefaultRanges(releases))).toBe('[7.5,)');
+    });
+
+    it('should show everything when there are no releases at all', () => {
+      expect(serializeVersionRanges(service.getDefaultRanges([]))).toBe('(,)');
+    });
+
+    it('should not let a nightly release keep an unsupported line open ended', () => {
+      expect(serializeVersionRanges(service.getDefaultRanges(mockReleases))).not.toContain('9.4');
+    });
+
+    it('should start the open end at the newest run of supported lines, not at an older supported major', () => {
+      expect(serializeVersionRanges(service.getDefaultRanges(createMultiMajorMockData()))).toBe(
+        '[10.0],[10.4],[11.0,)',
+      );
+    });
+
+    it('should leave a pruned branch out of the range it describes', () => {
+      const releases = createMultiMajorMockData();
+      const branchNames = branchNamesOf(service.structureReleaseData(releases, service.getDefaultRanges(releases)));
+
+      expect(branchNames).toContain('release/11.0');
+      expect(branchNames).toContain('release/10.0');
+      expect(branchNames).toContain('release/10.4');
+      expect(branchNames).not.toContain('release/10.2');
+    });
+
+    it('should keep majors that do not exist yet in view through the open end', () => {
+      const ranges = service.getDefaultRanges(createMultiMajorMockData());
+
+      expect(isVersionInRanges(ranges, 11, 3, 1)).toBeTrue();
+      expect(isVersionInRanges(ranges, 12, 0, 0)).toBeTrue();
+    });
+
+    it('should draw exactly the branches its own range describes', () => {
+      const ranges = service.getDefaultRanges(createMajorOnlyMockData());
+      const positionedMap = service.calculateReleaseCoordinates(
+        service.structureReleaseData(createMajorOnlyMockData(), ranges),
+      );
+
+      expect([...positionedMap.keys()]).toEqual([
+        MASTER_BRANCH_NAME,
+        'release/9.0',
+        'release/8.0',
+        'release/7.0',
+      ]);
+    });
+  });
+
   describe('calculateReleaseCoordinates', () => {
     let structuredData: Map<string, ReleaseNode[]>[];
 
@@ -191,79 +468,13 @@ describe('ReleaseNodeService', () => {
       expect(branchOrder).toEqual(['release/9.0', 'release/8.4', 'release/7.2']);
     });
 
-    it('should keep only the latest 2 major branches, and among the rest only the most recently unsupported one', () => {
-      const branches: Record<string, any> = {
-        master: { id: 'b-master', name: MASTER_BRANCH_NAME },
-        b90: { id: 'b-90', name: 'release/9.0' },
-        b80: { id: 'b-80', name: 'release/8.0' },
-        b70: { id: 'b-70', name: 'release/7.0' },
-        b60: { id: 'b-60', name: 'release/6.0' },
-      };
-
-      const releases: Release[] = [
-        {
-          id: '9.0-anchor',
-          name: 'v9.0.0',
-          publishedAt: new Date('2025-01-10T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: branches['b90'],
-          tagName: 'release/v9.0.0',
-        },
-        {
-          id: '8.0-anchor',
-          name: 'v8.0.0',
-          publishedAt: new Date('2023-01-01T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: branches['b80'],
-          tagName: 'release/v8.0.0',
-        },
-        {
-          id: '7.0-anchor',
-          name: 'v7.0.0',
-          publishedAt: new Date('2022-01-01T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: branches['b70'],
-          tagName: 'release/v7.0.0',
-        },
-        {
-          id: '6.0-anchor',
-          name: 'v6.0.0',
-          publishedAt: new Date('2020-01-01T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: branches['b60'],
-          tagName: 'release/v6.0.0',
-        },
-      ];
-
-      const structured = service.structureReleaseData(releases);
-      const positionedMap = service.calculateReleaseCoordinates(structured);
+    it('should position every branch when no range restricts the graph', () => {
+      const positionedMap = service.calculateReleaseCoordinates(
+        service.structureReleaseData(createMajorOnlyMockData()),
+      );
       const branchOrder = [...positionedMap.keys()].filter((b) => b !== MASTER_BRANCH_NAME);
 
-      expect(branchOrder).toEqual(['release/9.0', 'release/8.0', 'release/7.0']);
-    });
-
-    it('should keep the only existing unsupported branch visible when nothing else competes for the showcase slot', () => {
-      const branches: Record<string, any> = {
-        master: { id: 'b-master', name: MASTER_BRANCH_NAME },
-        b75: { id: 'b-75', name: 'release/7.5' },
-      };
-
-      const releases: Release[] = [
-        {
-          id: '7.5-anchor',
-          name: 'v7.5.0',
-          publishedAt: new Date('2015-01-01T10:00:00Z'),
-          lastScanned: new Date(),
-          branch: branches['b75'],
-          tagName: 'release/v7.5.0',
-        },
-      ];
-
-      const structured = service.structureReleaseData(releases);
-      const positionedMap = service.calculateReleaseCoordinates(structured);
-      const branchOrder = [...positionedMap.keys()].filter((branch) => branch !== MASTER_BRANCH_NAME);
-
-      expect(branchOrder).toContain('release/7.5');
+      expect(branchOrder).toEqual(['release/9.0', 'release/8.0', 'release/7.0', 'release/6.0']);
     });
 
     it('should position master nodes on Y=0 axis', () => {
