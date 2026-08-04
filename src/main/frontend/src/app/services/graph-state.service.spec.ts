@@ -21,163 +21,219 @@ describe('GraphStateService', () => {
   });
 
   describe('Initial State', () => {
-    it('should initialize with showExtendedSupport as false', () => {
+    it('should initialize with extended support level 0', () => {
+      expect(service.getExtendedSupportLevel()).toBe(0);
       expect(service.getShowExtendedSupport()).toBe(false);
     });
   });
 
-  describe('setShowExtendedSupport', () => {
-    it('should update the extended support state to true', () => {
-      service.setShowExtendedSupport(true);
+  describe('parseExtendedSupportLevel', () => {
+    it('should return 0 when the param is absent', () => {
+      expect(GraphStateService.parseExtendedSupportLevel()).toBe(0);
+      expect(GraphStateService.parseExtendedSupportLevel(null)).toBe(0);
+    });
 
+    it('should return 1 for a bare extended param', () => {
+      expect(GraphStateService.parseExtendedSupportLevel('')).toBe(1);
+    });
+
+    it('should return the requested level', () => {
+      expect(GraphStateService.parseExtendedSupportLevel('1')).toBe(1);
+      expect(GraphStateService.parseExtendedSupportLevel('2')).toBe(2);
+      expect(GraphStateService.parseExtendedSupportLevel('3')).toBe(3);
+    });
+
+    it('should cap the level at 3', () => {
+      expect(GraphStateService.parseExtendedSupportLevel('4')).toBe(3);
+      expect(GraphStateService.parseExtendedSupportLevel('99')).toBe(3);
+    });
+
+    it('should treat 0 and negative levels as disabled', () => {
+      expect(GraphStateService.parseExtendedSupportLevel('0')).toBe(0);
+      expect(GraphStateService.parseExtendedSupportLevel('-2')).toBe(0);
+    });
+
+    it('should fall back to a single window for non numeric values', () => {
+      expect(GraphStateService.parseExtendedSupportLevel('yes')).toBe(1);
+    });
+  });
+
+  describe('setExtendedSupportLevel', () => {
+    it('should update the extended support level', () => {
+      service.setExtendedSupportLevel(2);
+
+      expect(service.getExtendedSupportLevel()).toBe(2);
       expect(service.getShowExtendedSupport()).toBe(true);
     });
 
-    it('should update the extended support state to false', () => {
-      service.setShowExtendedSupport(true);
-      service.setShowExtendedSupport(false);
+    it('should reset the extended support level to 0', () => {
+      service.setExtendedSupportLevel(2);
+      service.setExtendedSupportLevel(0);
 
+      expect(service.getExtendedSupportLevel()).toBe(0);
       expect(service.getShowExtendedSupport()).toBe(false);
+    });
+
+    it('should clamp the level to the supported range', () => {
+      service.setExtendedSupportLevel(10);
+
+      expect(service.getExtendedSupportLevel()).toBe(3);
+
+      service.setExtendedSupportLevel(-1);
+
+      expect(service.getExtendedSupportLevel()).toBe(0);
     });
   });
 
   describe('getGraphQueryParams', () => {
-    it('should return empty object when showExtendedSupport is false', () => {
-      service.setShowExtendedSupport(false);
+    it('should return empty object when the extended support level is 0', () => {
+      service.setExtendedSupportLevel(0);
 
       expect(service.getGraphQueryParams()).toEqual({});
     });
 
-    it('should return extended param when showExtendedSupport is true', () => {
-      service.setShowExtendedSupport(true);
+    it('should return the extended param with the current level', () => {
+      service.setExtendedSupportLevel(1);
 
-      expect(service.getGraphQueryParams()).toEqual({ extended: '' });
+      expect(service.getGraphQueryParams()).toEqual({ extended: '1' });
+
+      service.setExtendedSupportLevel(3);
+
+      expect(service.getGraphQueryParams()).toEqual({ extended: '3' });
     });
   });
 
   describe('OAuth temporary storage', () => {
-    describe('saveExtendedForOAuth', () => {
-      it('should save extended state to temporary localStorage', () => {
-        service.saveExtendedForOAuth(true);
+    describe('saveExtendedSupportLevelForOAuth', () => {
+      it('should save the extended support level to temporary localStorage', () => {
+        service.saveExtendedSupportLevelForOAuth(2);
 
-        expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBe('true');
+        expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBe('2');
       });
 
-      it('should remove temporary storage when saving false', () => {
-        globalThis.localStorage.setItem('oauth_temp_extended', 'true');
+      it('should remove temporary storage when saving level 0', () => {
+        globalThis.localStorage.setItem('oauth_temp_extended', '2');
 
-        service.saveExtendedForOAuth(false);
+        service.saveExtendedSupportLevelForOAuth(0);
 
         expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull();
       });
 
       it('should not affect the in-memory state', () => {
-        service.setShowExtendedSupport(false);
-        service.saveExtendedForOAuth(true);
+        service.setExtendedSupportLevel(0);
+        service.saveExtendedSupportLevelForOAuth(2);
 
-        expect(service.getShowExtendedSupport()).toBe(false);
+        expect(service.getExtendedSupportLevel()).toBe(0);
       });
     });
 
-    describe('restoreAndClearOAuthExtended', () => {
-      it('should return true when temporary storage has true', () => {
-        globalThis.localStorage.setItem('oauth_temp_extended', 'true');
+    describe('restoreAndClearOAuthExtendedSupportLevel', () => {
+      it('should return the stored level', () => {
+        globalThis.localStorage.setItem('oauth_temp_extended', '3');
 
-        const result = service.restoreAndClearOAuthExtended();
+        const result = service.restoreAndClearOAuthExtendedSupportLevel();
 
-        expect(result).toBe(true);
+        expect(result).toBe(3);
       });
 
-      it('should return false when temporary storage is empty', () => {
-        const result = service.restoreAndClearOAuthExtended();
+      it('should restore a legacy true value as a single extended window', () => {
+        globalThis.localStorage.setItem('oauth_temp_extended', 'true');
 
-        expect(result).toBe(false);
+        const result = service.restoreAndClearOAuthExtendedSupportLevel();
+
+        expect(result).toBe(1);
+      });
+
+      it('should return 0 when temporary storage is empty', () => {
+        const result = service.restoreAndClearOAuthExtendedSupportLevel();
+
+        expect(result).toBe(0);
       });
 
       it('should clear temporary storage after restoring', () => {
-        globalThis.localStorage.setItem('oauth_temp_extended', 'true');
+        globalThis.localStorage.setItem('oauth_temp_extended', '2');
 
-        service.restoreAndClearOAuthExtended();
+        service.restoreAndClearOAuthExtendedSupportLevel();
 
         expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull();
       });
 
       it('should not throw when localStorage is empty', () => {
-        expect(() => service.restoreAndClearOAuthExtended()).not.toThrow();
+        expect(() => service.restoreAndClearOAuthExtendedSupportLevel()).not.toThrow();
       });
     });
   });
 
   describe('OAuth flow integration', () => {
     it('should handle complete OAuth flow correctly', () => {
-      // Step 1: User is on /graph?extended
-      service.setShowExtendedSupport(true);
+      // Step 1: User is on /graph?extended=2
+      service.setExtendedSupportLevel(2);
 
-      expect(service.getShowExtendedSupport()).toBe(true);
+      expect(service.getExtendedSupportLevel()).toBe(2);
 
       // Step 2: User clicks login - save state temporarily
-      service.saveExtendedForOAuth(true);
+      service.saveExtendedSupportLevelForOAuth(2);
 
-      expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBe('true');
+      expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBe('2');
 
       // Step 3: Simulate page reload by resetting the service state manually
-      service.setShowExtendedSupport(false);
+      service.setExtendedSupportLevel(0);
 
-      expect(service.getShowExtendedSupport()).toBe(false);
+      expect(service.getExtendedSupportLevel()).toBe(0);
 
       // Step 4: Restore from temp storage after OAuth redirect
-      const wasExtended = service.restoreAndClearOAuthExtended();
+      const restoredLevel = service.restoreAndClearOAuthExtendedSupportLevel();
 
-      expect(wasExtended).toBe(true);
+      expect(restoredLevel).toBe(2);
       expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull(); // cleaned up
 
       // Step 5: App sets state based on restored value
-      service.setShowExtendedSupport(wasExtended);
+      service.setExtendedSupportLevel(restoredLevel);
 
-      expect(service.getShowExtendedSupport()).toBe(true);
+      expect(service.getExtendedSupportLevel()).toBe(2);
     });
 
-    it('should handle OAuth flow when extended was false', () => {
+    it('should handle OAuth flow when extended was disabled', () => {
       // User is on /graph (no extended param)
-      service.setShowExtendedSupport(false);
+      service.setExtendedSupportLevel(0);
 
       // Save state temporarily before OAuth
-      service.saveExtendedForOAuth(false);
+      service.saveExtendedSupportLevelForOAuth(0);
 
       expect(globalThis.localStorage.getItem('oauth_temp_extended')).toBeNull();
 
       // After OAuth redirect
-      const wasExtended = service.restoreAndClearOAuthExtended();
+      const restoredLevel = service.restoreAndClearOAuthExtendedSupportLevel();
 
-      expect(wasExtended).toBe(false);
+      expect(restoredLevel).toBe(0);
     });
   });
 
   describe('URL as source of truth', () => {
     it('should allow multiple state changes without persistent storage', () => {
-      service.setShowExtendedSupport(true);
+      service.setExtendedSupportLevel(1);
 
-      expect(service.getShowExtendedSupport()).toBe(true);
+      expect(service.getExtendedSupportLevel()).toBe(1);
 
-      service.setShowExtendedSupport(false);
+      service.setExtendedSupportLevel(0);
 
-      expect(service.getShowExtendedSupport()).toBe(false);
+      expect(service.getExtendedSupportLevel()).toBe(0);
 
-      service.setShowExtendedSupport(true);
+      service.setExtendedSupportLevel(3);
 
-      expect(service.getShowExtendedSupport()).toBe(true);
+      expect(service.getExtendedSupportLevel()).toBe(3);
 
       // Verify no persistent storage was created (only temp OAuth storage would be in localStorage)
       expect(globalThis.localStorage.getItem('extended_support')).toBeNull();
     });
 
     it('should not create persistent storage for normal state changes', () => {
-      service.setShowExtendedSupport(true);
+      service.setExtendedSupportLevel(1);
 
       // Verify that no persistent localStorage key is created for normal operations
       expect(globalThis.localStorage.getItem('extended_support')).toBeNull();
 
-      service.setShowExtendedSupport(false);
+      service.setExtendedSupportLevel(0);
 
       // Still no persistent storage
       expect(globalThis.localStorage.getItem('extended_support')).toBeNull();

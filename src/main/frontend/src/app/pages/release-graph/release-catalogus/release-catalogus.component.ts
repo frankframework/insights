@@ -16,10 +16,33 @@ import { PillButtonComponent } from '../../../components/pill-button/pill-button
 export class ReleaseCatalogusComponent implements OnInit {
   private static readonly SESSION_KEY = 'releaseCatalogusShown';
 
-  @Input() showExtendedSupport = false;
+  private static readonly MAJOR_PHASE_MONTHS = 6;
+  private static readonly MINOR_PHASE_MONTHS = 3;
+
+  @Input() extendedSupportLevel = 0;
 
   public modalOpen = false;
   public buildInfo$: Observable<BuildInfo | null> = inject(VersionService).getBuildInformation();
+
+  public get showExtendedSupport(): boolean {
+    return this.extendedSupportLevel > 0;
+  }
+
+  public get majorExtendedMonths(): number {
+    return this.extendedSupportLevel * ReleaseCatalogusComponent.MAJOR_PHASE_MONTHS;
+  }
+
+  public get majorTotalMonths(): number {
+    return ReleaseCatalogusComponent.MAJOR_PHASE_MONTHS * 2 + this.majorExtendedMonths;
+  }
+
+  public get minorExtendedMonths(): number {
+    return this.extendedSupportLevel * ReleaseCatalogusComponent.MINOR_PHASE_MONTHS;
+  }
+
+  public get minorTotalMonths(): number {
+    return ReleaseCatalogusComponent.MINOR_PHASE_MONTHS * 2 + this.minorExtendedMonths;
+  }
 
   toggleModal(): void {
     this.modalOpen = !this.modalOpen;

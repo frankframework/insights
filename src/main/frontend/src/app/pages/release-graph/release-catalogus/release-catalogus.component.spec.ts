@@ -94,7 +94,7 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should not show extended support timeline by default', () => {
-      component.showExtendedSupport = false;
+      component.extendedSupportLevel = 0;
       component.modalOpen = true;
       fixture.detectChanges();
 
@@ -105,8 +105,8 @@ describe('ReleaseCatalogusComponent', () => {
       expect(extendedSupportElements.length).toBe(0);
     });
 
-    it('should show extended support timeline when showExtendedSupport is true', () => {
-      component.showExtendedSupport = true;
+    it('should show extended support timeline when the extended support level is set', () => {
+      component.extendedSupportLevel = 1;
       component.modalOpen = true;
       fixture.detectChanges();
 
@@ -118,7 +118,7 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should display correct policy text when extended support is disabled', () => {
-      component.showExtendedSupport = false;
+      component.extendedSupportLevel = 0;
       component.modalOpen = true;
       fixture.detectChanges();
 
@@ -128,7 +128,7 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should display extended policy text when extended support is enabled', () => {
-      component.showExtendedSupport = true;
+      component.extendedSupportLevel = 1;
       component.modalOpen = true;
       fixture.detectChanges();
 
@@ -138,8 +138,21 @@ describe('ReleaseCatalogusComponent', () => {
       expect(policyText.nativeElement.textContent).toContain('6 months active + 6 months extended + 6 months security');
     });
 
+    it('should scale the policy text with the extended support level', () => {
+      component.extendedSupportLevel = 3;
+      component.modalOpen = true;
+      fixture.detectChanges();
+
+      const policyText = fixture.debugElement.query(By.css('.policy-text'));
+
+      expect(policyText.nativeElement.textContent).toContain('30 months total support');
+      expect(policyText.nativeElement.textContent).toContain('6 months active + 18 months extended + 6 months security');
+      expect(policyText.nativeElement.textContent).toContain('15 months');
+      expect(policyText.nativeElement.textContent).toContain('3 months active + 9 months extended + 3 months security');
+    });
+
     it('should show Extended Support label when enabled', () => {
-      component.showExtendedSupport = true;
+      component.extendedSupportLevel = 1;
       component.modalOpen = true;
       fixture.detectChanges();
 

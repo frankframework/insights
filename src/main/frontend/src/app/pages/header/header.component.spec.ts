@@ -46,13 +46,13 @@ describe('HeaderComponent', () => {
     };
     mockLocationService = jasmine.createSpyObj('LocationService', ['navigateTo', 'reload']);
     mockGraphStateService = jasmine.createSpyObj('GraphStateService', [
-      'getShowExtendedSupport',
-      'saveExtendedForOAuth',
+      'getExtendedSupportLevel',
+      'saveExtendedSupportLevelForOAuth',
       'getShowNightlies',
       'saveNightlyForOAuth',
       'getGraphQueryParams',
     ]);
-    mockGraphStateService.getShowExtendedSupport.and.returnValue(false);
+    mockGraphStateService.getExtendedSupportLevel.and.returnValue(0);
     mockGraphStateService.getShowNightlies.and.returnValue(false);
     mockGraphStateService.getGraphQueryParams.and.returnValue({});
 
@@ -223,8 +223,8 @@ describe('HeaderComponent', () => {
 
       expect(mockAuthService.setLoading).toHaveBeenCalledWith(true);
       expect(mockAuthService.setPendingAuth).toHaveBeenCalledWith();
-      expect(mockGraphStateService.getShowExtendedSupport).toHaveBeenCalledWith();
-      expect(mockGraphStateService.saveExtendedForOAuth).toHaveBeenCalledWith(false);
+      expect(mockGraphStateService.getExtendedSupportLevel).toHaveBeenCalledWith();
+      expect(mockGraphStateService.saveExtendedSupportLevelForOAuth).toHaveBeenCalledWith(0);
       expect(mockGraphStateService.getShowNightlies).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveNightlyForOAuth).toHaveBeenCalledWith(false);
       expect(mockLocationService.navigateTo).toHaveBeenCalledWith('/oauth2/authorization/github');
