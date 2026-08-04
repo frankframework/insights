@@ -87,7 +87,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   protected authService = inject(AuthService);
 
-  private rangeParameter: string | undefined;
+  private rangeParameter: string | null = null;
   private defaultRanges: VersionRange[] = [];
   private lastPositionX = 0;
   private minTranslateX = 0;
@@ -146,13 +146,13 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit(): void {
     this.isLoading = true;
 
-    this.route.queryParams.subscribe((parameters) => {
+    this.route.queryParamMap.subscribe((parameters) => {
       const wasExtended = this.showExtendedSupport;
       const previousRange = this.rangeParameter;
 
-      this.showExtendedSupport = parameters['extended'] !== undefined;
-      this.showNightlies = parameters['nightly'] !== undefined;
-      this.rangeParameter = parameters['range'];
+      this.showExtendedSupport = parameters.has('extended');
+      this.showNightlies = parameters.has('nightly');
+      this.rangeParameter = parameters.get('range');
 
       this.graphStateService.setShowExtendedSupport(this.showExtendedSupport);
       this.graphStateService.setShowNightlies(this.showNightlies);

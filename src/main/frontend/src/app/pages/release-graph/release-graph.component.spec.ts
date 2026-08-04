@@ -3,8 +3,8 @@ import { ReleaseGraphComponent } from './release-graph.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLinkService, SkipNode } from './release-link.service';
-import { Router, NavigationEnd, ActivatedRoute, DefaultUrlSerializer, UrlTree } from '@angular/router';
-import { of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
+import { Router, NavigationEnd, ActivatedRoute, DefaultUrlSerializer, UrlTree, convertToParamMap } from '@angular/router';
+import { map, of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
 import { ElementRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -77,7 +77,7 @@ describe('ReleaseGraphComponent', () => {
     };
 
     const mockActivatedRoute = {
-      queryParams: queryParametersSubject.asObservable(),
+      queryParamMap: queryParametersSubject.pipe(map((parameters) => convertToParamMap(parameters))),
     };
 
     await TestBed.configureTestingModule({

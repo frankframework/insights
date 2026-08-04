@@ -59,7 +59,7 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.route.queryParams.subscribe((parameters) => {
+    this.route.queryParamMap.subscribe((parameters) => {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
@@ -79,9 +79,9 @@ export class AppComponent implements OnInit {
       }
 
       if (isGraphRoute) {
-        this.graphStateService.setShowExtendedSupport(parameters['extended'] !== undefined);
-        this.graphStateService.setShowNightlies(parameters['nightly'] !== undefined);
-        this.graphStateService.setReleaseRanges(parseVersionRanges(parameters['range']).ranges);
+        this.graphStateService.setShowExtendedSupport(parameters.has('extended'));
+        this.graphStateService.setShowNightlies(parameters.has('nightly'));
+        this.graphStateService.setReleaseRanges(parseVersionRanges(parameters.get('range')).ranges);
       }
     });
   }
