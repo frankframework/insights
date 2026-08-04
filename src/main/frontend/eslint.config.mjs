@@ -11,9 +11,6 @@ import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import jasminePlugin from 'eslint-plugin-jasmine';
 
-// The @angular-eslint/* plugin packages no longer ship a `configs` export; the rule presets
-// live in the umbrella `angular-eslint` package as flat-config arrays. Flatten one to rules
-// so it can be spread into the hand-rolled blocks below.
 const rulesOf = (flatConfig) => Object.assign({}, ...flatConfig.map((config) => config.rules ?? {}));
 
 export default [
@@ -53,8 +50,7 @@ export default [
 
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'app', style: 'camelCase' }],
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
-      // Added to tsRecommended in angular-eslint v22. Components here deliberately declare
-      // ChangeDetectionStrategy.Eager; adopting OnPush app-wide is a separate migration.
+
       '@angular-eslint/prefer-on-push-component-change-detection': 'off',
 
       'prefer-template': 'error',
