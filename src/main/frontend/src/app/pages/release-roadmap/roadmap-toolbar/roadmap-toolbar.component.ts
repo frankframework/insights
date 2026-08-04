@@ -1,12 +1,13 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ViewMode } from '../release-roadmap.component';
+import { ViewMode } from '../roadmap.types';
 
 @Component({
   selector: 'app-roadmap-toolbar',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './roadmap-toolbar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./roadmap-toolbar.component.scss'],
 })
 export class RoadmapToolbarComponent {

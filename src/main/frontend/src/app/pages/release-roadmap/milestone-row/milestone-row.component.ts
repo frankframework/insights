@@ -1,10 +1,11 @@
-import { Component, inject, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, inject, Input, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
 import { GitHubStates } from '../../../app.service';
-import { ReleaseRoadmapComponent, ViewMode } from '../release-roadmap.component';
+import { ReleaseRoadmapComponent } from '../release-roadmap.component';
+import { ViewMode } from '../roadmap.types';
 
 interface PositionedIssue {
   issue?: Issue;
@@ -31,6 +32,7 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
   standalone: true,
   imports: [CommonModule, IssueBarComponent],
   templateUrl: './milestone-row.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./milestone-row.component.scss'],
 })
 export class MilestoneRowComponent implements OnChanges {

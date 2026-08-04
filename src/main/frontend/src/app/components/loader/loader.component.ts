@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-loader',
   imports: [],
   templateUrl: './loader.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './loader.component.scss',
 })
 export class LoaderComponent {}

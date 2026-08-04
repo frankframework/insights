@@ -1,6 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi, HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  provideHttpClient,
+  withInterceptorsFromDi,
+  HttpInterceptor,
+  HttpRequest,
+  HttpHandler,
+  HttpEvent,
+  withXhr,
+} from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService, User, ErrorResponse } from './auth.service';
 import { AppService } from '../app.service';
@@ -36,7 +45,7 @@ describe('AuthService', () => {
         AuthService,
         AppService,
         { provide: LocationService, useValue: mockLocationService },
-        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClient(withXhr(), withInterceptorsFromDi()),
         provideHttpClientTesting(),
         {
           provide: HTTP_INTERCEPTORS,

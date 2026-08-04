@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseSkippedVersions } from './release-skipped-versions';
 import { SkipNode } from '../release-link.service';
@@ -12,12 +12,8 @@ describe('ReleaseSkippedVersions', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseSkippedVersions],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
-    })
-    .compileComponents();
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseSkippedVersions);
     component = fixture.componentInstance;
@@ -45,7 +41,7 @@ describe('ReleaseSkippedVersions', () => {
           name: 'v7.0.0',
           branch: { name: 'master' },
           tagName: '',
-          publishedAt: new Date,
+          publishedAt: new Date(),
           lastScanned: new Date(),
         },
         {
@@ -62,7 +58,7 @@ describe('ReleaseSkippedVersions', () => {
           branch: { name: 'master' },
           tagName: '',
           publishedAt: new Date(),
-          lastScanned: new Date,
+          lastScanned: new Date(),
         },
       ];
 
@@ -148,7 +144,8 @@ describe('ReleaseSkippedVersions', () => {
           tagName: '',
           publishedAt: new Date(),
           lastScanned: new Date(),
-        }, {
+        },
+        {
           id: 'r2',
           name: 'v7.0.0',
           branch: { name: 'master' },
@@ -164,7 +161,7 @@ describe('ReleaseSkippedVersions', () => {
           publishedAt: new Date(),
           lastScanned: new Date(),
         },
-  ];
+      ];
 
       component.skipNode = skipNode;
       component.releases = releases;
@@ -246,7 +243,8 @@ describe('ReleaseSkippedVersions', () => {
           tagName: '',
           publishedAt: new Date(),
           lastScanned: new Date(),
-        },      ];
+        },
+      ];
 
       component.skipNode = skipNode;
       component.releases = releases;

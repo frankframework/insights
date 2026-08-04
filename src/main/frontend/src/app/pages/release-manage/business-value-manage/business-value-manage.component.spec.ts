@@ -1,8 +1,8 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { BusinessValueManageComponent } from './business-value-manage.component';
@@ -10,21 +10,36 @@ import { BusinessValueService, BusinessValue } from '../../../services/business-
 import { IssueService, Issue } from '../../../services/issue.service';
 import { ReleaseService, Release } from '../../../services/release.service';
 
-@Component({ selector: 'app-business-value-add', standalone: true, template: '' })
+@Component({
+  selector: 'app-business-value-add',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
+})
 class MockBusinessValueAddComponent {
   @Input() releaseId!: string;
   @Output() closed = new EventEmitter<void>();
   @Output() businessValueCreated = new EventEmitter<BusinessValue>();
 }
 
-@Component({ selector: 'app-business-value-edit', standalone: true, template: '' })
+@Component({
+  selector: 'app-business-value-edit',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
+})
 class MockBusinessValueEditComponent {
   @Input() businessValue: any;
   @Output() closed = new EventEmitter<void>();
   @Output() businessValueUpdated = new EventEmitter<BusinessValue>();
 }
 
-@Component({ selector: 'app-business-value-delete', standalone: true, template: '' })
+@Component({
+  selector: 'app-business-value-delete',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
+})
 class MockBusinessValueDeleteComponent {
   @Input() businessValue: any;
   @Output() closed = new EventEmitter<void>();
@@ -38,7 +53,13 @@ const mockIssues: Issue[] = [
 ];
 
 const mockBusinessValues: BusinessValue[] = [
-  { id: 'bv-1', title: 'Security Improvements', description: 'desc', releaseId: 'release-123', issues: [mockIssues[0]] },
+  {
+    id: 'bv-1',
+    title: 'Security Improvements',
+    description: 'desc',
+    releaseId: 'release-123',
+    issues: [mockIssues[0]],
+  },
   { id: 'bv-2', title: 'UX Enhancements', description: 'desc', releaseId: 'release-123', issues: [] },
 ];
 
@@ -95,10 +116,10 @@ describe('BusinessValueManageComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: { paramMap: { get: (key: string) => key === 'id' ? 'release-123' : null } },
+            snapshot: { paramMap: { get: (key: string) => (key === 'id' ? 'release-123' : null) } },
           },
         },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     })
@@ -245,7 +266,13 @@ describe('BusinessValueManageComponent', () => {
     });
 
     it('should handle create business value', () => {
-      const newBV: BusinessValue = { id: 'new-bv', title: 'New', description: 'New Desc', releaseId: 'release-123', issues: [] };
+      const newBV: BusinessValue = {
+        id: 'new-bv',
+        title: 'New',
+        description: 'New Desc',
+        releaseId: 'release-123',
+        issues: [],
+      };
       mockBusinessValueService.getBusinessValueById.and.returnValue(of(newBV));
 
       component.onBusinessValueCreated(newBV);

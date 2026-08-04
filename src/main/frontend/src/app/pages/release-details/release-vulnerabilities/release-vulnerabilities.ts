@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, Input, OnChanges, ChangeDetectionStrategy } from '@angular/core';
 import { Vulnerability, VulnerabilitySeverities, VulnerabilitySeverity } from '../../../services/vulnerability.service';
 import { CommonModule } from '@angular/common';
 import { VulnerabilityDetailsOffCanvas } from '../vulnerability-details-off-canvas/vulnerability-details-off-canvas';
@@ -8,6 +8,7 @@ import { VulnerabilityDetailsOffCanvas } from '../vulnerability-details-off-canv
   standalone: true,
   imports: [CommonModule, VulnerabilityDetailsOffCanvas],
   templateUrl: './release-vulnerabilities.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-vulnerabilities.scss',
 })
 export class ReleaseVulnerabilities implements OnChanges {

@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Input, Output, inject, signal, computed } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  inject,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -11,6 +20,7 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
   standalone: true,
   imports: [CommonModule, FormsModule, ModalComponent, MarkdownPipe],
   templateUrl: './business-value-edit.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-edit.component.scss',
 })
 export class BusinessValueEditComponent {

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { IssueBarComponent } from './issue-bar.component';
 import { Issue, IssuePriority, IssueState, IssueType } from '../../../services/issue.service';
@@ -35,7 +35,7 @@ describe('IssueBarComponent', () => {
       imports: [IssueBarComponent],
       providers: [
         { provide: TooltipService, useValue: mockTooltipService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

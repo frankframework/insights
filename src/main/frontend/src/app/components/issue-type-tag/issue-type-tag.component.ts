@@ -1,4 +1,4 @@
-import { Component, inject, Input } from '@angular/core';
+import { Component, inject, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ColorService } from '../../services/color.service';
 
@@ -12,6 +12,7 @@ interface IssueType {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './issue-type-tag.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./issue-type-tag.component.scss'],
 })
 export class IssueTypeTagComponent {

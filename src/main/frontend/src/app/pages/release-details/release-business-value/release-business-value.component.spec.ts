@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseBusinessValueComponent } from './release-business-value.component';
 import { BusinessValue } from '../../../services/business-value.service';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const mockBusinessValues: BusinessValue[] = [
@@ -16,7 +16,7 @@ describe('ReleaseBusinessValueComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseBusinessValueComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseBusinessValueComponent);

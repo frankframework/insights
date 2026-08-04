@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, WritableSignal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, WritableSignal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { MarkdownPipe } from '../../../pipes/markdown.pipe';
@@ -11,6 +11,7 @@ import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree
   standalone: true,
   imports: [CommonModule, ModalComponent, IssueTreeBranchComponent, MarkdownPipe],
   templateUrl: './release-business-value-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-business-value-modal.component.scss',
 })
 export class ReleaseBusinessValueModalComponent {

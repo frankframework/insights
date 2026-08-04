@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { RoadmapToolbarComponent } from './roadmap-toolbar.component';
-import { ViewMode } from '../release-roadmap.component';
+import { ViewMode } from '../roadmap.types';
 
 describe('RoadmapToolbarComponent', () => {
   let component: RoadmapToolbarComponent;
@@ -12,10 +12,7 @@ describe('RoadmapToolbarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RoadmapToolbarComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RoadmapToolbarComponent);

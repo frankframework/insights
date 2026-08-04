@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnInit } from '@angular/core';
+import { Component, inject, Input, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AsyncPipe, DatePipe, LowerCasePipe } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { BuildInfo, VersionService } from '../../../services/version.service';
@@ -11,6 +11,7 @@ import { PillButtonComponent } from '../../../components/pill-button/pill-button
   standalone: true,
   templateUrl: './release-catalogus.component.html',
   styleUrl: './release-catalogus.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [ModalComponent, AsyncPipe, DatePipe, LowerCasePipe, GestureComponent, PillButtonComponent],
 })
 export class ReleaseCatalogusComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, inject, HostListener } from '@angular/core';
+import { Component, inject, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { VersionService, BuildInfo } from '../../services/version.service';
 import { NgOptimizedImage } from '@angular/common';
@@ -7,6 +7,7 @@ import { NgOptimizedImage } from '@angular/common';
   selector: 'app-feedback',
   imports: [NgOptimizedImage],
   templateUrl: './feedback.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './feedback.component.scss',
 })
 export class FeedbackComponent {
