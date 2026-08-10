@@ -1,0 +1,29 @@
+@if (pendingCount() > 0) {
+  <button
+    type="button"
+    class="include-button apply-button"
+    title="Apply pending includes and reload the graph"
+    (click)="applyPending.emit()"
+  >
+    Apply {{ pendingLabel() }}
+  </button>
+}
+
+<button
+  type="button"
+  class="include-button"
+  [disabled]="alreadyIncluded()"
+  [attr.title]="
+    alreadyIncluded()
+      ? 'These release lines are already shown in the graph'
+      : 'Widens ?range= with ' + includeLabel() + ' and draws these release lines'
+  "
+  (click)="includeAll.emit()"
+>
+  {{ includeButtonLabel() }}
+</button>
+
+<span class="include-hint">
+  The graph shows what <code>?range=</code> asks for, with master as reference. Ranges are written the Maven way, for
+  example <code>[9.0],[10.0,)</code> or <code>[7.0,9.3.2]</code>.
+</span>

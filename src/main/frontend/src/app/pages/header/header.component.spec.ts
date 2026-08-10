@@ -7,6 +7,7 @@ import { signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
+import { VersionRange } from '../../pipes/release-range';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
@@ -15,9 +16,11 @@ describe('HeaderComponent', () => {
   let mockGraphStateService: {
     extendedSupportLevel: WritableSignal<number>;
     showNightlies: WritableSignal<boolean>;
+    releaseRanges: WritableSignal<VersionRange[]>;
     graphQueryParams: WritableSignal<Record<string, string>>;
     saveExtendedSupportLevelForOAuth: jasmine.Spy;
     saveNightlyForOAuth: jasmine.Spy;
+    saveRangeForOAuth: jasmine.Spy;
   };
   let mockAuthService: {
     currentUser: WritableSignal<User | null>;
@@ -54,9 +57,11 @@ describe('HeaderComponent', () => {
     mockGraphStateService = {
       extendedSupportLevel: signal(0),
       showNightlies: signal(false),
-      graphQueryParams: signal<Record<string, string>>({}),
       saveExtendedSupportLevelForOAuth: jasmine.createSpy('saveExtendedSupportLevelForOAuth'),
       saveNightlyForOAuth: jasmine.createSpy('saveNightlyForOAuth'),
+      releaseRanges: signal<VersionRange[]>([]),
+      saveRangeForOAuth: jasmine.createSpy('saveRangeForOAuth'),
+      graphQueryParams: signal<Record<string, string>>({}),
     };
 
     await TestBed.configureTestingModule({

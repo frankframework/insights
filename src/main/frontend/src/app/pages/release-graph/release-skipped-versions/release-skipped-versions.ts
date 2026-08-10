@@ -1,8 +1,23 @@
-import { Component, Signal, computed, inject, input, output } from '@angular/core';
+import { Component, Signal, computed, inject, input, linkedSignal, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { Release } from '../../../services/release.service';
 import { SkipNode } from '../release-link.service';
 import { ReleaseNode, ReleaseNodeService } from '../release-node.service';
+import {
+  areRangesCovered,
+  createExactVersionRanges,
+  createReleaseLineRanges,
+  serializeVersionRanges,
+  VersionRange,
+} from '../../../pipes/release-range';
+import { IncludeVersionButtonComponent } from './include-version-button/include-version-button.component';
+import { IncludeActionsComponent } from './include-actions/include-actions.component';
+
+interface PendingVersionsSource {
+  skipNode: SkipNode | null;
+  releases: Release[];
+  releaseRanges: VersionRange[];
+}
 
 interface ReleaseTreeNode {
   release: Release | null;
@@ -14,15 +29,18 @@ interface ReleaseTreeNode {
 @Component({
   selector: 'app-skipped-versions-modal',
   standalone: true,
-  imports: [ModalComponent],
+  imports: [ModalComponent, IncludeVersionButtonComponent, IncludeActionsComponent],
   templateUrl: './release-skipped-versions.html',
   styleUrls: ['./release-skipped-versions.scss'],
 })
 export class ReleaseSkippedVersions {
   public readonly skipNode = input<SkipNode | null>(null);
   public readonly releases = input<Release[]>([]);
+  public readonly releaseRanges = input<VersionRange[]>([]);
+
   public readonly closed = output<void>();
   public readonly versionClicked = output<string>();
+  public readonly rangeRequested = output<VersionRange[]>();
 
   public readonly releaseTree: Signal<ReleaseTreeNode[]> = computed(() => {
     const skipNode = this.skipNode();
@@ -32,6 +50,39 @@ export class ReleaseSkippedVersions {
     const releaseMap = this.buildReleaseMap(ReleaseSkippedVersions.getSkippedReleases(skipNode, releases));
     return this.sortPatchesInTree(this.sortReleaseTree(releaseMap));
   });
+
+  public readonly includableRanges: Signal<VersionRange[]> = computed(() =>
+    createReleaseLineRanges(this.releaseTree().map((node) => node.version)),
+  );
+
+  public readonly includeLabel: Signal<string> = computed(() => serializeVersionRanges(this.includableRanges()));
+
+  public readonly isAlreadyIncluded: Signal<boolean> = computed(() =>
+    areRangesCovered(this.releaseRanges(), this.includableRanges()),
+  );
+
+  /**
+   * Pending versions survive a change of the shown range, minus the ones that range now covers, but are
+   * dropped entirely as soon as another skip node is opened.
+   */
+  public readonly pendingVersions = linkedSignal<PendingVersionsSource, string[]>({
+    source: () => ({ skipNode: this.skipNode(), releases: this.releases(), releaseRanges: this.releaseRanges() }),
+    computation: (source, previous) => {
+      if (!previous || previous.source.skipNode !== source.skipNode || previous.source.releases !== source.releases) {
+        return [];
+      }
+
+      return previous.value.filter(
+        (version) => !areRangesCovered(source.releaseRanges, createExactVersionRanges([version])),
+      );
+    },
+  });
+
+  public readonly pendingRanges: Signal<VersionRange[]> = computed(() =>
+    createExactVersionRanges(this.pendingVersions()),
+  );
+
+  public readonly hasPending: Signal<boolean> = computed(() => this.pendingVersions().length > 0);
 
   private readonly nodeService = inject(ReleaseNodeService);
 
@@ -90,6 +141,39 @@ export class ReleaseSkippedVersions {
 
   public onVersionClick(version: string): void {
     this.versionClicked.emit(version);
+  }
+
+  public isVersionIncluded(version: string): boolean {
+    return areRangesCovered(this.releaseRanges(), createExactVersionRanges([version]));
+  }
+
+  public isVersionPending(version: string): boolean {
+    return this.pendingVersions().includes(version);
+  }
+
+  public includeReleases(): void {
+    const ranges = this.includableRanges();
+    if (ranges.length === 0) return;
+
+    this.rangeRequested.emit(ranges);
+  }
+
+  public includeVersion(version: string): void {
+    const isRelease = createExactVersionRanges([version]).length > 0;
+    if (!isRelease || this.pendingVersions().includes(version)) return;
+
+    this.pendingVersions.update((pending) => [...pending, version]);
+  }
+
+  public removeFromPending(version: string): void {
+    this.pendingVersions.update((pending) => pending.filter((entry) => entry !== version));
+  }
+
+  public applyPendingIncludes(): void {
+    const ranges = this.pendingRanges();
+    if (ranges.length === 0) return;
+
+    this.rangeRequested.emit(ranges);
   }
 
   public closeModal(): void {

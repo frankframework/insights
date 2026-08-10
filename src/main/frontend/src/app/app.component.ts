@@ -17,6 +17,7 @@ import { HeaderComponent } from './pages/header/header.component';
 import { TooltipComponent } from './components/tooltip/tooltip.component';
 import { AuthService } from './services/auth.service';
 import { GraphStateService } from './services/graph-state.service';
+import { parseVersionRanges, serializeVersionRanges } from './pipes/release-range';
 
 const isNavigationSettled = (event: RouterEvent): boolean =>
   event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError;
@@ -50,6 +51,7 @@ export class AppComponent implements OnInit {
     const returnUrl = this.authService.consumeReturnUrl();
     const restoredExtendedSupportLevel = this.graphStateService.restoreAndClearOAuthExtendedSupportLevel();
     const restoredNightly = this.graphStateService.restoreAndClearOAuthNightly();
+    const restoredPreviousRanges = this.graphStateService.restoreAndClearOAuthRange();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -64,26 +66,31 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.route.queryParams.subscribe((parameters) => {
+    this.route.queryParamMap.subscribe((parameters) => {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if ((restoredExtendedSupportLevel > 0 || restoredNightly) && isGraphRoute) {
+      if ((restoredExtendedSupportLevel > 0 || restoredNightly || restoredPreviousRanges.length > 0) && isGraphRoute) {
         const queryParameters: Record<string, string> = {};
         if (restoredExtendedSupportLevel > 0) queryParameters['extended'] = String(restoredExtendedSupportLevel);
         if (restoredNightly) queryParameters['nightly'] = '';
 
+        const range = serializeVersionRanges(restoredPreviousRanges);
+        if (range) queryParameters['range'] = range;
+
         this.graphStateService.setExtendedSupportLevel(restoredExtendedSupportLevel);
         this.graphStateService.setShowNightlies(restoredNightly);
+        this.graphStateService.setReleaseRanges(restoredPreviousRanges);
         this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
         return;
       }
 
       if (isGraphRoute) {
         this.graphStateService.setExtendedSupportLevel(
-          GraphStateService.parseExtendedSupportLevel(parameters['extended']),
+          GraphStateService.parseExtendedSupportLevel(parameters.get('extended')),
         );
-        this.graphStateService.setShowNightlies(parameters['nightly'] !== undefined);
+        this.graphStateService.setShowNightlies(parameters.has('nightly'));
+        this.graphStateService.setReleaseRanges(parseVersionRanges(parameters.get('range')).ranges);
       }
     });
   }

@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
 
-export type PillButtonIcon = 'moon' | 'help' | 'github';
+export type PillButtonIcon = 'moon' | 'help' | 'github' | 'list';
 
 @Component({
   selector: 'app-pill-button',

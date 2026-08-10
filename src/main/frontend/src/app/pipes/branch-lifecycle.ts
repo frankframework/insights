@@ -15,6 +15,7 @@ export function isBranchMaintained(branchName: string, earliestPublishedAt: stri
   const basePublishedDate = new Date(earliestPublishedAt);
   const securitySupportEnd = new Date(basePublishedDate);
   securitySupportEnd.setMonth(basePublishedDate.getMonth() + securitySupportMonths);
+  securitySupportEnd.setHours(23, 59, 59, 999);
 
   return new Date() <= securitySupportEnd;
 }

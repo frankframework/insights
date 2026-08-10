@@ -39,6 +39,10 @@
       mask-image: url('./icons/github.svg');
     }
 
+    &.pill-icon--list {
+      mask-image: url('./icons/list.svg');
+    }
+
     &.pill-icon--spinner {
       mask-image: url('./icons/spinner.svg');
       animation: spin 1s linear infinite;

@@ -26,7 +26,7 @@
     "@angular/router": "^22.1.0",
     "chart.js": "^4.5.1",
     "dompurify": "^3.4.12",
-    "marked": "^18.0.7",
+    "marked": "^18.0.9",
     "ng2-charts": "^10.0.0",
     "ngx-markdown": "^22.0.0",
     "rxjs": "~7.8.2",
@@ -47,8 +47,8 @@
     "@eslint/js": "^10.0.1",
     "@types/dompurify": "^3.2.0",
     "@types/jasmine": "~6.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.65.0",
-    "@typescript-eslint/parser": "^8.65.0",
+    "@typescript-eslint/eslint-plugin": "^8.66.0",
+    "@typescript-eslint/parser": "^8.66.0",
     "angular-eslint": "^22.1.0",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
@@ -65,7 +65,7 @@
     "karma-jasmine-html-reporter": "~2.2.0",
     "prettier": "^3.9.6",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.65.0"
+    "typescript-eslint": "^8.66.0"
   },
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
 }

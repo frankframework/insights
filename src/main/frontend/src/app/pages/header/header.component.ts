@@ -37,6 +37,7 @@ export class HeaderComponent {
     this.rememberReturnUrl();
     this.graphStateService.saveExtendedSupportLevelForOAuth(this.graphStateService.extendedSupportLevel());
     this.graphStateService.saveNightlyForOAuth(this.graphStateService.showNightlies());
+    this.graphStateService.saveRangeForOAuth(this.graphStateService.releaseRanges());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }
 

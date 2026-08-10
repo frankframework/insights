@@ -26,7 +26,7 @@ describe('Release Details Page Journey', () => {
 
     cy.get('.back-button').click();
 
-    cy.url().should('eq', Cypress.config().baseUrl + '/graph');
+    cy.url().should('include', Cypress.config().baseUrl + '/graph');
     cy.get('app-release-graph').should('be.visible');
   });
 
@@ -37,7 +37,7 @@ describe('Release Details Page Journey', () => {
     cy.visit('/graph');
 
     cy.get('app-release-details').should('not.exist');
-    cy.url().should('eq', Cypress.config().baseUrl + '/graph');
+    cy.url().should('include', Cypress.config().baseUrl + '/graph');
     cy.get('app-release-graph').should('be.visible');
   });
 
