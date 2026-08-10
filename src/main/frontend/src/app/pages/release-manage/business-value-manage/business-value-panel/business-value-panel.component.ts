@@ -1,4 +1,4 @@
-import { Component, input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, input, Output, EventEmitter, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
@@ -8,6 +8,7 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
   standalone: true,
   imports: [CommonModule, MarkdownPipe],
   templateUrl: './business-value-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-panel.component.scss',
 })
 export class BusinessValuePanelComponent {

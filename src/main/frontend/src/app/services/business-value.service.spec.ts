@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { BusinessValueService, BusinessValue } from './business-value.service';
 import { AppService } from '../app.service';
 
@@ -18,12 +18,7 @@ describe('BusinessValueService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        BusinessValueService,
-        AppService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [BusinessValueService, AppService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(BusinessValueService);

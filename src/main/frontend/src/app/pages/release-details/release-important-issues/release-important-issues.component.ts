@@ -1,4 +1,4 @@
-import { Component, Input, computed, signal, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, computed, signal, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { Issue } from '../../../services/issue.service';
 import { IssueTreeBranchComponent } from './issue-tree-branch/issue-tree-branch.component';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,7 @@ interface IssueTypeOption {
   selector: 'app-release-important-issues',
   imports: [IssueTreeBranchComponent, FormsModule],
   templateUrl: './release-important-issues.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-important-issues.component.scss',
 })
 export class ReleaseImportantIssuesComponent implements OnChanges {

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseHighlightsComponent } from './release-highlights.component';
 import { Issue } from '../../../services/issue.service';
@@ -42,11 +42,7 @@ describe('ReleaseHighlightsComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ReleaseHighlightsComponent],
-      providers: [
-        ColorService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [ColorService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ReleaseHighlightsComponent);

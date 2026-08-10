@@ -1,15 +1,16 @@
-import { Component, Input, OnInit, ElementRef, ViewChild, inject } from '@angular/core';
+import { Component, Input, OnInit, ElementRef, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
 import { TooltipDetail, TooltipService } from '../../../components/tooltip/tooltip.service';
-import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../release-roadmap.component';
+import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../roadmap.types';
 
 @Component({
   selector: 'app-issue-bar',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './issue-bar.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./issue-bar.component.scss'],
 })
 export class IssueBarComponent implements OnInit {

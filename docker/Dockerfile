@@ -1,4 +1,4 @@
-FROM aquasec/trivy:0.72.0 AS trivy-downloader
+FROM aquasec/trivy:0.73.0 AS trivy-downloader
 
 FROM eclipse-temurin:25.0.3_9-jre-jammy AS runner
 ARG GID=2000
@@ -8,7 +8,9 @@ RUN addgroup --gid ${GID} spring && \
     adduser --uid ${UID} --gid ${GID} --shell /usr/sbin/nologin spring
 
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates maven && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=trivy-downloader /usr/local/bin/trivy /usr/local/bin/trivy
 
 USER spring

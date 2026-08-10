@@ -3,12 +3,15 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 import angularPlugin from '@angular-eslint/eslint-plugin';
 import angularTemplate from '@angular-eslint/eslint-plugin-template';
 import angularTemplateParser from '@angular-eslint/template-parser';
+import angular from 'angular-eslint';
 import prettierPlugin from 'eslint-plugin-prettier';
 import unicorn from 'eslint-plugin-unicorn';
 import sonarjs from 'eslint-plugin-sonarjs';
 import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import jasminePlugin from 'eslint-plugin-jasmine';
+
+const rulesOf = (flatConfig) => Object.assign({}, ...flatConfig.map((config) => config.rules ?? {}));
 
 export default [
   {
@@ -38,7 +41,7 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended?.rules,
       ...tsPlugin.configs.stylistic?.rules,
-      ...angularPlugin.configs.recommended?.rules,
+      ...rulesOf(angular.configs.tsRecommended),
       ...eslintConfigPrettier?.rules,
 
       '@typescript-eslint/explicit-function-return-type': 'error',
@@ -47,6 +50,8 @@ export default [
 
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'app', style: 'camelCase' }],
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
+
+      '@angular-eslint/prefer-on-push-component-change-detection': 'off',
 
       'prefer-template': 'error',
       'no-undef': 'off',
@@ -103,8 +108,8 @@ export default [
       prettier: prettierPlugin,
     },
     rules: {
-      ...angularTemplate.configs.recommended?.rules,
-      ...angularTemplate.configs.accessibility?.rules,
+      ...rulesOf(angular.configs.templateRecommended),
+      ...rulesOf(angular.configs.templateAccessibility),
       ...eslintConfigPrettier?.rules,
 
       '@angular-eslint/template/prefer-self-closing-tags': 'error',

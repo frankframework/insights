@@ -1,4 +1,13 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild, inject, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  inject,
+  AfterViewInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { Release, ReleaseService } from '../../services/release.service';
 import { catchError, map, of } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
@@ -38,6 +47,7 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -49,11 +59,12 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly QUARTER_LINE_GAP_PX: number = 12;
   private static readonly SVG_LINE_OVERFLOW_PX: number = 100;
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
+  private static readonly GRAPH_END_PADDING_PROPORTION: number = 0.05;
+
   private static readonly MAX_GRAPH_SCALE: number = 2;
-  private static readonly GRAPH_HEIGHT_FILL: number = 0.85;
+  private static readonly GRAPH_HEIGHT_FILL: number = 0.8;
   private static readonly SCROLL_MARGIN_LEFT: number = 0.2;
-  private static readonly SCROLL_MARGIN_RIGHT: number = 0.45;
-  private static readonly INITIAL_SCROLL_OFFSET: number = 0.1;
+  private static readonly LATEST_RELEASE_OFFSET: number = 0.35;
 
   @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
 
@@ -72,7 +83,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   public svgChevronY = -90;
   public showNotFoundError = false;
   public showNightlies = false;
-  public showExtendedSupport = false;
+  public extendedSupportLevel = 0;
   public releaseRanges: VersionRange[] = [];
   public rangeMessage: string | null = null;
   public defaultRange = '';
@@ -147,19 +158,19 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isLoading = true;
 
     this.route.queryParamMap.subscribe((parameters) => {
-      const wasExtended = this.showExtendedSupport;
+      const previousExtendedSupportLevel = this.extendedSupportLevel;
       const previousRange = this.rangeParameter;
 
-      this.showExtendedSupport = parameters.has('extended');
+      this.extendedSupportLevel = GraphStateService.parseExtendedSupportLevel(parameters.get('extended'));
       this.showNightlies = parameters.has('nightly');
       this.rangeParameter = parameters.get('range');
 
-      this.graphStateService.setShowExtendedSupport(this.showExtendedSupport);
+      this.graphStateService.setExtendedSupportLevel(this.extendedSupportLevel);
       this.graphStateService.setShowNightlies(this.showNightlies);
 
       const rangeChanged = previousRange !== this.rangeParameter;
 
-      if ((wasExtended !== this.showExtendedSupport || rangeChanged) && this.releases.length > 0) {
+      if ((previousExtendedSupportLevel !== this.extendedSupportLevel || rangeChanged) && this.releases.length > 0) {
         this.applyRange();
       }
     });
@@ -754,10 +765,12 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     }
 
-    const xs = allCoordinates.map((coord) => coord.x);
+    const releaseXs = allCoordinates.map((coord) => coord.x);
+    const contentXs = [...releaseXs, ...this.collectLifecyclePhaseXPositions()];
     const ys = allCoordinates.map((coord) => coord.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
+    const latestReleaseX = Math.max(...releaseXs);
+    const minX = Math.min(...contentXs);
+    const maxX = Math.max(...contentXs, this.lastQuarterMarkerX());
     const minY = Math.min(...ys);
     const maxY = Math.max(...ys);
     const graphH = maxY - minY;
@@ -773,8 +786,10 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     this.translateY = -minY * this.scale + topPadding + navPadding;
 
     this.maxTranslateX = -minX * this.scale + W * ReleaseGraphComponent.SCROLL_MARGIN_LEFT;
-    this.minTranslateX = W - maxX * this.scale - W * ReleaseGraphComponent.SCROLL_MARGIN_RIGHT;
-    this.translateX = this.minTranslateX + W * ReleaseGraphComponent.INITIAL_SCROLL_OFFSET;
+    this.minTranslateX = W - maxX * this.scale - W * ReleaseGraphComponent.GRAPH_END_PADDING_PROPORTION;
+
+    const latestReleaseTranslateX = W - latestReleaseX * this.scale - W * ReleaseGraphComponent.LATEST_RELEASE_OFFSET;
+    this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, latestReleaseTranslateX));
 
     const headerBottom = ReleaseGraphComponent.HEADER_HEIGHT_PX;
     const labelFontSize = ReleaseGraphComponent.QUARTER_LABEL_FONT_SIZE;
@@ -800,6 +815,16 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       ),
     );
     return Math.round(ReleaseGraphComponent.MAX_GRAPH_NAVIGATION_PADDING * (1 - t));
+  }
+
+  private collectLifecyclePhaseXPositions(): number[] {
+    return this.branchLifecycles.flatMap((lifecycle) =>
+      lifecycle.phases.flatMap((phase) => [phase.startX, phase.endX]),
+    );
+  }
+
+  private lastQuarterMarkerX(): number {
+    return this.quarterMarkers.at(-1)?.x ?? Number.NEGATIVE_INFINITY;
   }
 
   private calculateBranchLifecycles(releaseNodeMap: Map<string, ReleaseNode[]>): BranchLifecycle[] {
@@ -851,14 +876,9 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private calculateSupportEndDate(branchStartDate: Date, totalSupportQuarters: number, isMajor: boolean): Date {
-    const supportEnd = new Date(branchStartDate);
-    if (this.showExtendedSupport) {
-      const extendedQuarters = isMajor ? 2 : 1;
-      supportEnd.setMonth(branchStartDate.getMonth() + (totalSupportQuarters + extendedQuarters) * 3);
-    } else {
-      supportEnd.setMonth(branchStartDate.getMonth() + totalSupportQuarters * 3);
-    }
-    return supportEnd;
+    const quartersPerExtendedWindow = isMajor ? 2 : 1;
+    const extendedQuarters = quartersPerExtendedWindow * this.extendedSupportLevel;
+    return this.addMonths(branchStartDate, (totalSupportQuarters + extendedQuarters) * 3);
   }
 
   private calculatePhaseBoundaries(
@@ -867,27 +887,31 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     supportEndX: number,
     phaseMonths: number,
     scale: { startDate: Date; pixelsPerDay: number },
-  ): { greenPhaseEndX: number; orangePhaseStartX: number } {
-    if (this.showExtendedSupport) {
-      const greenPhaseEndDate = new Date(branchStartDate);
-      greenPhaseEndDate.setMonth(branchStartDate.getMonth() + phaseMonths);
-      const greenPhaseEndX = this.calculateXPositionFromDate(greenPhaseEndDate, scale);
-
-      const bluePhaseEndDate = new Date(branchStartDate);
-      bluePhaseEndDate.setMonth(branchStartDate.getMonth() + phaseMonths * 2);
-      const orangePhaseStartX = this.calculateXPositionFromDate(bluePhaseEndDate, scale);
-
-      return { greenPhaseEndX, orangePhaseStartX };
-    } else {
+  ): { greenPhaseEndX: number; extendedPhaseEndsX: number[] } {
+    if (this.extendedSupportLevel === 0) {
       const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
-      return { greenPhaseEndX: midpointX, orangePhaseStartX: midpointX };
+      return { greenPhaseEndX: midpointX, extendedPhaseEndsX: [] };
     }
+
+    const greenPhaseEndX = this.calculateXPositionFromDate(this.addMonths(branchStartDate, phaseMonths), scale);
+
+    const extendedPhaseEndsX = Array.from({ length: this.extendedSupportLevel }, (_, index) =>
+      this.calculateXPositionFromDate(this.addMonths(branchStartDate, phaseMonths * (index + 2)), scale),
+    );
+
+    return { greenPhaseEndX, extendedPhaseEndsX };
+  }
+
+  private addMonths(date: Date, months: number): Date {
+    const shiftedDate = new Date(date);
+    shiftedDate.setMonth(date.getMonth() + months);
+    return shiftedDate;
   }
 
   private createLifecyclePhases(
     offsetStartX: number,
     greenPhaseEndX: number,
-    orangePhaseStartX: number,
+    extendedPhaseEndsX: number[],
     supportEndX: number,
     isOutdated: boolean,
   ): LifecyclePhase[] {
@@ -904,19 +928,21 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       },
     ];
 
-    if (this.showExtendedSupport) {
+    let previousPhaseEndX = greenPhaseEndX;
+    for (const extendedPhaseEndX of extendedPhaseEndsX) {
       phases.push({
         type: 'supported',
-        startX: greenPhaseEndX,
-        endX: orangePhaseStartX,
+        startX: previousPhaseEndX,
+        endX: extendedPhaseEndX,
         color: isOutdated ? OUTDATED_FILL_COLOR : 'rgba(59, 130, 246, 0.15)',
         stroke: isOutdated ? OUTDATED_STROKE_COLOR : 'rgba(59, 130, 246, 0.15)',
       });
+      previousPhaseEndX = extendedPhaseEndX;
     }
 
     phases.push({
       type: 'supported',
-      startX: orangePhaseStartX,
+      startX: previousPhaseEndX,
       endX: supportEndX,
       color: isOutdated ? OUTDATED_FILL_COLOR : 'rgba(251, 146, 60, 0.15)',
       stroke: isOutdated ? OUTDATED_STROKE_COLOR : 'rgba(251, 146, 60, 0.2)',
@@ -958,7 +984,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     const isOutdated = new Date() > supportEnd;
     const phaseMonths = versionInfo.type === 'major' ? 6 : 3;
 
-    const { greenPhaseEndX, orangePhaseStartX } = this.calculatePhaseBoundaries(
+    const { greenPhaseEndX, extendedPhaseEndsX } = this.calculatePhaseBoundaries(
       branchStartDate,
       offsetStartX,
       supportEndX,
@@ -966,7 +992,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       scale,
     );
 
-    return this.createLifecyclePhases(offsetStartX, greenPhaseEndX, orangePhaseStartX, supportEndX, isOutdated);
+    return this.createLifecyclePhases(offsetStartX, greenPhaseEndX, extendedPhaseEndsX, supportEndX, isOutdated);
   }
 
   private calculateXPositionFromDate(date: Date, scale: { startDate: Date; pixelsPerDay: number }): number {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, computed } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { Release } from '../../../../services/release.service';
@@ -8,6 +8,7 @@ import { Release } from '../../../../services/release.service';
   standalone: true,
   imports: [CommonModule, ModalComponent],
   templateUrl: './business-value-duplicate.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-duplicate.component.scss',
 })
 export class BusinessValueDuplicateComponent {

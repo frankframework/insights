@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -22,6 +22,7 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
     ReleaseVulnerabilities,
   ],
   templateUrl: './release-manage.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-manage.component.scss',
 })
 export class ReleaseManageComponent implements OnInit {

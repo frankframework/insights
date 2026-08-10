@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { BusinessValueEditComponent } from './business-value-edit.component';
@@ -38,7 +38,7 @@ describe('BusinessValueEditComponent', () => {
       imports: [BusinessValueEditComponent],
       providers: [
         { provide: BusinessValueService, useValue: mockBusinessValueService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ReleaseManageComponent } from './release-manage.component';
@@ -8,7 +8,7 @@ import { ReleaseService, Release } from '../../services/release.service';
 import { IssueService } from '../../services/issue.service';
 import { VulnerabilityService } from '../../services/vulnerability.service';
 import { BusinessValueService, BusinessValue } from '../../services/business-value.service';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, Input } from '@angular/core';
 
@@ -16,18 +16,33 @@ import { ReleaseBusinessValueComponent } from '../release-details/release-busine
 import { ReleaseImportantIssuesComponent } from '../release-details/release-important-issues/release-important-issues.component';
 import { ReleaseVulnerabilities } from '../release-details/release-vulnerabilities/release-vulnerabilities';
 
-@Component({ selector: 'app-release-business-value', standalone: true, template: '' })
+@Component({
+  selector: 'app-release-business-value',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
+})
 class MockReleaseBusinessValueComponent {
   @Input() releaseId: any;
 }
 
-@Component({ selector: 'app-release-important-issues', standalone: true, template: '' })
+@Component({
+  selector: 'app-release-important-issues',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
+})
 class MockReleaseImportantIssuesComponent {
   @Input() releaseIssues: any;
   @Input() releaseId: any;
 }
 
-@Component({ selector: 'app-release-vulnerabilities', standalone: true, template: '' })
+@Component({
+  selector: 'app-release-vulnerabilities',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
+  template: '',
+})
 class MockReleaseVulnerabilities {
   @Input() vulnerabilities: any;
 }
@@ -100,25 +115,17 @@ describe('ReleaseManageComponent', () => {
             },
           },
         },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     })
       .overrideComponent(ReleaseManageComponent, {
         remove: {
-          imports: [
-            ReleaseBusinessValueComponent,
-            ReleaseImportantIssuesComponent,
-            ReleaseVulnerabilities
-          ]
+          imports: [ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
         },
         add: {
-          imports: [
-            MockReleaseBusinessValueComponent,
-            MockReleaseImportantIssuesComponent,
-            MockReleaseVulnerabilities
-          ]
-        }
+          imports: [MockReleaseBusinessValueComponent, MockReleaseImportantIssuesComponent, MockReleaseVulnerabilities],
+        },
       })
       .compileComponents();
 
@@ -154,9 +161,7 @@ describe('ReleaseManageComponent', () => {
     });
 
     it('should set businessValues to null when service throws an error', () => {
-      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(
-        throwError(() => new Error('API error')),
-      );
+      mockBusinessValueService.getBusinessValuesByReleaseId.and.returnValue(throwError(() => new Error('API error')));
 
       component.ngOnInit();
 

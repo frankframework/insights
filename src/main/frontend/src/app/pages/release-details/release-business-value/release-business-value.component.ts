@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BusinessValue } from '../../../services/business-value.service';
 import { ReleaseBusinessValueModalComponent } from '../release-business-value-modal/release-business-value-modal.component';
@@ -9,6 +9,7 @@ import { MarkdownPipe } from '../../../pipes/markdown.pipe';
   standalone: true,
   imports: [CommonModule, ReleaseBusinessValueModalComponent, MarkdownPipe],
   templateUrl: './release-business-value.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-business-value.component.scss',
 })
 export class ReleaseBusinessValueComponent {

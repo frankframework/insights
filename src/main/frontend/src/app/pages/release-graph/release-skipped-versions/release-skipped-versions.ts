@@ -1,4 +1,13 @@
-import { Component, EventEmitter, inject, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { Release } from '../../../services/release.service';
@@ -26,6 +35,7 @@ interface ReleaseTreeNode {
   standalone: true,
   imports: [CommonModule, ModalComponent, IncludeVersionButtonComponent, IncludeActionsComponent],
   templateUrl: './release-skipped-versions.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./release-skipped-versions.scss'],
 })
 export class ReleaseSkippedVersions implements OnChanges {

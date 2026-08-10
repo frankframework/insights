@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Issue } from '../../../../services/issue.service';
 import { IssueTypeTagComponent } from '../../../../components/issue-type-tag/issue-type-tag.component';
@@ -8,6 +8,7 @@ import { IssueTypeTagComponent } from '../../../../components/issue-type-tag/iss
   standalone: true,
   imports: [CommonModule, IssueTypeTagComponent],
   templateUrl: './issue-tree-branch.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './issue-tree-branch.component.scss',
 })
 export class IssueTreeBranchComponent {

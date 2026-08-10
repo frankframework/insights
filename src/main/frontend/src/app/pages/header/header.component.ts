@@ -1,4 +1,4 @@
-import { Component, inject, HostListener } from '@angular/core';
+import { Component, inject, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -11,6 +11,7 @@ import { PillButtonComponent } from '../../components/pill-button/pill-button.co
   standalone: true,
   imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent],
   templateUrl: './header.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
@@ -35,7 +36,7 @@ export class HeaderComponent {
     this.authService.setLoading(true);
     this.authService.setPendingAuth();
     this.rememberReturnUrl();
-    this.graphStateService.saveExtendedForOAuth(this.graphStateService.getShowExtendedSupport());
+    this.graphStateService.saveExtendedSupportLevelForOAuth(this.graphStateService.getExtendedSupportLevel());
     this.graphStateService.saveNightlyForOAuth(this.graphStateService.getShowNightlies());
     this.graphStateService.saveRangeForOAuth(this.graphStateService.getReleaseRanges());
     this.locationService.navigateTo('/oauth2/authorization/github');

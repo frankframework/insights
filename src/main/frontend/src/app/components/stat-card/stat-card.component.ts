@@ -1,10 +1,11 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   selector: 'app-stat-card',
   standalone: true,
   templateUrl: './stat-card.component.html',
   styleUrl: './stat-card.component.scss',
+  changeDetection: ChangeDetectionStrategy.Eager,
   host: { '[class]': 'hostClasses()' },
 })
 export class StatCardComponent {

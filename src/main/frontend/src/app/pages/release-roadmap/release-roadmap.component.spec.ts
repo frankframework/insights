@@ -5,7 +5,7 @@ import { ReleaseRoadmapComponent } from './release-roadmap.component';
 import { MilestoneService, Milestone } from '../../services/milestone.service'; // Import Milestone
 import { IssueService, Issue } from '../../services/issue.service';
 import { GitHubStates } from '../../app.service';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const BASE_MOCK_UNPLANNED_EPICS: Issue[] = [
@@ -25,7 +25,7 @@ const BASE_MOCK_UNPLANNED_EPICS: Issue[] = [
   } as Issue,
 ];
 
-const getEpicsCopy = () => BASE_MOCK_UNPLANNED_EPICS.map(epic => ({ ...epic }));
+const getEpicsCopy = () => BASE_MOCK_UNPLANNED_EPICS.map((epic) => ({ ...epic }));
 
 describe('ReleaseRoadmapComponent', () => {
   let component: ReleaseRoadmapComponent;
@@ -42,7 +42,7 @@ describe('ReleaseRoadmapComponent', () => {
       providers: [
         { provide: MilestoneService, useValue: milestoneSpy },
         { provide: IssueService, useValue: issueSpy },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();
@@ -75,7 +75,7 @@ describe('ReleaseRoadmapComponent', () => {
         dueOn: new Date(),
         openIssueCount: 0,
         closedIssueCount: 0,
-        state: GitHubStates.OPEN
+        state: GitHubStates.OPEN,
       } as Milestone;
 
       milestoneService.getMilestones.and.returnValue(of([MOCK_MILESTONE]));

@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ReleaseGraphComponent } from './release-graph.component';
+import { LifecyclePhase, ReleaseGraphComponent } from './release-graph.component';
 import { ReleaseService, Release } from '../../services/release.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
 import { ReleaseLinkService, SkipNode } from './release-link.service';
 import { Router, NavigationEnd, ActivatedRoute, DefaultUrlSerializer, UrlTree, convertToParamMap } from '@angular/router';
 import { map, of, ReplaySubject, throwError, BehaviorSubject } from 'rxjs';
 import { ElementRef } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { parseVersionRanges, VersionRange } from '../../pipes/release-range';
 
@@ -23,7 +23,16 @@ describe('ReleaseGraphComponent', () => {
   const urlSerializer = new DefaultUrlSerializer();
 
   const mockReleaseData: Record<string, Release[]> = {
-    master: [{ id: '1', name: 'v1.0.0', tagName: 'v1', publishedAt: new Date(), lastScanned: new Date(), branch: { id: 'b1', name: 'master' } }],
+    master: [
+      {
+        id: '1',
+        name: 'v1.0.0',
+        tagName: 'v1',
+        publishedAt: new Date(),
+        lastScanned: new Date(),
+        branch: { id: 'b1', name: 'master' },
+      },
+    ],
   };
   const mockReleases: Release[] = Object.values(mockReleaseData).flat();
   const mockNodes: ReleaseNode[] = [
@@ -61,7 +70,11 @@ describe('ReleaseGraphComponent', () => {
       'getVersionInfo',
       'getDefaultRanges',
     ]);
-    mockLinkService = jasmine.createSpyObj('ReleaseLinkService', ['createLinks', 'createSkipNodes', 'createSkipNodeLinks']);
+    mockLinkService = jasmine.createSpyObj('ReleaseLinkService', [
+      'createLinks',
+      'createSkipNodes',
+      'createSkipNodeLinks',
+    ]);
     routerEventsSubject = new ReplaySubject<NavigationEnd>(1);
     queryParametersSubject = new BehaviorSubject<any>({});
 
@@ -88,7 +101,7 @@ describe('ReleaseGraphComponent', () => {
         { provide: ReleaseLinkService, useValue: mockLinkService },
         { provide: Router, useValue: mockRouter },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();
@@ -368,9 +381,7 @@ describe('ReleaseGraphComponent', () => {
 
     describe('onSkipNodeTouchEnd', () => {
       beforeEach(() => {
-        component.skipNodes = [
-          { id: 'skip-1', label: 'Skip 1', x: 100, y: 200, skippedCount: 5, skippedVersions: [] },
-        ];
+        component.skipNodes = [{ id: 'skip-1', label: 'Skip 1', x: 100, y: 200, skippedCount: 5, skippedVersions: [] }];
       });
 
       it('should open skip node modal when tap detected (no drag)', () => {
@@ -836,9 +847,7 @@ describe('ReleaseGraphComponent', () => {
     });
 
     it('should find a skip node', () => {
-      component.skipNodes = [
-        { id: 'skip-1', x: 150, y: 0, label: 'skip' } as SkipNode,
-      ];
+      component.skipNodes = [{ id: 'skip-1', x: 150, y: 0, label: 'skip' } as SkipNode];
       const result = findNodeById('skip-1');
 
       expect(result).toBeDefined();
@@ -854,9 +863,7 @@ describe('ReleaseGraphComponent', () => {
     });
 
     it('should create a start-node relative to the first node (no initial skip)', () => {
-      component.releaseNodes = [
-        { id: 'node-1', position: { x: 400, y: 0 } } as ReleaseNode,
-      ];
+      component.releaseNodes = [{ id: 'node-1', position: { x: 400, y: 0 } } as ReleaseNode];
       component.skipNodes = [];
 
       const result = findNodeById('start-node-node-1');
@@ -867,12 +874,8 @@ describe('ReleaseGraphComponent', () => {
     });
 
     it('should create a start-node relative to the initial skip node', () => {
-      component.releaseNodes = [
-        { id: 'node-1', position: { x: 800, y: 0 } } as ReleaseNode,
-      ];
-      component.skipNodes = [
-        { id: 'skip-initial-node-1', x: 400, y: 0 } as SkipNode,
-      ];
+      component.releaseNodes = [{ id: 'node-1', position: { x: 800, y: 0 } } as ReleaseNode];
+      component.skipNodes = [{ id: 'skip-initial-node-1', x: 400, y: 0 } as SkipNode];
 
       const result = findNodeById('start-node-node-1');
 
@@ -882,30 +885,126 @@ describe('ReleaseGraphComponent', () => {
     });
   });
 
+  describe('calculateViewBox', () => {
+    const viewportWidth = 1000;
+    const viewportHeight = 800;
+    const nodes: ReleaseNode[] = [
+      { id: 'a', position: { x: 0, y: 100 } } as ReleaseNode,
+      { id: 'b', position: { x: 3000, y: 500 } } as ReleaseNode,
+    ];
+    const lifecycleEndX = 8000;
+
+    beforeEach(() => {
+      component.svgElement = {
+        nativeElement: { clientWidth: viewportWidth, clientHeight: viewportHeight },
+      } as ElementRef<SVGSVGElement>;
+      component.allLinks = [];
+      component.branchLifecycles = [];
+      component.quarterMarkers = [];
+    });
+
+    function withLifecycleWindow(endX: number = lifecycleEndX): void {
+      component.branchLifecycles = [
+        {
+          branchLabel: '7.7',
+          y: 100,
+          phases: [{ type: 'supported', startX: 0, endX, color: '', stroke: '' }],
+        },
+      ];
+    }
+
+    it('should allow scrolling until the last lifecycle window is in view', () => {
+      withLifecycleWindow();
+
+      (component as any).calculateViewBox(nodes);
+
+      const lifecycleEndOnScreen = lifecycleEndX * component.scale + (component as any).minTranslateX;
+
+      expect(lifecycleEndOnScreen).toBeLessThanOrEqual(viewportWidth);
+    });
+
+    it('should not bound the horizontal scrolling by the release nodes alone', () => {
+      (component as any).calculateViewBox(nodes);
+      const boundaryWithoutLifecycles = (component as any).minTranslateX;
+
+      withLifecycleWindow();
+      (component as any).calculateViewBox(nodes);
+
+      expect((component as any).minTranslateX).toBeLessThan(boundaryWithoutLifecycles);
+    });
+
+    it('should end the horizontal scrolling on the last quarter line', () => {
+      withLifecycleWindow();
+      const lastQuarterX = lifecycleEndX + 500;
+      component.quarterMarkers = [
+        {
+          label: 'Q1 2030',
+          date: new Date('2030-01-01'),
+          x: lastQuarterX,
+          labelX: lastQuarterX,
+          year: 2030,
+          quarter: 1,
+        },
+      ];
+
+      (component as any).calculateViewBox(nodes);
+
+      const lastQuarterOnScreen = lastQuarterX * component.scale + (component as any).minTranslateX;
+
+      expect(lastQuarterOnScreen).toBeLessThanOrEqual(viewportWidth);
+      expect(lastQuarterOnScreen).toBeGreaterThan(viewportWidth * 0.9);
+    });
+
+    it('should open the graph on the latest release regardless of the lifecycle length', () => {
+      withLifecycleWindow(4000);
+      (component as any).calculateViewBox(nodes);
+      const initialTranslateXWithShortLifecycles = component.translateX;
+
+      withLifecycleWindow(lifecycleEndX);
+      (component as any).calculateViewBox(nodes);
+
+      expect(component.translateX).toBe(initialTranslateXWithShortLifecycles);
+    });
+  });
+
   describe('Extended Support Functionality', () => {
     describe('Query Parameter Detection', () => {
-      it('should set showExtendedSupport to false by default', () => {
+      it('should set extendedSupportLevel to 0 by default', () => {
         fixture.detectChanges();
 
-        expect(component.showExtendedSupport).toBe(false);
+        expect(component.extendedSupportLevel).toBe(0);
       });
 
-      it('should set showExtendedSupport to true when extended param is present', () => {
+      it('should set extendedSupportLevel to 1 when a bare extended param is present', () => {
         queryParametersSubject.next({ extended: '' });
         fixture.detectChanges();
 
-        expect(component.showExtendedSupport).toBe(true);
+        expect(component.extendedSupportLevel).toBe(1);
       });
 
-      it('should set showExtendedSupport to false when extended param is removed', () => {
+      it('should set extendedSupportLevel to the requested amount of windows', () => {
+        queryParametersSubject.next({ extended: '3' });
+        fixture.detectChanges();
+
+        expect(component.extendedSupportLevel).toBe(3);
+      });
+
+      it('should cap extendedSupportLevel at 3', () => {
+        queryParametersSubject.next({ extended: '7' });
+        fixture.detectChanges();
+
+        expect(component.extendedSupportLevel).toBe(3);
+      });
+
+      it('should set extendedSupportLevel to 0 when extended param is removed', () => {
         queryParametersSubject.next({ extended: '' });
         fixture.detectChanges();
 
-        expect(component.showExtendedSupport).toBe(true);
+        expect(component.extendedSupportLevel).toBe(1);
 
         queryParametersSubject.next({});
 
-        expect(component.showExtendedSupport).toBe(false);
+        expect(component.extendedSupportLevel).toBe(0);
       });
 
       it('should rebuild graph when extended mode changes', () => {
@@ -914,6 +1013,17 @@ describe('ReleaseGraphComponent', () => {
         spyOn<any>(component, 'buildReleaseGraph');
 
         queryParametersSubject.next({ extended: '' });
+
+        expect((component as any).buildReleaseGraph).toHaveBeenCalledWith(mockStructuredGroups);
+      });
+
+      it('should rebuild graph when the extended support level changes', () => {
+        queryParametersSubject.next({ extended: '1' });
+        fixture.detectChanges();
+        component.releases = mockReleases;
+        spyOn<any>(component, 'buildReleaseGraph');
+
+        queryParametersSubject.next({ extended: '2' });
 
         expect((component as any).buildReleaseGraph).toHaveBeenCalledWith(mockStructuredGroups);
       });
@@ -927,7 +1037,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should calculate standard support end date for major version', () => {
-        component.showExtendedSupport = false;
+        component.extendedSupportLevel = 0;
         const startDate = new Date('2024-01-01');
         const endDate = calculateSupportEndDate(startDate, 4, true);
 
@@ -936,7 +1046,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should calculate extended support end date for major version', () => {
-        component.showExtendedSupport = true;
+        component.extendedSupportLevel = 1;
         const startDate = new Date('2024-01-01');
         const endDate = calculateSupportEndDate(startDate, 4, true);
 
@@ -944,8 +1054,17 @@ describe('ReleaseGraphComponent', () => {
         expect(endDate.getMonth()).toBe(6);
       });
 
+      it('should add an extra half year per extended level for major version', () => {
+        component.extendedSupportLevel = 3;
+        const startDate = new Date('2024-01-01');
+        const endDate = calculateSupportEndDate(startDate, 4, true);
+
+        expect(endDate.getFullYear()).toBe(2026);
+        expect(endDate.getMonth()).toBe(6);
+      });
+
       it('should calculate standard support end date for minor version', () => {
-        component.showExtendedSupport = false;
+        component.extendedSupportLevel = 0;
         const startDate = new Date('2024-01-01');
         const endDate = calculateSupportEndDate(startDate, 2, false);
 
@@ -954,12 +1073,21 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should calculate extended support end date for minor version', () => {
-        component.showExtendedSupport = true;
+        component.extendedSupportLevel = 1;
         const startDate = new Date('2024-01-01');
         const endDate = calculateSupportEndDate(startDate, 2, false);
 
         expect(endDate.getFullYear()).toBe(2024);
         expect(endDate.getMonth()).toBe(9);
+      });
+
+      it('should add an extra quarter per extended level for minor version', () => {
+        component.extendedSupportLevel = 3;
+        const startDate = new Date('2024-01-01');
+        const endDate = calculateSupportEndDate(startDate, 2, false);
+
+        expect(endDate.getFullYear()).toBe(2025);
+        expect(endDate.getMonth()).toBe(3);
       });
     });
 
@@ -972,32 +1100,30 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should calculate 2-phase boundaries in standard mode', () => {
-        component.showExtendedSupport = false;
-        const result = calculatePhaseBoundaries(
-          new Date('2024-01-01'),
-          0,
-          1000,
-          6,
-          mockScale
-        );
+        component.extendedSupportLevel = 0;
+        const result = calculatePhaseBoundaries(new Date('2024-01-01'), 0, 1000, 6, mockScale);
 
         expect(result.greenPhaseEndX).toBe(500);
-        expect(result.orangePhaseStartX).toBe(500);
+        expect(result.extendedPhaseEndsX).toEqual([]);
       });
 
       it('should calculate 3-phase boundaries in extended mode for major version', () => {
-        component.showExtendedSupport = true;
-        const result = calculatePhaseBoundaries(
-          new Date('2024-01-01'),
-          0,
-          1000,
-          6,
-          mockScale
-        );
+        component.extendedSupportLevel = 1;
+        const result = calculatePhaseBoundaries(new Date('2024-01-01'), 0, 1000, 6, mockScale);
 
         expect(result.greenPhaseEndX).toBeGreaterThan(0);
-        expect(result.orangePhaseStartX).toBeGreaterThan(result.greenPhaseEndX);
-        expect(result.orangePhaseStartX).toBeLessThan(1000);
+        expect(result.extendedPhaseEndsX.length).toBe(1);
+        expect(result.extendedPhaseEndsX[0]).toBeGreaterThan(result.greenPhaseEndX);
+      });
+
+      it('should calculate one boundary per extended support level', () => {
+        component.extendedSupportLevel = 3;
+        const result = calculatePhaseBoundaries(new Date('2024-01-01'), 0, 1000, 6, mockScale);
+
+        expect(result.extendedPhaseEndsX.length).toBe(3);
+        expect(result.extendedPhaseEndsX[0]).toBeGreaterThan(result.greenPhaseEndX);
+        expect(result.extendedPhaseEndsX[1]).toBeGreaterThan(result.extendedPhaseEndsX[0]);
+        expect(result.extendedPhaseEndsX[2]).toBeGreaterThan(result.extendedPhaseEndsX[1]);
       });
     });
 
@@ -1009,8 +1135,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should create 2 phases in standard mode', () => {
-        component.showExtendedSupport = false;
-        const phases = createLifecyclePhases(0, 500, 500, 1000, false);
+        const phases = createLifecyclePhases(0, 500, [], 1000, false);
 
         expect(phases.length).toBe(2);
         expect(phases[0].color).toContain('144, 238, 144');
@@ -1018,8 +1143,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should create 3 phases in extended mode', () => {
-        component.showExtendedSupport = true;
-        const phases = createLifecyclePhases(0, 333, 666, 1000, false);
+        const phases = createLifecyclePhases(0, 333, [666], 1000, false);
 
         expect(phases.length).toBe(3);
         expect(phases[0].color).toContain('144, 238, 144');
@@ -1027,17 +1151,24 @@ describe('ReleaseGraphComponent', () => {
         expect(phases[2].color).toContain('251, 146, 60');
       });
 
+      it('should create an extended phase per boundary', () => {
+        const phases = createLifecyclePhases(0, 250, [500, 750], 1000, false);
+
+        expect(phases.length).toBe(4);
+        expect(phases[1].color).toContain('59, 130, 246');
+        expect(phases[2].color).toContain('59, 130, 246');
+        expect(phases[3].color).toContain('251, 146, 60');
+      });
+
       it('should use outdated colors when isOutdated is true', () => {
-        component.showExtendedSupport = false;
-        const phases = createLifecyclePhases(0, 500, 500, 1000, true);
+        const phases = createLifecyclePhases(0, 500, [], 1000, true);
 
         expect(phases[0].color).toContain('210, 210, 210');
         expect(phases[1].color).toContain('210, 210, 210');
       });
 
       it('should create phases with correct boundaries', () => {
-        component.showExtendedSupport = true;
-        const phases = createLifecyclePhases(0, 300, 600, 900, false);
+        const phases = createLifecyclePhases(0, 300, [600], 900, false);
 
         expect(phases[0].startX).toBe(0);
         expect(phases[0].endX).toBe(300);
@@ -1045,6 +1176,18 @@ describe('ReleaseGraphComponent', () => {
         expect(phases[1].endX).toBe(600);
         expect(phases[2].startX).toBe(600);
         expect(phases[2].endX).toBe(900);
+      });
+
+      it('should chain the extended phases without gaps', () => {
+        const phases = createLifecyclePhases(0, 200, [400, 600, 800], 1000, false);
+
+        expect(phases.map((phase: LifecyclePhase) => [phase.startX, phase.endX])).toEqual([
+          [0, 200],
+          [200, 400],
+          [400, 600],
+          [600, 800],
+          [800, 1000],
+        ]);
       });
     });
 
@@ -1068,9 +1211,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should find release without v prefix', () => {
-        component.releases = [
-          { id: '1', name: '7.0.0', publishedAt: new Date() } as Release,
-        ];
+        component.releases = [{ id: '1', name: '7.0.0', publishedAt: new Date() } as Release];
 
         const result = findMajorMinorRelease('7.0');
 
@@ -1079,9 +1220,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should not find nightly releases', () => {
-        component.releases = [
-          { id: '1', name: 'v7.0.0-nightly', publishedAt: new Date() } as Release,
-        ];
+        component.releases = [{ id: '1', name: 'v7.0.0-nightly', publishedAt: new Date() } as Release];
 
         const result = findMajorMinorRelease('7.0');
 
@@ -1089,9 +1228,7 @@ describe('ReleaseGraphComponent', () => {
       });
 
       it('should return undefined when no matching release exists', () => {
-        component.releases = [
-          { id: '1', name: 'v8.0.0', publishedAt: new Date() } as Release,
-        ];
+        component.releases = [{ id: '1', name: 'v8.0.0', publishedAt: new Date() } as Release];
 
         const result = findMajorMinorRelease('7.0');
 

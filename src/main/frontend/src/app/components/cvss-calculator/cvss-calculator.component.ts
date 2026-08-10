@@ -9,6 +9,7 @@ import {
   Signal,
   signal,
   WritableSignal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,6 +30,7 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule, ModalComponent],
   templateUrl: './cvss-calculator.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './cvss-calculator.component.scss',
 })
 export class CvssCalculatorComponent implements OnInit {

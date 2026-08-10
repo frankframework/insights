@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseLinkService, SkipNode } from './release-link.service';
 import { ReleaseNode, ReleaseNodeService } from './release-node.service';
@@ -61,7 +61,7 @@ describe('ReleaseLinkService', () => {
       providers: [
         ReleaseLinkService,
         { provide: ReleaseNodeService, useValue: nodeServiceSpy },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });
@@ -97,7 +97,7 @@ describe('ReleaseLinkService', () => {
     it('should create skip nodes for version gaps in master branch', () => {
       const masterNodes = [
         createMockNode('v6.0.0', undefined, 'v6.0.0'),
-        createMockNode('v8.0.0', undefined, 'v8.0.0')
+        createMockNode('v8.0.0', undefined, 'v8.0.0'),
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
@@ -171,7 +171,7 @@ describe('ReleaseLinkService', () => {
     it('should only count minor/major releases in skip nodes, excluding patch versions', () => {
       const masterNodes = [
         createMockNode('v6.0.0', undefined, 'v6.0.0'),
-        createMockNode('v8.0.0', undefined, 'v8.0.0')
+        createMockNode('v8.0.0', undefined, 'v8.0.0'),
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
@@ -222,7 +222,7 @@ describe('ReleaseLinkService', () => {
     it('should not create skip node if no minor/major releases are skipped', () => {
       const masterNodes = [
         createMockNode('v6.0.0', undefined, 'v6.0.0'),
-        createMockNode('v6.1.0', undefined, 'v6.1.0')
+        createMockNode('v6.1.0', undefined, 'v6.1.0'),
       ];
       const structuredGroups = [new Map([[MASTER_BRANCH_NAME, masterNodes]])];
       const skippedReleases: Release[] = [
@@ -256,14 +256,16 @@ describe('ReleaseLinkService', () => {
   describe('createSkipNodeLinks() - Link Generation', () => {
     it('should create links for initial skip nodes', () => {
       const masterNodes = [createMockNode('v5.0.0', undefined, 'v5.0.0')];
-      const skipNodes: SkipNode[] = [{
-        id: 'skip-initial-v5.0.0',
-        x: 225,
-        y: 0,
-        skippedCount: 2,
-        skippedVersions: ['v3.0.0', 'v4.0.0'],
-        label: '2 skipped'
-      }];
+      const skipNodes: SkipNode[] = [
+        {
+          id: 'skip-initial-v5.0.0',
+          x: 225,
+          y: 0,
+          skippedCount: 2,
+          skippedVersions: ['v3.0.0', 'v4.0.0'],
+          label: '2 skipped',
+        },
+      ];
 
       const links = service.createSkipNodeLinks(skipNodes, masterNodes);
 
@@ -276,21 +278,23 @@ describe('ReleaseLinkService', () => {
     it('should create two links for regular skip nodes (source to skip, skip to target)', () => {
       const masterNodes = [
         createMockNode('v6.0.0', undefined, 'v6.0.0'),
-        createMockNode('v8.0.0', undefined, 'v8.0.0')
+        createMockNode('v8.0.0', undefined, 'v8.0.0'),
       ];
       masterNodes[0].position = { x: 0, y: 0 };
       masterNodes[1].position = { x: 450, y: 0 };
 
-      const skipNodes: SkipNode[] = [{
-        id: 'skip-v6.0.0-v8.0.0',
-        x: 225,
-        y: 0,
-        skippedCount: 1,
-        skippedVersions: ['v7.0.0'],
-        label: '1 skipped',
-        sourceNodeId: 'v6.0.0',
-        targetNodeId: 'v8.0.0',
-      }];
+      const skipNodes: SkipNode[] = [
+        {
+          id: 'skip-v6.0.0-v8.0.0',
+          x: 225,
+          y: 0,
+          skippedCount: 1,
+          skippedVersions: ['v7.0.0'],
+          label: '1 skipped',
+          sourceNodeId: 'v6.0.0',
+          targetNodeId: 'v8.0.0',
+        },
+      ];
 
       const links = service.createSkipNodeLinks(skipNodes, masterNodes);
 
@@ -311,14 +315,16 @@ describe('ReleaseLinkService', () => {
     });
 
     it('should handle skip nodes when master nodes array is empty', () => {
-      const skipNodes: SkipNode[] = [{
-        id: 'skip-initial-v5.0.0',
-        x: 225,
-        y: 0,
-        skippedCount: 1,
-        skippedVersions: ['v4.0.0'],
-        label: '1 skipped'
-      }];
+      const skipNodes: SkipNode[] = [
+        {
+          id: 'skip-initial-v5.0.0',
+          x: 225,
+          y: 0,
+          skippedCount: 1,
+          skippedVersions: ['v4.0.0'],
+          label: '1 skipped',
+        },
+      ];
 
       const links = service.createSkipNodeLinks(skipNodes, []);
 
@@ -400,14 +406,16 @@ describe('ReleaseLinkService', () => {
     });
 
     it('should include special fade-in links when skip nodes are provided', () => {
-      const skipNodes: SkipNode[] = [{
-        id: 'skip-initial-master-1',
-        x: 100,
-        y: 0,
-        skippedCount: 1,
-        skippedVersions: ['v1.0.0'],
-        label: '1 skipped'
-      }];
+      const skipNodes: SkipNode[] = [
+        {
+          id: 'skip-initial-master-1',
+          x: 100,
+          y: 0,
+          skippedCount: 1,
+          skippedVersions: ['v1.0.0'],
+          label: '1 skipped',
+        },
+      ];
 
       const links = service.createLinks(structuredGroups, skipNodes);
       const fadeInLink = links.find((link) => link.isGap && link.source.startsWith('start-node-'));
@@ -471,9 +479,7 @@ describe('ReleaseLinkService', () => {
 
       const links = service.createLinks(structuredGroups, []);
 
-      const directLink = links.find(
-        (link) => link.source === miniNode94.id && link.target === miniNode100.id,
-      );
+      const directLink = links.find((link) => link.source === miniNode94.id && link.target === miniNode100.id);
 
       expect(directLink).withContext('expected a direct link between the 9.4 and 10.0 mini nodes').toBeDefined();
     });
@@ -527,22 +533,22 @@ describe('ReleaseLinkService', () => {
         new Map([['release/10.0', [subNode100]]]),
       ];
 
-      const skipNodes: SkipNode[] = [{
-        id: 'skip-mini-sub-9.4-1-mini-sub-10.0-1',
-        x: 110,
-        y: 0,
-        skippedCount: 1,
-        skippedVersions: ['v9.5.0'],
-        label: '1 skipped',
-        sourceNodeId: miniNode94.id,
-        targetNodeId: miniNode100.id,
-      }];
+      const skipNodes: SkipNode[] = [
+        {
+          id: 'skip-mini-sub-9.4-1-mini-sub-10.0-1',
+          x: 110,
+          y: 0,
+          skippedCount: 1,
+          skippedVersions: ['v9.5.0'],
+          label: '1 skipped',
+          sourceNodeId: miniNode94.id,
+          targetNodeId: miniNode100.id,
+        },
+      ];
 
       const links = service.createLinks(structuredGroups, skipNodes);
 
-      const directLink = links.find(
-        (link) => link.source === miniNode94.id && link.target === miniNode100.id,
-      );
+      const directLink = links.find((link) => link.source === miniNode94.id && link.target === miniNode100.id);
 
       expect(directLink).withContext('expected no direct link when a skip node covers the gap').toBeUndefined();
     });
@@ -551,14 +557,14 @@ describe('ReleaseLinkService', () => {
   describe('(private) isVersionGap', () => {
     it('should return false for consecutive minor versions', () => {
       const source = createMockNode('v1.1.0', undefined, 'v1.1.0');
-      const target = createMockNode('v1.2.0', undefined, 'v1.2.0')
+      const target = createMockNode('v1.2.0', undefined, 'v1.2.0');
 
       expect((service as any).isVersionGap(source, target)).toBe(false);
     });
 
     it('should return true for consecutive major versions', () => {
       const source = createMockNode('v1.0.0', undefined, 'v1.0.0');
-      const target = createMockNode('v2.0.0', undefined, 'v2.0.0')
+      const target = createMockNode('v2.0.0', undefined, 'v2.0.0');
 
       expect((service as any).isVersionGap(source, target)).toBe(true);
     });
@@ -597,7 +603,7 @@ describe('ReleaseLinkService', () => {
       const masterNodes = [
         createMockNode('v4.0.0', undefined, 'v4.0.0'),
         createMockNode('v7.0.0', undefined, 'v7.0.0'),
-        createMockNode('v9.0.0', undefined, 'v9.0.0')
+        createMockNode('v9.0.0', undefined, 'v9.0.0'),
       ];
       masterNodes[0].position = { x: 450, y: 0 };
       masterNodes[1].position = { x: 900, y: 0 };
@@ -664,7 +670,7 @@ describe('ReleaseLinkService', () => {
       expect(skipNodes.length).toBe(3);
       expect(skipNodeLinks.length).toBe(5);
 
-      const fadeInLink = allLinks.find(link => link.source.startsWith('start-node-'));
+      const fadeInLink = allLinks.find((link) => link.source.startsWith('start-node-'));
 
       expect(fadeInLink).toBeDefined();
       expect(fadeInLink?.target).toBe('skip-initial-v4.0.0');

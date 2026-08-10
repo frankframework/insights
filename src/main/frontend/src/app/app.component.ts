@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import {
   RouterOutlet,
   Router,
@@ -20,6 +20,7 @@ import { parseVersionRanges, serializeVersionRanges } from './pipes/release-rang
   selector: 'app-root',
   imports: [RouterOutlet, LoaderComponent, FeedbackComponent, HeaderComponent, TooltipComponent],
   templateUrl: './app.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
@@ -42,9 +43,9 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     const returnUrl = this.authService.consumeReturnUrl();
-    const wasExtended = this.graphStateService.restoreAndClearOAuthExtended();
-    const wasNightly = this.graphStateService.restoreAndClearOAuthNightly();
-    const previousRanges = this.graphStateService.restoreAndClearOAuthRange();
+    const restoredExtendedSupportLevel = this.graphStateService.restoreAndClearOAuthExtendedSupportLevel();
+    const restoredNightly = this.graphStateService.restoreAndClearOAuthNightly();
+    const restoredPreviousRanges = this.graphStateService.restoreAndClearOAuthRange();
 
     this.authService.checkAuthStatus().subscribe({
       next: (user) => {
@@ -63,23 +64,25 @@ export class AppComponent implements OnInit {
       const currentUrl = this.router.url;
       const isGraphRoute = currentUrl.startsWith('/graph') || currentUrl === '/';
 
-      if ((wasExtended || wasNightly || previousRanges.length > 0) && isGraphRoute) {
+      if ((restoredExtendedSupportLevel > 0 || restoredNightly || restoredPreviousRanges.length > 0) && isGraphRoute) {
         const queryParameters: Record<string, string> = {};
-        if (wasExtended) queryParameters['extended'] = '';
-        if (wasNightly) queryParameters['nightly'] = '';
+        if (restoredExtendedSupportLevel > 0) queryParameters['extended'] = String(restoredExtendedSupportLevel);
+        if (restoredNightly) queryParameters['nightly'] = '';
 
-        const range = serializeVersionRanges(previousRanges);
+        const range = serializeVersionRanges(restoredPreviousRanges);
         if (range) queryParameters['range'] = range;
 
-        this.graphStateService.setShowExtendedSupport(wasExtended);
-        this.graphStateService.setShowNightlies(wasNightly);
-        this.graphStateService.setReleaseRanges(previousRanges);
+        this.graphStateService.setExtendedSupportLevel(restoredExtendedSupportLevel);
+        this.graphStateService.setShowNightlies(restoredNightly);
+        this.graphStateService.setReleaseRanges(restoredPreviousRanges);
         this.router.navigate([], { queryParams: queryParameters, replaceUrl: true });
         return;
       }
 
       if (isGraphRoute) {
-        this.graphStateService.setShowExtendedSupport(parameters.has('extended'));
+        this.graphStateService.setExtendedSupportLevel(
+          GraphStateService.parseExtendedSupportLevel(parameters.get('extended')),
+        );
         this.graphStateService.setShowNightlies(parameters.has('nightly'));
         this.graphStateService.setReleaseRanges(parseVersionRanges(parameters.get('range')).ranges);
       }

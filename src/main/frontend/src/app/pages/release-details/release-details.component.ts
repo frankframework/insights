@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Release, ReleaseService } from '../../services/release.service';
@@ -30,6 +30,7 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
     ReleaseVulnerabilities,
   ],
   templateUrl: './release-details.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-details.component.scss',
 })
 export class ReleaseDetailsComponent implements OnInit {

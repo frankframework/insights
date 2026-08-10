@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
 import { TooltipData, TooltipService } from './tooltip.service';
@@ -8,6 +8,7 @@ import { TooltipData, TooltipService } from './tooltip.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './tooltip.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./tooltip.component.scss'],
 })
 export class TooltipComponent {

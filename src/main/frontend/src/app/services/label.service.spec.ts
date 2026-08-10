@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { LabelService } from './label.service';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('LabelService', () => {
@@ -9,7 +9,7 @@ describe('LabelService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(LabelService);
   });

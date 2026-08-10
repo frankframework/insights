@@ -102,9 +102,10 @@
 
         @if (showExtendedSupport) {
           <p class="policy-text">
-            Our extended support policy provides major versions with 18 months total support (6 months active + 6 months
-            extended + 6 months security). For minor versions, the total support period is 9 months (3 months active + 3
-            months extended + 3 months security).
+            Our extended support policy provides major versions with {{ majorTotalMonths }} months total support (6
+            months active + {{ majorExtendedMonths }} months extended + 6 months security). For minor versions, the
+            total support period is {{ minorTotalMonths }} months (3 months active + {{ minorExtendedMonths }} months
+            extended + 3 months security).
           </p>
         } @else {
           <p class="policy-text">

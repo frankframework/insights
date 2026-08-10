@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DatePipe } from '@angular/common';
 import { SimpleChanges } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MilestoneRowComponent } from './milestone-row.component';
 import { Milestone } from '../../../services/milestone.service';
@@ -109,7 +109,7 @@ describe('MilestoneRowComponent', () => {
       providers: [
         DatePipe,
         { provide: ReleaseRoadmapComponent, useValue: releaseRoadmapComponentSpy },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

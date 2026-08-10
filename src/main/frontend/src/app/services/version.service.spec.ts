@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 import { VersionService, ActuatorInfo } from './version.service';
 
@@ -10,11 +10,7 @@ describe('VersionService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        VersionService,
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [VersionService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(VersionService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -32,11 +28,11 @@ describe('VersionService', () => {
     const mockResponse: ActuatorInfo = {
       build: {
         version: '1.2.3',
-        time: '2024-01-01T12:00:00Z'
-      }
+        time: '2024-01-01T12:00:00Z',
+      },
     };
 
-    service.getBuildInformation().subscribe(version => {
+    service.getBuildInformation().subscribe((version) => {
       expect(version?.version).toBe('1.2.3');
     });
 
@@ -49,7 +45,7 @@ describe('VersionService', () => {
   it('should return null when API returns empty or malformed data', () => {
     const emptyResponse = {};
 
-    service.getBuildInformation().subscribe(version => {
+    service.getBuildInformation().subscribe((version) => {
       expect(version).toBe(null);
     });
 
@@ -58,7 +54,7 @@ describe('VersionService', () => {
   });
 
   it('should return null" when the API fails (404/500)', () => {
-    service.getBuildInformation().subscribe(version => {
+    service.getBuildInformation().subscribe((version) => {
       expect(version).toBe(null);
     });
 
