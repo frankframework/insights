@@ -1,13 +1,18 @@
 import {
-  Component,
-  ElementRef,
-  OnInit,
-  OnDestroy,
-  ViewChild,
-  inject,
-  AfterViewInit,
   ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  AfterViewInit,
+  OnDestroy,
+  OnInit,
+  Signal,
+  computed,
+  inject,
+  signal,
+  viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Release, ReleaseService } from '../../services/release.service';
 import { catchError, map, of } from 'rxjs';
 import { ReleaseNode, ReleaseNodeService, QuarterMarker } from './release-node.service';
@@ -40,7 +45,7 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -52,32 +57,55 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly SKIP_RELEASE_NODE_BEGIN: string = 'skip-initial-';
   private static readonly GRAPH_END_PADDING_PROPORTION: number = 0.05;
 
-  @ViewChild('svgElement') svgElement!: ElementRef<SVGSVGElement>;
+  public readonly svgElement = viewChild<ElementRef<SVGSVGElement>>('svgElement');
 
-  public releaseNodes: ReleaseNode[] = [];
-  public allLinks: ReleaseLink[] = [];
-  public branchLabels: { label: string; y: number; x: number }[] = [];
-  public stickyBranchLabels: { label: string; screenY: number }[] = [];
-  public skipNodes: SkipNode[] = [];
-  public dataForSkipModal: SkipNode | null = null;
-  public quarterMarkers: QuarterMarker[] = [];
-  public branchLifecycles: BranchLifecycle[] = [];
-  public currentTimeX = 0;
-  public svgLineTopY = -90;
-  public svgLineBottomY = 1000;
-  public svgLabelY = -105;
-  public svgChevronY = -90;
-  public showNotFoundError = false;
-  public showNightlies = false;
-  public extendedSupportLevel = 0;
+  public readonly releaseNodes = signal<ReleaseNode[]>([]);
+  public readonly allLinks = signal<ReleaseLink[]>([]);
+  public readonly branchLabels = signal<{ label: string; y: number; x: number }[]>([]);
+  public readonly stickyBranchLabels = signal<{ label: string; screenY: number }[]>([]);
+  public readonly skipNodes = signal<SkipNode[]>([]);
+  public readonly dataForSkipModal = signal<SkipNode | null>(null);
+  public readonly quarterMarkers = signal<QuarterMarker[]>([]);
+  public readonly branchLifecycles = signal<BranchLifecycle[]>([]);
+  public readonly currentTimeX = signal(0);
+  public readonly svgLineTopY = signal(-90);
+  public readonly svgLineBottomY = signal(1000);
+  public readonly svgLabelY = signal(-105);
+  public readonly svgChevronY = signal(-90);
+  public readonly showNotFoundError = signal(false);
+  public readonly showNightlies = signal(false);
+  public readonly extendedSupportLevel = signal(0);
 
-  public isLoading = true;
-  public releases: Release[] = [];
-  public scale = 1;
-  public translateX = 0;
-  public translateY = 0;
-  public viewBox = '0 0 0 0';
+  public readonly isLoading = signal(true);
+  public readonly releases = signal<Release[]>([]);
+  public readonly scale = signal(1);
+  public readonly translateX = signal(0);
+  public readonly translateY = signal(0);
+  public readonly viewBox = signal('0 0 0 0');
   public isDragging = false;
+
+  public readonly graphQueryParams: Signal<Params> = computed(() => this.graphStateService.graphQueryParams());
+
+  public readonly visibleReleaseNodes: Signal<ReleaseNode[]> = computed(() => {
+    const releaseNodes = this.releaseNodes();
+    if (this.showNightlies()) return releaseNodes;
+
+    return releaseNodes.filter((node) => !ReleaseGraphComponent.isNightlyNode(node));
+  });
+
+  public readonly visibleLinks: Signal<ReleaseLink[]> = computed(() => {
+    const allLinks = this.allLinks();
+    if (this.showNightlies()) return allLinks;
+
+    return allLinks.filter((link) => {
+      const sourceNode = this.findNodeById(link.source);
+      const targetNode = this.findNodeById(link.target);
+
+      if (!sourceNode || !targetNode) return true;
+
+      return !ReleaseGraphComponent.isNightlyNode(sourceNode) && !ReleaseGraphComponent.isNightlyNode(targetNode);
+    });
+  });
 
   protected authService = inject(AuthService);
 
@@ -100,48 +128,38 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private graphStateService = inject(GraphStateService);
+  private destroyRef = inject(DestroyRef);
 
-  public get visibleReleaseNodes(): ReleaseNode[] {
-    if (this.showNightlies) {
-      return this.releaseNodes;
+  private static isNightlyNode(node: ReleaseNode): boolean {
+    if (node.isMiniNode) {
+      return false;
     }
 
-    return this.releaseNodes.filter((node) => !this.isNightlyNode(node));
-  }
-
-  public get visibleLinks(): ReleaseLink[] {
-    if (this.showNightlies) {
-      return this.allLinks;
+    if (node.position.y === 0) {
+      return false;
     }
-
-    return this.allLinks.filter((link) => {
-      const sourceNode = this.findNodeById(link.source);
-      const targetNode = this.findNodeById(link.target);
-
-      if (!sourceNode || !targetNode) return true;
-
-      const isSourceHidden = this.isNightlyNode(sourceNode);
-      const isTargetHidden = this.isNightlyNode(targetNode);
-
-      return !isSourceHidden && !isTargetHidden;
-    });
+    const label = node.label.toLowerCase();
+    return label.includes('nightly') || /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/.test(node.label);
   }
 
   ngOnInit(): void {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.getAllReleases();
 
-    this.route.queryParams.subscribe((parameters) => {
-      const previousExtendedSupportLevel = this.extendedSupportLevel;
-      this.extendedSupportLevel = GraphStateService.parseExtendedSupportLevel(parameters['extended']);
-      this.showNightlies = parameters['nightly'] !== undefined;
+    this.route.queryParams.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((parameters) => {
+      const previousExtendedSupportLevel = this.extendedSupportLevel();
+      const extendedSupportLevel = GraphStateService.parseExtendedSupportLevel(parameters['extended']);
+      const showNightlies = parameters['nightly'] !== undefined;
 
-      this.graphStateService.setExtendedSupportLevel(this.extendedSupportLevel);
-      this.graphStateService.setShowNightlies(this.showNightlies);
+      this.extendedSupportLevel.set(extendedSupportLevel);
+      this.showNightlies.set(showNightlies);
 
-      if (previousExtendedSupportLevel !== this.extendedSupportLevel && this.releases.length > 0) {
-        const sortedGroups = this.nodeService.structureReleaseData(this.releases);
-        this.buildReleaseGraph(sortedGroups);
+      this.graphStateService.setExtendedSupportLevel(extendedSupportLevel);
+      this.graphStateService.setShowNightlies(showNightlies);
+
+      const releases = this.releases();
+      if (previousExtendedSupportLevel !== extendedSupportLevel && releases.length > 0) {
+        this.buildReleaseGraph(this.nodeService.structureReleaseData(releases));
       }
     });
 
@@ -163,8 +181,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public toggleNightlies(): void {
-    const queryParameters = { ...this.graphStateService.getGraphQueryParams() };
-    if (this.showNightlies) {
+    const queryParameters = { ...this.graphStateService.graphQueryParams() };
+    if (this.showNightlies()) {
       delete queryParameters['nightly'];
     } else {
       queryParameters['nightly'] = '';
@@ -176,12 +194,12 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     event.preventDefault();
     this.isDragging = true;
     this.lastPositionX = event.clientX;
-    this.svgElement.nativeElement.style.cursor = 'grabbing';
+    this.requireSvg().style.cursor = 'grabbing';
   }
 
   public onMouseUp(): void {
     this.isDragging = false;
-    this.svgElement.nativeElement.style.cursor = 'grab';
+    this.requireSvg().style.cursor = 'grab';
   }
 
   public onMouseMove(event: MouseEvent): void {
@@ -189,8 +207,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     event.preventDefault();
     const deltaX = event.clientX - this.lastPositionX;
     this.lastPositionX = event.clientX;
-    const newTranslateX = this.translateX + deltaX;
-    this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, newTranslateX));
+    this.translateX.set(this.clampTranslateX(this.translateX() + deltaX));
     this.updateStickyBranchLabels();
   }
 
@@ -223,8 +240,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.lastPositionX = touch.clientX;
-    const newTranslateX = this.translateX + deltaX;
-    this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, newTranslateX));
+    this.translateX.set(this.clampTranslateX(this.translateX() + deltaX));
     this.updateStickyBranchLabels();
   }
 
@@ -251,9 +267,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   public onWheel(event: WheelEvent): void {
     event.preventDefault();
-    const delta = (event.deltaX === 0 ? event.deltaY : event.deltaX) / this.scale;
-    const newTranslateX = this.translateX - delta;
-    this.translateX = Math.min(this.maxTranslateX, Math.max(this.minTranslateX, newTranslateX));
+    const delta = (event.deltaX === 0 ? event.deltaY : event.deltaX) / this.scale();
+    this.translateX.set(this.clampTranslateX(this.translateX() - delta));
     this.updateStickyBranchLabels();
   }
 
@@ -306,31 +321,27 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public releaseNodeLink(releaseNodeId: string): string {
-    const release = this.releases.find((r) => r.id === releaseNodeId);
+    const release = this.releases().find((r) => r.id === releaseNodeId);
     const identifier = (release?.tagName ?? releaseNodeId).replace(/^release\//, '');
     return `/graph/${identifier}`;
   }
 
-  public graphQueryParams(): Params {
-    return this.graphStateService.getGraphQueryParams();
-  }
-
   public openSkipNodeModal(skipNodeId: string): void {
-    const skipNode = this.skipNodes.find((s) => s.id === skipNodeId);
+    const skipNode = this.skipNodes().find((s) => s.id === skipNodeId);
     if (skipNode) {
-      this.dataForSkipModal = skipNode;
+      this.dataForSkipModal.set(skipNode);
     }
   }
 
   public closeSkipNodeModal(): void {
-    this.dataForSkipModal = null;
+    this.dataForSkipModal.set(null);
   }
 
   public onSkippedVersionClick(version: string): void {
     this.closeSkipNodeModal();
-    const release = this.releases.find((r) => r.name === version || `v${r.name}` === version);
+    const release = this.releases().find((r) => r.name === version || `v${r.name}` === version);
     if (release) {
-      const queryParameters = this.graphStateService.getGraphQueryParams();
+      const queryParameters = this.graphStateService.graphQueryParams();
       this.router.navigate(['/graph', release.tagName.replace(/^release\//, '')], { queryParams: queryParameters });
     }
   }
@@ -342,28 +353,31 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     return minor === 0;
   }
 
-  private isNightlyNode(node: ReleaseNode): boolean {
-    if (node.isMiniNode) {
-      return false;
-    }
+  private svgNative(): SVGSVGElement | undefined {
+    return this.svgElement()?.nativeElement;
+  }
 
-    if (node.position.y === 0) {
-      return false;
-    }
-    const label = node.label.toLowerCase();
-    return label.includes('nightly') || /^v?\d+\.\d+\.\d+-\d{8}\.\d{6}/.test(node.label);
+  private requireSvg(): SVGSVGElement {
+    const svg = this.svgNative();
+    if (!svg) throw new Error('SVG element is not available yet');
+    return svg;
+  }
+
+  private clampTranslateX(value: number): number {
+    return Math.max(this.minTranslateX, Math.min(this.maxTranslateX, value));
   }
 
   private findNodeById(id: string): ReleaseNode | undefined {
-    if (id.startsWith('start-node-') && this.releaseNodes.length > 0) {
-      const firstNode = this.releaseNodes[0];
-      const hasInitialSkip = this.skipNodes.some((s) => s.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN));
+    const releaseNodes = this.releaseNodes();
+    const skipNodes = this.skipNodes();
+
+    if (id.startsWith('start-node-') && releaseNodes.length > 0) {
+      const firstNode = releaseNodes[0];
+      const hasInitialSkip = skipNodes.some((s) => s.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN));
 
       let startDistance = 300;
       if (hasInitialSkip) {
-        const initialSkipNode = this.skipNodes.find((s) =>
-          s.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN),
-        );
+        const initialSkipNode = skipNodes.find((s) => s.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN));
         if (initialSkipNode) {
           startDistance = firstNode.position.x - initialSkipNode.x + startDistance;
         }
@@ -380,7 +394,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     }
 
-    const skipNode = this.skipNodes.find((s) => s.id === id);
+    const skipNode = skipNodes.find((s) => s.id === id);
     if (skipNode) {
       return {
         id: skipNode.id,
@@ -392,7 +406,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       };
     }
 
-    const node = this.releaseNodes.find((n) => n.id === id);
+    const node = releaseNodes.find((n) => n.id === id);
     if (node) {
       return node;
     }
@@ -406,17 +420,18 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       .pipe(
         map((record) => Object.values(record).flat()),
         catchError(() => {
-          this.showNotFoundError = true;
-          this.releaseNodes = [];
-          this.allLinks = [];
+          this.showNotFoundError.set(true);
+          this.releaseNodes.set([]);
+          this.allLinks.set([]);
           this.checkReleaseGraphLoading();
           return of([]);
         }),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((releases) => {
-        this.releases = releases;
+        this.releases.set(releases);
         if (releases.length === 0) {
-          this.showNotFoundError = true;
+          this.showNotFoundError.set(true);
           this.checkReleaseGraphLoading();
           return;
         }
@@ -429,27 +444,29 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     const releaseNodeMap = this.nodeService.calculateReleaseCoordinates(sortedGroups);
     this.nodeService.assignReleaseColors(releaseNodeMap);
 
-    this.releaseNodes = [];
+    const releaseNodes: ReleaseNode[] = [];
     for (const [, nodes] of releaseNodeMap.entries()) {
-      const spacedNodes = this.nodeService.applyMinimumSpacing(nodes);
-      this.releaseNodes.push(...spacedNodes);
+      releaseNodes.push(...this.nodeService.applyMinimumSpacing(nodes));
     }
+    this.releaseNodes.set(releaseNodes);
 
-    this.skipNodes = this.linkService.createSkipNodes(sortedGroups, this.releases);
+    const releases = this.releases();
+    const skipNodes = this.linkService.createSkipNodes(sortedGroups, releases);
+    this.skipNodes.set(skipNodes);
 
     this.updateSkipNodePositions();
 
     const masterNodes = releaseNodeMap.get('master') ?? [];
-    const skipNodeLinks = this.linkService.createSkipNodeLinks(this.skipNodes, masterNodes);
+    const skipNodeLinks = this.linkService.createSkipNodeLinks(skipNodes, masterNodes);
 
-    this.allLinks = [...this.linkService.createLinks(sortedGroups, this.skipNodes), ...skipNodeLinks];
-    this.branchLabels = this.createBranchLabels(releaseNodeMap, this.releases);
-    this.branchLifecycles = this.calculateBranchLifecycles(releaseNodeMap);
+    this.allLinks.set([...this.linkService.createLinks(sortedGroups, skipNodes), ...skipNodeLinks]);
+    this.branchLabels.set(this.createBranchLabels(releaseNodeMap, releases));
+    this.branchLifecycles.set(this.calculateBranchLifecycles(releaseNodeMap));
 
-    this.quarterMarkers = this.extendQuarterMarkersToLifecycleEnd();
+    this.quarterMarkers.set(this.extendQuarterMarkersToLifecycleEnd());
 
     if (this.nodeService.timelineScale) {
-      this.currentTimeX = this.calculateXPositionFromDate(new Date(), this.nodeService.timelineScale);
+      this.currentTimeX.set(this.calculateXPositionFromDate(new Date(), this.nodeService.timelineScale));
     }
 
     this.checkReleaseGraphLoading();
@@ -471,7 +488,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private getMaxLifecycleEndX(): number {
     let maxEndX = 0;
-    for (const lifecycle of this.branchLifecycles) {
+    for (const lifecycle of this.branchLifecycles()) {
       for (const phase of lifecycle.phases) {
         maxEndX = Math.max(maxEndX, phase.endX);
       }
@@ -523,11 +540,11 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private updateSkipNodePositions(): void {
-    for (const skipNode of this.skipNodes) {
+    for (const skipNode of this.skipNodes()) {
       const isInitial = skipNode.id.startsWith(ReleaseGraphComponent.SKIP_RELEASE_NODE_BEGIN);
 
       if (isInitial) {
-        const firstNode = this.releaseNodes[0];
+        const firstNode = this.releaseNodes()[0];
         if (firstNode) {
           skipNode.x = firstNode.position.x / 2;
           skipNode.y = firstNode.position.y;
@@ -629,34 +646,35 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private centerGraph(): void {
-    if (!this.svgElement?.nativeElement || this.releaseNodes.length === 0) return;
-    this.viewBox = this.calculateViewBox(this.releaseNodes);
+    const releaseNodes = this.releaseNodes();
+    if (!this.svgNative() || releaseNodes.length === 0) return;
+    this.viewBox.set(this.calculateViewBox(releaseNodes));
     this.updateStickyBranchLabels();
   }
 
   private updateStickyBranchLabels(): void {
-    if (!this.svgElement?.nativeElement) return;
+    const svg = this.svgNative();
+    if (!svg) return;
 
-    this.stickyBranchLabels = this.branchLabels.map((label) => {
-      const svgY = label.y * this.scale + this.translateY;
-      const svg = this.svgElement.nativeElement;
-      const svgRect = svg.getBoundingClientRect();
-      const screenY = svgRect.top + svgY;
+    const scale = this.scale();
+    const translateY = this.translateY();
+    const svgRect = svg.getBoundingClientRect();
 
-      return {
+    this.stickyBranchLabels.set(
+      this.branchLabels().map((label) => ({
         label: label.label,
-        screenY: screenY,
-      };
-    });
+        screenY: svgRect.top + label.y * scale + translateY,
+      })),
+    );
   }
 
   private calculateViewBox(nodes: ReleaseNode[]): string {
-    const svg = this.svgElement.nativeElement;
+    const svg = this.requireSvg();
     const W = svg.clientWidth;
     const H = svg.clientHeight;
 
     const allCoordinates: { x: number; y: number }[] = nodes.map((n) => ({ x: n.position.x, y: n.position.y }));
-    for (const link of this.allLinks) {
+    for (const link of this.allLinks()) {
       const source = this.findNodeById(link.source);
       const target = this.findNodeById(link.target);
       if (source && target) {
@@ -679,38 +697,41 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const contentHeightProportion = 0.65;
     const targetHeight = H * contentHeightProportion;
-    this.scale = targetHeight / Math.max(graphH, 1);
-    const scaledGraphH = graphH * this.scale;
+    const scale = targetHeight / Math.max(graphH, 1);
+    const scaledGraphH = graphH * scale;
     const topPadding = (H - scaledGraphH) / 2;
-    this.translateY = -minY * this.scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING;
+    const translateY = -minY * scale + topPadding + ReleaseGraphComponent.RELEASE_GRAPH_NAVIGATION_PADDING;
 
-    this.maxTranslateX = -minX * this.scale + W * 0.2;
-    this.minTranslateX = W - maxX * this.scale - W * ReleaseGraphComponent.GRAPH_END_PADDING_PROPORTION;
+    this.scale.set(scale);
+    this.translateY.set(translateY);
 
-    const latestReleaseTranslateX = W - latestReleaseX * this.scale - W * 0.35;
-    this.translateX = Math.max(this.minTranslateX, Math.min(this.maxTranslateX, latestReleaseTranslateX));
+    this.maxTranslateX = -minX * scale + W * 0.2;
+    this.minTranslateX = W - maxX * scale - W * ReleaseGraphComponent.GRAPH_END_PADDING_PROPORTION;
+
+    const latestReleaseTranslateX = W - latestReleaseX * scale - W * 0.35;
+    this.translateX.set(this.clampTranslateX(latestReleaseTranslateX));
 
     const headerBottom = ReleaseGraphComponent.HEADER_HEIGHT_PX;
     const labelFontSize = ReleaseGraphComponent.QUARTER_LABEL_FONT_SIZE;
     const lineGap = ReleaseGraphComponent.QUARTER_LINE_GAP_PX;
     const lineOverflow = ReleaseGraphComponent.SVG_LINE_OVERFLOW_PX;
 
-    this.svgLabelY = (headerBottom - this.translateY) / this.scale;
-    this.svgLineTopY = (headerBottom + lineGap - this.translateY) / this.scale + labelFontSize;
-    this.svgChevronY = (headerBottom - this.translateY) / this.scale;
-    this.svgLineBottomY = (H + lineOverflow - this.translateY) / this.scale;
+    this.svgLabelY.set((headerBottom - translateY) / scale);
+    this.svgLineTopY.set((headerBottom + lineGap - translateY) / scale + labelFontSize);
+    this.svgChevronY.set((headerBottom - translateY) / scale);
+    this.svgLineBottomY.set((H + lineOverflow - translateY) / scale);
 
     return `0 0 ${W} ${H}`;
   }
 
   private collectLifecyclePhaseXPositions(): number[] {
-    return this.branchLifecycles.flatMap((lifecycle) =>
+    return this.branchLifecycles().flatMap((lifecycle) =>
       lifecycle.phases.flatMap((phase) => [phase.startX, phase.endX]),
     );
   }
 
   private lastQuarterMarkerX(): number {
-    return this.quarterMarkers.at(-1)?.x ?? Number.NEGATIVE_INFINITY;
+    return this.quarterMarkers().at(-1)?.x ?? Number.NEGATIVE_INFINITY;
   }
 
   private calculateBranchLifecycles(releaseNodeMap: Map<string, ReleaseNode[]>): BranchLifecycle[] {
@@ -724,7 +745,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
       if (yPosition === 0) continue;
 
       const nodesAtY = nodesByY.get(yPosition)!;
-      const branchLabel = this.determineBranchLabel(yPosition, nodesAtY, this.releases);
+      const branchLabel = this.determineBranchLabel(yPosition, nodesAtY, this.releases());
 
       const allNodesInBranch = this.getAllNodesInBranch(nodesAtY);
 
@@ -751,11 +772,11 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private identifyAnyNodeById(nodeId: string): ReleaseNode | undefined {
-    return this.releaseNodes.find((n) => n.id === nodeId);
+    return this.releaseNodes().find((n) => n.id === nodeId);
   }
 
   private findMajorMinorRelease(branchMajorMinor: string): Release | undefined {
-    return this.releases.find((release) => {
+    return this.releases().find((release) => {
       const releaseName = release.name.startsWith('v') ? release.name.slice(1) : release.name;
       return releaseName.startsWith(`${branchMajorMinor}.0`) && !releaseName.includes('nightly');
     });
@@ -763,7 +784,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private calculateSupportEndDate(branchStartDate: Date, totalSupportQuarters: number, isMajor: boolean): Date {
     const quartersPerExtendedWindow = isMajor ? 2 : 1;
-    const extendedQuarters = quartersPerExtendedWindow * this.extendedSupportLevel;
+    const extendedQuarters = quartersPerExtendedWindow * this.extendedSupportLevel();
     return this.addMonths(branchStartDate, (totalSupportQuarters + extendedQuarters) * 3);
   }
 
@@ -774,14 +795,15 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
     phaseMonths: number,
     scale: { startDate: Date; pixelsPerDay: number },
   ): { greenPhaseEndX: number; extendedPhaseEndsX: number[] } {
-    if (this.extendedSupportLevel === 0) {
+    const extendedSupportLevel = this.extendedSupportLevel();
+    if (extendedSupportLevel === 0) {
       const midpointX = offsetStartX + (supportEndX - offsetStartX) / 2;
       return { greenPhaseEndX: midpointX, extendedPhaseEndsX: [] };
     }
 
     const greenPhaseEndX = this.calculateXPositionFromDate(this.addMonths(branchStartDate, phaseMonths), scale);
 
-    const extendedPhaseEndsX = Array.from({ length: this.extendedSupportLevel }, (_, index) =>
+    const extendedPhaseEndsX = Array.from({ length: extendedSupportLevel }, (_, index) =>
       this.calculateXPositionFromDate(this.addMonths(branchStartDate, phaseMonths * (index + 2)), scale),
     );
 
@@ -887,8 +909,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private checkReleaseGraphLoading(): void {
-    if (this.isLoading) {
-      this.isLoading = false;
+    if (this.isLoading()) {
+      this.isLoading.set(false);
       this.waitForSvgReady(() => {
         this.centerGraph();
         this.attachNonPassiveEventListeners();
@@ -897,7 +919,7 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private waitForSvgReady(callback: () => void): void {
-    const svg = this.svgElement?.nativeElement;
+    const svg = this.svgNative();
 
     if (!svg) {
       requestAnimationFrame(() => this.waitForSvgReady(callback));
@@ -922,9 +944,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private attachNonPassiveEventListeners(): void {
-    if (!this.svgElement?.nativeElement) return;
-
-    const svg = this.svgElement.nativeElement;
+    const svg = this.svgNative();
+    if (!svg) return;
 
     this.wheelListener = this.onWheel.bind(this);
     this.touchStartListener = this.onTouchStart.bind(this);
@@ -936,9 +957,8 @@ export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private removeNonPassiveEventListeners(): void {
-    if (!this.svgElement?.nativeElement) return;
-
-    const svg = this.svgElement.nativeElement;
+    const svg = this.svgNative();
+    if (!svg) return;
 
     if (this.wheelListener) {
       svg.removeEventListener('wheel', this.wheelListener);

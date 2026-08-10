@@ -5,7 +5,7 @@ import { NgOptimizedImage } from '@angular/common';
   selector: 'app-not-found',
   imports: [NgOptimizedImage],
   templateUrl: './not-found.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './not-found.component.scss',
 })
 export class NotFoundComponent {}

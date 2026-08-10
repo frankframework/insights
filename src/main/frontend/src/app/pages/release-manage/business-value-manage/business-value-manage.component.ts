@@ -1,6 +1,5 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnInit, Signal, computed, inject, input, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
 import { Release, ReleaseService } from '../../../services/release.service';
@@ -21,7 +20,6 @@ import { ReleaseManageComponent } from '../release-manage.component';
   selector: 'app-business-value-manage',
   standalone: true,
   imports: [
-    CommonModule,
     BusinessValueAddComponent,
     BusinessValueEditComponent,
     BusinessValueDeleteComponent,
@@ -31,47 +29,49 @@ import { ReleaseManageComponent } from '../release-manage.component';
     LoaderComponent,
   ],
   templateUrl: './business-value-manage.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-manage.component.scss',
 })
 export class BusinessValueManageComponent implements OnInit {
-  public businessValues = signal<BusinessValue[]>([]);
-  public allIssues = signal<Issue[]>([]);
-  public issuesWithSelection = signal<IssueWithSelection[]>([]);
-  public selectedBusinessValue = signal<BusinessValue | null>(null);
-  public isLoading = signal<boolean>(true);
-  public isSaving = signal<boolean>(false);
-  public releaseId = signal<string>('');
-  public releaseTitle = signal<string>('');
+  public readonly id = input<string | undefined>();
+  public readonly businessValueId = input<string | undefined>();
 
-  public showCreateForm = signal<boolean>(false);
-  public showEditForm = signal<boolean>(false);
-  public showDeleteForm = signal<boolean>(false);
-  public showDuplicateModal = signal<boolean>(false);
+  public readonly businessValues = signal<BusinessValue[]>([]);
+  public readonly allIssues = signal<Issue[]>([]);
+  public readonly issuesWithSelection = signal<IssueWithSelection[]>([]);
+  public readonly selectedBusinessValue = signal<BusinessValue | null>(null);
+  public readonly isLoading = signal<boolean>(true);
+  public readonly isSaving = signal<boolean>(false);
+  public readonly releaseId = signal<string>('');
+  public readonly releaseTitle = signal<string>('');
 
-  public businessValueToDelete = signal<BusinessValue | null>(null);
+  public readonly showCreateForm = signal<boolean>(false);
+  public readonly showEditForm = signal<boolean>(false);
+  public readonly showDeleteForm = signal<boolean>(false);
+  public readonly showDuplicateModal = signal<boolean>(false);
 
-  public otherReleases = signal<Release[]>([]);
-  public isDuplicating = signal<boolean>(false);
-  public duplicateErrorMessage = signal<string>('');
+  public readonly businessValueToDelete = signal<BusinessValue | null>(null);
 
-  public hasChanges = computed(() => this.hasIssueChanges());
+  public readonly otherReleases = signal<Release[]>([]);
+  public readonly isDuplicating = signal<boolean>(false);
+  public readonly duplicateErrorMessage = signal<string>('');
 
-  private route = inject(ActivatedRoute);
+  public readonly hasChanges: Signal<boolean> = computed(() => this.hasIssueChanges());
+
   private businessValueService = inject(BusinessValueService);
   private issueService = inject(IssueService);
   private releaseService = inject(ReleaseService);
   private router = inject(Router);
 
-  private originalSelectedIssueIds = signal<Set<string>>(new Set());
+  private readonly originalSelectedIssueIds = signal<Set<string>>(new Set());
   private pendingBusinessValueId: string | null = null;
   private readonly businessValuesPath = 'business-values';
 
   ngOnInit(): void {
-    const releaseId = this.route.snapshot.paramMap.get('id');
+    const releaseId = this.id();
     if (releaseId) {
       this.releaseId.set(releaseId);
-      this.pendingBusinessValueId = this.route.snapshot.paramMap.get('businessValueId');
+      this.pendingBusinessValueId = this.businessValueId() ?? null;
       this.fetchData(releaseId);
     }
   }
@@ -139,7 +139,9 @@ export class BusinessValueManageComponent implements OnInit {
 
   public onBusinessValueUpdated(updatedBusinessValue: BusinessValue): void {
     this.businessValues.update((list) =>
-      list.map((bv) => (bv.id === updatedBusinessValue.id ? updatedBusinessValue : bv)),
+      list.map((businessValue) =>
+        businessValue.id === updatedBusinessValue.id ? updatedBusinessValue : businessValue,
+      ),
     );
 
     this.selectedBusinessValue.set(updatedBusinessValue);

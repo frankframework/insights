@@ -1,5 +1,4 @@
-import { Component, input, Output, EventEmitter, computed, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Signal, computed, input, output, signal } from '@angular/core';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { Issue } from '../../../../services/issue.service';
 
@@ -13,23 +12,23 @@ export interface IssueWithSelection extends Issue {
 @Component({
   selector: 'app-business-value-issue-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './business-value-issue-panel.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-issue-panel.component.scss',
 })
 export class BusinessValueIssuePanelComponent {
-  @Output() issueToggled = new EventEmitter<IssueWithSelection>();
-  @Output() saveClicked = new EventEmitter<void>();
+  public readonly selectedBusinessValue = input.required<BusinessValue | null>();
+  public readonly issuesWithSelection = input.required<IssueWithSelection[]>();
+  public readonly hasChanges = input.required<boolean>();
+  public readonly isSaving = input<boolean>(false);
 
-  public selectedBusinessValue = input.required<BusinessValue | null>();
-  public issuesWithSelection = input.required<IssueWithSelection[]>();
-  public hasChanges = input.required<boolean>();
-  public isSaving = input<boolean>(false);
+  public readonly issueToggled = output<IssueWithSelection>();
+  public readonly saveClicked = output<void>();
 
-  public issueSearchQuery = signal<string>('');
+  public readonly issueSearchQuery = signal<string>('');
 
-  public sortedIssues = computed(() => {
+  public readonly sortedIssues: Signal<IssueWithSelection[]> = computed(() => {
     const issues = [...this.issuesWithSelection()];
     const selectedBV = this.selectedBusinessValue();
     const searchQuery = this.issueSearchQuery().toLowerCase().trim();
@@ -41,9 +40,28 @@ export class BusinessValueIssuePanelComponent {
       );
     }
 
-    return [...filteredIssues].toSorted((a, b) => this.sortIssuesByPriority(a, b, selectedBV));
+    return [...filteredIssues].toSorted((issueA, issueB) =>
+      BusinessValueIssuePanelComponent.sortIssuesByPriority(issueA, issueB, selectedBV),
+    );
   });
 
+  private static sortIssuesByPriority(
+    issueA: IssueWithSelection,
+    issueB: IssueWithSelection,
+    selectedBusinessValue: BusinessValue | null,
+  ): number {
+    if (!selectedBusinessValue) return issueA.number - issueB.number;
+
+    if (issueA.isConnected && !issueB.isConnected) return -1;
+    if (!issueA.isConnected && issueB.isConnected) return 1;
+
+    const isAFree = !issueA.isConnected && !issueA.assignedToOther;
+    const isBFree = !issueB.isConnected && !issueB.assignedToOther;
+    if (isAFree && !isBFree) return -1;
+    if (!isAFree && isBFree) return 1;
+
+    return issueA.number - issueB.number;
+  }
   public updateSearchQuery(event: Event): void {
     const query = (event.target as HTMLInputElement).value;
     this.issueSearchQuery.set(query);
@@ -55,19 +73,5 @@ export class BusinessValueIssuePanelComponent {
 
   public onSaveClick(): void {
     this.saveClicked.emit();
-  }
-
-  private sortIssuesByPriority(a: IssueWithSelection, b: IssueWithSelection, selectedBV: BusinessValue | null): number {
-    if (!selectedBV) return a.number - b.number;
-
-    if (a.isConnected && !b.isConnected) return -1;
-    if (!a.isConnected && b.isConnected) return 1;
-
-    const aFree = !a.isConnected && !a.assignedToOther;
-    const bFree = !b.isConnected && !b.assignedToOther;
-    if (aFree && !bFree) return -1;
-    if (!aFree && bFree) return 1;
-
-    return a.number - b.number;
   }
 }

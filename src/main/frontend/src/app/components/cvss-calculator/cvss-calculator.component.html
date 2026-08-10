@@ -1,8 +1,8 @@
 <app-modal title="CVSS 3.1 Calculator" (closed)="close()">
   <div class="cvss-calculator">
-    @if (referenceScore !== null) {
+    @if (referenceScore() !== null) {
       <p class="reference-note">
-        Original NVD score for reference: <strong>{{ referenceScore }}</strong>
+        Original NVD score for reference: <strong>{{ referenceScore() }}</strong>
       </p>
     }
 
@@ -14,7 +14,8 @@
           type="text"
           class="vector-input"
           placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
-          [(ngModel)]="vectorInput"
+          [ngModel]="vectorInput()"
+          (ngModelChange)="vectorInput.set($event)"
           (keydown.enter)="applyVectorInput()"
         />
         <button type="button" class="load-btn" (click)="applyVectorInput()">Load</button>

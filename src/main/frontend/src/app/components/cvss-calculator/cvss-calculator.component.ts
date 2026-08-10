@@ -1,17 +1,15 @@
 import {
-  Component,
-  computed,
-  EventEmitter,
-  inject,
-  Input,
-  OnInit,
-  Output,
-  Signal,
-  signal,
-  WritableSignal,
   ChangeDetectionStrategy,
+  Component,
+  Signal,
+  WritableSignal,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../modal/modal.component';
 import { TooltipService } from '../tooltip/tooltip.service';
@@ -28,39 +26,36 @@ import {
 @Component({
   selector: 'app-cvss-calculator',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent],
+  imports: [FormsModule, ModalComponent],
   templateUrl: './cvss-calculator.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './cvss-calculator.component.scss',
 })
-export class CvssCalculatorComponent implements OnInit {
-  @Input() referenceScore: number | null = null;
-  @Input() referenceVector: string | null = null;
+export class CvssCalculatorComponent {
+  public readonly referenceScore = input<number | null>(null);
+  public readonly referenceVector = input<string | null>(null);
 
-  @Output() closed = new EventEmitter<void>();
-  @Output() scoreSelected = new EventEmitter<number>();
+  public readonly closed = output<void>();
+  public readonly scoreSelected = output<number>();
 
   public readonly metrics = CVSS_METRICS;
 
-  public vectorInput = '';
-  public vectorError: WritableSignal<string | null> = signal(null);
+  public readonly selection: WritableSignal<CvssVector> = linkedSignal<string | null, CvssVector>({
+    source: this.referenceVector,
+    computation: (vector) => (vector ? (parseVectorString(vector) ?? {}) : {}),
+  });
 
-  public selection: WritableSignal<CvssVector> = signal({});
+  public readonly vectorInput: WritableSignal<string> = linkedSignal<string | null, string>({
+    source: this.referenceVector,
+    computation: (vector) => (vector && parseVectorString(vector) ? vector : ''),
+  });
 
-  public result: Signal<CvssResult | null> = computed(() => calculateCvssScore(this.selection()));
-  public currentVectorString: Signal<string> = computed(() => vectorToString(this.selection()));
+  public readonly vectorError: WritableSignal<string | null> = signal<string | null>(null);
 
-  private tooltipService = inject(TooltipService);
+  public readonly result: Signal<CvssResult | null> = computed(() => calculateCvssScore(this.selection()));
+  public readonly currentVectorString: Signal<string> = computed(() => vectorToString(this.selection()));
 
-  ngOnInit(): void {
-    if (!this.referenceVector) return;
-
-    const parsed = parseVectorString(this.referenceVector);
-    if (!parsed) return;
-
-    this.vectorInput = this.referenceVector;
-    this.selection.set(parsed);
-  }
+  private readonly tooltipService = inject(TooltipService);
 
   public selectMetric(key: CvssMetricKey, optionKey: string): void {
     this.selection.update((current) => ({ ...current, [key]: optionKey }));
@@ -68,7 +63,7 @@ export class CvssCalculatorComponent implements OnInit {
   }
 
   public applyVectorInput(): void {
-    const parsed = parseVectorString(this.vectorInput);
+    const parsed = parseVectorString(this.vectorInput());
     if (!parsed) {
       this.vectorError.set(
         'Enter a complete CVSS 3.1 vector string, for example: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',

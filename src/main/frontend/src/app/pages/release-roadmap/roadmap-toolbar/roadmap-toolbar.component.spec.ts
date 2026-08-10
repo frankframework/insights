@@ -27,7 +27,7 @@ describe('RoadmapToolbarComponent', () => {
   describe('Input: periodLabel', () => {
     it('should display the periodLabel when it is set', () => {
       const testLabel = 'Q3 2025 - Q4 2025';
-      component.periodLabel = testLabel;
+      fixture.componentRef.setInput('periodLabel', testLabel);
       fixture.detectChanges();
       const label = fixture.debugElement.query(By.css('.period-label')).nativeElement;
 
@@ -35,7 +35,7 @@ describe('RoadmapToolbarComponent', () => {
     });
 
     it('should display an empty string if periodLabel is not set', () => {
-      component.periodLabel = '';
+      fixture.componentRef.setInput('periodLabel', '');
       fixture.detectChanges();
       const label = fixture.debugElement.query(By.css('.period-label')).nativeElement;
 
@@ -45,7 +45,7 @@ describe('RoadmapToolbarComponent', () => {
 
   describe('Output: Event Emitters', () => {
     it('should emit changePeriod with -3 when the previous button is clicked in quarterly mode', () => {
-      component.viewMode = ViewMode.QUARTERLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.QUARTERLY);
       fixture.detectChanges();
 
       spyOn(component.changePeriod, 'emit');
@@ -59,7 +59,7 @@ describe('RoadmapToolbarComponent', () => {
     });
 
     it('should emit changePeriod with 3 when the next button is clicked in quarterly mode', () => {
-      component.viewMode = ViewMode.QUARTERLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.QUARTERLY);
       fixture.detectChanges();
 
       spyOn(component.changePeriod, 'emit');
@@ -73,7 +73,7 @@ describe('RoadmapToolbarComponent', () => {
     });
 
     it('should emit changePeriod with -1 when the previous button is clicked in monthly mode', () => {
-      component.viewMode = ViewMode.MONTHLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.MONTHLY);
       fixture.detectChanges();
 
       spyOn(component.changePeriod, 'emit');
@@ -86,7 +86,7 @@ describe('RoadmapToolbarComponent', () => {
     });
 
     it('should emit changePeriod with 1 when the next button is clicked in monthly mode', () => {
-      component.viewMode = ViewMode.MONTHLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.MONTHLY);
       fixture.detectChanges();
 
       spyOn(component.changePeriod, 'emit');
@@ -112,7 +112,7 @@ describe('RoadmapToolbarComponent', () => {
 
   describe('ViewMode Toggle', () => {
     it('should emit toggleViewMode when switching from quarterly to monthly', () => {
-      component.viewMode = ViewMode.QUARTERLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.QUARTERLY);
       fixture.detectChanges();
 
       spyOn(component.toggleViewMode, 'emit');
@@ -127,7 +127,7 @@ describe('RoadmapToolbarComponent', () => {
     });
 
     it('should emit toggleViewMode when switching from monthly to quarterly', () => {
-      component.viewMode = ViewMode.MONTHLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.MONTHLY);
       fixture.detectChanges();
 
       spyOn(component.toggleViewMode, 'emit');
@@ -142,7 +142,7 @@ describe('RoadmapToolbarComponent', () => {
     });
 
     it('should apply an "active" class to the correct view mode button', () => {
-      component.viewMode = ViewMode.QUARTERLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.QUARTERLY);
       fixture.detectChanges();
 
       const toggleButtons = fixture.debugElement.queryAll(By.css('.toggle-button'));
@@ -152,7 +152,7 @@ describe('RoadmapToolbarComponent', () => {
       expect(quarterlyButton.classes['active']).toBeTrue();
       expect(monthlyButton.classes['active']).toBeFalsy();
 
-      component.viewMode = ViewMode.MONTHLY;
+      fixture.componentRef.setInput('viewMode', ViewMode.MONTHLY);
       fixture.detectChanges();
 
       expect(quarterlyButton.classes['active']).toBeFalsy();

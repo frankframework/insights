@@ -12,7 +12,13 @@ describe('HeaderComponent', () => {
   let component: HeaderComponent;
   let fixture: ComponentFixture<HeaderComponent>;
   let mockLocationService: jasmine.SpyObj<LocationService>;
-  let mockGraphStateService: jasmine.SpyObj<GraphStateService>;
+  let mockGraphStateService: {
+    extendedSupportLevel: WritableSignal<number>;
+    showNightlies: WritableSignal<boolean>;
+    graphQueryParams: WritableSignal<Record<string, string>>;
+    saveExtendedSupportLevelForOAuth: jasmine.Spy;
+    saveNightlyForOAuth: jasmine.Spy;
+  };
   let mockAuthService: {
     currentUser: WritableSignal<User | null>;
     isAuthenticated: WritableSignal<boolean>;
@@ -45,16 +51,13 @@ describe('HeaderComponent', () => {
       clearError: jasmine.createSpy('clearError'),
     };
     mockLocationService = jasmine.createSpyObj('LocationService', ['navigateTo', 'reload']);
-    mockGraphStateService = jasmine.createSpyObj('GraphStateService', [
-      'getExtendedSupportLevel',
-      'saveExtendedSupportLevelForOAuth',
-      'getShowNightlies',
-      'saveNightlyForOAuth',
-      'getGraphQueryParams',
-    ]);
-    mockGraphStateService.getExtendedSupportLevel.and.returnValue(0);
-    mockGraphStateService.getShowNightlies.and.returnValue(false);
-    mockGraphStateService.getGraphQueryParams.and.returnValue({});
+    mockGraphStateService = {
+      extendedSupportLevel: signal(0),
+      showNightlies: signal(false),
+      graphQueryParams: signal<Record<string, string>>({}),
+      saveExtendedSupportLevelForOAuth: jasmine.createSpy('saveExtendedSupportLevelForOAuth'),
+      saveNightlyForOAuth: jasmine.createSpy('saveNightlyForOAuth'),
+    };
 
     await TestBed.configureTestingModule({
       imports: [HeaderComponent],
@@ -84,7 +87,7 @@ describe('HeaderComponent', () => {
     });
 
     it('should have showUserMenu set to false initially', () => {
-      expect(component.showUserMenu).toBe(false);
+      expect(component.showUserMenu()).toBe(false);
     });
 
     it('should inject AuthService', () => {
@@ -189,19 +192,19 @@ describe('HeaderComponent', () => {
       userProfile.nativeElement.click();
       fixture.detectChanges();
 
-      expect(component.showUserMenu).toBe(true);
+      expect(component.showUserMenu()).toBe(true);
       expect(fixture.debugElement.query(By.css('.user-menu'))).toBeTruthy();
 
       // Close
       userProfile.nativeElement.click();
       fixture.detectChanges();
 
-      expect(component.showUserMenu).toBe(false);
+      expect(component.showUserMenu()).toBe(false);
     });
 
     it('should call onLogout when logout button is clicked', () => {
       spyOn(component, 'onLogout');
-      component.showUserMenu = true;
+      component.showUserMenu.set(true);
       fixture.detectChanges();
 
       const logoutButton = fixture.debugElement.query(By.css('.logout-btn'));
@@ -223,9 +226,7 @@ describe('HeaderComponent', () => {
 
       expect(mockAuthService.setLoading).toHaveBeenCalledWith(true);
       expect(mockAuthService.setPendingAuth).toHaveBeenCalledWith();
-      expect(mockGraphStateService.getExtendedSupportLevel).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveExtendedSupportLevelForOAuth).toHaveBeenCalledWith(0);
-      expect(mockGraphStateService.getShowNightlies).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveNightlyForOAuth).toHaveBeenCalledWith(false);
       expect(mockLocationService.navigateTo).toHaveBeenCalledWith('/oauth2/authorization/github');
     });
@@ -252,10 +253,10 @@ describe('HeaderComponent', () => {
     });
 
     it('onLogout should close menu and call authService.logout', () => {
-      component.showUserMenu = true;
+      component.showUserMenu.set(true);
       component.onLogout();
 
-      expect(component.showUserMenu).toBe(false);
+      expect(component.showUserMenu()).toBe(false);
       expect(mockAuthService.logout).toHaveBeenCalledWith();
     });
   });

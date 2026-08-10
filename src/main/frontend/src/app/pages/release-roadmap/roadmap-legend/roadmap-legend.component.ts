@@ -1,5 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ISSUE_STATE_STYLES, IssueStateStyle } from '../roadmap.types';
 
 interface LegendItem {
@@ -7,26 +6,18 @@ interface LegendItem {
   style: IssueStateStyle;
 }
 
+const ISSUE_STATE_LEGEND_ITEMS: LegendItem[] = Object.entries(ISSUE_STATE_STYLES).map(([label, style]) => ({
+  label,
+  style,
+}));
+
 @Component({
   selector: 'app-roadmap-legend',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './roadmap-legend.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './roadmap-legend.component.scss',
 })
 export class RoadmapLegend {
-  public issueStateItems: LegendItem[] = [];
-
-  constructor() {
-    this.initializeLegendItems();
-  }
-
-  private initializeLegendItems(): void {
-    for (const [stateName, style] of Object.entries(ISSUE_STATE_STYLES)) {
-      this.issueStateItems.push({
-        label: stateName,
-        style: style,
-      });
-    }
-  }
+  public readonly issueStateItems: LegendItem[] = ISSUE_STATE_LEGEND_ITEMS;
 }

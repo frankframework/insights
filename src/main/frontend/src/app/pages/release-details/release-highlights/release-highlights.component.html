@@ -1,10 +1,10 @@
 <div class="highlight-pie">
   <div class="chart-legends">
     <div class="chart-legend">
-      @if (hasHighlightRing) {
+      @if (hasHighlightRing()) {
         <p class="legend-title">Issue types</p>
       }
-      @for (item of legendItems; track item.label) {
+      @for (item of legendItems(); track item.label) {
         <div class="legend-item">
           <span class="legend-color" [style.background]="item.color"></span>
           <span class="legend-label">{{ item.label }}</span>
@@ -12,10 +12,10 @@
         </div>
       }
     </div>
-    @if (hasHighlightRing) {
+    @if (hasHighlightRing()) {
       <div class="chart-legend">
         <p class="legend-title">Highlights</p>
-        @for (item of highlightLegendItems; track item.label) {
+        @for (item of highlightLegendItems(); track item.label) {
           <div class="legend-item">
             <span class="legend-color" [style.background]="item.color"></span>
             <span class="legend-label">{{ item.label }}</span>
@@ -29,7 +29,7 @@
     <canvas
       baseChart
       class="highlight-donut-chart"
-      [data]="doughnutChartData"
+      [data]="doughnutChartData()"
       [options]="doughnutChartOptions"
       [type]="'doughnut'"
       [plugins]="doughnutChartPlugins"

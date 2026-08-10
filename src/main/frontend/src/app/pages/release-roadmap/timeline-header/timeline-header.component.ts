@@ -1,27 +1,21 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Signal, computed, input } from '@angular/core';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-timeline-header',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [DatePipe],
   templateUrl: './timeline-header.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./timeline-header.component.scss'],
 })
 export class TimelineHeaderComponent {
-  @Input() months: Date[] = [];
+  public readonly months = input<Date[]>([]);
+  public readonly quarters = input<{ name: string; monthCount: number }[]>([]);
 
-  public quartersGridStyle = '';
-  private _quarters: { name: string; monthCount: number }[] = [];
-
-  get quarters(): { name: string; monthCount: number }[] {
-    return this._quarters;
-  }
-
-  @Input()
-  set quarters(value: { name: string; monthCount: number }[]) {
-    this._quarters = value;
-    this.quartersGridStyle = this._quarters.map((q) => `${q.monthCount}fr`).join(' ');
-  }
+  public readonly quartersGridStyle: Signal<string> = computed(() =>
+    this.quarters()
+      .map((quarter) => `${quarter.monthCount}fr`)
+      .join(' '),
+  );
 }

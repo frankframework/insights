@@ -1,5 +1,7 @@
 <div class="release-details-container">
-  @if (!isLoading && release) {
+  @if (isLoading()) {
+    <app-loader />
+  } @else if (release(); as release) {
     <header class="release-details-header">
       <div class="header-actions">
         <a class="back-button" [routerLink]="['/graph']" [queryParams]="graphQueryParams()">
@@ -49,20 +51,20 @@
     <div class="release-details-body">
       <div class="release-details-content">
         <section class="left-panel">
-          @if (highlightedLabels === null && releaseIssues === null && !businessValues) {
+          @if (highlightedLabels() === null && releaseIssues() === null && !businessValues()) {
             <div class="no-new-features">
               <p>No new features found towards previous release.</p>
             </div>
           } @else {
-            @if (highlightedLabels) {
-              <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues" />
+            @if (highlightedLabels(); as highlightedLabels) {
+              <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues()" />
             } @else {
               <div class="no-highlights">
                 <p>No new highlights found for this release.</p>
               </div>
             }
 
-            @if (businessValues) {
+            @if (businessValues()) {
               <div class="section-view-toggle">
                 <button
                   class="view-tab"
@@ -85,9 +87,9 @@
 
             @if (activeView() === 'business-value') {
               <div class="section-content">
-                <app-release-business-value [businessValues]="businessValues" />
+                <app-release-business-value [businessValues]="businessValues()" />
               </div>
-            } @else if (releaseIssues) {
+            } @else if (releaseIssues(); as releaseIssues) {
               <div class="section-content">
                 <app-release-important-issues [releaseIssues]="releaseIssues" />
               </div>
@@ -96,7 +98,7 @@
         </section>
 
         <section class="right-panel">
-          @if (vulnerabilities !== null) {
+          @if (vulnerabilities(); as vulnerabilities) {
             <app-release-vulnerabilities [vulnerabilities]="vulnerabilities" [lastScanned]="release.lastScanned" />
           } @else {
             <div class="placeholder">
@@ -106,7 +108,5 @@
         </section>
       </div>
     </div>
-  } @else if (isLoading) {
-    <app-loader />
   }
 </div>

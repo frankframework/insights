@@ -1,4 +1,4 @@
-import { Injectable, signal, WritableSignal } from '@angular/core';
+import { Injectable, Signal, WritableSignal, computed, signal } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
@@ -8,8 +8,27 @@ export class GraphStateService {
 
   private static readonly OAUTH_TEMP_EXTENDED_KEY: string = 'oauth_temp_extended';
   private static readonly OAUTH_TEMP_NIGHTLY_KEY: string = 'oauth_temp_nightly';
-  private extendedSupportLevel: WritableSignal<number> = signal<number>(0);
-  private showNightlies: WritableSignal<boolean> = signal<boolean>(false);
+
+  public readonly extendedSupportLevel: Signal<number>;
+  public readonly showNightlies: Signal<boolean>;
+  public readonly showExtendedSupport: Signal<boolean>;
+  public readonly graphQueryParams: Signal<Record<string, string>>;
+
+  private readonly extendedSupportLevelState: WritableSignal<number> = signal<number>(0);
+  private readonly showNightliesState: WritableSignal<boolean> = signal<boolean>(false);
+
+  constructor() {
+    this.extendedSupportLevel = this.extendedSupportLevelState.asReadonly();
+    this.showNightlies = this.showNightliesState.asReadonly();
+    this.showExtendedSupport = computed(() => this.extendedSupportLevelState() > 0);
+    this.graphQueryParams = computed(() => {
+      const parameters: Record<string, string> = {};
+      const level = this.extendedSupportLevelState();
+      if (level > 0) parameters['extended'] = String(level);
+      if (this.showNightliesState()) parameters['nightly'] = '';
+      return parameters;
+    });
+  }
 
   public static parseExtendedSupportLevel(value?: string | null): number {
     if (value === null || value === undefined) return 0;
@@ -25,31 +44,12 @@ export class GraphStateService {
     return Math.min(Math.max(Math.trunc(level), 0), GraphStateService.MAX_EXTENDED_SUPPORT_LEVEL);
   }
 
-  public getExtendedSupportLevel(): number {
-    return this.extendedSupportLevel();
-  }
-
   public setExtendedSupportLevel(level: number): void {
-    this.extendedSupportLevel.set(GraphStateService.clampExtendedSupportLevel(level));
-  }
-
-  public getShowExtendedSupport(): boolean {
-    return this.extendedSupportLevel() > 0;
-  }
-
-  public getShowNightlies(): boolean {
-    return this.showNightlies();
+    this.extendedSupportLevelState.set(GraphStateService.clampExtendedSupportLevel(level));
   }
 
   public setShowNightlies(value: boolean): void {
-    this.showNightlies.set(value);
-  }
-
-  public getGraphQueryParams(): Record<string, string> {
-    const parameters: Record<string, string> = {};
-    if (this.extendedSupportLevel() > 0) parameters['extended'] = String(this.extendedSupportLevel());
-    if (this.showNightlies()) parameters['nightly'] = '';
-    return parameters;
+    this.showNightliesState.set(value);
   }
 
   public saveNightlyForOAuth(value: boolean): void {

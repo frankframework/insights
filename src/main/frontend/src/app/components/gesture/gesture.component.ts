@@ -1,14 +1,14 @@
-import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 
 @Component({
   selector: 'app-gesture',
   standalone: true,
   imports: [],
   templateUrl: './gesture.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './gesture.component.scss',
 })
 export class GestureComponent {
-  @Input() imageSrc = '';
-  @Input() gestureDescription = '';
+  readonly imageSrc = input('');
+  readonly gestureDescription = input('');
 }

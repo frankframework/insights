@@ -43,7 +43,7 @@ describe('IssueBarComponent', () => {
     fixture = TestBed.createComponent(IssueBarComponent);
     component = fixture.componentInstance;
 
-    component.issue = MOCK_ISSUE;
+    fixture.componentRef.setInput('issue', MOCK_ISSUE);
   });
 
   it('should create', () => {
@@ -54,33 +54,33 @@ describe('IssueBarComponent', () => {
 
   describe('Styling Logic', () => {
     it('should apply CLOSED_STYLE for a closed issue', () => {
-      component.issue = { ...MOCK_ISSUE, state: GitHubStates.CLOSED };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, state: GitHubStates.CLOSED });
       fixture.detectChanges();
       const closedStyle = (component as any).CLOSED_STYLE;
 
-      expect(component.priorityStyle).toEqual(closedStyle);
+      expect(component.priorityStyle()).toEqual(closedStyle);
     });
 
     it('should apply OPEN_STYLE for an open issue without a priority color', () => {
-      component.issue = { ...MOCK_ISSUE, issuePriority: undefined };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issuePriority: undefined });
       fixture.detectChanges();
       const openStyle = (component as any).OPEN_STYLE;
 
-      expect(component.priorityStyle).toEqual(openStyle);
+      expect(component.priorityStyle()).toEqual(openStyle);
     });
 
     it('should apply OPEN_STYLE for an open issue with an invalid priority color', () => {
       const priorityWithInvalidColor: IssuePriority = { id: 'p1', name: 'High', color: 'invalid', description: '' };
-      component.issue = { ...MOCK_ISSUE, issuePriority: priorityWithInvalidColor };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issuePriority: priorityWithInvalidColor });
       fixture.detectChanges();
       const openStyle = (component as any).OPEN_STYLE;
 
-      expect(component.priorityStyle).toEqual(openStyle);
+      expect(component.priorityStyle()).toEqual(openStyle);
     });
 
     it('should generate custom styles for an open issue with a valid priority color', () => {
       const priorityWithValidColor: IssuePriority = { id: 'p1', name: 'High', color: 'ff0000', description: '' };
-      component.issue = { ...MOCK_ISSUE, issuePriority: priorityWithValidColor };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issuePriority: priorityWithValidColor });
       fixture.detectChanges();
 
       const expectedStyle = {
@@ -89,67 +89,67 @@ describe('IssueBarComponent', () => {
         'border-color': '#ff0000',
       };
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should apply On hold state style when issue has On hold state', () => {
       const onHoldState: IssueState = { id: 's1', name: 'On hold', color: 'red', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: onHoldState };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: onHoldState });
       fixture.detectChanges();
       const expectedStyle = (component as any).ISSUE_STATE_STYLES['On hold'];
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should apply Todo state style when issue has Todo state', () => {
       const todoState: IssueState = { id: 's2', name: 'Todo', color: 'yellow', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: todoState };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: todoState });
       fixture.detectChanges();
       const expectedStyle = (component as any).ISSUE_STATE_STYLES['Todo'];
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should apply In Progress state style when issue has In Progress state', () => {
       const inProgressState: IssueState = { id: 's3', name: 'In Progress', color: 'blue', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: inProgressState };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: inProgressState });
       fixture.detectChanges();
       const expectedStyle = (component as any).ISSUE_STATE_STYLES['In Progress'];
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should apply Review state style when issue has Review state', () => {
       const reviewState: IssueState = { id: 's4', name: 'Review', color: 'green', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: reviewState };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: reviewState });
       fixture.detectChanges();
       const expectedStyle = (component as any).ISSUE_STATE_STYLES['Review'];
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should apply Done state style when issue has Done state', () => {
       const doneState: IssueState = { id: 's5', name: 'Done', color: 'gray', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: doneState };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: doneState });
       fixture.detectChanges();
       const expectedStyle = (component as any).ISSUE_STATE_STYLES['Done'];
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should fall back to CLOSED_STYLE when issue is closed and has unknown state', () => {
       const unknownState: IssueState = { id: 's6', name: 'Unknown State', color: 'gray', description: '' };
-      component.issue = { ...MOCK_ISSUE, state: GitHubStates.CLOSED, issueState: unknownState };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, state: GitHubStates.CLOSED, issueState: unknownState });
       fixture.detectChanges();
       const closedStyle = (component as any).CLOSED_STYLE;
 
-      expect(component.priorityStyle).toEqual(closedStyle);
+      expect(component.priorityStyle()).toEqual(closedStyle);
     });
 
     it('should fall back to priority color when issue has unknown state and valid priority', () => {
       const unknownState: IssueState = { id: 's6', name: 'Unknown State', color: 'gray', description: '' };
       const priorityWithValidColor: IssuePriority = { id: 'p1', name: 'High', color: 'ff0000', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: unknownState, issuePriority: priorityWithValidColor };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: unknownState, issuePriority: priorityWithValidColor });
       fixture.detectChanges();
 
       const expectedStyle = {
@@ -158,17 +158,17 @@ describe('IssueBarComponent', () => {
         'border-color': '#ff0000',
       };
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
 
     it('should prioritize issue state over priority color when both are present', () => {
       const inProgressState: IssueState = { id: 's3', name: 'In Progress', color: 'blue', description: '' };
       const priorityWithValidColor: IssuePriority = { id: 'p1', name: 'High', color: 'ff0000', description: '' };
-      component.issue = { ...MOCK_ISSUE, issueState: inProgressState, issuePriority: priorityWithValidColor };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueState: inProgressState, issuePriority: priorityWithValidColor });
       fixture.detectChanges();
       const expectedStyle = (component as any).ISSUE_STATE_STYLES['In Progress'];
 
-      expect(component.priorityStyle).toEqual(expectedStyle);
+      expect(component.priorityStyle()).toEqual(expectedStyle);
     });
   });
 
@@ -180,14 +180,14 @@ describe('IssueBarComponent', () => {
       const subIssue1: Issue = { ...MOCK_ISSUE, id: 'sub1', issueState: doneState };
       const subIssue2: Issue = { ...MOCK_ISSUE, id: 'sub2', issueState: inProgressState };
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues: [subIssue1, subIssue2] };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues: [subIssue1, subIssue2] });
       fixture.detectChanges();
 
-      expect(component.priorityStyle['background']).toContain('linear-gradient');
-      expect(component.priorityStyle['background']).toContain('#dbeafe');
-      expect(component.priorityStyle['background']).toContain('#f3e8ff');
-      expect(component.priorityStyle['background']).toContain('#93c5fd');
-      expect(component.priorityStyle['background']).toContain('#d8b4fe');
+      expect(component.priorityStyle()['background']).toContain('linear-gradient');
+      expect(component.priorityStyle()['background']).toContain('#dbeafe');
+      expect(component.priorityStyle()['background']).toContain('#f3e8ff');
+      expect(component.priorityStyle()['background']).toContain('#93c5fd');
+      expect(component.priorityStyle()['background']).toContain('#d8b4fe');
     });
 
     it('should create gradient covering all 5 issue states', () => {
@@ -205,10 +205,10 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub5', issueState: doneState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues });
       fixture.detectChanges();
 
-      const gradient = component.priorityStyle['background'];
+      const gradient = component.priorityStyle()['background'];
 
       expect(gradient).toContain('linear-gradient');
       expect(gradient).toContain('#f0fdf4');
@@ -227,10 +227,10 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub2', issueState: inProgressState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues });
       fixture.detectChanges();
 
-      const gradient = component.priorityStyle['background'];
+      const gradient = component.priorityStyle()['background'];
 
       expect(gradient).toContain('linear-gradient');
       expect(gradient).toContain('50%');
@@ -246,11 +246,11 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub3', issueState: inProgressState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues });
       fixture.detectChanges();
 
-      expect(component.priorityStyle['color']).toBe('#581c87');
-      expect(component.priorityStyle['background']).toContain('#d8b4fe');
+      expect(component.priorityStyle()['color']).toBe('#581c87');
+      expect(component.priorityStyle()['background']).toContain('#d8b4fe');
     });
 
     it('should handle sub-issues without issue state falling back to GitHub state', () => {
@@ -262,10 +262,10 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub3', state: GitHubStates.OPEN, issueState: undefined },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues });
       fixture.detectChanges();
 
-      const gradient = component.priorityStyle['background'];
+      const gradient = component.priorityStyle()['background'];
 
       expect(gradient).toContain('linear-gradient');
       expect(gradient).toContain('#f3e8ff');
@@ -282,10 +282,10 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub3', issueState: doneState },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, subIssues });
       fixture.detectChanges();
 
-      const gradient = component.priorityStyle['background'];
+      const gradient = component.priorityStyle()['background'];
 
       expect(gradient).toContain('linear-gradient');
       expect(gradient).toContain('#f3e8ff');
@@ -301,10 +301,10 @@ describe('IssueBarComponent', () => {
         { ...MOCK_ISSUE, id: 'sub2', issueState: subIssue2State },
       ];
 
-      component.issue = { ...MOCK_ISSUE, issueType: EPIC_TYPE, issueState: epicState, subIssues };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: EPIC_TYPE, issueState: epicState, subIssues });
       fixture.detectChanges();
 
-      const gradient = component.priorityStyle['background'];
+      const gradient = component.priorityStyle()['background'];
 
       expect(gradient).toContain('linear-gradient');
       expect(gradient).toContain('#f3e8ff');
@@ -318,7 +318,7 @@ describe('IssueBarComponent', () => {
       const issueLink = fixture.debugElement.query(By.css('.issue-bar'));
       issueLink.triggerEventHandler('mouseenter', null);
 
-      expect(mockTooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue.title, [
+      expect(mockTooltipService.show).toHaveBeenCalledWith(issueLink.nativeElement, component.issue().title, [
         { label: 'Points', value: '5' },
       ]);
     });
@@ -348,7 +348,7 @@ describe('IssueBarComponent', () => {
     });
 
     it('should apply the calculated position style to the host element', () => {
-      component.issueStyle = { left: '10%', width: '5%' };
+      fixture.componentRef.setInput('issueStyle', { left: '10%', width: '5%' });
       fixture.detectChanges();
       const anchorElement = fixture.debugElement.query(By.css('.issue-bar')).nativeElement as HTMLAnchorElement;
 

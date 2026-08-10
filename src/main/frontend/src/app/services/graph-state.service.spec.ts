@@ -22,8 +22,8 @@ describe('GraphStateService', () => {
 
   describe('Initial State', () => {
     it('should initialize with extended support level 0', () => {
-      expect(service.getExtendedSupportLevel()).toBe(0);
-      expect(service.getShowExtendedSupport()).toBe(false);
+      expect(service.extendedSupportLevel()).toBe(0);
+      expect(service.showExtendedSupport()).toBe(false);
     });
   });
 
@@ -62,44 +62,44 @@ describe('GraphStateService', () => {
     it('should update the extended support level', () => {
       service.setExtendedSupportLevel(2);
 
-      expect(service.getExtendedSupportLevel()).toBe(2);
-      expect(service.getShowExtendedSupport()).toBe(true);
+      expect(service.extendedSupportLevel()).toBe(2);
+      expect(service.showExtendedSupport()).toBe(true);
     });
 
     it('should reset the extended support level to 0', () => {
       service.setExtendedSupportLevel(2);
       service.setExtendedSupportLevel(0);
 
-      expect(service.getExtendedSupportLevel()).toBe(0);
-      expect(service.getShowExtendedSupport()).toBe(false);
+      expect(service.extendedSupportLevel()).toBe(0);
+      expect(service.showExtendedSupport()).toBe(false);
     });
 
     it('should clamp the level to the supported range', () => {
       service.setExtendedSupportLevel(10);
 
-      expect(service.getExtendedSupportLevel()).toBe(3);
+      expect(service.extendedSupportLevel()).toBe(3);
 
       service.setExtendedSupportLevel(-1);
 
-      expect(service.getExtendedSupportLevel()).toBe(0);
+      expect(service.extendedSupportLevel()).toBe(0);
     });
   });
 
-  describe('getGraphQueryParams', () => {
+  describe('graphQueryParams', () => {
     it('should return empty object when the extended support level is 0', () => {
       service.setExtendedSupportLevel(0);
 
-      expect(service.getGraphQueryParams()).toEqual({});
+      expect(service.graphQueryParams()).toEqual({});
     });
 
     it('should return the extended param with the current level', () => {
       service.setExtendedSupportLevel(1);
 
-      expect(service.getGraphQueryParams()).toEqual({ extended: '1' });
+      expect(service.graphQueryParams()).toEqual({ extended: '1' });
 
       service.setExtendedSupportLevel(3);
 
-      expect(service.getGraphQueryParams()).toEqual({ extended: '3' });
+      expect(service.graphQueryParams()).toEqual({ extended: '3' });
     });
   });
 
@@ -123,7 +123,7 @@ describe('GraphStateService', () => {
         service.setExtendedSupportLevel(0);
         service.saveExtendedSupportLevelForOAuth(2);
 
-        expect(service.getExtendedSupportLevel()).toBe(0);
+        expect(service.extendedSupportLevel()).toBe(0);
       });
     });
 
@@ -169,7 +169,7 @@ describe('GraphStateService', () => {
       // Step 1: User is on /graph?extended=2
       service.setExtendedSupportLevel(2);
 
-      expect(service.getExtendedSupportLevel()).toBe(2);
+      expect(service.extendedSupportLevel()).toBe(2);
 
       // Step 2: User clicks login - save state temporarily
       service.saveExtendedSupportLevelForOAuth(2);
@@ -179,7 +179,7 @@ describe('GraphStateService', () => {
       // Step 3: Simulate page reload by resetting the service state manually
       service.setExtendedSupportLevel(0);
 
-      expect(service.getExtendedSupportLevel()).toBe(0);
+      expect(service.extendedSupportLevel()).toBe(0);
 
       // Step 4: Restore from temp storage after OAuth redirect
       const restoredLevel = service.restoreAndClearOAuthExtendedSupportLevel();
@@ -190,7 +190,7 @@ describe('GraphStateService', () => {
       // Step 5: App sets state based on restored value
       service.setExtendedSupportLevel(restoredLevel);
 
-      expect(service.getExtendedSupportLevel()).toBe(2);
+      expect(service.extendedSupportLevel()).toBe(2);
     });
 
     it('should handle OAuth flow when extended was disabled', () => {
@@ -213,15 +213,15 @@ describe('GraphStateService', () => {
     it('should allow multiple state changes without persistent storage', () => {
       service.setExtendedSupportLevel(1);
 
-      expect(service.getExtendedSupportLevel()).toBe(1);
+      expect(service.extendedSupportLevel()).toBe(1);
 
       service.setExtendedSupportLevel(0);
 
-      expect(service.getExtendedSupportLevel()).toBe(0);
+      expect(service.extendedSupportLevel()).toBe(0);
 
       service.setExtendedSupportLevel(3);
 
-      expect(service.getExtendedSupportLevel()).toBe(3);
+      expect(service.extendedSupportLevel()).toBe(3);
 
       // Verify no persistent storage was created (only temp OAuth storage would be in localStorage)
       expect(globalThis.localStorage.getItem('extended_support')).toBeNull();

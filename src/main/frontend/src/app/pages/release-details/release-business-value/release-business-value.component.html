@@ -4,9 +4,9 @@
   }
 
   <h3>Business Values</h3>
-  @if (businessValues?.length) {
+  @if (businessValues()?.length) {
     <ul class="business-values-list">
-      @for (businessValue of businessValues; track businessValue.id) {
+      @for (businessValue of businessValues() ?? []; track businessValue.id) {
         <li class="business-value-item" (click)="openBusinessValueModal(businessValue)">
           <div class="business-value-title">{{ businessValue.title }}</div>
           <div class="business-value-description" [innerHTML]="businessValue.description | markdown"></div>

@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, Output, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { TitleCasePipe } from '@angular/common';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { BusinessValue, BusinessValueService } from '../../../../services/business-value.service';
@@ -7,20 +7,21 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
 @Component({
   selector: 'app-business-value-delete',
   standalone: true,
-  imports: [CommonModule, ModalComponent],
+  imports: [TitleCasePipe, ModalComponent],
   templateUrl: './business-value-delete.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-delete.component.scss',
 })
 export class BusinessValueDeleteComponent {
-  @Input({ required: true }) businessValue!: BusinessValue;
-  @Output() closed = new EventEmitter<void>();
-  @Output() businessValueDeleted = new EventEmitter<string>(); // Emits ID of deleted item
+  public readonly businessValue = input.required<BusinessValue>();
 
-  public isDeleting = signal<boolean>(false);
-  public errorMessage = signal<string>('');
+  public readonly closed = output<void>();
+  public readonly businessValueDeleted = output<string>();
 
-  private businessValueService = inject(BusinessValueService);
+  public readonly isDeleting = signal<boolean>(false);
+  public readonly errorMessage = signal<string>('');
+
+  private readonly businessValueService = inject(BusinessValueService);
 
   public close(): void {
     this.closed.emit();
@@ -31,11 +32,11 @@ export class BusinessValueDeleteComponent {
     this.errorMessage.set('');
 
     this.businessValueService
-      .deleteBusinessValue(this.businessValue.id)
+      .deleteBusinessValue(this.businessValue().id)
       .pipe(finalize(() => this.isDeleting.set(false)))
       .subscribe({
         next: () => {
-          this.businessValueDeleted.emit(this.businessValue.id);
+          this.businessValueDeleted.emit(this.businessValue().id);
           this.close();
         },
         error: (error) => this.errorMessage.set(error.error?.message || 'Failed to delete business value'),

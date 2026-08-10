@@ -1,5 +1,5 @@
-import { Component, inject, Input, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Signal, computed, inject, input } from '@angular/core';
+import { DatePipe, NgStyle } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
@@ -30,26 +30,41 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
 @Component({
   selector: 'app-milestone-row',
   standalone: true,
-  imports: [CommonModule, IssueBarComponent],
+  imports: [DatePipe, NgStyle, IssueBarComponent],
   templateUrl: './milestone-row.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./milestone-row.component.scss'],
 })
-export class MilestoneRowComponent implements OnChanges {
-  @Input({ required: true }) milestone!: Milestone;
-  @Input({ required: true }) issues: Issue[] = [];
-  @Input({ required: true }) timelineStartDate!: Date;
-  @Input({ required: true }) timelineEndDate!: Date;
-  @Input({ required: true }) totalTimelineDays!: number;
-  @Input({ required: true }) quarters!: { name: string; monthCount: number }[];
-  @Input() isLast = false;
-  @Input() viewMode: ViewMode = ViewMode.QUARTERLY;
+export class MilestoneRowComponent {
+  private static readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
 
-  public positionedIssues: PositionedIssue[] = [];
-  public trackCount = 1;
-  public progressPercentage = 0;
+  public readonly milestone = input.required<Milestone>();
+  public readonly issues = input.required<Issue[]>();
+  public readonly timelineStartDate = input.required<Date>();
+  public readonly timelineEndDate = input.required<Date>();
+  public readonly totalTimelineDays = input.required<number>();
+  public readonly quarters = input.required<{ name: string; monthCount: number }[]>();
+  public readonly isLast = input(false);
+  public readonly viewMode = input<ViewMode>(ViewMode.QUARTERLY);
 
-  private readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
+  public readonly progressPercentage: Signal<number> = computed(() => {
+    const milestone = this.milestone();
+    const total = milestone.openIssueCount + milestone.closedIssueCount;
+    return total === 0 ? 0 : Math.round((milestone.closedIssueCount / total) * 100);
+  });
+
+  public readonly positionedIssues: Signal<PositionedIssue[]> = computed(() => this.layout().positionedIssues);
+  public readonly trackCount: Signal<number> = computed(() => this.layout().trackCount);
+  public readonly tracks: Signal<number[]> = computed(() =>
+    Array.from({ length: this.trackCount() }, (_, index) => index),
+  );
+  public readonly trackAreaHeight: Signal<number> = computed(() =>
+    this.viewMode() === ViewMode.MONTHLY ? this.trackCount() * 2.5 : this.trackCount() * 2.25,
+  );
+  public readonly isUnplannedEpicMilestone: Signal<boolean> = computed(
+    () => this.milestone().id === MilestoneRowComponent.UNPLANNED_EPICS_ID,
+  );
+
   private readonly DEFAULT_POINTS = 3;
   private readonly MIN_ISSUE_WIDTH_PERCENTAGE = 3;
   private readonly GAP_MS = 12 * 3600 * 1000;
@@ -58,55 +73,52 @@ export class MilestoneRowComponent implements OnChanges {
 
   private releaseRoadmapComponent = inject(ReleaseRoadmapComponent);
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['milestone'] || changes['issues'] || changes['quarters'] || changes['viewMode']) {
-      this.calculateProgress();
-      this.runLayoutAlgorithm();
-    }
+  private readonly layout: Signal<LayoutContext> = computed(() => this.runLayoutAlgorithm());
+
+  private static addLabel(target: PositionedIssue[], labelText: string, trackIndex: number): void {
+    target.push({
+      track: trackIndex,
+      style: {},
+      isLabel: true,
+      labelText,
+    });
+  }
+
+  private static addIssueToTrack(
+    target: PositionedIssue[],
+    issue: Issue,
+    trackIndex: number,
+    barStyle: Record<string, string>,
+  ): void {
+    target.push({
+      issue,
+      track: trackIndex,
+      style: barStyle,
+    });
   }
 
   public getIssuesForTrack(trackNumber: number): PositionedIssue[] {
-    return this.positionedIssues.filter((p) => p.track === trackNumber);
+    return this.positionedIssues().filter((positioned) => positioned.track === trackNumber);
   }
 
-  public getTracks(): number[] {
-    return Array.from({ length: this.trackCount }, (_, index) => index);
-  }
-
-  public getTrackAreaHeight(): number {
-    if (this.viewMode === ViewMode.MONTHLY) {
-      return this.trackCount * 2.5;
+  private runLayoutAlgorithm(): LayoutContext {
+    if (this.issues().length === 0) {
+      return { positionedIssues: [], trackCount: 1 };
     }
 
-    return this.trackCount * 2.25;
-  }
-
-  public isUnplannedEpicMilestone(): boolean {
-    return this.isUnplannedEpic();
-  }
-
-  private runLayoutAlgorithm(): void {
-    if (this.issues.length === 0) {
-      this.positionedIssues = [];
-      this.trackCount = 1;
-      return;
+    if (this.isUnplannedEpicMilestone()) {
+      return this.layoutUnplannedEpics();
     }
 
-    if (this.isUnplannedEpic()) {
-      this.layoutUnplannedEpics();
-      return;
+    if (this.viewMode() === ViewMode.MONTHLY) {
+      return this.layoutMonthlyView();
     }
 
-    if (this.viewMode === ViewMode.MONTHLY) {
-      this.layoutMonthlyView();
-      return;
-    }
-
-    this.positionedIssues = [];
+    const positionedIssues: PositionedIssue[] = [];
     let overallMaxTrackCount = 0;
 
     const issuesByQuarter = this.distributeIssuesIntoQuarters();
-    const visibleQuarters = new Set(this.quarters.map((q) => q.name));
+    const visibleQuarters = new Set(this.quarters().map((quarter) => quarter.name));
 
     for (const [quarterKey, quarterIssues] of issuesByQuarter.entries()) {
       if (!visibleQuarters.has(quarterKey)) continue;
@@ -116,24 +128,24 @@ export class MilestoneRowComponent implements OnChanges {
 
       const { closedWindow, openWindow } = this.getPlanningWindowsForQuarter(quarterWindow);
 
-      const sortedClosedIssues = this.sortIssuesByPriority(quarterIssues.closed);
-      const sortedOpenIssues = this.sortIssuesByPriority(quarterIssues.open);
+      const closedLayout = this.layoutIssuesWithEvenSpacing(
+        this.sortIssuesByPriority(quarterIssues.closed),
+        closedWindow,
+      );
+      const openLayout = this.layoutIssuesWithEvenSpacing(this.sortIssuesByPriority(quarterIssues.open), openWindow);
 
-      const closedLayout = this.layoutIssuesWithEvenSpacing(sortedClosedIssues, closedWindow);
-      const openLayout = this.layoutIssuesWithEvenSpacing(sortedOpenIssues, openWindow);
-
-      this.positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
+      positionedIssues.push(...closedLayout.positionedIssues, ...openLayout.positionedIssues);
       overallMaxTrackCount = Math.max(overallMaxTrackCount, closedLayout.trackCount, openLayout.trackCount);
     }
 
-    this.trackCount = Math.max(1, overallMaxTrackCount);
+    return { positionedIssues, trackCount: Math.max(1, overallMaxTrackCount) };
   }
 
   private distributeIssuesIntoQuarters(): QuarterIssueMap {
     const quarterMap = this.initializeQuarterMap();
     const currentQuarterStart = this.getCurrentQuarterStart();
 
-    for (const issue of this.issues) {
+    for (const issue of this.issues()) {
       const quarterKey = this.getIssueLayoutQuarterKey(issue, currentQuarterStart);
       if (!quarterMap.has(quarterKey)) {
         quarterMap.set(quarterKey, { open: [], closed: [] });
@@ -152,14 +164,14 @@ export class MilestoneRowComponent implements OnChanges {
 
   private initializeQuarterMap(): QuarterIssueMap {
     const quarterMap: QuarterIssueMap = new Map();
-    for (const q of this.quarters) {
+    for (const q of this.quarters()) {
       quarterMap.set(q.name, { open: [], closed: [] });
     }
     return quarterMap;
   }
 
   private getIssueLayoutQuarterKey(issue: Issue, currentQuarterStart: Date): string {
-    if (this.viewMode === ViewMode.MONTHLY) {
+    if (this.viewMode() === ViewMode.MONTHLY) {
       return this.getMonthlyIssueKey(issue, currentQuarterStart);
     }
     return this.getQuarterlyIssueKey(issue, currentQuarterStart);
@@ -170,7 +182,8 @@ export class MilestoneRowComponent implements OnChanges {
       return this.getMonthKey(new Date(issue.closedAt));
     }
 
-    const milestoneDueDate = this.milestone.dueOn ? new Date(this.milestone.dueOn) : new Date();
+    const dueOn = this.milestone().dueOn;
+    const milestoneDueDate = dueOn ? new Date(dueOn) : new Date();
     const effectiveDate =
       milestoneDueDate.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueDate;
 
@@ -182,9 +195,8 @@ export class MilestoneRowComponent implements OnChanges {
       return this.getQuarterKey(this.getQuarterFromDate(new Date(issue.closedAt)));
     }
 
-    const milestoneDueQuarter = this.milestone.dueOn
-      ? this.getQuarterFromDate(new Date(this.milestone.dueOn))
-      : currentQuarterStart;
+    const dueOn = this.milestone().dueOn;
+    const milestoneDueQuarter = dueOn ? this.getQuarterFromDate(new Date(dueOn)) : currentQuarterStart;
 
     const effectiveQuarter =
       milestoneDueQuarter.getTime() < currentQuarterStart.getTime() ? currentQuarterStart : milestoneDueQuarter;
@@ -343,9 +355,9 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private calculateBarPosition(startDate: Date, durationDays: number): Record<string, string> {
-    const startDays = (startDate.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24);
-    const leftPercentage = (startDays / this.totalTimelineDays) * 100;
-    const widthPercentage = (durationDays / this.totalTimelineDays) * 100;
+    const startDays = (startDate.getTime() - this.timelineStartDate().getTime()) / (1000 * 3600 * 24);
+    const leftPercentage = (startDays / this.totalTimelineDays()) * 100;
+    const widthPercentage = (durationDays / this.totalTimelineDays()) * 100;
 
     return {
       left: `${leftPercentage}%`,
@@ -356,7 +368,7 @@ export class MilestoneRowComponent implements OnChanges {
   private getIssueDurationMsWithMinWidth(issue: Issue): number {
     const points = issue.points ?? this.DEFAULT_POINTS;
     const durationMs = points * 24 * 60 * 60 * 1000;
-    const minDurationMs = this.totalTimelineDays * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * (24 * 60 * 60 * 1000);
+    const minDurationMs = this.totalTimelineDays() * (this.MIN_ISSUE_WIDTH_PERCENTAGE / 100) * (24 * 60 * 60 * 1000);
     return Math.max(durationMs, minDurationMs);
   }
 
@@ -374,67 +386,49 @@ export class MilestoneRowComponent implements OnChanges {
     return `${this.MONTH_NAMES[month]} ${year}`;
   }
 
-  private calculateProgress(): void {
-    if (!this.milestone) {
-      this.progressPercentage = 0;
-      return;
-    }
-    const total = this.milestone.openIssueCount + this.milestone.closedIssueCount;
-    this.progressPercentage = total === 0 ? 0 : Math.round((this.milestone.closedIssueCount / total) * 100);
-  }
+  private layoutUnplannedEpics(): LayoutContext {
+    const milestone = this.milestone();
+    if (!milestone.dueOn) return { positionedIssues: [], trackCount: 1 };
 
-  private isUnplannedEpic(): boolean {
-    return this.milestone.id === this.UNPLANNED_EPICS_ID;
-  }
-
-  private layoutUnplannedEpics(): void {
-    this.positionedIssues = [];
-
-    if (!this.milestone.dueOn) return;
-
-    if (this.viewMode === ViewMode.MONTHLY) {
-      this.layoutMonthlyViewForUnplannedEpics();
-      return;
+    if (this.viewMode() === ViewMode.MONTHLY) {
+      return this.layoutMonthlyViewForUnplannedEpics();
     }
 
-    this.trackCount = 1;
+    const positionedIssues: PositionedIssue[] = [];
     const startOffset = 6 * 60 * 60 * 1000;
-    let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
-    const timelineEndTime = this.timelineEndDate.getTime();
+    let currentTime = new Date(milestone.dueOn).getTime() + startOffset;
+    const timelineEndTime = this.timelineEndDate().getTime();
 
-    const sortedIssues = this.sortIssuesByPriority(this.issues);
-
-    for (const issue of sortedIssues) {
+    for (const issue of this.sortIssuesByPriority(this.issues())) {
       const durationMs = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
       if (currentTime >= timelineEndTime) {
         break;
       }
 
-      this.positionedIssues.push(this.createPositionedIssue(issue, currentTime, durationMs, 0));
+      positionedIssues.push(this.createPositionedIssue(issue, currentTime, durationMs, 0));
       currentTime += durationMs + this.GAP_MS;
     }
+
+    return { positionedIssues, trackCount: 1 };
   }
 
-  private layoutMonthlyViewForUnplannedEpics(): void {
-    this.positionedIssues = [];
-
-    if (!this.milestone.dueOn) return;
+  private layoutMonthlyViewForUnplannedEpics(): LayoutContext {
+    const milestone = this.milestone();
+    if (!milestone.dueOn) return { positionedIssues: [], trackCount: 1 };
 
     const positions = new Map<Issue, { startTime: number; endTime: number }>();
     const startOffset = 6 * 60 * 60 * 1000;
-    let currentTime = new Date(this.milestone.dueOn).getTime() + startOffset;
+    let currentTime = new Date(milestone.dueOn).getTime() + startOffset;
 
-    const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
+    const quarterStart = this.getQuarterFromDate(this.timelineStartDate());
     const quarterEnd = new Date(quarterStart);
     quarterEnd.setMonth(quarterEnd.getMonth() + 6);
     quarterEnd.setDate(0);
     quarterEnd.setHours(23, 59, 59, 999);
     const timelineEndTime = quarterEnd.getTime();
 
-    const sortedIssues = this.sortIssuesByPriority(this.issues);
-
-    for (const issue of sortedIssues) {
+    for (const issue of this.sortIssuesByPriority(this.issues())) {
       const durationMs = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
       if (currentTime >= timelineEndTime) {
@@ -449,22 +443,19 @@ export class MilestoneRowComponent implements OnChanges {
       currentTime += durationMs + this.GAP_MS;
     }
 
-    const filteredIssues = this.filterIssuesByMonthOverlap(positions);
+    const sortedFilteredIssues = this.sortIssuesForMonthlyView(this.filterIssuesByMonthOverlap(positions));
 
-    const sortedFilteredIssues = this.sortIssuesForMonthlyView(filteredIssues);
-
-    this.trackCount = this.layoutIssuesWithLabels(sortedFilteredIssues, { left: '1%', width: '97%' });
+    return this.layoutIssuesWithLabels(sortedFilteredIssues, { left: '1%', width: '97%' });
   }
 
-  private layoutMonthlyView(): void {
-    this.positionedIssues = [];
+  private layoutMonthlyView(): LayoutContext {
     const quarterlyPositions = this.calculateQuarterlyPositions();
-    const filteredIssues = this.filterIssuesByMonthOverlap(quarterlyPositions);
-    const sortedIssues = this.sortIssuesForMonthlyView(filteredIssues);
-    this.trackCount = this.layoutIssuesWithLabels(sortedIssues, { left: '1.75%', width: '96%' });
+    const sortedIssues = this.sortIssuesForMonthlyView(this.filterIssuesByMonthOverlap(quarterlyPositions));
+    return this.layoutIssuesWithLabels(sortedIssues, { left: '1.75%', width: '96%' });
   }
 
-  private layoutIssuesWithLabels(sortedIssues: Issue[], barStyle: Record<string, string>): number {
+  private layoutIssuesWithLabels(sortedIssues: Issue[], barStyle: Record<string, string>): LayoutContext {
+    const positionedIssues: PositionedIssue[] = [];
     const state = {
       trackIndex: 0,
       hasClosedIssues: false,
@@ -474,12 +465,12 @@ export class MilestoneRowComponent implements OnChanges {
     };
 
     for (const issue of sortedIssues) {
-      this.addLabelIfNeeded(issue, state);
-      this.addIssueToTrack(issue, state.trackIndex, barStyle);
+      this.addLabelIfNeeded(issue, state, positionedIssues);
+      MilestoneRowComponent.addIssueToTrack(positionedIssues, issue, state.trackIndex, barStyle);
       state.trackIndex++;
     }
 
-    return Math.max(1, state.trackIndex);
+    return { positionedIssues, trackCount: Math.max(1, state.trackIndex) };
   }
 
   private addLabelIfNeeded(
@@ -491,85 +482,75 @@ export class MilestoneRowComponent implements OnChanges {
       hasAddedClosedLabel: boolean;
       hasAddedOpenLabel: boolean;
     },
+    target: PositionedIssue[],
   ): void {
-    const isClosed = issue.state === GitHubStates.CLOSED;
-    const isOpen = issue.state === GitHubStates.OPEN;
-
-    if (isClosed) {
-      this.addClosedLabelIfNeeded(state);
+    if (issue.state === GitHubStates.CLOSED) {
+      this.addClosedLabelIfNeeded(state, target);
       state.hasClosedIssues = true;
     }
 
-    if (isOpen) {
-      this.addOpenLabelIfNeeded(state);
+    if (issue.state === GitHubStates.OPEN) {
+      this.addOpenLabelIfNeeded(state, target);
     }
   }
 
-  private addClosedLabelIfNeeded(state: { trackIndex: number; hasAddedClosedLabel: boolean }): void {
+  private addClosedLabelIfNeeded(
+    state: { trackIndex: number; hasAddedClosedLabel: boolean },
+    target: PositionedIssue[],
+  ): void {
     if (!state.hasAddedClosedLabel) {
-      this.addLabel('Closed Issues', state.trackIndex);
+      MilestoneRowComponent.addLabel(target, 'Closed Issues', state.trackIndex);
       state.trackIndex++;
       state.hasAddedClosedLabel = true;
     }
   }
 
-  private addOpenLabelIfNeeded(state: {
-    trackIndex: number;
-    hasClosedIssues: boolean;
-    hasAddedSeparator: boolean;
-    hasAddedOpenLabel: boolean;
-  }): void {
+  private addOpenLabelIfNeeded(
+    state: {
+      trackIndex: number;
+      hasClosedIssues: boolean;
+      hasAddedSeparator: boolean;
+      hasAddedOpenLabel: boolean;
+    },
+    target: PositionedIssue[],
+  ): void {
     if (state.hasAddedOpenLabel) {
       return;
     }
 
     if (state.hasClosedIssues && !state.hasAddedSeparator) {
-      this.addOpenLabelAfterSeparator(state);
+      this.addOpenLabelAfterSeparator(state, target);
     } else if (!state.hasClosedIssues) {
-      this.addOpenLabel(state);
+      this.addOpenLabel(state, target);
     }
   }
 
-  private addOpenLabelAfterSeparator(state: {
-    trackIndex: number;
-    hasAddedSeparator: boolean;
-    hasAddedOpenLabel: boolean;
-  }): void {
+  private addOpenLabelAfterSeparator(
+    state: {
+      trackIndex: number;
+      hasAddedSeparator: boolean;
+      hasAddedOpenLabel: boolean;
+    },
+    target: PositionedIssue[],
+  ): void {
     state.trackIndex++;
     state.hasAddedSeparator = true;
-    this.addLabel('Open Issues', state.trackIndex);
+    MilestoneRowComponent.addLabel(target, 'Open Issues', state.trackIndex);
     state.trackIndex++;
     state.hasAddedOpenLabel = true;
   }
 
-  private addOpenLabel(state: { trackIndex: number; hasAddedOpenLabel: boolean }): void {
-    this.addLabel('Open Issues', state.trackIndex);
+  private addOpenLabel(state: { trackIndex: number; hasAddedOpenLabel: boolean }, target: PositionedIssue[]): void {
+    MilestoneRowComponent.addLabel(target, 'Open Issues', state.trackIndex);
     state.trackIndex++;
     state.hasAddedOpenLabel = true;
-  }
-
-  private addLabel(labelText: string, trackIndex: number): void {
-    this.positionedIssues.push({
-      track: trackIndex,
-      style: {},
-      isLabel: true,
-      labelText,
-    });
-  }
-
-  private addIssueToTrack(issue: Issue, trackIndex: number, barStyle: Record<string, string>): void {
-    this.positionedIssues.push({
-      issue,
-      track: trackIndex,
-      style: barStyle,
-    });
   }
 
   private calculateQuarterlyPositions(): Map<Issue, { startTime: number; endTime: number }> {
     const positions = new Map<Issue, { startTime: number; endTime: number }>();
     const currentQuarterStart = this.getCurrentQuarterStart();
 
-    const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
+    const quarterStart = this.getQuarterFromDate(this.timelineStartDate());
 
     const temporaryQuarters: { name: string; monthCount: number }[] = [];
     const startYear = quarterStart.getFullYear();
@@ -609,7 +590,7 @@ export class MilestoneRowComponent implements OnChanges {
   private distributeIssuesIntoQuartersForCalculation(currentQuarterStart: Date): QuarterIssueMap {
     const quarterMap: QuarterIssueMap = new Map();
 
-    const quarterStart = this.getQuarterFromDate(this.timelineStartDate);
+    const quarterStart = this.getQuarterFromDate(this.timelineStartDate());
     const quarters: { name: string; monthCount: number }[] = [];
 
     const startYear = quarterStart.getFullYear();
@@ -628,7 +609,7 @@ export class MilestoneRowComponent implements OnChanges {
       quarterMap.set(q.name, { open: [], closed: [] });
     }
 
-    for (const issue of this.issues) {
+    for (const issue of this.issues()) {
       const quarterKey = this.getQuarterlyIssueKey(issue, currentQuarterStart);
       if (!quarterMap.has(quarterKey)) {
         quarterMap.set(quarterKey, { open: [], closed: [] });
@@ -668,10 +649,10 @@ export class MilestoneRowComponent implements OnChanges {
   }
 
   private filterIssuesByMonthOverlap(positions: Map<Issue, { startTime: number; endTime: number }>): Issue[] {
-    const monthStart = this.timelineStartDate.getTime();
-    const monthEnd = this.timelineEndDate.getTime();
+    const monthStart = this.timelineStartDate().getTime();
+    const monthEnd = this.timelineEndDate().getTime();
 
-    return this.issues.filter((issue) => {
+    return this.issues().filter((issue) => {
       const position = positions.get(issue);
       if (!position) return false;
 

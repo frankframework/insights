@@ -62,17 +62,14 @@ describe('ReleaseSkippedVersions', () => {
         },
       ];
 
-      component.skipNode = skipNode;
-      component.releases = releases;
-      component.ngOnChanges({
-        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
-        releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
-      });
+      fixture.componentRef.setInput('skipNode', skipNode);
+      fixture.componentRef.setInput('releases', releases);
+      fixture.detectChanges();
 
-      expect(component.releaseTree.length).toBe(3);
-      expect(component.releaseTree[0].version).toBe('v7.0.0');
-      expect(component.releaseTree[1].version).toBe('v7.1.0');
-      expect(component.releaseTree[2].version).toBe('v7.2.0');
+      expect(component.releaseTree().length).toBe(3);
+      expect(component.releaseTree()[0].version).toBe('v7.0.0');
+      expect(component.releaseTree()[1].version).toBe('v7.1.0');
+      expect(component.releaseTree()[2].version).toBe('v7.2.0');
     });
 
     it('should group patch releases under their parent minor version', () => {
@@ -112,18 +109,15 @@ describe('ReleaseSkippedVersions', () => {
         },
       ];
 
-      component.skipNode = skipNode;
-      component.releases = releases;
-      component.ngOnChanges({
-        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
-        releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
-      });
+      fixture.componentRef.setInput('skipNode', skipNode);
+      fixture.componentRef.setInput('releases', releases);
+      fixture.detectChanges();
 
-      expect(component.releaseTree.length).toBe(1);
-      expect(component.releaseTree[0].version).toBe('v7.1.0');
-      expect(component.releaseTree[0].patches.length).toBe(2);
-      expect(component.releaseTree[0].patches[0].name).toBe('v7.1.1');
-      expect(component.releaseTree[0].patches[1].name).toBe('v7.1.2');
+      expect(component.releaseTree().length).toBe(1);
+      expect(component.releaseTree()[0].version).toBe('v7.1.0');
+      expect(component.releaseTree()[0].patches.length).toBe(2);
+      expect(component.releaseTree()[0].patches[0].name).toBe('v7.1.1');
+      expect(component.releaseTree()[0].patches[1].name).toBe('v7.1.2');
     });
 
     it('should sort releases by version number', () => {
@@ -163,16 +157,13 @@ describe('ReleaseSkippedVersions', () => {
         },
       ];
 
-      component.skipNode = skipNode;
-      component.releases = releases;
-      component.ngOnChanges({
-        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
-        releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
-      });
+      fixture.componentRef.setInput('skipNode', skipNode);
+      fixture.componentRef.setInput('releases', releases);
+      fixture.detectChanges();
 
-      expect(component.releaseTree[0].version).toBe('v7.0.0');
-      expect(component.releaseTree[1].version).toBe('v7.1.0');
-      expect(component.releaseTree[2].version).toBe('v7.2.0');
+      expect(component.releaseTree()[0].version).toBe('v7.0.0');
+      expect(component.releaseTree()[1].version).toBe('v7.1.0');
+      expect(component.releaseTree()[2].version).toBe('v7.2.0');
     });
 
     it('should group patch releases under the major (x.0.0) parent, not create a duplicate minor entry', () => {
@@ -212,17 +203,14 @@ describe('ReleaseSkippedVersions', () => {
         },
       ];
 
-      component.skipNode = skipNode;
-      component.releases = releases;
-      component.ngOnChanges({
-        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
-        releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
-      });
+      fixture.componentRef.setInput('skipNode', skipNode);
+      fixture.componentRef.setInput('releases', releases);
+      fixture.detectChanges();
 
-      expect(component.releaseTree.length).toBe(1);
-      expect(component.releaseTree[0].version).toBe('v9.0.0');
-      expect(component.releaseTree[0].type).toBe('major');
-      expect(component.releaseTree[0].patches.length).toBe(2);
+      expect(component.releaseTree().length).toBe(1);
+      expect(component.releaseTree()[0].version).toBe('v9.0.0');
+      expect(component.releaseTree()[0].type).toBe('major');
+      expect(component.releaseTree()[0].patches.length).toBe(2);
     });
 
     it('should handle releases without v prefix', () => {
@@ -246,15 +234,12 @@ describe('ReleaseSkippedVersions', () => {
         },
       ];
 
-      component.skipNode = skipNode;
-      component.releases = releases;
-      component.ngOnChanges({
-        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
-        releases: { currentValue: releases, previousValue: [], firstChange: true, isFirstChange: () => true },
-      });
+      fixture.componentRef.setInput('skipNode', skipNode);
+      fixture.componentRef.setInput('releases', releases);
+      fixture.detectChanges();
 
-      expect(component.releaseTree.length).toBe(1);
-      expect(component.releaseTree[0].version).toBe('v7.0.0');
+      expect(component.releaseTree().length).toBe(1);
+      expect(component.releaseTree()[0].version).toBe('v7.0.0');
     });
 
     it('should emit versionClicked event when version is clicked', () => {
@@ -274,8 +259,8 @@ describe('ReleaseSkippedVersions', () => {
     });
 
     it('should not create release tree if skipNode is null', () => {
-      component.skipNode = null;
-      component.releases = [
+      fixture.componentRef.setInput('skipNode', null);
+      fixture.componentRef.setInput('releases', [
         {
           id: 'r1',
           name: 'v7.0.0',
@@ -284,12 +269,10 @@ describe('ReleaseSkippedVersions', () => {
           publishedAt: new Date(),
           lastScanned: new Date(),
         },
-      ];
-      component.ngOnChanges({
-        releases: { currentValue: component.releases, previousValue: [], firstChange: true, isFirstChange: () => true },
-      });
+      ]);
+      fixture.detectChanges();
 
-      expect(component.releaseTree.length).toBe(0);
+      expect(component.releaseTree().length).toBe(0);
     });
 
     it('should not create release tree if releases array is empty', () => {
@@ -302,13 +285,11 @@ describe('ReleaseSkippedVersions', () => {
         label: '1 skipped',
       };
 
-      component.skipNode = skipNode;
-      component.releases = [];
-      component.ngOnChanges({
-        skipNode: { currentValue: skipNode, previousValue: null, firstChange: true, isFirstChange: () => true },
-      });
+      fixture.componentRef.setInput('skipNode', skipNode);
+      fixture.componentRef.setInput('releases', []);
+      fixture.detectChanges();
 
-      expect(component.releaseTree.length).toBe(0);
+      expect(component.releaseTree().length).toBe(0);
     });
   });
 });

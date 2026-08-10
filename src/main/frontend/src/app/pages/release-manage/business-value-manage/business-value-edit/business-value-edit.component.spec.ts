@@ -45,7 +45,7 @@ describe('BusinessValueEditComponent', () => {
 
     fixture = TestBed.createComponent(BusinessValueEditComponent);
     component = fixture.componentInstance;
-    component.businessValue = mockBusinessValue;
+    fixture.componentRef.setInput('businessValue', mockBusinessValue);
     fixture.detectChanges();
   });
 
@@ -60,13 +60,13 @@ describe('BusinessValueEditComponent', () => {
     });
 
     it('should handle input change when businessValue is updated', () => {
-      component.businessValue = {
+      fixture.componentRef.setInput('businessValue', {
         id: 'custom-id',
         title: 'Custom Title',
         description: 'Custom Description',
         releaseId: 'custom-release-id',
         issues: [],
-      };
+      });
       fixture.detectChanges();
 
       expect(component.name()).toBe('Custom Title');
@@ -219,7 +219,7 @@ describe('BusinessValueEditComponent', () => {
       component.save();
 
       expect(mockBusinessValueService.updateBusinessValue).toHaveBeenCalledWith(
-        component.businessValue.id,
+        component.businessValue().id,
         maxTitle,
         'Valid Description',
       );
@@ -234,7 +234,7 @@ describe('BusinessValueEditComponent', () => {
       component.save();
 
       expect(mockBusinessValueService.updateBusinessValue).toHaveBeenCalledWith(
-        component.businessValue.id,
+        component.businessValue().id,
         'Valid Title',
         maxDescription,
       );
@@ -342,7 +342,7 @@ describe('BusinessValueEditComponent', () => {
     });
 
     it('should not call updateBusinessValue when there are no changes', () => {
-      component.businessValue = mockBusinessValue;
+      fixture.componentRef.setInput('businessValue', { ...mockBusinessValue });
       fixture.detectChanges();
 
       expect(component.isFormValidAndChanged()).toBeFalse();

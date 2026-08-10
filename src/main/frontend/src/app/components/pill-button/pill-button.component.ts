@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 
 export type PillButtonIcon = 'moon' | 'help' | 'github';
 
@@ -7,16 +7,16 @@ export type PillButtonIcon = 'moon' | 'help' | 'github';
   standalone: true,
   imports: [],
   templateUrl: './pill-button.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './pill-button.component.scss',
 })
 export class PillButtonComponent {
-  @Input() icon: PillButtonIcon = 'help';
-  @Input() label = '';
-  @Input() active = false;
-  @Input() disabled = false;
-  @Input() loading = false;
-  @Input() tooltip = '';
+  readonly icon = input<PillButtonIcon>('help');
+  readonly label = input('');
+  readonly active = input(false);
+  readonly disabled = input(false);
+  readonly loading = input(false);
+  readonly tooltip = input('');
 
-  @Output() clicked = new EventEmitter<void>();
+  readonly clicked = output<void>();
 }

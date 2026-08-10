@@ -33,7 +33,7 @@ describe('TimelineHeaderComponent', () => {
     ];
 
     it('should render the correct number of quarter cells', () => {
-      component.quarters = mockQuarters;
+      fixture.componentRef.setInput('quarters', mockQuarters);
       fixture.detectChanges();
       const quarterCells = nativeElement.querySelectorAll('.quarter-cell');
 
@@ -41,7 +41,7 @@ describe('TimelineHeaderComponent', () => {
     });
 
     it('should display the quarter names correctly', () => {
-      component.quarters = mockQuarters;
+      fixture.componentRef.setInput('quarters', mockQuarters);
       fixture.detectChanges();
       const quarterCells = nativeElement.querySelectorAll('.quarter-cell');
 
@@ -50,13 +50,13 @@ describe('TimelineHeaderComponent', () => {
     });
 
     it('should calculate quartersGridStyle correctly based on monthCount', () => {
-      component.quarters = mockQuarters;
+      fixture.componentRef.setInput('quarters', mockQuarters);
 
-      expect(component.quartersGridStyle).toBe('3fr 3fr');
+      expect(component.quartersGridStyle()).toBe('3fr 3fr');
     });
 
     it('should apply the calculated grid style to the quarters grid area', () => {
-      component.quarters = mockQuarters;
+      fixture.componentRef.setInput('quarters', mockQuarters);
       fixture.detectChanges();
       const quartersGridArea = nativeElement.querySelector('.quarters-row .grid-area') as HTMLElement;
 
@@ -68,7 +68,7 @@ describe('TimelineHeaderComponent', () => {
     const mockMonths = [new Date('2025-04-01'), new Date('2025-05-01'), new Date('2025-06-01')];
 
     it('should render the correct number of month cells', () => {
-      component.months = mockMonths;
+      fixture.componentRef.setInput('months', mockMonths);
       fixture.detectChanges();
       const monthCells = nativeElement.querySelectorAll('.month-cell');
 
@@ -76,7 +76,7 @@ describe('TimelineHeaderComponent', () => {
     });
 
     it('should display the abbreviated month names correctly using the DatePipe', () => {
-      component.months = mockMonths;
+      fixture.componentRef.setInput('months', mockMonths);
       fixture.detectChanges();
       const monthCells = nativeElement.querySelectorAll('.month-cell');
 
@@ -86,7 +86,7 @@ describe('TimelineHeaderComponent', () => {
     });
 
     it('should apply the correct grid style to the months grid area', () => {
-      component.months = mockMonths;
+      fixture.componentRef.setInput('months', mockMonths);
       fixture.detectChanges();
       const monthsGridArea = nativeElement.querySelector('.months-row .grid-area') as HTMLElement;
 

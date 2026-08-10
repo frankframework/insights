@@ -40,7 +40,7 @@ describe('ReleaseCatalogusComponent', () => {
     it('should open modal automatically on fresh session', () => {
       createComponent();
 
-      expect(component.modalOpen).toBe(true);
+      expect(component.modalOpen()).toBe(true);
     });
 
     it('should set sessionStorage key on fresh session', () => {
@@ -56,17 +56,17 @@ describe('ReleaseCatalogusComponent', () => {
 
       createComponent();
 
-      expect(component.modalOpen).toBe(false);
+      expect(component.modalOpen()).toBe(false);
     });
 
     it('should toggle modal from open to closed on fresh session', () => {
       createComponent();
 
-      expect(component.modalOpen).toBe(true);
+      expect(component.modalOpen()).toBe(true);
 
       component.toggleModal();
 
-      expect(component.modalOpen).toBe(false);
+      expect(component.modalOpen()).toBe(false);
     });
 
     it('should toggle modal from closed to open on existing session', () => {
@@ -75,11 +75,11 @@ describe('ReleaseCatalogusComponent', () => {
 
       createComponent();
 
-      expect(component.modalOpen).toBe(false);
+      expect(component.modalOpen()).toBe(false);
 
       component.toggleModal();
 
-      expect(component.modalOpen).toBe(true);
+      expect(component.modalOpen()).toBe(true);
     });
   });
 
@@ -91,8 +91,8 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should not show extended support timeline by default', () => {
-      component.extendedSupportLevel = 0;
-      component.modalOpen = true;
+      fixture.componentRef.setInput('extendedSupportLevel', 0);
+      component.modalOpen.set(true);
       fixture.detectChanges();
 
       const extendedSupportElements = fixture.debugElement.queryAll(By.css('.support-extended'));
@@ -101,8 +101,8 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should show extended support timeline when the extended support level is set', () => {
-      component.extendedSupportLevel = 1;
-      component.modalOpen = true;
+      fixture.componentRef.setInput('extendedSupportLevel', 1);
+      component.modalOpen.set(true);
       fixture.detectChanges();
 
       const extendedSupportElements = fixture.debugElement.queryAll(By.css('.support-extended'));
@@ -111,8 +111,8 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should display correct policy text when extended support is disabled', () => {
-      component.extendedSupportLevel = 0;
-      component.modalOpen = true;
+      fixture.componentRef.setInput('extendedSupportLevel', 0);
+      component.modalOpen.set(true);
       fixture.detectChanges();
 
       const policyText = fixture.debugElement.query(By.css('.policy-text'));
@@ -121,8 +121,8 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should display extended policy text when extended support is enabled', () => {
-      component.extendedSupportLevel = 1;
-      component.modalOpen = true;
+      fixture.componentRef.setInput('extendedSupportLevel', 1);
+      component.modalOpen.set(true);
       fixture.detectChanges();
 
       const policyText = fixture.debugElement.query(By.css('.policy-text'));
@@ -132,8 +132,8 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should scale the policy text with the extended support level', () => {
-      component.extendedSupportLevel = 3;
-      component.modalOpen = true;
+      fixture.componentRef.setInput('extendedSupportLevel', 3);
+      component.modalOpen.set(true);
       fixture.detectChanges();
 
       const policyText = fixture.debugElement.query(By.css('.policy-text'));
@@ -148,8 +148,8 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should show Extended Support label when enabled', () => {
-      component.extendedSupportLevel = 1;
-      component.modalOpen = true;
+      fixture.componentRef.setInput('extendedSupportLevel', 1);
+      component.modalOpen.set(true);
       fixture.detectChanges();
 
       const compiled = fixture.nativeElement;
@@ -159,15 +159,15 @@ describe('ReleaseCatalogusComponent', () => {
     });
 
     it('should toggle modal visibility', () => {
-      expect(component.modalOpen).toBe(false);
+      expect(component.modalOpen()).toBe(false);
 
       component.toggleModal();
 
-      expect(component.modalOpen).toBe(true);
+      expect(component.modalOpen()).toBe(true);
 
       component.toggleModal();
 
-      expect(component.modalOpen).toBe(false);
+      expect(component.modalOpen()).toBe(false);
     });
   });
 });

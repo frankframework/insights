@@ -5,13 +5,13 @@ import { Component, computed, input, ChangeDetectionStrategy } from '@angular/co
   standalone: true,
   templateUrl: './stat-card.component.html',
   styleUrl: './stat-card.component.scss',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[class]': 'hostClasses()' },
 })
 export class StatCardComponent {
-  public label = input.required<string>();
-  public value = input.required<string | number>();
-  public badgeClass = input<string | null>(null);
+  public readonly label = input.required<string>();
+  public readonly value = input.required<string | number>();
+  public readonly badgeClass = input<string | null>(null);
 
   public readonly hostClasses = computed(() => {
     const badge = this.badgeClass();

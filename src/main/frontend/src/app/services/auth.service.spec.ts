@@ -58,11 +58,7 @@ describe('AuthService', () => {
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
 
-    // Reset signals and Storage
-    service.currentUser.set(null);
-    service.isAuthenticated.set(false);
-    service.authError.set(null);
-    service.isLoading.set(false);
+    // A fresh service instance per test already starts from the default signal state
     // eslint-disable-next-line no-undef
     localStorage.clear();
   });

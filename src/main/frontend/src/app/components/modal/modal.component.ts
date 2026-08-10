@@ -1,12 +1,11 @@
 import {
-  AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
-  EventEmitter,
-  Input,
-  Output,
-  ViewChild,
-  ChangeDetectionStrategy,
+  afterNextRender,
+  input,
+  output,
+  viewChild,
 } from '@angular/core';
 
 @Component({
@@ -14,21 +13,21 @@ import {
   standalone: true,
   imports: [],
   templateUrl: './modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './modal.component.scss',
 })
-export class ModalComponent implements AfterViewInit {
-  @Input() title = '';
-  @Input() hideScrollBar = false;
-  @Input() closeOnBackdropClick = true;
-  @Output() closed = new EventEmitter<void>();
-  @ViewChild('modalContent') modalContent!: ElementRef<HTMLDivElement>;
+export class ModalComponent {
+  public readonly title = input('');
+  public readonly hideScrollBar = input(false);
+  public readonly closeOnBackdropClick = input(true);
+  public readonly closed = output<void>();
+  public readonly modalContent = viewChild.required<ElementRef<HTMLDivElement>>('modalContent');
+
+  constructor() {
+    afterNextRender(() => this.modalContent().nativeElement.focus());
+  }
 
   public close(): void {
     this.closed.emit();
-  }
-
-  ngAfterViewInit(): void {
-    setTimeout(() => this.modalContent.nativeElement.focus());
   }
 }

@@ -37,7 +37,7 @@ describe('BusinessValueAddComponent', () => {
     fixture = TestBed.createComponent(BusinessValueAddComponent);
     component = fixture.componentInstance;
 
-    component.releaseId = '';
+    fixture.componentRef.setInput('releaseId', '');
 
     fixture.detectChanges();
   });

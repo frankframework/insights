@@ -30,14 +30,14 @@ describe('IssueTypeTagComponent', () => {
   });
 
   it('should create', () => {
-    component.issueType = { name: 'Test', color: 'blue' };
+    fixture.componentRef.setInput('issueType', { name: 'Test', color: 'blue' });
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
   });
 
   it('should display the issue type name and background color', () => {
-    component.issueType = { name: 'Bug', color: 'red' };
+    fixture.componentRef.setInput('issueType', { name: 'Bug', color: 'red' });
     fixture.detectChanges();
 
     const spanElement = nativeElement.querySelector('.issue-type-tag') as HTMLSpanElement;
@@ -49,7 +49,7 @@ describe('IssueTypeTagComponent', () => {
   it('should call ColorService to get the correct text color', () => {
     const colorSpy = spyOn(colorService, 'getTypeTextColor').and.callThrough();
 
-    component.issueType = { name: 'Task', color: 'yellow' };
+    fixture.componentRef.setInput('issueType', { name: 'Task', color: 'yellow' });
     fixture.detectChanges();
 
     const spanElement = nativeElement.querySelector('.issue-type-tag') as HTMLSpanElement;

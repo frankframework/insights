@@ -1,6 +1,6 @@
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BehaviorSubject } from 'rxjs';
 
 import { TooltipComponent } from './tooltip.component';
 import { TooltipData, TooltipService } from './tooltip.service';
@@ -17,7 +17,7 @@ describe('TooltipService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should emit tooltip data on show()', (done) => {
+  it('should expose tooltip data on show()', () => {
     const mockElement = document.createElement('div');
 
     spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
@@ -27,57 +27,42 @@ describe('TooltipService', () => {
       height: 20,
     } as DOMRect);
 
-    service.tooltipState$.subscribe((data) => {
-      if (data) {
-        expect(data.title).toBe('Test Title');
-        expect(data.details).toEqual([{ label: 'Priority', value: 'High' }]);
-        expect(data.top).toBe('92px');
-        expect(data.left).toBe('225px');
-        done();
-      }
-    });
-
     service.show(mockElement, 'Test Title', [{ label: 'Priority', value: 'High' }]);
-  });
 
-  it('should default to an empty details array', (done) => {
-    const mockElement = document.createElement('div');
-
-    service.tooltipState$.subscribe((data) => {
-      if (data) {
-        expect(data.details).toEqual([]);
-        done();
-      }
+    expect(service.tooltip()).toEqual({
+      title: 'Test Title',
+      details: [{ label: 'Priority', value: 'High' }],
+      top: '92px',
+      left: '225px',
     });
-
-    service.show(mockElement, 'Test Title');
   });
 
-  it('should emit null on hide()', (done) => {
+  it('should default to an empty details array', () => {
     service.show(document.createElement('div'), 'Test Title');
 
-    service.tooltipState$.subscribe((data) => {
-      if (data === null) {
-        expect(data).toBeNull();
-        done();
-      }
-    });
+    expect(service.tooltip()?.details).toEqual([]);
+  });
+
+  it('should expose null on hide()', () => {
+    service.show(document.createElement('div'), 'Test Title');
 
     service.hide();
+
+    expect(service.tooltip()).toBeNull();
   });
 });
 
 describe('TooltipComponent', () => {
   let component: TooltipComponent;
   let fixture: ComponentFixture<TooltipComponent>;
-  let tooltipSubject: BehaviorSubject<TooltipData | null>;
+  let tooltipState: WritableSignal<TooltipData | null>;
 
   beforeEach(async () => {
-    tooltipSubject = new BehaviorSubject<TooltipData | null>(null);
+    tooltipState = signal<TooltipData | null>(null);
 
     await TestBed.configureTestingModule({
       imports: [TooltipComponent],
-      providers: [{ provide: TooltipService, useValue: { tooltipState$: tooltipSubject.asObservable() } }],
+      providers: [{ provide: TooltipService, useValue: { tooltip: tooltipState.asReadonly() } }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TooltipComponent);
@@ -91,7 +76,7 @@ describe('TooltipComponent', () => {
   });
 
   it('should not display the tooltip when service state is null', () => {
-    tooltipSubject.next(null);
+    tooltipState.set(null);
     fixture.detectChanges();
     const tooltipElement = fixture.debugElement.query(By.css('.tooltip'));
 
@@ -108,7 +93,7 @@ describe('TooltipComponent', () => {
       top: '100px',
       left: '200px',
     };
-    tooltipSubject.next(tooltipData);
+    tooltipState.set(tooltipData);
     fixture.detectChanges();
     tick();
 
@@ -132,7 +117,7 @@ describe('TooltipComponent', () => {
       top: '100px',
       left: '200px',
     };
-    tooltipSubject.next(tooltipData);
+    tooltipState.set(tooltipData);
     fixture.detectChanges();
     tick();
 
@@ -143,7 +128,7 @@ describe('TooltipComponent', () => {
 
   it('should hide the tooltip when service emits null after showing', fakeAsync(() => {
     const tooltipData: TooltipData = { title: 'Tooltip Test Issue', details: [], top: '100px', left: '200px' };
-    tooltipSubject.next(tooltipData);
+    tooltipState.set(tooltipData);
     fixture.detectChanges();
     tick();
 
@@ -151,7 +136,7 @@ describe('TooltipComponent', () => {
 
     expect(tooltipElement).not.toBeNull();
 
-    tooltipSubject.next(null);
+    tooltipState.set(null);
     fixture.detectChanges();
     tick();
 

@@ -1,4 +1,4 @@
-import { Component, inject, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -11,24 +11,24 @@ import { PillButtonComponent } from '../../components/pill-button/pill-button.co
   standalone: true,
   imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent],
   templateUrl: './header.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './header.component.scss',
+  host: { '(document:click)': 'onDocumentClick($event)' },
 })
 export class HeaderComponent {
-  public authService = inject(AuthService);
-  public showUserMenu = false;
-  public graphStateService: GraphStateService = inject(GraphStateService);
+  public readonly authService = inject(AuthService);
+  public readonly graphStateService = inject(GraphStateService);
+  public readonly showUserMenu = signal(false);
 
-  private locationService = inject(LocationService);
-  private router = inject(Router);
+  private readonly locationService = inject(LocationService);
+  private readonly router = inject(Router);
 
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
+  public onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     const userProfile = target.closest('.user-profile');
 
-    if (!userProfile && this.showUserMenu) {
-      this.showUserMenu = false;
+    if (!userProfile) {
+      this.closeUserMenu();
     }
   }
 
@@ -36,13 +36,13 @@ export class HeaderComponent {
     this.authService.setLoading(true);
     this.authService.setPendingAuth();
     this.rememberReturnUrl();
-    this.graphStateService.saveExtendedSupportLevelForOAuth(this.graphStateService.getExtendedSupportLevel());
-    this.graphStateService.saveNightlyForOAuth(this.graphStateService.getShowNightlies());
+    this.graphStateService.saveExtendedSupportLevelForOAuth(this.graphStateService.extendedSupportLevel());
+    this.graphStateService.saveNightlyForOAuth(this.graphStateService.showNightlies());
     this.locationService.navigateTo('/oauth2/authorization/github');
   }
 
   public toggleUserMenu(): void {
-    this.showUserMenu = !this.showUserMenu;
+    this.showUserMenu.update((open) => !open);
   }
 
   public onLogout(): void {
@@ -55,7 +55,7 @@ export class HeaderComponent {
   }
 
   private closeUserMenu(): void {
-    this.showUserMenu = false;
+    this.showUserMenu.set(false);
   }
 
   /**

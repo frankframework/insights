@@ -2,25 +2,25 @@
   #issueLink
   target="_blank"
   class="issue-bar"
-  [class.monthly-view]="viewMode === ViewMode.MONTHLY"
-  [href]="issue.url"
-  [ngStyle]="issueStyle"
+  [class.monthly-view]="viewMode() === ViewMode.MONTHLY"
+  [href]="issue().url"
+  [ngStyle]="issueStyle()"
   (mouseenter)="onMouseEnter()"
   (mouseleave)="onMouseLeave()"
 >
-  <div class="inner" [ngStyle]="priorityStyle">
-    @if (viewMode === ViewMode.MONTHLY) {
-      <span class="title">{{ issue.title }}</span>
+  <div class="inner" [ngStyle]="priorityStyle()">
+    @if (viewMode() === ViewMode.MONTHLY) {
+      <span class="title">{{ issue().title }}</span>
       <div class="monthly-info">
-        @if (issue.issuePriority) {
-          <span class="priority">{{ issue.issuePriority.name }}</span>
+        @if (issue().issuePriority; as issuePriority) {
+          <span class="priority">{{ issuePriority.name }}</span>
         }
-        @if (issue.points) {
-          <span class="points">{{ issue.points }} pts</span>
+        @if (issue().points; as points) {
+          <span class="points">{{ points }} pts</span>
         }
       </div>
     } @else {
-      <span class="number">{{ issue.number }}</span>
+      <span class="number">{{ issue().number }}</span>
     }
   </div>
 </a>

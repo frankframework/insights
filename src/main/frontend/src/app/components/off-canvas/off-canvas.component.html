@@ -1,7 +1,7 @@
 <div class="off-canvas open">
   <div class="off-canvas-content">
-    @if (title) {
-      <h4 class="off-canvas-title">{{ title }}</h4>
+    @if (title(); as canvasTitle) {
+      <h4 class="off-canvas-title">{{ canvasTitle }}</h4>
     }
     <button class="off-canvas-close" (click)="onClose()">✕</button>
     <ng-content />

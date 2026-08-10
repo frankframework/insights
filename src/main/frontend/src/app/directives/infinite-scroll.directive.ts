@@ -2,13 +2,12 @@ import {
   AfterViewInit,
   Directive,
   ElementRef,
-  EventEmitter,
   inject,
   Injector,
-  Input,
   OnDestroy,
-  Output,
   afterNextRender,
+  input,
+  output,
 } from '@angular/core';
 
 @Directive({
@@ -16,10 +15,10 @@ import {
   standalone: true,
 })
 export class InfiniteScrollDirective implements AfterViewInit, OnDestroy {
-  @Input({ required: true }) scrollContainer!: HTMLElement;
-  @Input() isLoading = false;
-  @Input() isLastPage = false;
-  @Output() readonly loadMore = new EventEmitter<void>();
+  readonly scrollContainer = input.required<HTMLElement>();
+  readonly isLoading = input(false);
+  readonly isLastPage = input(false);
+  readonly loadMore = output<void>();
 
   private readonly el = inject(ElementRef<HTMLElement>);
   private readonly injector = inject(Injector);
@@ -27,7 +26,7 @@ export class InfiniteScrollDirective implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.observer = new IntersectionObserver(() => this.maybeLoadMore(), {
-      root: this.scrollContainer,
+      root: this.scrollContainer(),
       rootMargin: '0px 0px 200px 0px',
     });
     this.observer.observe(this.el.nativeElement);
@@ -38,7 +37,7 @@ export class InfiniteScrollDirective implements AfterViewInit, OnDestroy {
   }
 
   scrollToTop(behavior: ScrollBehavior = 'instant'): void {
-    this.scrollContainer?.scrollTo({ top: 0, behavior });
+    this.scrollContainer()?.scrollTo({ top: 0, behavior });
   }
 
   checkAfterRender(): void {
@@ -46,9 +45,9 @@ export class InfiniteScrollDirective implements AfterViewInit, OnDestroy {
   }
 
   private maybeLoadMore(): void {
-    if (this.isLoading || this.isLastPage) return;
+    if (this.isLoading() || this.isLastPage()) return;
 
-    const container = this.scrollContainer;
+    const container = this.scrollContainer();
     const sentinel = this.el.nativeElement;
     if (!container || !sentinel) return;
 

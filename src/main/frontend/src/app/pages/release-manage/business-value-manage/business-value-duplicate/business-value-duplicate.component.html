@@ -1,15 +1,15 @@
 <app-modal title="Duplicate business values from release" (closed)="close()">
   <div class="duplicate-container">
-    @if (errorMessage) {
-      <div class="error-message">{{ errorMessage }}</div>
+    @if (errorMessage()) {
+      <div class="error-message">{{ errorMessage() }}</div>
     }
 
-    @if (releases.length === 0) {
+    @if (releases().length === 0) {
       <p class="empty-state">No other releases available.</p>
     } @else {
       <p class="description">
         Select a release to copy its business values (title &amp; description only) into
-        <strong>{{ targetReleaseTitle }}</strong
+        <strong>{{ targetReleaseTitle() }}</strong
         >. Business values whose title already exists in this release will be skipped.
       </p>
 
@@ -27,7 +27,7 @@
         }
         @for (release of filteredReleases(); track release.id) {
           <li class="release-item">
-            <button class="release-button" [disabled]="isDuplicating" (click)="selectRelease(release)">
+            <button class="release-button" [disabled]="isDuplicating()" (click)="selectRelease(release)">
               {{ release.name }}
             </button>
           </li>
@@ -35,7 +35,7 @@
       </ul>
     }
 
-    @if (isDuplicating) {
+    @if (isDuplicating()) {
       <p class="duplicating-message">Duplicating...</p>
     }
   </div>

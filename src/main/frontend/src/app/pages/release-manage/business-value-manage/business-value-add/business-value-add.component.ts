@@ -1,5 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
@@ -9,24 +8,24 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
 @Component({
   selector: 'app-business-value-add',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent, MarkdownPipe],
+  imports: [FormsModule, ModalComponent, MarkdownPipe],
   templateUrl: './business-value-add.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-add.component.scss',
 })
 export class BusinessValueAddComponent {
-  @Input({ required: true }) releaseId!: string;
+  public readonly releaseId = input.required<string>();
 
-  @Output() closed = new EventEmitter<void>();
-  @Output() businessValueCreated = new EventEmitter<BusinessValue>();
+  public readonly closed = output<void>();
+  public readonly businessValueCreated = output<BusinessValue>();
 
-  public name = signal<string>('');
-  public description = signal<string>('');
-  public descriptionPreview = signal<boolean>(false);
-  public isSaving = signal<boolean>(false);
-  public errorMessage = signal<string>('');
+  public readonly name = signal<string>('');
+  public readonly description = signal<string>('');
+  public readonly descriptionPreview = signal<boolean>(false);
+  public readonly isSaving = signal<boolean>(false);
+  public readonly errorMessage = signal<string>('');
 
-  private businessValueService = inject(BusinessValueService);
+  private readonly businessValueService = inject(BusinessValueService);
 
   public close(): void {
     this.closed.emit();
@@ -57,7 +56,7 @@ export class BusinessValueAddComponent {
     this.errorMessage.set('');
 
     this.businessValueService
-      .createBusinessValue(nameValue, descriptionValue, this.releaseId)
+      .createBusinessValue(nameValue, descriptionValue, this.releaseId())
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (businessValue) => {

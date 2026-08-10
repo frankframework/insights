@@ -1,4 +1,5 @@
-import { Component, inject, HostListener, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Signal, WritableSignal, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { VersionService, BuildInfo } from '../../services/version.service';
 import { NgOptimizedImage } from '@angular/common';
@@ -7,38 +8,37 @@ import { NgOptimizedImage } from '@angular/common';
   selector: 'app-feedback',
   imports: [NgOptimizedImage],
   templateUrl: './feedback.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './feedback.component.scss',
+  host: { '(document:mouseup)': 'onTextSelection()' },
 })
 export class FeedbackComponent {
-  private router = inject(Router);
-  private versionService = inject(VersionService);
+  private readonly router = inject(Router);
+  private readonly versionService = inject(VersionService);
 
-  private buildInfo: BuildInfo | null = null;
-  private selectedText = '';
+  private readonly buildInfo: Signal<BuildInfo | null>;
+  private readonly selectedText: WritableSignal<string> = signal<string>('');
 
   constructor() {
-    this.versionService.getBuildInformation().subscribe((info) => {
-      this.buildInfo = info;
-    });
+    this.buildInfo = toSignal(this.versionService.getBuildInformation(), { initialValue: null });
   }
 
-  @HostListener('document:mouseup')
   onTextSelection(): void {
     const selection = globalThis.getSelection();
-    this.selectedText = selection?.toString().trim() || '';
+    this.selectedText.set(selection?.toString().trim() || '');
   }
 
   openFeedback(): void {
     const currentPage = this.router.url;
-    const version = this.buildInfo?.version || 'Unknown';
+    const version = this.buildInfo()?.version || 'Unknown';
+    const selectedText = this.selectedText();
 
     const parameters = new URLSearchParams({
       title: '',
       body: `## Context
 - **Page:** \`${currentPage}\`
 - **Version:** \`${version}\`
-${this.selectedText ? `- **Selected Text:** \`${this.selectedText}\`\n` : ''}
+${selectedText ? `- **Selected Text:** \`${selectedText}\`\n` : ''}
 ## Description
 <!-- Describe the bug or issue -->
 

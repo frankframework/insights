@@ -1,14 +1,15 @@
 import {
-  ChangeDetectorRef,
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
-  inject,
   OnInit,
-  ViewChild,
-  ChangeDetectionStrategy,
+  Signal,
+  computed,
   forwardRef,
+  inject,
+  signal,
+  viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { RoadmapToolbarComponent } from './roadmap-toolbar/roadmap-toolbar.component';
 import { TimelineHeaderComponent } from './timeline-header/timeline-header.component';
@@ -31,7 +32,6 @@ export interface Version {
   selector: 'app-release-roadmap',
   standalone: true,
   imports: [
-    CommonModule,
     RoadmapToolbarComponent,
     TimelineHeaderComponent,
     forwardRef(() => MilestoneRowComponent),
@@ -39,25 +39,43 @@ export interface Version {
     RoadmapLegend,
   ],
   templateUrl: './release-roadmap.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./release-roadmap.component.scss'],
 })
 export class ReleaseRoadmapComponent implements OnInit {
-  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
+  readonly scrollContainer = viewChild.required<ElementRef<HTMLDivElement>>('scrollContainer');
 
-  public isLoading = true;
-  public milestones: Milestone[] = [];
-  public milestoneIssues = new Map<string, Issue[]>();
-  public unplannedEpics: Issue[] = [];
-  public timelineStartDate!: Date;
-  public timelineEndDate!: Date;
-  public months: Date[] = [];
-  public quarters: { name: string; monthCount: number }[] = [];
-  public totalDays = 0;
-  public displayDate!: Date;
-  public currentPeriodLabel = '';
-  public viewMode: ViewMode = ViewMode.QUARTERLY;
-  protected todayOffsetPercentage = 0;
+  public readonly isLoading = signal(true);
+  public readonly milestones = signal<Milestone[]>([]);
+  public readonly milestoneIssues = signal<Map<string, Issue[]>>(new Map());
+  public readonly unplannedEpics = signal<Issue[]>([]);
+  public readonly timelineStartDate = signal<Date>(new Date());
+  public readonly timelineEndDate = signal<Date>(new Date());
+  public readonly months = signal<Date[]>([]);
+  public readonly quarters = signal<{ name: string; monthCount: number }[]>([]);
+  public readonly totalDays = signal(0);
+  public readonly displayDate = signal<Date | null>(null);
+  public readonly currentPeriodLabel = signal('');
+  public readonly viewMode = signal<ViewMode>(ViewMode.QUARTERLY);
+
+  public readonly visibleMilestones: Signal<Milestone[]> = computed(() =>
+    this.milestones().filter((milestone) => {
+      const issues = this.getIssuesForMilestone(milestone.id);
+      if (issues.length === 0) return false;
+
+      if (this.isUnplannedEpic(milestone)) {
+        return this.hasVisibleUnplannedEpics(milestone, issues);
+      }
+
+      if (this.viewMode() === ViewMode.MONTHLY) {
+        return this.milestoneHasIssuesInMonth(milestone, issues);
+      }
+
+      return true;
+    }),
+  );
+
+  protected readonly todayOffsetPercentage = signal(0);
 
   private allMilestones: Milestone[] = [];
   private allUnplannedEpics: Issue[] = [];
@@ -69,53 +87,36 @@ export class ReleaseRoadmapComponent implements OnInit {
 
   private milestoneService = inject(MilestoneService);
   private issueService = inject(IssueService);
-  private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
     this.loadInitialData();
   }
 
   public changePeriod(months: number): void {
-    this.displayDate.setMonth(this.displayDate.getMonth() + months);
-    this.displayDate = new Date(this.displayDate);
+    const displayDate = new Date(this.displayDate() ?? new Date());
+    displayDate.setMonth(displayDate.getMonth() + months);
+    this.displayDate.set(displayDate);
     this.generateTimelineFromPeriod();
   }
 
   public resetPeriod(): void {
     const today = new Date();
-    if (this.viewMode === ViewMode.QUARTERLY) {
+    if (this.viewMode() === ViewMode.QUARTERLY) {
       const currentQuarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
-      this.displayDate = new Date(today.getFullYear(), currentQuarterStartMonth, 1);
+      this.displayDate.set(new Date(today.getFullYear(), currentQuarterStartMonth, 1));
     } else {
-      this.displayDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      this.displayDate.set(new Date(today.getFullYear(), today.getMonth(), 1));
     }
     this.generateTimelineFromPeriod();
   }
 
   public toggleViewMode(): void {
-    this.viewMode = this.viewMode === ViewMode.QUARTERLY ? ViewMode.MONTHLY : ViewMode.QUARTERLY;
+    this.viewMode.update((mode) => (mode === ViewMode.QUARTERLY ? ViewMode.MONTHLY : ViewMode.QUARTERLY));
     this.resetPeriod();
   }
 
   public getIssuesForMilestone(milestoneId: string): Issue[] {
-    return this.milestoneIssues.get(milestoneId) || [];
-  }
-
-  public getVisibleMilestones(): Milestone[] {
-    return this.milestones.filter((milestone) => {
-      const issues = this.getIssuesForMilestone(milestone.id);
-      if (issues.length === 0) return false;
-
-      if (this.isUnplannedEpic(milestone)) {
-        return this.hasVisibleUnplannedEpics(milestone, issues);
-      }
-
-      if (this.viewMode === ViewMode.MONTHLY) {
-        return this.milestoneHasIssuesInMonth(milestone, issues);
-      }
-
-      return true;
-    });
+    return this.milestoneIssues().get(milestoneId) || [];
   }
 
   public createQuarterWindow(quarterMatch: RegExpMatchArray): { start: number; end: number } {
@@ -147,8 +148,8 @@ export class ReleaseRoadmapComponent implements OnInit {
 
     const issuePositions = this.calculateIssuePositionsForMilestone(milestone, issues);
 
-    const monthStart = this.timelineStartDate.getTime();
-    const monthEnd = this.timelineEndDate.getTime();
+    const monthStart = this.timelineStartDate().getTime();
+    const monthEnd = this.timelineEndDate().getTime();
 
     for (const position of issuePositions.values()) {
       if (position.startTime <= monthEnd && position.endTime >= monthStart) {
@@ -298,8 +299,8 @@ export class ReleaseRoadmapComponent implements OnInit {
 
     const startOffset = 6 * 3600 * 1000;
     let currentTime = new Date(milestone.dueOn).getTime() + startOffset;
-    const timelineStartTime = this.timelineStartDate.getTime();
-    const timelineEndTime = this.timelineEndDate.getTime();
+    const timelineStartTime = this.timelineStartDate().getTime();
+    const timelineEndTime = this.timelineEndDate().getTime();
     const epicDuration = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -323,8 +324,8 @@ export class ReleaseRoadmapComponent implements OnInit {
   private hasUnplannedEpicsInMonth(milestone: Milestone, issues: Issue[]): boolean {
     if (!milestone.dueOn) return false;
 
-    const monthStart = this.timelineStartDate.getTime();
-    const monthEnd = this.timelineEndDate.getTime();
+    const monthStart = this.timelineStartDate().getTime();
+    const monthEnd = this.timelineEndDate().getTime();
 
     const epicStartTime = new Date(milestone.dueOn).getTime();
     const epicDuration = this.EPIC_POINTS * 24 * 60 * 60 * 1000;
@@ -340,7 +341,8 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private generateTimelineFromPeriod(): void {
-    if (!this.displayDate) return;
+    const displayDate = this.displayDate();
+    if (!displayDate) return;
 
     this.calculateTimelineBoundaries();
     this.generateMonths();
@@ -353,10 +355,11 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private calculateTimelineBoundaries(): void {
-    this.timelineStartDate = new Date(this.displayDate);
-    const endDate = new Date(this.timelineStartDate);
+    const timelineStartDate = new Date(this.displayDate() ?? new Date());
+    this.timelineStartDate.set(timelineStartDate);
+    const endDate = new Date(timelineStartDate);
 
-    if (this.viewMode === ViewMode.QUARTERLY) {
+    if (this.viewMode() === ViewMode.QUARTERLY) {
       endDate.setMonth(endDate.getMonth() + 6);
       endDate.setDate(0);
     } else {
@@ -365,66 +368,71 @@ export class ReleaseRoadmapComponent implements OnInit {
       endDate.setHours(23, 59, 59, 999);
     }
 
-    this.timelineEndDate = endDate;
+    this.timelineEndDate.set(endDate);
   }
 
   private generateMonths(): void {
-    this.months = [];
-    let currentDate = new Date(this.timelineStartDate);
-    while (currentDate <= this.timelineEndDate) {
-      this.months.push(new Date(currentDate));
+    const months: Date[] = [];
+    let currentDate = new Date(this.timelineStartDate());
+    while (currentDate <= this.timelineEndDate()) {
+      months.push(new Date(currentDate));
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
+    this.months.set(months);
   }
 
   private calculateTodayMarkerPosition(): void {
-    this.totalDays = (this.timelineEndDate.getTime() - this.timelineStartDate.getTime()) / (1000 * 3600 * 24) + 1;
+    this.totalDays.set(
+      (this.timelineEndDate().getTime() - this.timelineStartDate().getTime()) / (1000 * 3600 * 24) + 1,
+    );
     const today = new Date();
-    if (today < this.timelineStartDate || today > this.timelineEndDate) {
-      this.todayOffsetPercentage = 0;
+    if (today < this.timelineStartDate() || today > this.timelineEndDate()) {
+      this.todayOffsetPercentage.set(0);
       return;
     }
 
-    const totalDuration = this.timelineEndDate.getTime() - this.timelineStartDate.getTime();
+    const totalDuration = this.timelineEndDate().getTime() - this.timelineStartDate().getTime();
     if (totalDuration <= 0) {
-      this.todayOffsetPercentage = 0;
+      this.todayOffsetPercentage.set(0);
       return;
     }
-    const todayOffset = today.getTime() - this.timelineStartDate.getTime();
-    this.todayOffsetPercentage = (todayOffset / totalDuration) * 100;
+    const todayOffset = today.getTime() - this.timelineStartDate().getTime();
+    this.todayOffsetPercentage.set((todayOffset / totalDuration) * 100);
   }
 
   private generateQuarters(): void {
-    this.quarters = [];
-    if (this.months.length === 0) return;
+    this.quarters.set([]);
+    if (this.months().length === 0) return;
 
-    if (this.viewMode === ViewMode.QUARTERLY) {
-      const startYear = this.timelineStartDate.getFullYear();
-      const startQuarterNumber = Math.floor(this.timelineStartDate.getMonth() / 3) + 1;
+    const timelineStartDate = this.timelineStartDate();
+
+    if (this.viewMode() === ViewMode.QUARTERLY) {
+      const startYear = timelineStartDate.getFullYear();
+      const startQuarterNumber = Math.floor(timelineStartDate.getMonth() / 3) + 1;
       const firstQuarterName = `Q${startQuarterNumber} ${startYear}`;
-      this.quarters.push({ name: firstQuarterName, monthCount: 3 });
 
-      const nextQuarterStartDate = new Date(this.timelineStartDate);
+      const nextQuarterStartDate = new Date(timelineStartDate);
       nextQuarterStartDate.setMonth(nextQuarterStartDate.getMonth() + 3);
       const endYear = nextQuarterStartDate.getFullYear();
       const endQuarterNumber = Math.floor(nextQuarterStartDate.getMonth() / 3) + 1;
       const secondQuarterName = `Q${endQuarterNumber} ${endYear}`;
-      this.quarters.push({ name: secondQuarterName, monthCount: 3 });
 
-      this.currentPeriodLabel = `${firstQuarterName} - ${secondQuarterName}`;
+      this.quarters.set([
+        { name: firstQuarterName, monthCount: 3 },
+        { name: secondQuarterName, monthCount: 3 },
+      ]);
+      this.currentPeriodLabel.set(`${firstQuarterName} - ${secondQuarterName}`);
     } else {
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const startYear = this.timelineStartDate.getFullYear();
-      const startMonth = this.timelineStartDate.getMonth();
-      const monthName = `${monthNames[startMonth]} ${startYear}`;
-      this.quarters.push({ name: monthName, monthCount: 1 });
+      const monthName = `${monthNames[timelineStartDate.getMonth()]} ${timelineStartDate.getFullYear()}`;
 
-      this.currentPeriodLabel = monthName;
+      this.quarters.set([{ name: monthName, monthCount: 1 }]);
+      this.currentPeriodLabel.set(monthName);
     }
   }
 
   private loadInitialData(): void {
-    this.isLoading = true;
+    this.isLoading.set(true);
     forkJoin({
       milestones: this.milestoneService.getMilestones(),
       unplannedEpics: this.issueService.getFutureEpicIssues(),
@@ -442,9 +450,8 @@ export class ReleaseRoadmapComponent implements OnInit {
           return of(null);
         }),
         finalize(() => {
-          this.isLoading = false;
+          this.isLoading.set(false);
           this.resetPeriod();
-          this.cdr.detectChanges();
         }),
       )
       .subscribe((result) => {
@@ -459,15 +466,14 @@ export class ReleaseRoadmapComponent implements OnInit {
   private updateVisibleData(): void {
     if (!this.isDataLoaded) return;
 
-    this.milestones = this.allMilestones.filter((m) => this.hasIssuesInView(m));
-    this.unplannedEpics = this.allUnplannedEpics;
+    this.milestones.set(this.allMilestones.filter((milestone) => this.hasIssuesInView(milestone)));
+    this.unplannedEpics.set(this.allUnplannedEpics);
     this.addUnplannedEpicsMilestone();
-    this.cdr.detectChanges();
   }
 
   private fetchIssuesForMilestones(milestones: Milestone[]): Observable<void> {
     if (milestones.length === 0) {
-      this.milestoneIssues.clear();
+      this.milestoneIssues.set(new Map());
       return of();
     }
 
@@ -480,16 +486,17 @@ export class ReleaseRoadmapComponent implements OnInit {
 
     return forkJoin(issueRequests).pipe(
       map((issueResults) => {
-        this.milestoneIssues.clear();
+        const milestoneIssues = new Map<string, Issue[]>();
         for (const result of issueResults) {
-          this.milestoneIssues.set(result.milestoneId, result.issues);
+          milestoneIssues.set(result.milestoneId, result.issues);
         }
       }),
     );
   }
 
   private addUnplannedEpicsMilestone(): void {
-    if (this.unplannedEpics.length === 0) return;
+    const unplannedEpics = this.unplannedEpics();
+    if (unplannedEpics.length === 0) return;
 
     const nextQuarterStart = this.getNextQuarterStart();
     const unplannedMilestone: Milestone = {
@@ -499,14 +506,16 @@ export class ReleaseRoadmapComponent implements OnInit {
       url: '',
       state: GitHubStates.OPEN,
       dueOn: nextQuarterStart,
-      openIssueCount: this.unplannedEpics.length,
+      openIssueCount: unplannedEpics.length,
       closedIssueCount: 0,
       isEstimated: false,
     };
 
-    if (!this.milestones.some((m) => m.id === this.UNPLANNED_EPICS_ID)) {
-      this.milestoneIssues.set(this.UNPLANNED_EPICS_ID, this.unplannedEpics);
-      this.milestones.push(unplannedMilestone);
+    if (!this.milestones().some((milestone) => milestone.id === this.UNPLANNED_EPICS_ID)) {
+      this.milestoneIssues.update((issuesByMilestone) =>
+        new Map(issuesByMilestone).set(this.UNPLANNED_EPICS_ID, unplannedEpics),
+      );
+      this.milestones.update((milestones) => [...milestones, unplannedMilestone]);
     }
   }
 
@@ -528,7 +537,7 @@ export class ReleaseRoadmapComponent implements OnInit {
   }
 
   private hasIssuesInView(milestone: Milestone): boolean {
-    const issues = this.milestoneIssues.get(milestone.id) || [];
+    const issues = this.milestoneIssues().get(milestone.id) || [];
     if (issues.length === 0) return false;
 
     const today = new Date();
@@ -541,8 +550,8 @@ export class ReleaseRoadmapComponent implements OnInit {
 
       const quarterEnd = this.getQuarterEndDate(issueQuarter);
       if (
-        issueQuarter.getTime() <= this.timelineEndDate.getTime() &&
-        quarterEnd.getTime() >= this.timelineStartDate.getTime()
+        issueQuarter.getTime() <= this.timelineEndDate().getTime() &&
+        quarterEnd.getTime() >= this.timelineStartDate().getTime()
       ) {
         return true;
       }

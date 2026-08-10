@@ -1,31 +1,30 @@
-import { Component, EventEmitter, Input, Output, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, Signal, computed, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { Release } from '../../../../services/release.service';
 
 @Component({
   selector: 'app-business-value-duplicate',
   standalone: true,
-  imports: [CommonModule, ModalComponent],
+  imports: [ModalComponent],
   templateUrl: './business-value-duplicate.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-duplicate.component.scss',
 })
 export class BusinessValueDuplicateComponent {
-  @Input({ required: true }) targetReleaseTitle!: string;
-  @Input({ required: true }) releases!: Release[];
-  @Input() isDuplicating = false;
-  @Input() errorMessage = '';
+  public readonly targetReleaseTitle = input.required<string>();
+  public readonly releases = input.required<Release[]>();
+  public readonly isDuplicating = input(false);
+  public readonly errorMessage = input('');
 
-  @Output() closed = new EventEmitter<void>();
-  @Output() duplicateSelected = new EventEmitter<Release>();
+  public readonly closed = output<void>();
+  public readonly duplicateSelected = output<Release>();
 
-  public searchQuery = signal<string>('');
+  public readonly searchQuery = signal<string>('');
 
-  public filteredReleases = computed(() => {
+  public readonly filteredReleases: Signal<Release[]> = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
-    if (!query) return this.releases;
-    return this.releases.filter((r) => r.name.toLowerCase().includes(query));
+    if (!query) return this.releases();
+    return this.releases().filter((release) => release.name.toLowerCase().includes(query));
   });
 
   public close(): void {

@@ -1,6 +1,6 @@
 <app-pill-button icon="help" label="Legend" tooltip="Show legend and release info" (clicked)="toggleModal()" />
 
-@if (modalOpen) {
+@if (modalOpen()) {
   <app-modal [title]="'Release Support'" [hideScrollBar]="true" (closed)="toggleModal()">
     <ng-container>
       <div class="release-modal-content">
@@ -77,7 +77,7 @@
           <p><strong>Active support window</strong> - Branch is receiving active development and bug fixes</p>
         </div>
 
-        @if (showExtendedSupport) {
+        @if (showExtendedSupport()) {
           <div class="release-content-item">
             <div class="release-content-item-icon support-timeline-icon">
               <div class="support-rectangle support-extended"></div>
@@ -100,12 +100,12 @@
           <p><strong>Historical support window</strong> - Shows when the branch was supported in the past</p>
         </div>
 
-        @if (showExtendedSupport) {
+        @if (showExtendedSupport()) {
           <p class="policy-text">
-            Our extended support policy provides major versions with {{ majorTotalMonths }} months total support (6
-            months active + {{ majorExtendedMonths }} months extended + 6 months security). For minor versions, the
-            total support period is {{ minorTotalMonths }} months (3 months active + {{ minorExtendedMonths }} months
-            extended + 3 months security).
+            Our extended support policy provides major versions with {{ majorTotalMonths() }} months total support (6
+            months active + {{ majorExtendedMonths() }} months extended + 6 months security). For minor versions, the
+            total support period is {{ minorTotalMonths() }} months (3 months active +
+            {{ minorExtendedMonths() }} months extended + 3 months security).
           </p>
         } @else {
           <p class="policy-text">
@@ -115,7 +115,7 @@
           </p>
         }
 
-        @if (buildInfo$ | async; as buildInfo) {
+        @if (buildInfo(); as buildInfo) {
           @if (buildInfo.version && buildInfo.time) {
             <h3 class="legend-section-title">Build Information</h3>
 

@@ -1,5 +1,15 @@
-import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  Signal,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
 import { Release, ReleaseService } from '../../services/release.service';
 import { Label, LabelService } from '../../services/label.service';
@@ -20,7 +30,7 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
   selector: 'app-release-details',
   standalone: true,
   imports: [
-    CommonModule,
+    DatePipe,
     FormsModule,
     RouterLink,
     LoaderComponent,
@@ -30,30 +40,34 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
     ReleaseVulnerabilities,
   ],
   templateUrl: './release-details.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-details.component.scss',
 })
 export class ReleaseDetailsComponent implements OnInit {
-  public release?: Release;
-  public highlightedLabels: Label[] | null = null;
-  public releaseIssues: Issue[] | null = null;
-  public vulnerabilities: Vulnerability[] | null = null;
-  public businessValues: BusinessValue[] | null = null;
-  public isLoading = true;
-  public activeView = signal<'business-value' | 'issues'>('issues');
-  public authService = inject(AuthService);
-  public graphStateService = inject(GraphStateService);
+  public readonly authService = inject(AuthService);
+  public readonly graphStateService = inject(GraphStateService);
 
-  public previousRelease = signal<Release | null>(null);
-  public nextRelease = signal<Release | null>(null);
-  public branchReleases = signal<Release[]>([]);
+  public readonly release = signal<Release | null>(null);
+  public readonly highlightedLabels = signal<Label[] | null>(null);
+  public readonly releaseIssues = signal<Issue[] | null>(null);
+  public readonly vulnerabilities = signal<Vulnerability[] | null>(null);
+  public readonly businessValues = signal<BusinessValue[] | null>(null);
+  public readonly isLoading = signal<boolean>(true);
+  public readonly activeView = signal<'business-value' | 'issues'>('issues');
 
-  private releaseService = inject(ReleaseService);
-  private labelService = inject(LabelService);
-  private issueService = inject(IssueService);
-  private vulnerabilityService = inject(VulnerabilityService);
-  private businessValueService = inject(BusinessValueService);
-  private route = inject(ActivatedRoute);
+  public readonly previousRelease = signal<Release | null>(null);
+  public readonly nextRelease = signal<Release | null>(null);
+  public readonly branchReleases = signal<Release[]>([]);
+
+  public readonly graphQueryParams: Signal<Params> = computed(() => this.graphStateService.graphQueryParams());
+
+  private readonly releaseService = inject(ReleaseService);
+  private readonly labelService = inject(LabelService);
+  private readonly issueService = inject(IssueService);
+  private readonly vulnerabilityService = inject(VulnerabilityService);
+  private readonly businessValueService = inject(BusinessValueService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
     this.route.paramMap
@@ -63,22 +77,23 @@ export class ReleaseDetailsComponent implements OnInit {
           if (!releaseId) {
             return of(null);
           }
-          this.isLoading = true;
+          this.isLoading.set(true);
           return forkJoin({
             release: this.releaseService.getReleaseById(releaseId),
             allReleases: this.releaseService.getAllReleases().pipe(catchError(() => of([]))),
           }).pipe(
             catchError((error) => {
               console.error('Failed to load release:', error);
-              this.isLoading = false;
+              this.isLoading.set(false);
               return of(null);
             }),
           );
         }),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((result) => {
         if (result) {
-          this.release = result.release;
+          this.release.set(result.release);
           this.computeBranchNavigation(result.release, result.allReleases);
           this.fetchData(result.release.id);
         }
@@ -92,10 +107,6 @@ export class ReleaseDetailsComponent implements OnInit {
   public releaseGraphLink(release: Release | null): string {
     if (!release) return '';
     return `/graph/${release.tagName.replace(/^release\//, '')}`;
-  }
-
-  public graphQueryParams(): Params {
-    return this.graphStateService.getGraphQueryParams();
   }
 
   private isNightly(release: Release): boolean {
@@ -156,15 +167,15 @@ export class ReleaseDetailsComponent implements OnInit {
     })
       .pipe(
         finalize(() => {
-          this.isLoading = false;
+          this.isLoading.set(false);
         }),
       )
       .subscribe(({ labels, issues, vulnerabilities, businessValues }) => {
-        this.highlightedLabels = labels.length > 0 ? labels : null;
-        this.releaseIssues = issues.length > 0 ? issues : null;
-        this.vulnerabilities = vulnerabilities;
-        this.businessValues = businessValues.length > 0 ? businessValues : null;
-        this.activeView.set(this.businessValues ? 'business-value' : 'issues');
+        this.highlightedLabels.set(labels.length > 0 ? labels : null);
+        this.releaseIssues.set(issues.length > 0 ? issues : null);
+        this.vulnerabilities.set(vulnerabilities);
+        this.businessValues.set(businessValues.length > 0 ? businessValues : null);
+        this.activeView.set(businessValues.length > 0 ? 'business-value' : 'issues');
       });
   }
 }
