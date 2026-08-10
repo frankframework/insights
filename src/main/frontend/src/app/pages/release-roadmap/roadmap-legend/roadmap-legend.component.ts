@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { ISSUE_STATE_STYLES, IssueStateStyle } from '../roadmap.types';
 
 interface LegendItem {
@@ -15,7 +15,6 @@ const ISSUE_STATE_LEGEND_ITEMS: LegendItem[] = Object.entries(ISSUE_STATE_STYLES
   selector: 'app-roadmap-legend',
   imports: [],
   templateUrl: './roadmap-legend.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './roadmap-legend.component.scss',
 })
 export class RoadmapLegend {

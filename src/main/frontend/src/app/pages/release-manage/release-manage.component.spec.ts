@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal, ChangeDetectionStrategy, input } from '@angular/core';
+import { signal, input } from '@angular/core';
 import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ReleaseManageComponent } from './release-manage.component';
@@ -19,7 +19,6 @@ import { ReleaseVulnerabilities } from '../release-details/release-vulnerabiliti
 @Component({
   selector: 'app-release-business-value',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockReleaseBusinessValueComponent {
@@ -29,7 +28,6 @@ class MockReleaseBusinessValueComponent {
 @Component({
   selector: 'app-release-important-issues',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockReleaseImportantIssuesComponent {
@@ -40,7 +38,6 @@ class MockReleaseImportantIssuesComponent {
 @Component({
   selector: 'app-release-vulnerabilities',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockReleaseVulnerabilities {

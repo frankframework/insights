@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Release, ReleaseService } from '../../services/release.service';
@@ -15,7 +15,6 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
   standalone: true,
   imports: [RouterLink, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
   templateUrl: './release-manage.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-manage.component.scss',
 })
 export class ReleaseManageComponent implements OnInit {

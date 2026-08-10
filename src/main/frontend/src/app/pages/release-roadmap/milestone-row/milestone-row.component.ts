@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, inject, input } from '@angular/core';
-import { DatePipe, NgStyle } from '@angular/common';
+import { Component, Signal, computed, inject, input } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { IssueBarComponent } from '../issue-bar/issue-bar.component';
 import { Milestone } from '../../../services/milestone.service';
 import { Issue } from '../../../services/issue.service';
@@ -30,9 +30,8 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
 @Component({
   selector: 'app-milestone-row',
   standalone: true,
-  imports: [DatePipe, NgStyle, IssueBarComponent],
+  imports: [DatePipe, IssueBarComponent],
   templateUrl: './milestone-row.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./milestone-row.component.scss'],
 })
 export class MilestoneRowComponent {

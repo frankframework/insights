@@ -1,19 +1,10 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  afterNextRender,
-  input,
-  output,
-  viewChild,
-} from '@angular/core';
+import { Component, ElementRef, afterNextRender, input, output, viewChild } from '@angular/core';
 
 @Component({
   selector: 'app-modal',
   standalone: true,
   imports: [],
   templateUrl: './modal.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './modal.component.scss',
 })
 export class ModalComponent {

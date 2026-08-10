@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
 import { TitleCasePipe } from '@angular/common';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
@@ -9,7 +9,6 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
   standalone: true,
   imports: [TitleCasePipe, ModalComponent],
   templateUrl: './business-value-delete.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-delete.component.scss',
 })
 export class BusinessValueDeleteComponent {

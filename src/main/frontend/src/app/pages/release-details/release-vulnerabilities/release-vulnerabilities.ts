@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  Signal,
-  WritableSignal,
-  computed,
-  input,
-  linkedSignal,
-} from '@angular/core';
+import { Component, Signal, WritableSignal, computed, input, linkedSignal } from '@angular/core';
 import { Vulnerability, VulnerabilitySeverities, VulnerabilitySeverity } from '../../../services/vulnerability.service';
 import { DatePipe, NgClass } from '@angular/common';
 import { VulnerabilityDetailsOffCanvas } from '../vulnerability-details-off-canvas/vulnerability-details-off-canvas';
@@ -25,7 +17,6 @@ const SEVERITY_ORDER: Record<VulnerabilitySeverity, number> = {
   standalone: true,
   imports: [DatePipe, NgClass, VulnerabilityDetailsOffCanvas],
   templateUrl: './release-vulnerabilities.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-vulnerabilities.scss',
 })
 export class ReleaseVulnerabilities {

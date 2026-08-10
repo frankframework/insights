@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   Signal,
   WritableSignal,
@@ -28,7 +27,6 @@ import {
   standalone: true,
   imports: [FormsModule, ModalComponent],
   templateUrl: './cvss-calculator.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './cvss-calculator.component.scss',
 })
 export class CvssCalculatorComponent {

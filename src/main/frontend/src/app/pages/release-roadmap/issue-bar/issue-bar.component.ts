@@ -1,13 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  Signal,
-  computed,
-  inject,
-  input,
-  viewChild,
-} from '@angular/core';
+import { Component, ElementRef, Signal, computed, inject, input, viewChild } from '@angular/core';
 import { NgStyle } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
@@ -19,7 +10,6 @@ import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../roadm
   standalone: true,
   imports: [NgStyle],
   templateUrl: './issue-bar.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./issue-bar.component.scss'],
 })
 export class IssueBarComponent {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, input } from '@angular/core';
+import { Component, Signal, computed, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
 @Component({
@@ -6,7 +6,6 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   imports: [DatePipe],
   templateUrl: './timeline-header.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./timeline-header.component.scss'],
 })
 export class TimelineHeaderComponent {

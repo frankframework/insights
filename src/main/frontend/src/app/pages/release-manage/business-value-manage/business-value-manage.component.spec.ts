@@ -1,7 +1,7 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -13,7 +13,6 @@ import { ReleaseService, Release } from '../../../services/release.service';
 @Component({
   selector: 'app-business-value-add',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockBusinessValueAddComponent {
@@ -25,7 +24,6 @@ class MockBusinessValueAddComponent {
 @Component({
   selector: 'app-business-value-edit',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockBusinessValueEditComponent {
@@ -37,7 +35,6 @@ class MockBusinessValueEditComponent {
 @Component({
   selector: 'app-business-value-delete',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockBusinessValueDeleteComponent {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, inject, input } from '@angular/core';
+import { Component, Signal, computed, inject, input } from '@angular/core';
 import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
@@ -36,7 +36,6 @@ const normalizeColor = (color: string): string => color.replace('#', '').toLower
   standalone: true,
   imports: [BaseChartDirective],
   templateUrl: './release-highlights.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-highlights.component.scss',
 })
 export class ReleaseHighlightsComponent {

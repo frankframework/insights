@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
@@ -10,7 +10,6 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
   standalone: true,
   imports: [FormsModule, ModalComponent, MarkdownPipe],
   templateUrl: './business-value-add.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-add.component.scss',
 })
 export class BusinessValueAddComponent {

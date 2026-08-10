@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, WritableSignal, inject, signal } from '@angular/core';
+import { Component, Signal, WritableSignal, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { VersionService, BuildInfo } from '../../services/version.service';
@@ -8,7 +8,6 @@ import { NgOptimizedImage } from '@angular/common';
   selector: 'app-feedback',
   imports: [NgOptimizedImage],
   templateUrl: './feedback.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './feedback.component.scss',
   host: { '(document:mouseup)': 'onTextSelection()' },
 })

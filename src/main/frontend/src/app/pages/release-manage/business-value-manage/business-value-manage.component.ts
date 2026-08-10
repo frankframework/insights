@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, Signal, computed, inject, input, signal } from '@angular/core';
+import { Component, OnInit, Signal, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { BusinessValue, BusinessValueService } from '../../../services/business-value.service';
 import { Issue, IssueService } from '../../../services/issue.service';
@@ -29,7 +29,6 @@ import { ReleaseManageComponent } from '../release-manage.component';
     LoaderComponent,
   ],
   templateUrl: './business-value-manage.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-manage.component.scss',
 })
 export class BusinessValueManageComponent implements OnInit {

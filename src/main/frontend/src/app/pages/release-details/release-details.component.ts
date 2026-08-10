@@ -1,13 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  OnInit,
-  Signal,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, DestroyRef, OnInit, Signal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { catchError, finalize, forkJoin, of, switchMap } from 'rxjs';
@@ -40,7 +31,6 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
     ReleaseVulnerabilities,
   ],
   templateUrl: './release-details.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-details.component.scss',
 })
 export class ReleaseDetailsComponent implements OnInit {

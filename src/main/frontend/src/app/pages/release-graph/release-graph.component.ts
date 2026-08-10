@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   ElementRef,
@@ -45,7 +44,6 @@ export interface BranchLifecycle {
   standalone: true,
   templateUrl: './release-graph.component.html',
   styleUrls: ['./release-graph.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {

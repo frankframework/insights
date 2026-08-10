@@ -1,15 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  OnInit,
-  Signal,
-  computed,
-  forwardRef,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, ElementRef, OnInit, Signal, computed, forwardRef, inject, signal, viewChild } from '@angular/core';
 import { catchError, finalize, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { RoadmapToolbarComponent } from './roadmap-toolbar/roadmap-toolbar.component';
 import { TimelineHeaderComponent } from './timeline-header/timeline-header.component';
@@ -39,7 +28,6 @@ export interface Version {
     RoadmapLegend,
   ],
   templateUrl: './release-roadmap.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./release-roadmap.component.scss'],
 })
 export class ReleaseRoadmapComponent implements OnInit {

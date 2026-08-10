@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { TooltipService } from './tooltip.service';
 
 @Component({
@@ -6,7 +6,6 @@ import { TooltipService } from './tooltip.service';
   standalone: true,
   imports: [],
   templateUrl: './tooltip.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./tooltip.component.scss'],
 })
 export class TooltipComponent {

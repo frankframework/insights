@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 
 export type PillButtonIcon = 'moon' | 'help' | 'github';
 
@@ -7,7 +7,6 @@ export type PillButtonIcon = 'moon' | 'help' | 'github';
   standalone: true,
   imports: [],
   templateUrl: './pill-button.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './pill-button.component.scss',
 })
 export class PillButtonComponent {

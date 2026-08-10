@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -11,7 +11,6 @@ import { PillButtonComponent } from '../../components/pill-button/pill-button.co
   standalone: true,
   imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent],
   templateUrl: './header.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './header.component.scss',
   host: { '(document:click)': 'onDocumentClick($event)' },
 })

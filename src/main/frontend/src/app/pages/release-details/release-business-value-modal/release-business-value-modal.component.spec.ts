@@ -1,6 +1,6 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseBusinessValueModalComponent } from './release-business-value-modal.component';
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree-branch/issue-tree-branch.component';
 import { Issue } from '../../../services/issue.service';
@@ -8,7 +8,6 @@ import { Issue } from '../../../services/issue.service';
 @Component({
   selector: 'app-modal',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<ng-content></ng-content>',
 })
 class MockModalComponent {
@@ -19,7 +18,6 @@ class MockModalComponent {
 @Component({
   selector: 'app-issue-tree-branch',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '',
 })
 class MockIssueTreeBranchComponent {

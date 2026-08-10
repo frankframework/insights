@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, input, output, signal } from '@angular/core';
+import { Component, Signal, computed, input, output, signal } from '@angular/core';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { Issue } from '../../../../services/issue.service';
 
@@ -14,7 +14,6 @@ export interface IssueWithSelection extends Issue {
   standalone: true,
   imports: [],
   templateUrl: './business-value-issue-panel.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-issue-panel.component.scss',
 })
 export class BusinessValueIssuePanelComponent {

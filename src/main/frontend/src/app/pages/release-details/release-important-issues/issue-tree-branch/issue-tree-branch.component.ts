@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, input, signal } from '@angular/core';
+import { Component, Signal, computed, input, signal } from '@angular/core';
 import { Issue } from '../../../../services/issue.service';
 import { IssueTypeTagComponent } from '../../../../components/issue-type-tag/issue-type-tag.component';
 
@@ -7,7 +7,6 @@ import { IssueTypeTagComponent } from '../../../../components/issue-type-tag/iss
   standalone: true,
   imports: [IssueTypeTagComponent],
   templateUrl: './issue-tree-branch.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './issue-tree-branch.component.scss',
 })
 export class IssueTreeBranchComponent {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, Signal, inject } from '@angular/core';
+import { Component, OnInit, Signal, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   RouterOutlet,
@@ -25,7 +25,6 @@ const isNavigationSettled = (event: RouterEvent): boolean =>
   selector: 'app-root',
   imports: [RouterOutlet, LoaderComponent, FeedbackComponent, HeaderComponent, TooltipComponent],
   templateUrl: './app.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {

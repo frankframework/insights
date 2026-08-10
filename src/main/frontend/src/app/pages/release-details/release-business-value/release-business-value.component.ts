@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { BusinessValue } from '../../../services/business-value.service';
 import { ReleaseBusinessValueModalComponent } from '../release-business-value-modal/release-business-value-modal.component';
 import { MarkdownPipe } from '../../../pipes/markdown.pipe';
@@ -8,7 +8,6 @@ import { MarkdownPipe } from '../../../pipes/markdown.pipe';
   standalone: true,
   imports: [ReleaseBusinessValueModalComponent, MarkdownPipe],
   templateUrl: './release-business-value.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-business-value.component.scss',
 })
 export class ReleaseBusinessValueComponent {

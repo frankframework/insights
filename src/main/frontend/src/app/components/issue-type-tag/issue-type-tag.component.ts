@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, inject, input } from '@angular/core';
+import { Component, Signal, computed, inject, input } from '@angular/core';
 import { ColorService } from '../../services/color.service';
 
 interface IssueType {
@@ -11,7 +11,6 @@ interface IssueType {
   standalone: true,
   imports: [],
   templateUrl: './issue-type-tag.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./issue-type-tag.component.scss'],
 })
 export class IssueTypeTagComponent {

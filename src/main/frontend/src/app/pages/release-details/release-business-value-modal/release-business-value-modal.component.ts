@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { MarkdownPipe } from '../../../pipes/markdown.pipe';
 import { BusinessValue } from '../../../services/business-value.service';
@@ -10,7 +10,6 @@ import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree
   standalone: true,
   imports: [ModalComponent, IssueTreeBranchComponent, MarkdownPipe],
   templateUrl: './release-business-value-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './release-business-value-modal.component.scss',
 })
 export class ReleaseBusinessValueModalComponent {

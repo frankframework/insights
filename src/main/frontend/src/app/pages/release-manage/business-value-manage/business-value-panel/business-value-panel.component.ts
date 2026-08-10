@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, input, output, signal } from '@angular/core';
+import { Component, Signal, computed, input, output, signal } from '@angular/core';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
 
@@ -7,7 +7,6 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
   standalone: true,
   imports: [MarkdownPipe],
   templateUrl: './business-value-panel.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-panel.component.scss',
 })
 export class BusinessValuePanelComponent {

@@ -9,11 +9,11 @@ import {
 } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { AppComponent } from './app.component';
-import { Component, NO_ERRORS_SCHEMA, ChangeDetectionStrategy } from '@angular/core';
+import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
-@Component({ selector: 'router-outlet', changeDetection: ChangeDetectionStrategy.OnPush, template: '' })
+@Component({ selector: 'router-outlet', template: '' })
 class MockRouterOutletComponent {}
 
 class MockRouter {

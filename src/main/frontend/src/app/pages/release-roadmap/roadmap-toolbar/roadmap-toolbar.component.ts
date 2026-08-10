@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ViewMode } from '../roadmap.types';
 
 @Component({
@@ -6,7 +6,6 @@ import { ViewMode } from '../roadmap.types';
   standalone: true,
   imports: [],
   templateUrl: './roadmap-toolbar.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./roadmap-toolbar.component.scss'],
 })
 export class RoadmapToolbarComponent {

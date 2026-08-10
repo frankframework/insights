@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, input, output, signal } from '@angular/core';
+import { Component, Signal, computed, input, output, signal } from '@angular/core';
 import { ModalComponent } from '../../../../components/modal/modal.component';
 import { Release } from '../../../../services/release.service';
 
@@ -7,7 +7,6 @@ import { Release } from '../../../../services/release.service';
   standalone: true,
   imports: [ModalComponent],
   templateUrl: './business-value-duplicate.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './business-value-duplicate.component.scss',
 })
 export class BusinessValueDuplicateComponent {

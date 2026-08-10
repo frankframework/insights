@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Signal, computed, inject, input, output } from '@angular/core';
+import { Component, Signal, computed, inject, input, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { Release } from '../../../services/release.service';
 import { SkipNode } from '../release-link.service';
@@ -16,7 +16,6 @@ interface ReleaseTreeNode {
   standalone: true,
   imports: [ModalComponent],
   templateUrl: './release-skipped-versions.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./release-skipped-versions.scss'],
 })
 export class ReleaseSkippedVersions {
