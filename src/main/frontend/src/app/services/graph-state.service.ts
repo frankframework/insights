@@ -1,4 +1,5 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
+import { parseVersionRanges, serializeVersionRanges, VersionRange } from '../pipes/release-range';
 
 @Injectable({
   providedIn: 'root',
@@ -8,8 +9,10 @@ export class GraphStateService {
 
   private static readonly OAUTH_TEMP_EXTENDED_KEY: string = 'oauth_temp_extended';
   private static readonly OAUTH_TEMP_NIGHTLY_KEY: string = 'oauth_temp_nightly';
+  private static readonly OAUTH_TEMP_RANGE_KEY: string = 'oauth_temp_range';
   private extendedSupportLevel: WritableSignal<number> = signal<number>(0);
   private showNightlies: WritableSignal<boolean> = signal<boolean>(false);
+  private releaseRanges: WritableSignal<VersionRange[]> = signal<VersionRange[]>([]);
 
   public static parseExtendedSupportLevel(value?: string | null): number {
     if (value === null || value === undefined) return 0;
@@ -45,11 +48,38 @@ export class GraphStateService {
     this.showNightlies.set(value);
   }
 
+  public getReleaseRanges(): VersionRange[] {
+    return this.releaseRanges();
+  }
+
+  public setReleaseRanges(ranges: VersionRange[]): void {
+    this.releaseRanges.set(ranges);
+  }
+
   public getGraphQueryParams(): Record<string, string> {
     const parameters: Record<string, string> = {};
     if (this.extendedSupportLevel() > 0) parameters['extended'] = String(this.extendedSupportLevel());
     if (this.showNightlies()) parameters['nightly'] = '';
+
+    const range = serializeVersionRanges(this.releaseRanges());
+    if (range) parameters['range'] = range;
+
     return parameters;
+  }
+
+  public saveRangeForOAuth(ranges: VersionRange[]): void {
+    const serialized = serializeVersionRanges(ranges);
+    if (serialized) {
+      localStorage.setItem(GraphStateService.OAUTH_TEMP_RANGE_KEY, serialized);
+    } else {
+      localStorage.removeItem(GraphStateService.OAUTH_TEMP_RANGE_KEY);
+    }
+  }
+
+  public restoreAndClearOAuthRange(): VersionRange[] {
+    const stored = localStorage.getItem(GraphStateService.OAUTH_TEMP_RANGE_KEY);
+    localStorage.removeItem(GraphStateService.OAUTH_TEMP_RANGE_KEY);
+    return parseVersionRanges(stored).ranges;
   }
 
   public saveNightlyForOAuth(value: boolean): void {

@@ -1,5 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Release } from '../../services/release.service';
+import {
+  createLineRange,
+  createOpenEndedRange,
+  isVersionInRanges,
+  mergeVersionRanges,
+  VersionRange,
+} from '../../pipes/release-range';
 
 export interface Position {
   x: number;
@@ -58,6 +65,11 @@ interface SupportDates {
   securitySupportEnd: Date;
 }
 
+interface ReleaseLine {
+  major: number;
+  minor: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReleaseNodeService {
   public static readonly GITHUB_NIGHTLY_RELEASE: string = 'nightly';
@@ -68,17 +80,39 @@ export class ReleaseNodeService {
 
   public timelineScale: TimelineScale | null = null;
 
-  public structureReleaseData(releases: Release[]): Map<string, ReleaseNode[]>[] {
+  public structureReleaseData(releases: Release[], ranges: VersionRange[] = []): Map<string, ReleaseNode[]>[] {
     const hydratedReleases = this.hydrateReleases(releases);
-    const groupedByBranch = this.prepareGroupedReleases(hydratedReleases);
+    const branchOriginDates = this.captureBranchOriginDates(hydratedReleases);
+    const groupedByBranch = this.prepareGroupedReleases(hydratedReleases, ranges);
 
-    const filteredNodes = this.processMasterBranch(groupedByBranch);
-    const branchMaps = this.processBranchReleases(groupedByBranch, filteredNodes);
+    const filteredNodes = this.processMasterBranch(groupedByBranch, ranges);
+    const branchMaps = this.processBranchReleases(groupedByBranch, filteredNodes, branchOriginDates);
 
     this.sortByNightlyAndDate(filteredNodes, (node) => node.label);
 
     const masterMap = new Map([[ReleaseNodeService.GITHUB_MASTER_BRANCH, filteredNodes]]);
     return [masterMap, ...branchMaps];
+  }
+
+  public getDefaultRanges(releases: Release[]): VersionRange[] {
+    const hydratedReleases = this.hydrateReleases(releases);
+    const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
+    this.sortGroupedReleases(groupedByBranch);
+    this.removeDuplicateNightlies(groupedByBranch);
+    this.pruneHistoricalBranchesWithoutNightly(groupedByBranch);
+
+    const visibleLines = this.collectBranchReleaseLines(groupedByBranch);
+    const supportedLineKeys = this.collectSupportedLineKeys(hydratedReleases);
+    const openEndedLine = this.findOpenEndedLine(visibleLines, supportedLineKeys);
+
+    if (!openEndedLine) return [{ from: null, to: null }];
+
+    const openEndedKey = this.toReleaseLineKey(openEndedLine);
+    const lineRanges = visibleLines
+      .filter((line) => this.toReleaseLineKey(line) < openEndedKey)
+      .map((line) => createLineRange(line.major, line.minor));
+
+    return mergeVersionRanges(lineRanges, [createOpenEndedRange(openEndedLine.major, openEndedLine.minor)]);
   }
 
   public calculateReleaseCoordinates(structuredGroups: Map<string, ReleaseNode[]>[]): Map<string, ReleaseNode[]> {
@@ -201,28 +235,138 @@ export class ReleaseNodeService {
     }));
   }
 
+  private captureBranchOriginDates(hydratedReleases: (Release & { publishedAt: Date })[]): Map<string, Date> {
+    const originDates = new Map<string, Date>();
+    for (const release of hydratedReleases) {
+      const branchName = release.branch.name;
+      const existing = originDates.get(branchName);
+      if (!existing || release.publishedAt < existing) {
+        originDates.set(branchName, release.publishedAt);
+      }
+    }
+    return originDates;
+  }
+
   private prepareGroupedReleases(
     hydratedReleases: (Release & { publishedAt: Date })[],
+    ranges: VersionRange[],
   ): Map<string, (Release & { publishedAt: Date })[]> {
     const groupedByBranch = this.groupReleasesByBranch(hydratedReleases);
     this.sortGroupedReleases(groupedByBranch);
     this.removeDuplicateNightlies(groupedByBranch);
-    this.pruneHistoricalBranchesWithoutNightly(groupedByBranch);
+    this.applyRangeVisibility(groupedByBranch, ranges);
     this.filterLowVersionNightliesFromBranches(groupedByBranch);
     return groupedByBranch;
   }
 
-  private processMasterBranch(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): ReleaseNode[] {
+  private applyRangeVisibility(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+    ranges: VersionRange[],
+  ): void {
+    if (ranges.length === 0) return;
+
+    for (const [branchName, releases] of groupedByBranch.entries()) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH) continue;
+
+      const releasesInRange = releases.filter((release) => this.isReleaseInRange(release, ranges));
+      if (releasesInRange.length > 0) {
+        groupedByBranch.set(branchName, releasesInRange);
+      } else {
+        groupedByBranch.delete(branchName);
+      }
+    }
+  }
+
+  private isReleaseInRange(release: Release, ranges: VersionRange[]): boolean {
+    return this.isVersionOfInRange(release.name, ranges);
+  }
+
+  private isNodeInRange(node: ReleaseNode, ranges: VersionRange[]): boolean {
+    return this.isVersionOfInRange(node.label, ranges);
+  }
+
+  private isVersionOfInRange(label: string, ranges: VersionRange[]): boolean {
+    const versionInfo = this.getVersionInfo({ label } as ReleaseNode);
+    if (!versionInfo) return false;
+
+    return isVersionInRanges(ranges, versionInfo.major, versionInfo.minor, versionInfo.patch);
+  }
+
+  private processMasterBranch(
+    groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
+    ranges: VersionRange[],
+  ): ReleaseNode[] {
     const masterReleases = groupedByBranch.get(ReleaseNodeService.GITHUB_MASTER_BRANCH) ?? [];
     const nodes = this.createReleaseNodes(masterReleases);
-    const filteredNodes = this.filterUnsupportedMinorReleases(nodes);
+    const filteredNodes = this.filterMasterReleases(nodes, ranges);
     groupedByBranch.delete(ReleaseNodeService.GITHUB_MASTER_BRANCH);
     return filteredNodes;
+  }
+
+  private collectBranchReleaseLines(groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>): ReleaseLine[] {
+    const lines: ReleaseLine[] = [];
+
+    for (const [branchName, releases] of groupedByBranch.entries()) {
+      if (branchName === ReleaseNodeService.GITHUB_MASTER_BRANCH || releases.length === 0) continue;
+
+      const versionInfo = this.getVersionInfo(this.buildBranchRootNode(releases));
+      if (versionInfo) {
+        lines.push({ major: versionInfo.major, minor: versionInfo.minor });
+      }
+    }
+
+    return this.sortReleaseLines(lines);
+  }
+
+  private collectSupportedLineKeys(hydratedReleases: (Release & { publishedAt: Date })[]): Set<number> {
+    const releasesByLine = new Map<number, (Release & { publishedAt: Date })[]>();
+
+    for (const release of hydratedReleases) {
+      if (this.isNightlyRelease(release.name)) continue;
+
+      const versionInfo = this.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!versionInfo) continue;
+
+      const lineKey = this.toReleaseLineKey(versionInfo);
+      const lineReleases = releasesByLine.get(lineKey) ?? [];
+      lineReleases.push(release);
+      releasesByLine.set(lineKey, lineReleases);
+    }
+
+    const supportedLineKeys = new Set<number>();
+    for (const [lineKey, lineReleases] of releasesByLine.entries()) {
+      if (!this.isUnsupported(this.buildBranchRootNode(lineReleases))) {
+        supportedLineKeys.add(lineKey);
+      }
+    }
+
+    return supportedLineKeys;
+  }
+
+  private findOpenEndedLine(visibleLines: ReleaseLine[], supportedLineKeys: Set<number>): ReleaseLine | undefined {
+    let openEndedLine: ReleaseLine | undefined;
+
+    for (let index = visibleLines.length - 1; index >= 0; index--) {
+      if (!supportedLineKeys.has(this.toReleaseLineKey(visibleLines[index]))) break;
+      openEndedLine = visibleLines[index];
+    }
+
+    return openEndedLine ?? visibleLines.at(-1);
+  }
+
+  private sortReleaseLines(lines: ReleaseLine[]): ReleaseLine[] {
+    const uniqueLines = new Map(lines.map((line) => [this.toReleaseLineKey(line), line]));
+    return [...uniqueLines.values()].toSorted((a, b) => this.toReleaseLineKey(a) - this.toReleaseLineKey(b));
+  }
+
+  private toReleaseLineKey(line: ReleaseLine): number {
+    return line.major * 100_000 + line.minor;
   }
 
   private processBranchReleases(
     groupedByBranch: Map<string, (Release & { publishedAt: Date })[]>,
     filteredNodes: ReleaseNode[],
+    branchOriginDates: Map<string, Date>,
   ): Map<string, ReleaseNode[]>[] {
     const branchMaps: Map<string, ReleaseNode[]>[] = [];
 
@@ -230,7 +374,8 @@ export class ReleaseNodeService {
       if (branchReleases.length === 0) continue;
 
       const branchNodes = this.createReleaseNodes(branchReleases);
-      const miniNode = this.createMiniNode(branchNodes[0], branchName);
+      const originDate = branchOriginDates.get(branchName) ?? branchNodes[0].publishedAt;
+      const miniNode = this.createMiniNode(branchNodes[0], branchName, originDate);
 
       filteredNodes.push(miniNode);
       branchMaps.push(new Map([[branchName, branchNodes]]));
@@ -239,12 +384,12 @@ export class ReleaseNodeService {
     return branchMaps;
   }
 
-  private createMiniNode(firstBranchNode: ReleaseNode, branchName: string): ReleaseNode {
+  private createMiniNode(firstBranchNode: ReleaseNode, branchName: string, originDate: Date): ReleaseNode {
     return {
       id: `mini-${firstBranchNode.id}`,
       label: '',
       branch: ReleaseNodeService.GITHUB_MASTER_BRANCH,
-      publishedAt: firstBranchNode.publishedAt,
+      publishedAt: originDate,
       color: '',
       position: { x: 0, y: 0 },
       isMiniNode: true,
@@ -554,30 +699,25 @@ export class ReleaseNodeService {
   }
 
   /**
-   * Filters out unsupported minor releases from the master branch that don't have patch versions.
-   * These are versions like v6.1, v7.4 that should be hidden if they don't have supported patches.
+   * Trims the master timeline down to the ranges. Major releases and nightlies stay whatever the
+   * ranges say: they are the backbone every branch row hangs off. The rest, the minor releases
+   * like v6.1 or v7.4, is only drawn when a range asks for it.
    */
-  private filterUnsupportedMinorReleases(masterNodes: ReleaseNode[]): ReleaseNode[] {
+  private filterMasterReleases(masterNodes: ReleaseNode[], ranges: VersionRange[]): ReleaseNode[] {
     return masterNodes.filter((node) => {
       if (node.isMiniNode) {
         return true;
       }
 
-      const versionInfo = this.getVersionInfo(node);
-
       if (node.label.toLowerCase().includes(ReleaseNodeService.GITHUB_NIGHTLY_RELEASE)) {
         return true;
       }
 
-      if (versionInfo?.type === 'major') {
+      if (this.getVersionInfo(node)?.type === 'major') {
         return true;
       }
 
-      if (versionInfo?.type === 'minor') {
-        return !this.isUnsupported(node);
-      }
-
-      return true;
+      return this.isNodeInRange(node, ranges);
     });
   }
 
@@ -737,9 +877,7 @@ export class ReleaseNodeService {
     }
 
     const MINI_NODE_OFFSET = 40;
-    if (nodes.length > 0) {
-      miniNode.position.x = nodes[0].position.x - MINI_NODE_OFFSET;
-    }
+    miniNode.position.x = this.calculateXPositionFromDate(miniNode.publishedAt, this.timelineScale) - MINI_NODE_OFFSET;
   }
 
   /**

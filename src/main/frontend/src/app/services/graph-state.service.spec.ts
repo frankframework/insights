@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { GraphStateService } from './graph-state.service';
+import { parseVersionRanges, VersionRange } from '../pipes/release-range';
+
+const rangesOf = (specification: string): VersionRange[] => parseVersionRanges(specification).ranges;
 
 describe('GraphStateService', () => {
   let service: GraphStateService;
@@ -100,6 +103,51 @@ describe('GraphStateService', () => {
       service.setExtendedSupportLevel(3);
 
       expect(service.getGraphQueryParams()).toEqual({ extended: '3' });
+    });
+
+    it('should return the range param when a range is set', () => {
+      service.setReleaseRanges(rangesOf('[7.0,9.3.2]'));
+
+      expect(service.getGraphQueryParams()).toEqual({ range: '[7.0,9.3.2]' });
+    });
+  });
+
+  describe('setReleaseRanges', () => {
+    it('should initialize without a range', () => {
+      expect(service.getReleaseRanges()).toEqual([]);
+    });
+
+    it('should update the range', () => {
+      const ranges = rangesOf('[8.0],[8.3]');
+      service.setReleaseRanges(ranges);
+
+      expect(service.getReleaseRanges()).toEqual(ranges);
+    });
+  });
+
+  describe('range OAuth temporary storage', () => {
+    it('should save the range to temporary localStorage', () => {
+      service.saveRangeForOAuth(rangesOf('[7.1,7.3]'));
+
+      expect(globalThis.localStorage.getItem('oauth_temp_range')).toBe('[7.1,7.3]');
+    });
+
+    it('should clear temporary localStorage when there is no range', () => {
+      globalThis.localStorage.setItem('oauth_temp_range', '[7.1]');
+      service.saveRangeForOAuth([]);
+
+      expect(globalThis.localStorage.getItem('oauth_temp_range')).toBeNull();
+    });
+
+    it('should restore and clear the range', () => {
+      globalThis.localStorage.setItem('oauth_temp_range', '[7.1,7.3]');
+
+      expect(service.restoreAndClearOAuthRange()).toEqual(rangesOf('[7.1,7.3]'));
+      expect(globalThis.localStorage.getItem('oauth_temp_range')).toBeNull();
+    });
+
+    it('should restore nothing when no range was stored', () => {
+      expect(service.restoreAndClearOAuthRange()).toEqual([]);
     });
   });
 

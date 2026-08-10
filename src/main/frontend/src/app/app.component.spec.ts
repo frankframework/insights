@@ -6,6 +6,7 @@ import {
   NavigationCancel,
   NavigationError,
   ActivatedRoute,
+  convertToParamMap,
 } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { AppComponent } from './app.component';
@@ -24,7 +25,7 @@ class MockRouter {
 }
 
 class MockActivatedRoute {
-  queryParams = of({});
+  queryParamMap = of(convertToParamMap({}));
 }
 
 describe('AppComponent', () => {

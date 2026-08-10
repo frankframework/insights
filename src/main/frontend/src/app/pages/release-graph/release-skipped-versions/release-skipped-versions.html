@@ -17,6 +17,13 @@
             } @else if (node.type === 'minor') {
               <span class="version-type-badge minor">MINOR</span>
             }
+            <app-include-version-button
+              [version]="node.version"
+              [included]="isVersionIncluded(node.version)"
+              [pending]="isVersionPending(node.version)"
+              (include)="includeVersion(node.version)"
+              (remove)="removeFromPending(node.version)"
+            />
           </div>
           @if (node.patches.length > 0) {
             @for (patch of node.patches; track patch.id) {
@@ -28,11 +35,28 @@
                 <span class="patch-indent">└─</span>
                 <span>{{ patch.name.startsWith('v') ? patch.name : 'v' + patch.name }}</span>
                 <span class="version-type-badge patch">PATCH</span>
+                <app-include-version-button
+                  [version]="patch.name"
+                  [included]="isVersionIncluded(patch.name)"
+                  [pending]="isVersionPending(patch.name)"
+                  (include)="includeVersion(patch.name)"
+                  (remove)="removeFromPending(patch.name)"
+                />
               </div>
             }
           }
         }
       }
     </div>
+
+    @if (releaseTree.length > 0) {
+      <app-include-actions
+        [includableRanges]="includableRanges"
+        [pendingCount]="pendingVersions.length"
+        [alreadyIncluded]="isAlreadyIncluded"
+        (includeAll)="includeReleases()"
+        (applyPending)="applyPendingIncludes()"
+      />
+    }
   </app-modal>
 }
