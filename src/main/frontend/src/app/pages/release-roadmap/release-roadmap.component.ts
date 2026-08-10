@@ -478,6 +478,8 @@ export class ReleaseRoadmapComponent implements OnInit {
         for (const result of issueResults) {
           milestoneIssues.set(result.milestoneId, result.issues);
         }
+
+        this.milestoneIssues.set(milestoneIssues);
       }),
     );
   }
