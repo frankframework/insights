@@ -1,6 +1,6 @@
 packages:
-  - src/main/frontend
-  - src/main/frontend/cypress
+  - insights-webapp/src/main/frontend
+  - insights-webapp/src/main/frontend/cypress
 
 overrides:
   '@hono/node-server@<2.0.5': '>=2.1.0'
