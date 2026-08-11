@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SimpleChange } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ReleaseImportantIssuesComponent } from './release-important-issues.component';
@@ -42,33 +41,33 @@ describe('ReleaseImportantIssuesComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngOnChanges', () => {
+  describe('input changes', () => {
     it('should update the issuesSignal and reset the filter when releaseIssues input changes', () => {
       component.selectedType.set('Bug'); // Set a non-default filter
-      component.releaseIssues = mockIssues;
-      component.ngOnChanges({ releaseIssues: new SimpleChange(null, mockIssues, true) });
+      fixture.componentRef.setInput('releaseIssues', mockIssues);
+      fixture.detectChanges();
 
-      expect((component as any).issuesSignal()).toEqual(mockIssues);
+      expect((component as any).issues()).toEqual(mockIssues);
       expect(component.selectedType()).toBe('all');
     });
 
     it('should handle an empty or null releaseIssues input gracefully', () => {
-      component.releaseIssues = null;
-      component.ngOnChanges({ releaseIssues: new SimpleChange(null, null, true) });
+      fixture.componentRef.setInput('releaseIssues', null);
+      fixture.detectChanges();
 
-      expect((component as any).issuesSignal()).toEqual([]);
+      expect((component as any).issues()).toEqual([]);
 
-      component.releaseIssues = [];
-      component.ngOnChanges({ releaseIssues: new SimpleChange(null, [], true) });
+      fixture.componentRef.setInput('releaseIssues', []);
+      fixture.detectChanges();
 
-      expect((component as any).issuesSignal()).toEqual([]);
+      expect((component as any).issues()).toEqual([]);
     });
   });
 
   describe('Computed Signals', () => {
     beforeEach(() => {
-      component.releaseIssues = mockIssues;
-      component.ngOnChanges({ releaseIssues: new SimpleChange(null, mockIssues, true) });
+      fixture.componentRef.setInput('releaseIssues', mockIssues);
+      fixture.detectChanges();
       fixture.detectChanges();
     });
 

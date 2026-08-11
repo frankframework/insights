@@ -1,5 +1,4 @@
-import { Component, EventEmitter, Input, Output, signal, WritableSignal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, input, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { MarkdownPipe } from '../../../pipes/markdown.pipe';
 import { BusinessValue } from '../../../services/business-value.service';
@@ -9,23 +8,13 @@ import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree
 @Component({
   selector: 'app-release-business-value-modal',
   standalone: true,
-  imports: [CommonModule, ModalComponent, IssueTreeBranchComponent, MarkdownPipe],
+  imports: [ModalComponent, IssueTreeBranchComponent, MarkdownPipe],
   templateUrl: './release-business-value-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-business-value-modal.component.scss',
 })
 export class ReleaseBusinessValueModalComponent {
-  @Output() closed = new EventEmitter<void>();
-
-  public businessValueSignal: WritableSignal<BusinessValue | null> = signal(null);
-
-  public get businessValue(): WritableSignal<BusinessValue | null> {
-    return this.businessValueSignal;
-  }
-
-  @Input({ required: true }) set businessValue(value: BusinessValue | null) {
-    this.businessValueSignal.set(value);
-  }
+  public readonly businessValue = input.required<BusinessValue | null>();
+  public readonly closed = output<void>();
 
   public close(): void {
     this.closed.emit();

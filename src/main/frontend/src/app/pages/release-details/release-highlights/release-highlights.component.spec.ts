@@ -54,22 +54,23 @@ describe('ReleaseHighlightsComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('ngOnChanges and Chart Data Generation', () => {
-    it('should call generatePieData when releaseIssues input changes', () => {
-      spyOn(component as any, 'generatePieData').and.callThrough();
-      component.releaseIssues = mockIssues;
-      component.ngOnChanges();
+  describe('Chart Data Generation', () => {
+    it('should rebuild the chart data when the releaseIssues input changes', () => {
+      expect(component.doughnutChartData().labels).toEqual([]);
 
-      expect((component as any).generatePieData).toHaveBeenCalledWith();
+      fixture.componentRef.setInput('releaseIssues', mockIssues);
+      fixture.detectChanges();
+
+      expect(component.doughnutChartData().labels?.length).toBeGreaterThan(0);
     });
 
     it('should correctly aggregate issue types into doughnut chart data', () => {
       spyOn(colorService, 'colorNameToRgba').and.callFake((color: string) => `rgba(${color},0.75)`);
 
-      component.releaseIssues = mockIssues;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('releaseIssues', mockIssues);
+      fixture.detectChanges();
 
-      const chartData = component.doughnutChartData;
+      const chartData = component.doughnutChartData();
       const dataset = chartData.datasets[0];
 
       expect(chartData.labels).toEqual(['Feature', 'Bug']);
@@ -81,20 +82,20 @@ describe('ReleaseHighlightsComponent', () => {
     });
 
     it('should not generate data if releaseIssues is null', () => {
-      component.releaseIssues = null;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('releaseIssues', null);
+      fixture.detectChanges();
 
-      const chartData = component.doughnutChartData;
+      const chartData = component.doughnutChartData();
 
       expect(chartData.labels?.length).toBe(0);
       expect(chartData.datasets.length).toBe(0);
     });
 
     it('should ignore issues that have no issueType', () => {
-      component.releaseIssues = mockIssues;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('releaseIssues', mockIssues);
+      fixture.detectChanges();
 
-      const chartData = component.doughnutChartData;
+      const chartData = component.doughnutChartData();
 
       // Zorg ervoor dat de data van "No Type D" niet is meegenomen
       expect(chartData.labels).not.toContain('No Type D');

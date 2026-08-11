@@ -1,13 +1,13 @@
 <div class="graph-container">
-  @if (isLoading) {
+  @if (isLoading()) {
     <app-loader />
-  } @else if (this.showNotFoundError) {
+  } @else if (showNotFoundError()) {
     <span class="error-message">Releases not found, please try again later.</span>
-  } @else if (rangeMessage) {
+  } @else if (rangeMessage(); as rangeMessage) {
     <div class="error-message" data-cy="range-message">
       <p>{{ rangeMessage }}</p>
       <p class="range-message-hint">
-        A range is written the Maven way, for example <code>{{ defaultRange }}</code> or <code>[8.0,9.0)</code>.
+        A range is written the Maven way, for example <code>{{ defaultRange() }}</code> or <code>[8.0,9.0)</code>.
       </p>
       <button type="button" class="range-message-button" (click)="resetRange()">Back to the default range</button>
     </div>
@@ -15,7 +15,7 @@
     <svg
       #svgElement
       id="svgElement"
-      [attr.viewBox]="viewBox"
+      [attr.viewBox]="viewBox()"
       (mousedown)="onMouseDown($event)"
       (mouseup)="onMouseUp()"
       (mousemove)="onMouseMove($event)"
@@ -23,36 +23,36 @@
       (touchend)="onTouchEnd()"
       (touchcancel)="onTouchEnd()"
     >
-      <g [attr.transform]="'translate(' + translateX + ',' + translateY + ') scale(' + scale + ')'">
-        @for (quarter of quarterMarkers; track quarter.label) {
+      <g [attr.transform]="'translate(' + translateX() + ',' + translateY() + ') scale(' + scale() + ')'">
+        @for (quarter of quarterMarkers(); track quarter.label) {
           <g class="quarter-marker">
             <line
               class="quarter-line"
               [attr.x1]="quarter.x"
-              [attr.y1]="svgLineTopY"
+              [attr.y1]="svgLineTopY()"
               [attr.x2]="quarter.x"
-              [attr.y2]="svgLineBottomY"
+              [attr.y2]="svgLineBottomY()"
             />
-            <text class="quarter-label" [attr.y]="svgLabelY" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
+            <text class="quarter-label" [attr.y]="svgLabelY()" [attr.x]="quarter.labelX">{{ quarter.label }}</text>
           </g>
         }
 
         <g class="current-time-marker">
           <line
             class="current-time-line"
-            [attr.x1]="currentTimeX"
-            [attr.y1]="svgLineTopY + 8"
-            [attr.x2]="currentTimeX"
-            [attr.y2]="svgLineBottomY"
+            [attr.x1]="currentTimeX()"
+            [attr.y1]="svgLineTopY() + 8"
+            [attr.x2]="currentTimeX()"
+            [attr.y2]="svgLineBottomY()"
           />
           <path
             class="current-time-chevron"
             d="M -8 0 L 0 8 L 8 0 Z"
-            [attr.transform]="'translate(' + currentTimeX + ', ' + svgLineTopY + ')'"
+            [attr.transform]="'translate(' + currentTimeX() + ', ' + svgLineTopY() + ')'"
           />
         </g>
 
-        @for (lifecycle of branchLifecycles; track lifecycle.branchLabel + '-' + lifecycle.y) {
+        @for (lifecycle of branchLifecycles(); track lifecycle.branchLabel + '-' + lifecycle.y) {
           <g class="branch-lifecycle">
             @for (phase of lifecycle.phases; track phase.startX) {
               <rect
@@ -69,7 +69,7 @@
           </g>
         }
 
-        @for (link of visibleLinks; track link) {
+        @for (link of visibleLinks(); track link) {
           <path
             [attr.data-cy]="'link-' + link.id"
             [attr.d]="getCustomPath(link)"
@@ -78,7 +78,7 @@
           />
         }
 
-        @for (releaseNode of visibleReleaseNodes; track releaseNode.id) {
+        @for (releaseNode of visibleReleaseNodes(); track releaseNode.id) {
           <a
             class="release-node"
             [class.mini-node]="releaseNode.isMiniNode"
@@ -100,7 +100,7 @@
           </a>
         }
 
-        @for (skipNode of skipNodes; track skipNode.id) {
+        @for (skipNode of skipNodes(); track skipNode.id) {
           <g
             class="skip-node"
             [attr.data-cy]="'skip-node-' + skipNode.id"
@@ -117,11 +117,11 @@
     </svg>
 
     <div class="graph-controls" [class.with-profile]="authService.isAuthenticated()">
-      @if (!isDefaultRange) {
+      @if (!isDefaultRange()) {
         <app-pill-button
           icon="list"
           label="Default range"
-          [tooltip]="'Back to ' + defaultRange"
+          [tooltip]="'Back to ' + defaultRange()"
           (clicked)="resetRange()"
         />
       }
@@ -131,15 +131,15 @@
         icon="moon"
         label="Show nightlies"
         tooltip="Toggle all nightly releases"
-        [active]="showNightlies"
+        [active]="showNightlies()"
         (clicked)="toggleNightlies()"
       />
 
-      <app-release-catalogus [extendedSupportLevel]="extendedSupportLevel" />
+      <app-release-catalogus [extendedSupportLevel]="extendedSupportLevel()" />
     </div>
 
     <div class="branch-labels-sticky">
-      @for (stickyLabel of stickyBranchLabels; track stickyLabel.label) {
+      @for (stickyLabel of stickyBranchLabels(); track stickyLabel.label) {
         <div class="sticky-branch-label-container" [style.top.px]="stickyLabel.screenY - 75">
           <span class="sticky-branch-label">{{ stickyLabel.label }}</span>
           @if (isMajorVersionBranch(stickyLabel.label)) {
@@ -149,11 +149,11 @@
       }
     </div>
 
-    @if (dataForSkipModal) {
+    @if (dataForSkipModal(); as dataForSkipModal) {
       <app-skipped-versions-modal
         [skipNode]="dataForSkipModal"
-        [releases]="releases"
-        [releaseRanges]="releaseRanges"
+        [releases]="releases()"
+        [releaseRanges]="releaseRanges()"
         (closed)="closeSkipNodeModal()"
         (versionClicked)="onSkippedVersionClick($event)"
         (rangeRequested)="onRangeRequested($event)"

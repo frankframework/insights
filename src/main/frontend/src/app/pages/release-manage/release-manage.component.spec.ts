@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { signal, ChangeDetectionStrategy } from '@angular/core';
+import { signal, input } from '@angular/core';
 import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { ReleaseManageComponent } from './release-manage.component';
@@ -10,7 +10,7 @@ import { VulnerabilityService } from '../../services/vulnerability.service';
 import { BusinessValueService, BusinessValue } from '../../services/business-value.service';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { Component, Input } from '@angular/core';
+import { Component } from '@angular/core';
 
 import { ReleaseBusinessValueComponent } from '../release-details/release-business-value/release-business-value.component';
 import { ReleaseImportantIssuesComponent } from '../release-details/release-important-issues/release-important-issues.component';
@@ -19,32 +19,29 @@ import { ReleaseVulnerabilities } from '../release-details/release-vulnerabiliti
 @Component({
   selector: 'app-release-business-value',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockReleaseBusinessValueComponent {
-  @Input() releaseId: any;
+  readonly releaseId = input<any>();
 }
 
 @Component({
   selector: 'app-release-important-issues',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockReleaseImportantIssuesComponent {
-  @Input() releaseIssues: any;
-  @Input() releaseId: any;
+  readonly releaseIssues = input<any>();
+  readonly releaseId = input<any>();
 }
 
 @Component({
   selector: 'app-release-vulnerabilities',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockReleaseVulnerabilities {
-  @Input() vulnerabilities: any;
+  readonly vulnerabilities = input<any>();
 }
 
 describe('ReleaseManageComponent', () => {
@@ -131,6 +128,7 @@ describe('ReleaseManageComponent', () => {
 
     fixture = TestBed.createComponent(ReleaseManageComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('id', '123');
     fixture.detectChanges();
   });
 

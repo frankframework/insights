@@ -1,4 +1,4 @@
-import { Component, Input, computed, signal, OnChanges, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Signal, computed, input, linkedSignal } from '@angular/core';
 import { Issue } from '../../../services/issue.service';
 import { IssueTreeBranchComponent } from './issue-tree-branch/issue-tree-branch.component';
 import { FormsModule } from '@angular/forms';
@@ -22,16 +22,18 @@ interface IssueTypeOption {
   selector: 'app-release-important-issues',
   imports: [IssueTreeBranchComponent, FormsModule],
   templateUrl: './release-important-issues.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-important-issues.component.scss',
 })
-export class ReleaseImportantIssuesComponent implements OnChanges {
-  @Input() releaseIssues: Issue[] | null = null;
+export class ReleaseImportantIssuesComponent {
+  public readonly releaseIssues = input<Issue[] | null>(null);
 
-  public selectedType = signal<string | null | 'all'>('all');
+  public readonly selectedType = linkedSignal<Issue[] | null, string | null | 'all'>({
+    source: this.releaseIssues,
+    computation: () => 'all',
+  });
 
-  public issueTypeOptions = computed<IssueTypeOption[]>(() => {
-    const issues = this.issuesSignal();
+  public readonly issueTypeOptions: Signal<IssueTypeOption[]> = computed(() => {
+    const issues = this.issues();
 
     const typeNames = issues.map((issue) => this.getIssueTypeName(issue));
     const uniqueTypeNames = [...new Set(typeNames)];
@@ -48,10 +50,8 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
     return options;
   });
 
-  public sortedAndFilteredIssues = computed(() => {
-    const issues = this.issuesSignal();
-    if (!issues) return [];
-    let filtered = [...issues];
+  public readonly sortedAndFilteredIssues: Signal<Issue[]> = computed(() => {
+    let filtered = [...this.issues()];
 
     if (this.selectedType() !== 'all') {
       const filterPredicate = this.selectedType() === null ? this.isIssueWithoutType : this.isIssueWithSelectedType;
@@ -63,14 +63,7 @@ export class ReleaseImportantIssuesComponent implements OnChanges {
     return filtered;
   });
 
-  private issuesSignal = signal<Issue[]>([]);
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['releaseIssues']) {
-      this.selectedType.set('all');
-      this.issuesSignal.set(this.releaseIssues ? [...this.releaseIssues] : []);
-    }
-  }
+  private readonly issues: Signal<Issue[]> = computed(() => this.releaseIssues() ?? []);
 
   private sortIssues = (a: Issue, b: Issue): number => {
     const aGroup = this.groupOrder(a);

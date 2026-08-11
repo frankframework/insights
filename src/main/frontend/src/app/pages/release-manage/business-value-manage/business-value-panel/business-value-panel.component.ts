@@ -1,33 +1,35 @@
-import { Component, input, Output, EventEmitter, computed, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Signal, computed, input, output, signal } from '@angular/core';
 import { BusinessValue } from '../../../../services/business-value.service';
 import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-business-value-panel',
   standalone: true,
-  imports: [CommonModule, MarkdownPipe],
+  imports: [MarkdownPipe],
   templateUrl: './business-value-panel.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-panel.component.scss',
 })
 export class BusinessValuePanelComponent {
-  @Output() businessValueSelected = new EventEmitter<BusinessValue>();
-  @Output() createClicked = new EventEmitter<void>();
-  @Output() editClicked = new EventEmitter<void>();
-  @Output() deleteClicked = new EventEmitter<{ businessValue: BusinessValue; event: Event }>();
-  @Output() duplicateClicked = new EventEmitter<void>();
+  public readonly businessValues = input.required<BusinessValue[]>();
+  public readonly selectedBusinessValue = input<BusinessValue | null>(null);
 
-  public businessValues = input.required<BusinessValue[]>();
-  public selectedBusinessValue = input<BusinessValue | null>(null);
-  public businessValueSearchQuery = signal<string>('');
+  public readonly businessValueSelected = output<BusinessValue>();
+  public readonly createClicked = output<void>();
+  public readonly editClicked = output<void>();
+  public readonly deleteClicked = output<{
+    businessValue: BusinessValue;
+    event: Event;
+  }>();
+  public readonly duplicateClicked = output<void>();
 
-  public filteredBusinessValues = computed(() => {
+  public readonly businessValueSearchQuery = signal<string>('');
+
+  public readonly filteredBusinessValues: Signal<BusinessValue[]> = computed(() => {
     const query = this.businessValueSearchQuery().toLowerCase().trim();
     let values = this.businessValues();
 
     if (query) {
-      values = values.filter((bv) => this.filterBusinessValuesByQuery(bv, query));
+      values = values.filter((businessValue) => businessValue.title.toLowerCase().includes(query));
     }
 
     return [...values].toSorted(this.sortBusinessValuesByIssueCount);
@@ -60,13 +62,6 @@ export class BusinessValuePanelComponent {
     this.duplicateClicked.emit();
   }
 
-  private filterBusinessValuesByQuery(bv: BusinessValue, query: string): boolean {
-    return bv.title.toLowerCase().includes(query);
-  }
-
-  private sortBusinessValuesByIssueCount = (a: BusinessValue, b: BusinessValue): number => {
-    const countA = a.issues?.length || 0;
-    const countB = b.issues?.length || 0;
-    return countB - countA;
-  };
+  private sortBusinessValuesByIssueCount = (businessValueA: BusinessValue, businessValueB: BusinessValue): number =>
+    (businessValueB.issues?.length || 0) - (businessValueA.issues?.length || 0);
 }

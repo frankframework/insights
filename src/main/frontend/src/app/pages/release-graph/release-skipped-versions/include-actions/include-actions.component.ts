@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Signal, computed, input, output } from '@angular/core';
 import { serializeVersionRanges, VersionRange } from '../../../../pipes/release-range';
 
 @Component({
@@ -9,22 +9,24 @@ import { serializeVersionRanges, VersionRange } from '../../../../pipes/release-
   styleUrl: './include-actions.component.scss',
 })
 export class IncludeActionsComponent {
-  @Input() includableRanges: VersionRange[] = [];
-  @Input() pendingCount = 0;
-  @Input() alreadyIncluded = false;
-  @Output() includeAll = new EventEmitter<void>();
-  @Output() applyPending = new EventEmitter<void>();
+  public readonly includableRanges = input<VersionRange[]>([]);
+  public readonly pendingCount = input<number>(0);
+  public readonly alreadyIncluded = input<boolean>(false);
 
-  public get includeLabel(): string {
-    return serializeVersionRanges(this.includableRanges);
-  }
+  public readonly includeAll = output<void>();
+  public readonly applyPending = output<void>();
 
-  public get includeButtonLabel(): string {
-    if (this.alreadyIncluded) return 'Already included';
-    return this.includableRanges.length > 3 ? 'Include all these in graph' : `Include ${this.includeLabel} in graph`;
-  }
+  public readonly includeLabel: Signal<string> = computed(() => serializeVersionRanges(this.includableRanges()));
 
-  public get pendingLabel(): string {
-    return this.pendingCount === 1 ? '1 pending release' : `${this.pendingCount} pending releases`;
-  }
+  public readonly includeButtonLabel: Signal<string> = computed(() => {
+    if (this.alreadyIncluded()) return 'Already included';
+    return this.includableRanges().length > 3
+      ? 'Include all these in graph'
+      : `Include ${this.includeLabel()} in graph`;
+  });
+
+  public readonly pendingLabel: Signal<string> = computed(() => {
+    const pendingCount = this.pendingCount();
+    return pendingCount === 1 ? '1 pending release' : `${pendingCount} pending releases`;
+  });
 }

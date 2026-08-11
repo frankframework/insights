@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DatePipe } from '@angular/common';
-import { SimpleChanges } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MilestoneRowComponent } from './milestone-row.component';
@@ -59,20 +58,9 @@ describe('MilestoneRowComponent', () => {
   let releaseRoadmapComponentSpy: jasmine.SpyObj<ReleaseRoadmapComponent>;
 
   const initializeComponent = (milestone: Milestone, issues: Issue[]) => {
-    component.milestone = milestone;
-    component.issues = issues;
-    const changes: SimpleChanges = {
-      milestone: {
-        currentValue: component.milestone,
-        previousValue: null,
-        isFirstChange: () => true,
-        firstChange: true,
-      },
-      issues: { currentValue: component.issues, previousValue: null, isFirstChange: () => true, firstChange: true },
-      quarters: { currentValue: component.quarters, previousValue: null, isFirstChange: () => true, firstChange: true },
-      viewMode: { currentValue: component.viewMode, previousValue: null, isFirstChange: () => true, firstChange: true },
-    };
-    component.ngOnChanges(changes);
+    fixture.componentRef.setInput('milestone', milestone);
+    fixture.componentRef.setInput('issues', issues);
+    fixture.detectChanges();
     fixture.detectChanges();
   };
 
@@ -120,10 +108,10 @@ describe('MilestoneRowComponent', () => {
     jasmine.clock().install();
     jasmine.clock().mockDate(MOCK_TODAY);
 
-    component.timelineStartDate = MOCK_TIMELINE_START;
-    component.timelineEndDate = MOCK_TIMELINE_END;
-    component.totalTimelineDays = MOCK_TOTAL_DAYS;
-    component.quarters = MOCK_QUARTERS;
+    fixture.componentRef.setInput('timelineStartDate', MOCK_TIMELINE_START);
+    fixture.componentRef.setInput('timelineEndDate', MOCK_TIMELINE_END);
+    fixture.componentRef.setInput('totalTimelineDays', MOCK_TOTAL_DAYS);
+    fixture.componentRef.setInput('quarters', MOCK_QUARTERS);
   });
 
   afterEach(() => {
@@ -140,15 +128,15 @@ describe('MilestoneRowComponent', () => {
     const milestone: Milestone = { ...MOCK_MILESTONE, openIssueCount: 1, closedIssueCount: 1 };
     initializeComponent(milestone, []);
 
-    expect(component.progressPercentage).toBe(50);
+    expect(component.progressPercentage()).toBe(50);
   });
 
   describe('Layout Algorithm Scenarios', () => {
     it('should place closed issues before "today" and open issues after "today" in the CURRENT quarter', () => {
       initializeComponent(MOCK_MILESTONE, [MOCK_OPEN_ISSUE, MOCK_CLOSED_ISSUE]);
 
-      const closedPositioned = component.positionedIssues.find((p) => p.issue!.id === 'issue-closed');
-      const openPositioned = component.positionedIssues.find((p) => p.issue!.id === 'issue-open');
+      const closedPositioned = component.positionedIssues().find((p) => p.issue!.id === 'issue-closed');
+      const openPositioned = component.positionedIssues().find((p) => p.issue!.id === 'issue-open');
 
       expect(closedPositioned).withContext('Closed issue should be positioned').toBeDefined();
       expect(openPositioned).withContext('Open issue should be positioned').toBeDefined();
@@ -157,15 +145,15 @@ describe('MilestoneRowComponent', () => {
       const openLeft = Number.parseFloat(openPositioned!.style['left']!);
 
       expect(closedLeft).toBeLessThan(openLeft);
-      expect(component.trackCount).toBe(1);
+      expect(component.trackCount()).toBe(1);
     });
 
     it('should place all issues in the "open" window for a FUTURE quarter', () => {
       const futureMilestone = { ...MOCK_MILESTONE, dueOn: new Date(2025, 11, 15) };
       initializeComponent(futureMilestone, [MOCK_OPEN_ISSUE]);
 
-      expect(component.positionedIssues.length).toBe(1);
-      const issuePos = component.positionedIssues[0];
+      expect(component.positionedIssues().length).toBe(1);
+      const issuePos = component.positionedIssues()[0];
 
       const q4StartDays = (new Date(2025, 9, 1).getTime() - MOCK_TIMELINE_START.getTime()) / (1000 * 3600 * 24);
       const issueStartDays = (Number.parseFloat(issuePos.style['left']!) / 100) * MOCK_TOTAL_DAYS;
@@ -178,15 +166,15 @@ describe('MilestoneRowComponent', () => {
       const pastClosedIssue = { ...MOCK_CLOSED_ISSUE, closedAt: new Date(2025, 4, 20) };
       initializeComponent(pastMilestone, [pastClosedIssue]);
 
-      expect(component.positionedIssues.length).toBe(1);
+      expect(component.positionedIssues().length).toBe(1);
     });
 
     it('should move "overdue" open issues to the current quarter for layout', () => {
       const overdueMilestone = { ...MOCK_MILESTONE, dueOn: new Date(2025, 5, 15) };
       initializeComponent(overdueMilestone, [MOCK_OPEN_ISSUE]);
 
-      expect(component.positionedIssues.length).toBe(1);
-      const issuePos = component.positionedIssues[0];
+      expect(component.positionedIssues().length).toBe(1);
+      const issuePos = component.positionedIssues()[0];
       const todayStartDays = (MOCK_TODAY.getTime() - MOCK_TIMELINE_START.getTime()) / (1000 * 3600 * 24);
       const issueStartDays = (Number.parseFloat(issuePos.style['left']!) / 100) * MOCK_TOTAL_DAYS;
 
@@ -195,10 +183,10 @@ describe('MilestoneRowComponent', () => {
 
     it('should only render issues that fall into the visible quarters provided by input', () => {
       const futureMilestone = { ...MOCK_MILESTONE, dueOn: new Date(2025, 10, 15) };
-      component.quarters = [{ name: 'Q3 2025', monthCount: 3 }];
+      fixture.componentRef.setInput('quarters', [{ name: 'Q3 2025', monthCount: 3 }]);
       initializeComponent(futureMilestone, [MOCK_OPEN_ISSUE]);
 
-      expect(component.positionedIssues.length).toBe(0);
+      expect(component.positionedIssues().length).toBe(0);
     });
 
     it('should create multiple tracks if issues overflow a planning window', () => {
@@ -209,7 +197,7 @@ describe('MilestoneRowComponent', () => {
       }));
       initializeComponent(MOCK_MILESTONE, largeIssues);
 
-      expect(component.trackCount).toBeGreaterThan(1);
+      expect(component.trackCount()).toBeGreaterThan(1);
     });
   });
 
@@ -256,24 +244,24 @@ describe('MilestoneRowComponent', () => {
     it('should use single lane layout for unplanned epics', () => {
       initializeComponent(UNPLANNED_MILESTONE, MOCK_EPIC_ISSUES);
 
-      expect(component.trackCount).toBe(1);
+      expect(component.trackCount()).toBe(1);
     });
 
     it('should layout all epics in a row with 30 day width', () => {
       initializeComponent(UNPLANNED_MILESTONE, MOCK_EPIC_ISSUES);
 
-      expect(component.positionedIssues.length).toBe(3);
-      expect(component.positionedIssues[0].track).toBe(0);
-      expect(component.positionedIssues[1].track).toBe(0);
-      expect(component.positionedIssues[2].track).toBe(0);
+      expect(component.positionedIssues().length).toBe(3);
+      expect(component.positionedIssues()[0].track).toBe(0);
+      expect(component.positionedIssues()[1].track).toBe(0);
+      expect(component.positionedIssues()[2].track).toBe(0);
     });
 
     it('should position epics sequentially with gaps', () => {
       initializeComponent(UNPLANNED_MILESTONE, MOCK_EPIC_ISSUES);
 
-      const epic1 = component.positionedIssues[0];
-      const epic2 = component.positionedIssues[1];
-      const epic3 = component.positionedIssues[2];
+      const epic1 = component.positionedIssues()[0];
+      const epic2 = component.positionedIssues()[1];
+      const epic3 = component.positionedIssues()[2];
 
       expect(epic1.issue!.id).toBe('epic1');
       expect(epic2.issue!.id).toBe('epic2');
@@ -297,8 +285,8 @@ describe('MilestoneRowComponent', () => {
 
       initializeComponent(UNPLANNED_MILESTONE, manyEpics);
 
-      expect(component.positionedIssues.length).toBeLessThan(20);
-      expect(component.positionedIssues.length).toBeGreaterThan(0);
+      expect(component.positionedIssues().length).toBeLessThan(20);
+      expect(component.positionedIssues().length).toBeGreaterThan(0);
     });
 
     it('should maintain track count of 1 even with many epics', () => {
@@ -313,7 +301,7 @@ describe('MilestoneRowComponent', () => {
 
       initializeComponent(UNPLANNED_MILESTONE, manyEpics);
 
-      expect(component.trackCount).toBe(1);
+      expect(component.trackCount()).toBe(1);
     });
   });
 });

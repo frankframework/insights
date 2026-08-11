@@ -1,11 +1,11 @@
 <div class="vulnerabilities-container">
   <div class="cve-list">
     <header class="cve-list-header">
-      <h3 class="vulnerabilities-title">Vulnerabilities ({{ sortedVulnerabilities.length }})</h3>
+      <h3 class="vulnerabilities-title">Vulnerabilities ({{ sortedVulnerabilities().length }})</h3>
       <div>
         <h4 class="last-scanned-label">Last Scanned</h4>
         <p>
-          @if (lastScanned) {
+          @if (lastScanned(); as lastScanned) {
             {{ lastScanned | date: 'mediumDate' }}
           } @else {
             Never
@@ -14,19 +14,19 @@
       </div>
     </header>
 
-    @if (sortedVulnerabilities.length === 0) {
-      @if (lastScanned) {
+    @if (sortedVulnerabilities().length === 0) {
+      @if (lastScanned()) {
         <p class="no-vulnerabilities">No vulnerabilities found for this release.</p>
       } @else {
         <p class="no-vulnerabilities">Not yet scanned.</p>
       }
     } @else {
-      @for (vulnerability of sortedVulnerabilities; track vulnerability.cveId) {
+      @for (vulnerability of sortedVulnerabilities(); track vulnerability.cveId) {
         <div
           class="cve-item"
           tabindex="0"
           role="button"
-          [class.selected]="selectedVulnerability?.cveId === vulnerability.cveId && isOffCanvasOpen"
+          [class.selected]="selectedVulnerability()?.cveId === vulnerability.cveId && isOffCanvasOpen()"
           (click)="selectVulnerability(vulnerability)"
           (keydown.enter)="selectVulnerability(vulnerability)"
           (keydown.space)="selectVulnerability(vulnerability)"
@@ -48,9 +48,9 @@
     }
   </div>
 
-  @if (isOffCanvasOpen) {
+  @if (isOffCanvasOpen()) {
     <app-vulnerability-details-off-canvas
-      [vulnerability]="selectedVulnerability"
+      [vulnerability]="selectedVulnerability()"
       (closeVulnerabilityCanvas)="closeOffCanvas()"
     />
   }

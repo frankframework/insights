@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable, Signal, WritableSignal, signal } from '@angular/core';
 
 export interface TooltipDetail {
   label?: string;
@@ -17,16 +16,21 @@ export interface TooltipData {
   providedIn: 'root',
 })
 export class TooltipService {
-  public tooltipSubject = new BehaviorSubject<TooltipData | null>(null);
-  public readonly tooltipState$: Observable<TooltipData | null> = this.tooltipSubject.asObservable();
+  public readonly tooltip: Signal<TooltipData | null>;
+
+  private readonly tooltipState: WritableSignal<TooltipData | null> = signal<TooltipData | null>(null);
+
+  constructor() {
+    this.tooltip = this.tooltipState.asReadonly();
+  }
 
   public show(hostElement: HTMLElement, title: string, details: TooltipDetail[] = []): void {
     const position = this.calculatePosition(hostElement);
-    this.tooltipSubject.next({ title, details, ...position });
+    this.tooltipState.set({ title, details, ...position });
   }
 
   public hide(): void {
-    this.tooltipSubject.next(null);
+    this.tooltipState.set(null);
   }
 
   private calculatePosition(host: HTMLElement): { top: string; left: string } {

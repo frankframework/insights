@@ -1,5 +1,5 @@
-import { Component, Input, OnInit, ElementRef, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ElementRef, Signal, computed, inject, input, viewChild } from '@angular/core';
+import { NgStyle } from '@angular/common';
 import { GitHubStates } from '../../../app.service';
 import { Issue } from '../../../services/issue.service';
 import { TooltipDetail, TooltipService } from '../../../components/tooltip/tooltip.service';
@@ -8,54 +8,50 @@ import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../roadm
 @Component({
   selector: 'app-issue-bar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [NgStyle],
   templateUrl: './issue-bar.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./issue-bar.component.scss'],
 })
-export class IssueBarComponent implements OnInit {
-  @Input({ required: true }) issue!: Issue;
-  @Input() issueStyle: Record<string, string> = {};
-  @Input() isUnplannedEpic = false;
-  @Input() viewMode: ViewMode = ViewMode.QUARTERLY;
+export class IssueBarComponent {
+  public readonly issue = input.required<Issue>();
+  public readonly issueStyle = input<Record<string, string>>({});
+  public readonly isUnplannedEpic = input(false);
+  public readonly viewMode = input<ViewMode>(ViewMode.QUARTERLY);
 
-  @ViewChild('issueLink') issueLinkRef!: ElementRef<HTMLAnchorElement>;
+  public readonly issueLinkRef = viewChild.required<ElementRef<HTMLAnchorElement>>('issueLink');
 
   public ViewMode = ViewMode;
 
-  public priorityStyle: Record<string, string> = {};
-  public isClosed = false;
+  public readonly isClosed: Signal<boolean> = computed(() => this.issue().state === GitHubStates.CLOSED);
+  public readonly priorityStyle: Signal<Record<string, string>> = computed(() => this.getStyleForState());
 
   private tooltipService = inject(TooltipService);
   private readonly CLOSED_STYLE = CLOSED_STYLE;
   private readonly OPEN_STYLE = OPEN_STYLE;
   private readonly ISSUE_STATE_STYLES = ISSUE_STATE_STYLES;
 
-  ngOnInit(): void {
-    this.isClosed = this.issue.state === GitHubStates.CLOSED;
-    this.priorityStyle = this.getStyleForState();
-  }
-
   public onMouseEnter(): void {
-    if (this.viewMode === ViewMode.MONTHLY) {
+    if (this.viewMode() === ViewMode.MONTHLY) {
       return;
     }
 
-    if (this.issueLinkRef) {
+    const issueLinkReference = this.issueLinkRef();
+    if (issueLinkReference) {
+      const issue = this.issue();
       const details: TooltipDetail[] = [];
-      if (this.issue.issuePriority) {
-        details.push({ label: 'Priority', value: this.issue.issuePriority.name });
+      if (issue.issuePriority) {
+        details.push({ label: 'Priority', value: issue.issuePriority.name });
       }
-      if (this.issue.points) {
-        details.push({ label: 'Points', value: `${this.issue.points}` });
+      if (issue.points) {
+        details.push({ label: 'Points', value: `${issue.points}` });
       }
 
-      this.tooltipService.show(this.issueLinkRef.nativeElement, this.issue.title, details);
+      this.tooltipService.show(issueLinkReference.nativeElement, issue.title, details);
     }
   }
 
   public onMouseLeave(): void {
-    if (this.viewMode === ViewMode.MONTHLY) {
+    if (this.viewMode() === ViewMode.MONTHLY) {
       return;
     }
 
@@ -63,22 +59,23 @@ export class IssueBarComponent implements OnInit {
   }
 
   private getStyleForState(): Record<string, string> {
-    const isEpic = this.issue.issueType?.name === 'Epic';
+    const issue = this.issue();
+    const isEpic = issue.issueType?.name === 'Epic';
 
-    if (isEpic && this.issue.subIssues && this.issue.subIssues.length > 0) {
+    if (isEpic && issue.subIssues && issue.subIssues.length > 0) {
       return this.getEpicGradientStyle();
     }
 
-    const issueStateName = this.issue.issueState?.name;
+    const issueStateName = issue.issueState?.name;
     if (issueStateName && this.ISSUE_STATE_STYLES[issueStateName]) {
       return this.ISSUE_STATE_STYLES[issueStateName];
     }
 
-    if (this.isClosed) {
+    if (this.isClosed()) {
       return this.CLOSED_STYLE;
     }
 
-    const priorityColor = this.issue.issuePriority?.color;
+    const priorityColor = issue.issuePriority?.color;
     if (this.isValidHexColor(priorityColor)) {
       return this.getPriorityStyles(priorityColor);
     }
@@ -103,7 +100,7 @@ export class IssueBarComponent implements OnInit {
 
   private getEpicGradientStyle(): Record<string, string> {
     const stateDistribution = this.getSubIssueStateDistribution();
-    const totalSubIssues = this.issue.subIssues!.length;
+    const totalSubIssues = this.issue().subIssues!.length;
 
     const backgroundGradientStops: string[] = [];
     const borderGradientStops: string[] = [];
@@ -151,7 +148,7 @@ export class IssueBarComponent implements OnInit {
   private getSubIssueStateDistribution(): Map<string, number> {
     const distribution = new Map<string, number>();
 
-    for (const subIssue of this.issue.subIssues!) {
+    for (const subIssue of this.issue().subIssues!) {
       let stateName: string;
 
       if (subIssue.issueState?.name && this.ISSUE_STATE_STYLES[subIssue.issueState.name]) {

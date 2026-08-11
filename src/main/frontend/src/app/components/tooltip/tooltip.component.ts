@@ -1,22 +1,13 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
-import { TooltipData, TooltipService } from './tooltip.service';
+import { Component, inject } from '@angular/core';
+import { TooltipService } from './tooltip.service';
 
 @Component({
   selector: 'app-tooltip',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './tooltip.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./tooltip.component.scss'],
 })
 export class TooltipComponent {
-  public tooltipState$: Observable<TooltipData | null>;
-
-  private tooltipService = inject(TooltipService);
-
-  constructor() {
-    this.tooltipState$ = this.tooltipService.tooltipState$;
-  }
+  public readonly tooltip = inject(TooltipService).tooltip;
 }

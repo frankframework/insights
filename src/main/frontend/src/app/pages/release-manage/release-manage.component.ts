@@ -1,6 +1,5 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Release, ReleaseService } from '../../services/release.service';
 import { ReleaseBusinessValueComponent } from '../release-details/release-business-value/release-business-value.component';
@@ -14,29 +13,23 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
 @Component({
   selector: 'app-release-manage',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterLink,
-    ReleaseBusinessValueComponent,
-    ReleaseImportantIssuesComponent,
-    ReleaseVulnerabilities,
-  ],
+  imports: [RouterLink, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
   templateUrl: './release-manage.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-manage.component.scss',
 })
 export class ReleaseManageComponent implements OnInit {
   public static readonly releaseManagePath = '/release-manage';
 
-  public authService = inject(AuthService);
-  public release = signal<Release | null>(null);
-  public releaseIssues = signal<Issue[] | null>([]);
-  public vulnerabilities = signal<Vulnerability[] | null>([]);
-  public businessValues = signal<BusinessValue[] | null>([]);
-  public isLoading = signal<boolean>(true);
-  public activeSection = signal<'business-value' | 'vulnerabilities' | null>(null);
+  public readonly id = input<string | undefined>();
 
-  private route = inject(ActivatedRoute);
+  public authService = inject(AuthService);
+  public readonly release = signal<Release | null>(null);
+  public readonly releaseIssues = signal<Issue[] | null>([]);
+  public readonly vulnerabilities = signal<Vulnerability[] | null>([]);
+  public readonly businessValues = signal<BusinessValue[] | null>([]);
+  public readonly isLoading = signal<boolean>(true);
+  public readonly activeSection = signal<'business-value' | 'vulnerabilities' | null>(null);
+
   private router = inject(Router);
   private releaseService = inject(ReleaseService);
   private issueService = inject(IssueService);
@@ -44,7 +37,7 @@ export class ReleaseManageComponent implements OnInit {
   private businessValueService = inject(BusinessValueService);
 
   ngOnInit(): void {
-    const releaseId = this.route.snapshot.paramMap.get('id');
+    const releaseId = this.id();
     if (releaseId) {
       this.fetchReleaseData(releaseId);
     }

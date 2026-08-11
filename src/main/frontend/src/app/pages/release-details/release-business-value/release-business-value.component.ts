@@ -1,5 +1,4 @@
-import { Component, Input, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, input, signal } from '@angular/core';
 import { BusinessValue } from '../../../services/business-value.service';
 import { ReleaseBusinessValueModalComponent } from '../release-business-value-modal/release-business-value-modal.component';
 import { MarkdownPipe } from '../../../pipes/markdown.pipe';
@@ -7,15 +6,14 @@ import { MarkdownPipe } from '../../../pipes/markdown.pipe';
 @Component({
   selector: 'app-release-business-value',
   standalone: true,
-  imports: [CommonModule, ReleaseBusinessValueModalComponent, MarkdownPipe],
+  imports: [ReleaseBusinessValueModalComponent, MarkdownPipe],
   templateUrl: './release-business-value.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './release-business-value.component.scss',
 })
 export class ReleaseBusinessValueComponent {
-  @Input() businessValues: BusinessValue[] | null = null;
+  public readonly businessValues = input<BusinessValue[] | null>(null);
 
-  public selectedBusinessValue = signal<BusinessValue | null>(null);
+  public readonly selectedBusinessValue = signal<BusinessValue | null>(null);
 
   public openBusinessValueModal(businessValue: BusinessValue): void {
     this.selectedBusinessValue.set(businessValue);

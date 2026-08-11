@@ -10,11 +10,11 @@ import {
 } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { AppComponent } from './app.component';
-import { Component, NO_ERRORS_SCHEMA, ChangeDetectionStrategy } from '@angular/core';
+import { Component, NO_ERRORS_SCHEMA } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
-@Component({ selector: 'router-outlet', changeDetection: ChangeDetectionStrategy.Eager, template: '' })
+@Component({ selector: 'router-outlet', template: '' })
 class MockRouterOutletComponent {}
 
 class MockRouter {
@@ -63,7 +63,7 @@ describe('AppComponent', () => {
   });
 
   it('should have loading set to false initially', () => {
-    expect(component.loading).toBe(false);
+    expect(component.loading()).toBe(false);
   });
 
   describe('OAuth return URL handling', () => {
@@ -91,49 +91,49 @@ describe('AppComponent', () => {
 
       router.events.next(new NavigationStart(1, '/new-page'));
 
-      expect(component.loading).toBe(true);
+      expect(component.loading()).toBe(true);
     });
 
     it('should set loading to false on NavigationEnd event', () => {
-      component.loading = true;
       fixture.detectChanges();
+      router.events.next(new NavigationStart(1, '/new-page'));
 
       router.events.next(new NavigationEnd(1, '/new-page', '/new-page'));
 
-      expect(component.loading).toBe(false);
+      expect(component.loading()).toBe(false);
     });
 
     it('should set loading to false on NavigationCancel event', () => {
-      component.loading = true;
       fixture.detectChanges();
+      router.events.next(new NavigationStart(1, '/new-page'));
 
       router.events.next(new NavigationCancel(1, '/new-page', 'Guard returned false'));
 
-      expect(component.loading).toBe(false);
+      expect(component.loading()).toBe(false);
     });
 
     it('should set loading to false on NavigationError event', () => {
-      component.loading = true;
       fixture.detectChanges();
+      router.events.next(new NavigationStart(1, '/new-page'));
 
       router.events.next(new NavigationError(1, '/new-page', new Error('Route not found')));
 
-      expect(component.loading).toBe(false);
+      expect(component.loading()).toBe(false);
     });
 
     it('should correctly handle a sequence of navigation events', () => {
       fixture.detectChanges();
       router.events.next(new NavigationStart(1, '/'));
 
-      expect(component.loading).toBe(true);
+      expect(component.loading()).toBe(true);
 
       router.events.next(new NavigationEnd(1, '/', '/'));
 
-      expect(component.loading).toBe(false);
+      expect(component.loading()).toBe(false);
 
       router.events.next(new NavigationStart(2, '/other'));
 
-      expect(component.loading).toBe(true);
+      expect(component.loading()).toBe(true);
     });
   });
 });

@@ -7,12 +7,21 @@ import { signal, WritableSignal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { LocationService } from '../../services/location.service';
 import { GraphStateService } from '../../services/graph-state.service';
+import { VersionRange } from '../../pipes/release-range';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
   let fixture: ComponentFixture<HeaderComponent>;
   let mockLocationService: jasmine.SpyObj<LocationService>;
-  let mockGraphStateService: jasmine.SpyObj<GraphStateService>;
+  let mockGraphStateService: {
+    extendedSupportLevel: WritableSignal<number>;
+    showNightlies: WritableSignal<boolean>;
+    releaseRanges: WritableSignal<VersionRange[]>;
+    graphQueryParams: WritableSignal<Record<string, string>>;
+    saveExtendedSupportLevelForOAuth: jasmine.Spy;
+    saveNightlyForOAuth: jasmine.Spy;
+    saveRangeForOAuth: jasmine.Spy;
+  };
   let mockAuthService: {
     currentUser: WritableSignal<User | null>;
     isAuthenticated: WritableSignal<boolean>;
@@ -45,19 +54,15 @@ describe('HeaderComponent', () => {
       clearError: jasmine.createSpy('clearError'),
     };
     mockLocationService = jasmine.createSpyObj('LocationService', ['navigateTo', 'reload']);
-    mockGraphStateService = jasmine.createSpyObj('GraphStateService', [
-      'getExtendedSupportLevel',
-      'saveExtendedSupportLevelForOAuth',
-      'getShowNightlies',
-      'saveNightlyForOAuth',
-      'getReleaseRanges',
-      'saveRangeForOAuth',
-      'getGraphQueryParams',
-    ]);
-    mockGraphStateService.getExtendedSupportLevel.and.returnValue(0);
-    mockGraphStateService.getShowNightlies.and.returnValue(false);
-    mockGraphStateService.getReleaseRanges.and.returnValue([]);
-    mockGraphStateService.getGraphQueryParams.and.returnValue({});
+    mockGraphStateService = {
+      extendedSupportLevel: signal(0),
+      showNightlies: signal(false),
+      saveExtendedSupportLevelForOAuth: jasmine.createSpy('saveExtendedSupportLevelForOAuth'),
+      saveNightlyForOAuth: jasmine.createSpy('saveNightlyForOAuth'),
+      releaseRanges: signal<VersionRange[]>([]),
+      saveRangeForOAuth: jasmine.createSpy('saveRangeForOAuth'),
+      graphQueryParams: signal<Record<string, string>>({}),
+    };
 
     await TestBed.configureTestingModule({
       imports: [HeaderComponent],
@@ -87,7 +92,7 @@ describe('HeaderComponent', () => {
     });
 
     it('should have showUserMenu set to false initially', () => {
-      expect(component.showUserMenu).toBe(false);
+      expect(component.showUserMenu()).toBe(false);
     });
 
     it('should inject AuthService', () => {
@@ -192,19 +197,19 @@ describe('HeaderComponent', () => {
       userProfile.nativeElement.click();
       fixture.detectChanges();
 
-      expect(component.showUserMenu).toBe(true);
+      expect(component.showUserMenu()).toBe(true);
       expect(fixture.debugElement.query(By.css('.user-menu'))).toBeTruthy();
 
       // Close
       userProfile.nativeElement.click();
       fixture.detectChanges();
 
-      expect(component.showUserMenu).toBe(false);
+      expect(component.showUserMenu()).toBe(false);
     });
 
     it('should call onLogout when logout button is clicked', () => {
       spyOn(component, 'onLogout');
-      component.showUserMenu = true;
+      component.showUserMenu.set(true);
       fixture.detectChanges();
 
       const logoutButton = fixture.debugElement.query(By.css('.logout-btn'));
@@ -226,9 +231,7 @@ describe('HeaderComponent', () => {
 
       expect(mockAuthService.setLoading).toHaveBeenCalledWith(true);
       expect(mockAuthService.setPendingAuth).toHaveBeenCalledWith();
-      expect(mockGraphStateService.getExtendedSupportLevel).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveExtendedSupportLevelForOAuth).toHaveBeenCalledWith(0);
-      expect(mockGraphStateService.getShowNightlies).toHaveBeenCalledWith();
       expect(mockGraphStateService.saveNightlyForOAuth).toHaveBeenCalledWith(false);
       expect(mockLocationService.navigateTo).toHaveBeenCalledWith('/oauth2/authorization/github');
     });
@@ -255,10 +258,10 @@ describe('HeaderComponent', () => {
     });
 
     it('onLogout should close menu and call authService.logout', () => {
-      component.showUserMenu = true;
+      component.showUserMenu.set(true);
       component.onLogout();
 
-      expect(component.showUserMenu).toBe(false);
+      expect(component.showUserMenu()).toBe(false);
       expect(mockAuthService.logout).toHaveBeenCalledWith();
     });
   });

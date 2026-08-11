@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { signal } from '@angular/core';
+import { WritableSignal, signal } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { FrankFrameworkMemberGuard } from './frankframework-member.guard';
 import { AuthService, User } from '../services/auth.service';
@@ -10,6 +10,7 @@ const runGuard = () => TestBed.runInInjectionContext(() => FrankFrameworkMemberG
 describe('FrankFrameworkMemberGuard', () => {
   let authService: jasmine.SpyObj<AuthService>;
   let router: jasmine.SpyObj<Router>;
+  let currentUserState: WritableSignal<User | null>;
 
   const mockUser: User = {
     githubId: 123,
@@ -19,8 +20,9 @@ describe('FrankFrameworkMemberGuard', () => {
   };
 
   beforeEach(() => {
+    currentUserState = signal<User | null>(null);
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['checkAuthStatus', 'setAuthenticated'], {
-      currentUser: signal<User | null>(null),
+      currentUser: currentUserState.asReadonly(),
     });
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
@@ -36,7 +38,7 @@ describe('FrankFrameworkMemberGuard', () => {
   });
 
   it('should allow access when user is a FrankFramework member', () => {
-    authService.currentUser.set(mockUser);
+    currentUserState.set(mockUser);
 
     const result = runGuard();
 
@@ -46,7 +48,7 @@ describe('FrankFrameworkMemberGuard', () => {
   });
 
   it('should deny access and redirect when user is not a FrankFramework member', () => {
-    authService.currentUser.set({ ...mockUser, isFrankFrameworkMember: false });
+    currentUserState.set({ ...mockUser, isFrankFrameworkMember: false });
 
     const result = runGuard();
 
@@ -55,7 +57,7 @@ describe('FrankFrameworkMemberGuard', () => {
   });
 
   it('should resolve auth on a cold load and allow a member (e.g. opened in a new tab)', (done) => {
-    authService.currentUser.set(null);
+    currentUserState.set(null);
     authService.checkAuthStatus.and.returnValue(of(mockUser));
 
     (runGuard() as Observable<boolean>).subscribe((allowed) => {
@@ -67,7 +69,7 @@ describe('FrankFrameworkMemberGuard', () => {
   });
 
   it('should resolve auth on a cold load and redirect a non-member', (done) => {
-    authService.currentUser.set(null);
+    currentUserState.set(null);
     authService.checkAuthStatus.and.returnValue(of({ ...mockUser, isFrankFrameworkMember: false }));
 
     (runGuard() as Observable<boolean>).subscribe((allowed) => {
@@ -78,7 +80,7 @@ describe('FrankFrameworkMemberGuard', () => {
   });
 
   it('should redirect when there is no authenticated user', (done) => {
-    authService.currentUser.set(null);
+    currentUserState.set(null);
     authService.checkAuthStatus.and.returnValue(of(null));
 
     (runGuard() as Observable<boolean>).subscribe((allowed) => {

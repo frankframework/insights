@@ -50,7 +50,7 @@ describe('CvssCalculatorComponent', () => {
   });
 
   it('should parse a pasted vector string and populate the selection', () => {
-    component.vectorInput = 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H';
+    component.vectorInput.set('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
     component.applyVectorInput();
 
     expect(component.selection()).toEqual({ AV: 'N', AC: 'L', PR: 'N', UI: 'N', S: 'U', C: 'H', I: 'H', A: 'H' });
@@ -59,7 +59,7 @@ describe('CvssCalculatorComponent', () => {
   });
 
   it('should set an error when the pasted vector string is incomplete', () => {
-    component.vectorInput = 'CVSS:3.1/AV:N/AC:L';
+    component.vectorInput.set('CVSS:3.1/AV:N/AC:L');
     component.applyVectorInput();
 
     expect(component.vectorError()).not.toBeNull();
@@ -69,7 +69,7 @@ describe('CvssCalculatorComponent', () => {
   it('should emit scoreSelected with the calculated score when useScore is called', () => {
     const emitSpy = spyOn(component.scoreSelected, 'emit');
 
-    component.vectorInput = 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H';
+    component.vectorInput.set('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
     component.applyVectorInput();
     component.useScore();
 
@@ -111,7 +111,7 @@ describe('CvssCalculatorComponent', () => {
 
   it('should prefill the selection and vector input from a valid referenceVector on init', () => {
     const prefilledFixture = TestBed.createComponent(CvssCalculatorComponent);
-    prefilledFixture.componentInstance.referenceVector = 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H';
+    prefilledFixture.componentRef.setInput('referenceVector', 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
 
     prefilledFixture.detectChanges();
 
@@ -126,17 +126,17 @@ describe('CvssCalculatorComponent', () => {
       A: 'H',
     });
 
-    expect(prefilledFixture.componentInstance.vectorInput).toBe('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
+    expect(prefilledFixture.componentInstance.vectorInput()).toBe('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H');
     expect(prefilledFixture.componentInstance.result()).toEqual({ score: 9.8, severity: 'Critical' });
   });
 
   it('should ignore an invalid or incomplete referenceVector on init', () => {
     const prefilledFixture = TestBed.createComponent(CvssCalculatorComponent);
-    prefilledFixture.componentInstance.referenceVector = 'not-a-vector';
+    prefilledFixture.componentRef.setInput('referenceVector', 'not-a-vector');
 
     prefilledFixture.detectChanges();
 
     expect(prefilledFixture.componentInstance.selection()).toEqual({});
-    expect(prefilledFixture.componentInstance.vectorInput).toBe('');
+    expect(prefilledFixture.componentInstance.vectorInput()).toBe('');
   });
 });

@@ -1,18 +1,18 @@
-<div class="milestone-row" [class.milestone-row--last]="isLast">
+<div class="milestone-row" [class.milestone-row--last]="isLast()">
   <div class="title-cell">
-    @if (milestone.url) {
-      <a target="_blank" class="title-link" [href]="milestone.url + '?closed=1'">
-        {{ milestone.title }}
+    @if (milestone().url) {
+      <a target="_blank" class="title-link" [href]="milestone().url + '?closed=1'">
+        {{ milestone().title }}
       </a>
     } @else {
-      <span class="title-link">{{ milestone.title }}</span>
+      <span class="title-link">{{ milestone().title }}</span>
     }
     @if (isUnplannedEpicMilestone()) {
       <p class="detail unplanned">Unplanned</p>
-    } @else if (milestone.dueOn) {
+    } @else if (milestone().dueOn) {
       <p class="detail">
-        Due: {{ milestone.dueOn | date: 'dd-MM-yyyy' }}
-        @if (milestone.isEstimated) {
+        Due: {{ milestone().dueOn | date: 'dd-MM-yyyy' }}
+        @if (milestone().isEstimated) {
           <span class="estimated-icon" title="Estimated date">
             <img src="assets/icons/clock.svg" alt="" width="14" height="14" />
           </span>
@@ -25,20 +25,20 @@
       <div class="progress-bar-container">
         <div
           class="progress-bar"
-          [style.width.%]="progressPercentage"
-          [title]="progressPercentage + '% completed'"
+          [style.width.%]="progressPercentage()"
+          [title]="progressPercentage() + '% completed'"
         ></div>
       </div>
       <div class="counts">
-        <span>{{ milestone.openIssueCount }} open</span>
+        <span>{{ milestone().openIssueCount }} open</span>
         <span>/</span>
-        <span>{{ milestone.closedIssueCount }} closed</span>
+        <span>{{ milestone().closedIssueCount }} closed</span>
       </div>
     }
   </div>
-  <div class="issue-track-area" [style.height.rem]="getTrackAreaHeight()">
-    @if (milestone.dueOn) {
-      @for (trackNumber of getTracks(); track trackNumber) {
+  <div class="issue-track-area" [style.height.rem]="trackAreaHeight()">
+    @if (milestone().dueOn) {
+      @for (trackNumber of tracks(); track trackNumber) {
         <div class="issue-track">
           @for (
             positionedIssue of getIssuesForTrack(trackNumber);
@@ -51,7 +51,7 @@
                 [issue]="positionedIssue.issue!"
                 [issueStyle]="positionedIssue.style"
                 [isUnplannedEpic]="isUnplannedEpicMilestone()"
-                [viewMode]="viewMode"
+                [viewMode]="viewMode()"
               />
             }
           }

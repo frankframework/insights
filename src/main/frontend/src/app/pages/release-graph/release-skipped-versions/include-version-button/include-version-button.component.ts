@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, Signal, computed, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-include-version-button',
@@ -8,21 +8,23 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   styleUrl: './include-version-button.component.scss',
 })
 export class IncludeVersionButtonComponent {
-  @Input() version = '';
-  @Input() included = false;
-  @Input() pending = false;
-  @Output() include = new EventEmitter<void>();
-  @Output() remove = new EventEmitter<void>();
+  public readonly version = input<string>('');
+  public readonly included = input<boolean>(false);
+  public readonly pending = input<boolean>(false);
 
-  public get title(): string {
-    if (this.included) return `${this.version} is already shown in the graph`;
-    if (this.pending) return `Click to remove ${this.version} from pending`;
-    return `Include ${this.version} in the graph`;
-  }
+  public readonly include = output<void>();
+  public readonly remove = output<void>();
+
+  public readonly title: Signal<string> = computed(() => {
+    const version = this.version();
+    if (this.included()) return `${version} is already shown in the graph`;
+    if (this.pending()) return `Click to remove ${version} from pending`;
+    return `Include ${version} in the graph`;
+  });
 
   public onClick(event: Event): void {
     event.stopPropagation();
-    if (this.pending) {
+    if (this.pending()) {
       this.remove.emit();
     } else {
       this.include.emit();

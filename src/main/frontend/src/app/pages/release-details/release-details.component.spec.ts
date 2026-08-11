@@ -1,3 +1,4 @@
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, DefaultUrlSerializer, Router, UrlTree } from '@angular/router';
 import { Location } from '@angular/common';
@@ -96,7 +97,8 @@ describe('ReleaseDetailsComponent', () => {
   let mockBusinessValueService: jasmine.SpyObj<BusinessValueService>;
   let mockLocation: jasmine.SpyObj<Location>;
   let mockRouter: jasmine.SpyObj<Router>;
-  let mockGraphStateService: jasmine.SpyObj<GraphStateService>;
+  let mockGraphStateService: Pick<GraphStateService, 'graphQueryParams'>;
+  let graphQueryParametersState: WritableSignal<Record<string, string>>;
   let parameterMapSubject: Subject<any>;
 
   beforeEach(async () => {
@@ -116,8 +118,8 @@ describe('ReleaseDetailsComponent', () => {
     mockRouter.parseUrl.and.callFake((url: string) => urlSerializer.parse(url));
     mockRouter.createUrlTree.and.callFake((commands: string[]) => urlSerializer.parse(commands.join('') || '/'));
     mockRouter.serializeUrl.and.callFake((tree: UrlTree) => urlSerializer.serialize(tree));
-    mockGraphStateService = jasmine.createSpyObj('GraphStateService', ['getGraphQueryParams']);
-    mockGraphStateService.getGraphQueryParams.and.returnValue({});
+    graphQueryParametersState = signal<Record<string, string>>({});
+    mockGraphStateService = { graphQueryParams: graphQueryParametersState.asReadonly() };
     mockReleaseService.getAllReleases.and.returnValue(of([mockRelease]).pipe(delay(0)));
 
     parameterMapSubject = new Subject();
@@ -190,11 +192,11 @@ describe('ReleaseDetailsComponent', () => {
       fixture.detectChanges();
       parameterMapSubject.next({ get: () => 'release-1' });
 
-      expect(component.isLoading).toBe(true);
+      expect(component.isLoading()).toBe(true);
 
       tick();
 
-      expect(component.isLoading).toBe(false);
+      expect(component.isLoading()).toBe(false);
     }));
 
     it('should fetch release data when a valid release ID is provided', fakeAsync(() => {
@@ -213,11 +215,11 @@ describe('ReleaseDetailsComponent', () => {
       expect(mockIssueService.getIssuesByReleaseId).toHaveBeenCalledWith('release-1');
       expect(mockVulnerabilityService.getVulnerabilitiesByReleaseId).toHaveBeenCalledWith('release-1');
       expect(mockBusinessValueService.getBusinessValuesByReleaseId).toHaveBeenCalledWith('release-1');
-      expect(component.release).toEqual(mockRelease);
-      expect(component.highlightedLabels).toEqual(mockLabels);
-      expect(component.releaseIssues).toEqual(mockIssues);
-      expect(component.vulnerabilities).toEqual(mockVulnerabilities);
-      expect(component.businessValues).toEqual(mockBusinessValues);
+      expect(component.release()).toEqual(mockRelease);
+      expect(component.highlightedLabels()).toEqual(mockLabels);
+      expect(component.releaseIssues()).toEqual(mockIssues);
+      expect(component.vulnerabilities()).toEqual(mockVulnerabilities);
+      expect(component.businessValues()).toEqual(mockBusinessValues);
     }));
 
     it('should handle release fetch error gracefully', fakeAsync(() => {
@@ -229,8 +231,8 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.isLoading).toBe(false);
-      expect(component.release).toBeUndefined();
+      expect(component.isLoading()).toBe(false);
+      expect(component.release()).toBeNull();
     }));
 
     it('should handle label fetch error gracefully', fakeAsync(() => {
@@ -246,10 +248,10 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.isLoading).toBe(false);
-      expect(component.highlightedLabels).toBeNull();
-      expect(component.releaseIssues).toEqual(mockIssues);
-      expect(component.vulnerabilities).toEqual(mockVulnerabilities);
+      expect(component.isLoading()).toBe(false);
+      expect(component.highlightedLabels()).toBeNull();
+      expect(component.releaseIssues()).toEqual(mockIssues);
+      expect(component.vulnerabilities()).toEqual(mockVulnerabilities);
     }));
 
     it('should handle issue fetch error gracefully', fakeAsync(() => {
@@ -265,10 +267,10 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.isLoading).toBe(false);
-      expect(component.releaseIssues).toBeNull();
-      expect(component.highlightedLabels).toEqual(mockLabels);
-      expect(component.vulnerabilities).toEqual(mockVulnerabilities);
+      expect(component.isLoading()).toBe(false);
+      expect(component.releaseIssues()).toBeNull();
+      expect(component.highlightedLabels()).toEqual(mockLabels);
+      expect(component.vulnerabilities()).toEqual(mockVulnerabilities);
     }));
 
     it('should set data to null if API returns an empty array for labels', fakeAsync(() => {
@@ -282,7 +284,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.highlightedLabels).toBeNull();
+      expect(component.highlightedLabels()).toBeNull();
     }));
 
     it('should set data to undefined if API returns an empty array for issues', fakeAsync(() => {
@@ -296,7 +298,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.releaseIssues).toBeNull();
+      expect(component.releaseIssues()).toBeNull();
     }));
 
     it('should handle vulnerability fetch error gracefully', fakeAsync(() => {
@@ -312,8 +314,8 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.isLoading).toBe(false);
-      expect(component.vulnerabilities).toEqual([]);
+      expect(component.isLoading()).toBe(false);
+      expect(component.vulnerabilities()).toEqual([]);
     }));
 
     it('should set vulnerabilities to empty array if API returns empty array', fakeAsync(() => {
@@ -327,7 +329,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.vulnerabilities).toEqual([]);
+      expect(component.vulnerabilities()).toEqual([]);
     }));
 
     it('should refetch data when route parameter changes', fakeAsync(() => {
@@ -350,7 +352,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.release).toEqual(mockRelease);
+      expect(component.release()).toEqual(mockRelease);
 
       // Change route parameter
       mockReleaseService.getReleaseById.and.returnValue(of(mockRelease2).pipe(delay(0)));
@@ -358,7 +360,7 @@ describe('ReleaseDetailsComponent', () => {
       tick();
 
       expect(mockReleaseService.getReleaseById).toHaveBeenCalledWith('release-2');
-      expect(component.release).toEqual(mockRelease2);
+      expect(component.release()).toEqual(mockRelease2);
     }));
   });
 
@@ -374,7 +376,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.businessValues).toEqual(mockBusinessValues);
+      expect(component.businessValues()).toEqual(mockBusinessValues);
       expect(component.activeView()).toBe('business-value');
     }));
 
@@ -389,7 +391,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.businessValues).toBeNull();
+      expect(component.businessValues()).toBeNull();
       expect(component.activeView()).toBe('issues');
     }));
 
@@ -428,13 +430,13 @@ describe('ReleaseDetailsComponent', () => {
 
   describe('graphQueryParams', () => {
     it('should return current graph query params', () => {
-      mockGraphStateService.getGraphQueryParams.and.returnValue({ nightly: '' });
+      graphQueryParametersState.set({ nightly: '' });
 
       expect(component.graphQueryParams()).toEqual({ nightly: '' });
     });
 
     it('should return empty object when no params', () => {
-      mockGraphStateService.getGraphQueryParams.and.returnValue({});
+      graphQueryParametersState.set({});
 
       expect(component.graphQueryParams()).toEqual({});
     });
@@ -682,7 +684,7 @@ describe('ReleaseDetailsComponent', () => {
       parameterMapSubject.next({ get: () => 'release-1' });
       tick();
 
-      expect(component.release).toEqual(mockRelease);
+      expect(component.release()).toEqual(mockRelease);
       expect(component.branchReleases()).toEqual([]);
       expect(component.previousRelease()).toBeNull();
       expect(component.nextRelease()).toBeNull();

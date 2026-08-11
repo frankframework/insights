@@ -1,5 +1,4 @@
-import { Component, inject, Input, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Signal, computed, inject, input } from '@angular/core';
 import { ColorService } from '../../services/color.service';
 
 interface IssueType {
@@ -10,17 +9,17 @@ interface IssueType {
 @Component({
   selector: 'app-issue-type-tag',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './issue-type-tag.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./issue-type-tag.component.scss'],
 })
 export class IssueTypeTagComponent {
-  @Input() issueType!: IssueType;
+  public readonly issueType = input.required<IssueType>();
+  public readonly textColor: Signal<string>;
 
-  private colorService = inject(ColorService);
+  private readonly colorService = inject(ColorService);
 
-  public getIssueTypeColor(issueTypeColor: string): string {
-    return this.colorService.getTypeTextColor(issueTypeColor);
+  constructor() {
+    this.textColor = computed(() => this.colorService.getTypeTextColor(this.issueType().color));
   }
 }

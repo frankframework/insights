@@ -1,14 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  inject,
-  Input,
-  OnChanges,
-  Output,
-  SimpleChanges,
-  ChangeDetectionStrategy,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Signal, computed, inject, input, linkedSignal, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { Release } from '../../../services/release.service';
 import { SkipNode } from '../release-link.service';
@@ -23,6 +13,12 @@ import {
 import { IncludeVersionButtonComponent } from './include-version-button/include-version-button.component';
 import { IncludeActionsComponent } from './include-actions/include-actions.component';
 
+interface PendingVersionsSource {
+  skipNode: SkipNode | null;
+  releases: Release[];
+  releaseRanges: VersionRange[];
+}
+
 interface ReleaseTreeNode {
   release: Release | null;
   version: string;
@@ -33,114 +29,64 @@ interface ReleaseTreeNode {
 @Component({
   selector: 'app-skipped-versions-modal',
   standalone: true,
-  imports: [CommonModule, ModalComponent, IncludeVersionButtonComponent, IncludeActionsComponent],
+  imports: [ModalComponent, IncludeVersionButtonComponent, IncludeActionsComponent],
   templateUrl: './release-skipped-versions.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./release-skipped-versions.scss'],
 })
-export class ReleaseSkippedVersions implements OnChanges {
-  @Input() skipNode: SkipNode | null = null;
-  @Input() releases: Release[] = [];
-  @Input() releaseRanges: VersionRange[] = [];
-  @Output() closed = new EventEmitter<void>();
-  @Output() versionClicked = new EventEmitter<string>();
-  @Output() rangeRequested = new EventEmitter<VersionRange[]>();
+export class ReleaseSkippedVersions {
+  public readonly skipNode = input<SkipNode | null>(null);
+  public readonly releases = input<Release[]>([]);
+  public readonly releaseRanges = input<VersionRange[]>([]);
 
-  public releaseTree: ReleaseTreeNode[] = [];
-  public pendingVersions: string[] = [];
+  public readonly closed = output<void>();
+  public readonly versionClicked = output<string>();
+  public readonly rangeRequested = output<VersionRange[]>();
 
-  private nodeService = inject(ReleaseNodeService);
+  public readonly releaseTree: Signal<ReleaseTreeNode[]> = computed(() => {
+    const skipNode = this.skipNode();
+    const releases = this.releases();
+    if (!skipNode || releases.length === 0) return [];
 
-  public get includableRanges(): VersionRange[] {
-    return createReleaseLineRanges(this.releaseTree.map((node) => node.version));
-  }
+    const releaseMap = this.buildReleaseMap(ReleaseSkippedVersions.getSkippedReleases(skipNode, releases));
+    return this.sortPatchesInTree(this.sortReleaseTree(releaseMap));
+  });
 
-  public get includeLabel(): string {
-    return serializeVersionRanges(this.includableRanges);
-  }
+  public readonly includableRanges: Signal<VersionRange[]> = computed(() =>
+    createReleaseLineRanges(this.releaseTree().map((node) => node.version)),
+  );
 
-  public get pendingRanges(): VersionRange[] {
-    return createExactVersionRanges(this.pendingVersions);
-  }
+  public readonly includeLabel: Signal<string> = computed(() => serializeVersionRanges(this.includableRanges()));
 
-  public get isAlreadyIncluded(): boolean {
-    return areRangesCovered(this.releaseRanges, this.includableRanges);
-  }
+  public readonly isAlreadyIncluded: Signal<boolean> = computed(() =>
+    areRangesCovered(this.releaseRanges(), this.includableRanges()),
+  );
 
-  public get hasPending(): boolean {
-    return this.pendingVersions.length > 0;
-  }
+  /**
+   * Pending versions survive a change of the shown range, minus the ones that range now covers, but are
+   * dropped entirely as soon as another skip node is opened.
+   */
+  public readonly pendingVersions = linkedSignal<PendingVersionsSource, string[]>({
+    source: () => ({ skipNode: this.skipNode(), releases: this.releases(), releaseRanges: this.releaseRanges() }),
+    computation: (source, previous) => {
+      if (!previous || previous.source.skipNode !== source.skipNode || previous.source.releases !== source.releases) {
+        return [];
+      }
 
-  public isVersionIncluded(version: string): boolean {
-    return areRangesCovered(this.releaseRanges, createExactVersionRanges([version]));
-  }
+      return previous.value.filter(
+        (version) => !areRangesCovered(source.releaseRanges, createExactVersionRanges([version])),
+      );
+    },
+  });
 
-  public isVersionPending(version: string): boolean {
-    return this.pendingVersions.includes(version);
-  }
+  public readonly pendingRanges: Signal<VersionRange[]> = computed(() =>
+    createExactVersionRanges(this.pendingVersions()),
+  );
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['releaseRanges']) {
-      this.pendingVersions = this.pendingVersions.filter((v) => !this.isVersionIncluded(v));
-    }
-    if ((changes['skipNode'] || changes['releases']) && this.skipNode && this.releases.length > 0) {
-      this.pendingVersions = [];
-      this.structureSkippedReleases();
-    }
-  }
+  public readonly hasPending: Signal<boolean> = computed(() => this.pendingVersions().length > 0);
 
-  public onVersionClick(version: string): void {
-    this.versionClicked.emit(version);
-  }
+  private readonly nodeService = inject(ReleaseNodeService);
 
-  public includeReleases(): void {
-    const ranges = this.includableRanges;
-    if (ranges.length === 0) return;
-
-    this.rangeRequested.emit(ranges);
-  }
-
-  public includeVersion(version: string): void {
-    const isRelease = createExactVersionRanges([version]).length > 0;
-    if (!isRelease || this.pendingVersions.includes(version)) return;
-
-    this.pendingVersions = [...this.pendingVersions, version];
-  }
-
-  public removeFromPending(version: string): void {
-    this.pendingVersions = this.pendingVersions.filter((pending) => pending !== version);
-  }
-
-  public applyPendingIncludes(): void {
-    const ranges = this.pendingRanges;
-    if (ranges.length === 0) return;
-
-    this.rangeRequested.emit(ranges);
-  }
-
-  public closeModal(): void {
-    this.closed.emit();
-  }
-
-  private structureSkippedReleases(): void {
-    if (!this.skipNode) return;
-
-    const skippedReleases = this.getSkippedReleases();
-    const releaseMap = this.buildReleaseMap(skippedReleases);
-    this.releaseTree = this.sortReleaseTree(releaseMap);
-    this.sortPatchesInTree();
-  }
-
-  private getSkippedReleases(): Release[] {
-    return this.releases.filter((release) => {
-      const versionName = release.name.startsWith('v') ? release.name : `v${release.name}`;
-      const isIncluded = this.skipNode!.skippedVersions.includes(versionName);
-      const isNightly = this.isNightlyRelease(release.name);
-      return isIncluded && !isNightly;
-    });
-  }
-
-  private isNightlyRelease(label: string): boolean {
+  private static isNightlyRelease(label: string): boolean {
     if (label.toLowerCase().includes('snapshot')) {
       return true;
     }
@@ -149,44 +95,14 @@ export class ReleaseSkippedVersions implements OnChanges {
     return timestampPattern.test(label);
   }
 
-  private buildReleaseMap(skippedReleases: Release[]): Map<string, ReleaseTreeNode> {
-    const releaseMap = new Map<string, ReleaseTreeNode>();
-
-    for (const release of skippedReleases) {
-      const info = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
-      if (!info) continue;
-
-      if (info.type === 'major' || info.type === 'minor') {
-        this.handleMajorOrMinorRelease(release, info, releaseMap);
-      } else if (info.type === 'patch') {
-        this.handlePatchRelease(release, info, releaseMap);
-      }
-    }
-
-    return releaseMap;
-  }
-
-  private handleMajorOrMinorRelease(
-    release: Release,
-    info: { type: 'major' | 'minor' | 'patch'; major: number; minor: number },
-    releaseMap: Map<string, ReleaseTreeNode>,
-  ): void {
-    const prefixedReleaseName = release.name.startsWith('v') ? release.name : `v${release.name}`;
-
-    const mapKey = `v${info.major}.${info.minor}`;
-
-    const displayVersion = prefixedReleaseName;
-    const existingNode = releaseMap.get(mapKey);
-
-    releaseMap.set(mapKey, {
-      release,
-      version: displayVersion,
-      type: info.type,
-      patches: existingNode ? existingNode.patches : [],
+  private static getSkippedReleases(skipNode: SkipNode, releases: Release[]): Release[] {
+    return releases.filter((release) => {
+      const versionName = release.name.startsWith('v') ? release.name : `v${release.name}`;
+      return skipNode.skippedVersions.includes(versionName) && !ReleaseSkippedVersions.isNightlyRelease(release.name);
     });
   }
 
-  private handlePatchRelease(
+  private static handlePatchRelease(
     release: Release,
     info: { major: number; minor: number },
     releaseMap: Map<string, ReleaseTreeNode>,
@@ -206,24 +122,101 @@ export class ReleaseSkippedVersions implements OnChanges {
     }
   }
 
+  private static handleMajorOrMinorRelease(
+    release: Release,
+    info: { type: 'major' | 'minor' | 'patch'; major: number; minor: number },
+    releaseMap: Map<string, ReleaseTreeNode>,
+  ): void {
+    const prefixedReleaseName = release.name.startsWith('v') ? release.name : `v${release.name}`;
+    const mapKey = `v${info.major}.${info.minor}`;
+    const existingNode = releaseMap.get(mapKey);
+
+    releaseMap.set(mapKey, {
+      release,
+      version: prefixedReleaseName,
+      type: info.type,
+      patches: existingNode ? existingNode.patches : [],
+    });
+  }
+
+  public onVersionClick(version: string): void {
+    this.versionClicked.emit(version);
+  }
+
+  public isVersionIncluded(version: string): boolean {
+    return areRangesCovered(this.releaseRanges(), createExactVersionRanges([version]));
+  }
+
+  public isVersionPending(version: string): boolean {
+    return this.pendingVersions().includes(version);
+  }
+
+  public includeReleases(): void {
+    const ranges = this.includableRanges();
+    if (ranges.length === 0) return;
+
+    this.rangeRequested.emit(ranges);
+  }
+
+  public includeVersion(version: string): void {
+    const isRelease = createExactVersionRanges([version]).length > 0;
+    if (!isRelease || this.pendingVersions().includes(version)) return;
+
+    this.pendingVersions.update((pending) => [...pending, version]);
+  }
+
+  public removeFromPending(version: string): void {
+    this.pendingVersions.update((pending) => pending.filter((entry) => entry !== version));
+  }
+
+  public applyPendingIncludes(): void {
+    const ranges = this.pendingRanges();
+    if (ranges.length === 0) return;
+
+    this.rangeRequested.emit(ranges);
+  }
+
+  public closeModal(): void {
+    this.closed.emit();
+  }
+
+  private buildReleaseMap(skippedReleases: Release[]): Map<string, ReleaseTreeNode> {
+    const releaseMap = new Map<string, ReleaseTreeNode>();
+
+    for (const release of skippedReleases) {
+      const info = this.nodeService.getVersionInfo({ label: release.name } as ReleaseNode);
+      if (!info) continue;
+
+      if (info.type === 'major' || info.type === 'minor') {
+        ReleaseSkippedVersions.handleMajorOrMinorRelease(release, info, releaseMap);
+      } else if (info.type === 'patch') {
+        ReleaseSkippedVersions.handlePatchRelease(release, info, releaseMap);
+      }
+    }
+
+    return releaseMap;
+  }
+
   private sortReleaseTree(releaseMap: Map<string, ReleaseTreeNode>): ReleaseTreeNode[] {
-    return [...releaseMap.values()].toSorted((a, b) => {
-      const infoA = this.nodeService.getVersionInfo({ label: a.version } as ReleaseNode);
-      const infoB = this.nodeService.getVersionInfo({ label: b.version } as ReleaseNode);
+    return [...releaseMap.values()].toSorted((nodeA, nodeB) => {
+      const infoA = this.nodeService.getVersionInfo({ label: nodeA.version } as ReleaseNode);
+      const infoB = this.nodeService.getVersionInfo({ label: nodeB.version } as ReleaseNode);
       if (!infoA || !infoB) return 0;
       if (infoA.major !== infoB.major) return infoA.major - infoB.major;
       return infoA.minor - infoB.minor;
     });
   }
 
-  private sortPatchesInTree(): void {
-    for (const node of this.releaseTree) {
-      node.patches.sort((a, b) => {
-        const infoA = this.nodeService.getVersionInfo({ label: a.name } as ReleaseNode);
-        const infoB = this.nodeService.getVersionInfo({ label: b.name } as ReleaseNode);
+  private sortPatchesInTree(releaseTree: ReleaseTreeNode[]): ReleaseTreeNode[] {
+    for (const node of releaseTree) {
+      node.patches.sort((releaseA, releaseB) => {
+        const infoA = this.nodeService.getVersionInfo({ label: releaseA.name } as ReleaseNode);
+        const infoB = this.nodeService.getVersionInfo({ label: releaseB.name } as ReleaseNode);
         if (!infoA || !infoB) return 0;
         return infoA.patch - infoB.patch;
       });
     }
+
+    return releaseTree;
   }
 }

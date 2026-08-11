@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, Signal, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   RouterOutlet,
   Router,
@@ -7,7 +8,9 @@ import {
   NavigationError,
   NavigationStart,
   ActivatedRoute,
+  Event as RouterEvent,
 } from '@angular/router';
+import { filter, map } from 'rxjs/operators';
 import { LoaderComponent } from './components/loader/loader.component';
 import { FeedbackComponent } from './components/feedback/feedback.component';
 import { HeaderComponent } from './pages/header/header.component';
@@ -16,29 +19,32 @@ import { AuthService } from './services/auth.service';
 import { GraphStateService } from './services/graph-state.service';
 import { parseVersionRanges, serializeVersionRanges } from './pipes/release-range';
 
+const isNavigationSettled = (event: RouterEvent): boolean =>
+  event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError;
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, LoaderComponent, FeedbackComponent, HeaderComponent, TooltipComponent],
   templateUrl: './app.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
-  title = 'FF! Insights';
+  public readonly title = 'FF! Insights';
+  public readonly loading: Signal<boolean>;
 
-  public loading = false;
-
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private authService = inject(AuthService);
-  private graphStateService = inject(GraphStateService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
+  private readonly graphStateService = inject(GraphStateService);
 
   constructor() {
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationStart) this.loading = true;
-      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError)
-        this.loading = false;
-    });
+    this.loading = toSignal(
+      this.router.events.pipe(
+        filter((event) => event instanceof NavigationStart || isNavigationSettled(event)),
+        map((event) => event instanceof NavigationStart),
+      ),
+      { initialValue: false },
+    );
   }
 
   ngOnInit(): void {

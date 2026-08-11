@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, WritableSignal } from '@angular/core';
+import { Injectable, Signal, WritableSignal, inject, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
 import { finalize } from 'rxjs/operators';
@@ -22,16 +22,28 @@ export interface ErrorResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  public currentUser: WritableSignal<User | null> = signal<User | null>(null);
-  public isAuthenticated: WritableSignal<boolean> = signal<boolean>(false);
-  public authError: WritableSignal<string | null> = signal<string | null>(null);
-  public isLoading: WritableSignal<boolean> = signal<boolean>(false);
+  public readonly currentUser: Signal<User | null>;
+  public readonly isAuthenticated: Signal<boolean>;
+  public readonly authError: Signal<string | null>;
+  public readonly isLoading: Signal<boolean>;
+
+  private readonly currentUserState: WritableSignal<User | null> = signal<User | null>(null);
+  private readonly isAuthenticatedState: WritableSignal<boolean> = signal<boolean>(false);
+  private readonly authErrorState: WritableSignal<string | null> = signal<string | null>(null);
+  private readonly isLoadingState: WritableSignal<boolean> = signal<boolean>(false);
 
   private readonly SESSION_KEY: string = 'auth_session';
   private readonly RETURN_URL_KEY: string = 'auth_return_url';
   private readonly http: HttpClient = inject(HttpClient);
   private readonly appService: AppService = inject(AppService);
   private readonly locationService: LocationService = inject(LocationService);
+
+  constructor() {
+    this.currentUser = this.currentUserState.asReadonly();
+    this.isAuthenticated = this.isAuthenticatedState.asReadonly();
+    this.authError = this.authErrorState.asReadonly();
+    this.isLoading = this.isLoadingState.asReadonly();
+  }
 
   /**
    * Check authentication status by calling the backend
@@ -42,13 +54,13 @@ export class AuthService {
     const hasSession = localStorage.getItem(this.SESSION_KEY) === 'true';
 
     if (!hasSession) {
-      this.isAuthenticated.set(false);
+      this.isAuthenticatedState.set(false);
       return of(null);
     }
 
-    this.isLoading.set(true);
+    this.isLoadingState.set(true);
     return this.http.get<User>(this.appService.createAPIUrl('auth/user')).pipe(
-      finalize(() => this.isLoading.set(false)),
+      finalize(() => this.isLoadingState.set(false)),
       catchError((error: HttpErrorResponse) => {
         this.handleAuthError(error);
         return of(null);
@@ -57,18 +69,18 @@ export class AuthService {
   }
 
   public setAuthenticated(user: User): void {
-    this.currentUser.set(user);
-    this.isAuthenticated.set(true);
-    this.authError.set(null);
+    this.currentUserState.set(user);
+    this.isAuthenticatedState.set(true);
+    this.authErrorState.set(null);
     this.setSessionFlag(true);
   }
 
   public clearError(): void {
-    this.authError.set(null);
+    this.authErrorState.set(null);
   }
 
   public setLoading(loading: boolean): void {
-    this.isLoading.set(loading);
+    this.isLoadingState.set(loading);
   }
 
   /**
@@ -97,10 +109,10 @@ export class AuthService {
   }
 
   public logout(): Observable<ArrayBuffer> {
-    this.isLoading.set(true);
+    this.isLoadingState.set(true);
     return this.http.post<ArrayBuffer>(this.appService.createAPIUrl('auth/logout'), null).pipe(
       finalize(() => {
-        this.isLoading.set(false);
+        this.isLoadingState.set(false);
         this.clearAuthState();
       }),
       catchError((error) => {
@@ -111,9 +123,9 @@ export class AuthService {
   }
 
   private clearAuthState(): void {
-    this.currentUser.set(null);
-    this.isAuthenticated.set(false);
-    this.authError.set(null);
+    this.currentUserState.set(null);
+    this.isAuthenticatedState.set(false);
+    this.authErrorState.set(null);
     this.setSessionFlag(false);
 
     this.locationService.navigateTo(globalThis.location.pathname + globalThis.location.search);
@@ -124,13 +136,13 @@ export class AuthService {
    * @param error The HTTP error response
    */
   private handleAuthError(error: HttpErrorResponse): void {
-    this.currentUser.set(null);
-    this.isAuthenticated.set(false);
+    this.currentUserState.set(null);
+    this.isAuthenticatedState.set(false);
     this.setSessionFlag(false);
 
     if (error.status === 401) {
       console.log('AuthService: User is not authenticated (no active session)');
-      this.authError.set(null);
+      this.authErrorState.set(null);
     } else if (error.status === 403) {
       console.warn('AuthService: User authenticated but not authorized (not a frankframework member)');
       const errorResponse = error.error as ErrorResponse;
@@ -138,10 +150,10 @@ export class AuthService {
         errorResponse?.messages?.length > 0
           ? errorResponse.messages.join(' ')
           : 'Access denied. You must be a member of the frankframework organization.';
-      this.authError.set(message);
+      this.authErrorState.set(message);
     } else {
       console.error('AuthService: Unexpected error from /api/auth/user:', error.status, error.message);
-      this.authError.set(null);
+      this.authErrorState.set(null);
     }
   }
 

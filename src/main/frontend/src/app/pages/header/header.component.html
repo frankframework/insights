@@ -1,12 +1,12 @@
 <nav id="header">
-  <a class="logo-container" routerLink="/" [queryParams]="graphStateService.getGraphQueryParams()">
+  <a class="logo-container" routerLink="/" [queryParams]="graphStateService.graphQueryParams()">
     <img ngSrc="/assets/ff!-icon.svg" alt="FF! insights Logo" width="48" height="48" priority />
     <h2>Insights</h2>
   </a>
 
   <ul>
     <li>
-      <a routerLinkActive="active" [routerLink]="['/graph']" [queryParams]="graphStateService.getGraphQueryParams()">
+      <a routerLinkActive="active" [routerLink]="['/graph']" [queryParams]="graphStateService.graphQueryParams()">
         <h3>Release graph</h3>
         <span class="tab-underline"></span>
       </a>
@@ -38,7 +38,7 @@
         <img class="avatar" [src]="authService.currentUser()?.avatarUrl" [alt]="authService.currentUser()?.username" />
         <span class="username">{{ authService.currentUser()?.username }}</span>
 
-        @if (showUserMenu) {
+        @if (showUserMenu()) {
           <menu class="user-menu" tabindex="0" (click)="$event.stopPropagation()">
             <header class="user-menu-header">
               <img

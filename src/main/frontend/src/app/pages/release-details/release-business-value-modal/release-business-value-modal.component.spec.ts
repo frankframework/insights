@@ -1,6 +1,6 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReleaseBusinessValueModalComponent } from './release-business-value-modal.component';
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { ModalComponent } from '../../../components/modal/modal.component';
 import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree-branch/issue-tree-branch.component';
 import { Issue } from '../../../services/issue.service';
@@ -8,23 +8,21 @@ import { Issue } from '../../../services/issue.service';
 @Component({
   selector: 'app-modal',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<ng-content></ng-content>',
 })
 class MockModalComponent {
-  @Input() title: string = '';
-  @Output() closed = new EventEmitter<void>();
+  readonly title = input<string>('');
+  readonly closed = output<void>();
 }
 
 @Component({
   selector: 'app-issue-tree-branch',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockIssueTreeBranchComponent {
-  @Input() issue!: Issue;
-  @Input() depth: number = 0;
+  readonly issue = input.required<Issue>();
+  readonly depth = input<number>(0);
 }
 
 describe('ReleaseBusinessValueModalComponent', () => {

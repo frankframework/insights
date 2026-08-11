@@ -1,11 +1,11 @@
 <div class="roadmap-container">
-  @if (isLoading) {
+  @if (isLoading()) {
     <app-loader />
   } @else {
     <div class="header">
       <app-roadmap-toolbar
-        [periodLabel]="currentPeriodLabel"
-        [viewMode]="viewMode"
+        [periodLabel]="currentPeriodLabel()"
+        [viewMode]="viewMode()"
         (changePeriod)="changePeriod($event)"
         (resetPeriod)="resetPeriod()"
         (toggleViewMode)="toggleViewMode()"
@@ -13,33 +13,33 @@
     </div>
 
     <div class="content">
-      @if (getVisibleMilestones().length > 0) {
+      @if (visibleMilestones().length > 0) {
         <div #scrollContainer class="scroll-container">
-          <app-timeline-header [months]="months" [quarters]="quarters" />
+          <app-timeline-header [months]="months()" [quarters]="quarters()" />
 
           <div class="body">
             <div class="background">
-              @if (todayOffsetPercentage > 0 && todayOffsetPercentage < 100) {
-                <div class="today-marker" [style.left.%]="todayOffsetPercentage"></div>
+              @if (todayOffsetPercentage() > 0 && todayOffsetPercentage() < 100) {
+                <div class="today-marker" [style.left.%]="todayOffsetPercentage()"></div>
               }
-              <div class="grid-lines" [style.grid-template-columns]="'repeat(' + months.length + ', 1fr)'">
-                @for (month of months; track $index) {
+              <div class="grid-lines" [style.grid-template-columns]="'repeat(' + months().length + ', 1fr)'">
+                @for (month of months(); track $index) {
                   <div class="grid-line"></div>
                 }
               </div>
             </div>
 
             <div class="milestone-lanes">
-              @for (milestone of getVisibleMilestones(); track milestone.id; let isLast = $last) {
+              @for (milestone of visibleMilestones(); track milestone.id; let isLast = $last) {
                 <app-milestone-row
                   [milestone]="milestone"
                   [issues]="getIssuesForMilestone(milestone.id)"
-                  [timelineStartDate]="timelineStartDate"
-                  [timelineEndDate]="timelineEndDate"
-                  [totalTimelineDays]="totalDays"
-                  [quarters]="quarters"
+                  [timelineStartDate]="timelineStartDate()"
+                  [timelineEndDate]="timelineEndDate()"
+                  [totalTimelineDays]="totalDays()"
+                  [quarters]="quarters()"
                   [isLast]="isLast"
-                  [viewMode]="viewMode"
+                  [viewMode]="viewMode()"
                 />
               }
             </div>

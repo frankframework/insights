@@ -3,9 +3,9 @@
   tabindex="0"
   role="button"
   aria-label="Close modal"
-  (click)="closeOnBackdropClick && close()"
-  (keydown.enter)="closeOnBackdropClick && close()"
-  (keydown.space)="closeOnBackdropClick && close()"
+  (click)="closeOnBackdropClick() && close()"
+  (keydown.enter)="closeOnBackdropClick() && close()"
+  (keydown.space)="closeOnBackdropClick() && close()"
 >
   <div
     #modalContent
@@ -13,12 +13,12 @@
     tabindex="0"
     role="dialog"
     aria-modal="true"
-    [class.hide-scrollbar]="hideScrollBar"
-    [attr.aria-label]="title || 'Modal window'"
+    [class.hide-scrollbar]="hideScrollBar()"
+    [attr.aria-label]="title() || 'Modal window'"
     (click)="$event.stopPropagation()"
   >
-    @if (title.length > 0) {
-      <h2 class="modal-title">{{ title }}</h2>
+    @if (title().length > 0) {
+      <h2 class="modal-title">{{ title() }}</h2>
     }
     <button class="close-btn" type="button" aria-label="Close modal" (click)="close()">✕</button>
     <ng-content />

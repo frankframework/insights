@@ -49,7 +49,7 @@ describe('ReleaseBusinessValueComponent', () => {
 
   describe('rendering with businessValues input', () => {
     it('should render a list item for each business value', () => {
-      component.businessValues = mockBusinessValues;
+      fixture.componentRef.setInput('businessValues', mockBusinessValues);
       fixture.detectChanges();
 
       const items = fixture.nativeElement.querySelectorAll('.business-value-item');
@@ -58,7 +58,7 @@ describe('ReleaseBusinessValueComponent', () => {
     });
 
     it('should display title and description of each business value', () => {
-      component.businessValues = mockBusinessValues;
+      fixture.componentRef.setInput('businessValues', mockBusinessValues);
       fixture.detectChanges();
 
       const titles = fixture.nativeElement.querySelectorAll('.business-value-title');
@@ -73,7 +73,7 @@ describe('ReleaseBusinessValueComponent', () => {
     });
 
     it('should show empty message when businessValues is null', () => {
-      component.businessValues = null;
+      fixture.componentRef.setInput('businessValues', null);
       fixture.detectChanges();
 
       const emptyMessage = fixture.nativeElement.querySelector('.no-business-values');
@@ -85,7 +85,7 @@ describe('ReleaseBusinessValueComponent', () => {
 
   describe('modal interaction', () => {
     it('should open modal when clicking a business value item', () => {
-      component.businessValues = mockBusinessValues;
+      fixture.componentRef.setInput('businessValues', mockBusinessValues);
       fixture.detectChanges();
 
       const item = fixture.nativeElement.querySelector('.business-value-item');
@@ -98,7 +98,7 @@ describe('ReleaseBusinessValueComponent', () => {
     });
 
     it('should hide modal when selectedBusinessValue is null', () => {
-      component.businessValues = mockBusinessValues;
+      fixture.componentRef.setInput('businessValues', mockBusinessValues);
       component.selectedBusinessValue.set(null);
       fixture.detectChanges();
 

@@ -1,6 +1,6 @@
 <app-header />
 <div>
-  @if (loading) {
+  @if (loading()) {
     <app-loader />
   }
   <router-outlet />

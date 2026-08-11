@@ -47,7 +47,7 @@ describe('IssueTreeBranchComponent', () => {
   });
 
   it('should create', () => {
-    component.issue = MOCK_ISSUE;
+    fixture.componentRef.setInput('issue', MOCK_ISSUE);
     fixture.detectChanges();
 
     expect(component).toBeTruthy();
@@ -55,7 +55,7 @@ describe('IssueTreeBranchComponent', () => {
 
   describe('Default State & Rendering', () => {
     it('should display issue number, title, and url', () => {
-      component.issue = MOCK_ISSUE;
+      fixture.componentRef.setInput('issue', MOCK_ISSUE);
       fixture.detectChanges();
 
       const linkElement = nativeElement.querySelector('.issue-row') as HTMLAnchorElement;
@@ -69,7 +69,7 @@ describe('IssueTreeBranchComponent', () => {
     });
 
     it('should show the fold icon if sub-issues exist', () => {
-      component.issue = MOCK_ISSUE;
+      fixture.componentRef.setInput('issue', MOCK_ISSUE);
       fixture.detectChanges();
       const foldIcon = nativeElement.querySelector('.issue-fold-icon');
 
@@ -77,16 +77,16 @@ describe('IssueTreeBranchComponent', () => {
     });
 
     it('should render the IssueTypeTagComponent when issueType is provided', () => {
-      component.issue = MOCK_ISSUE;
+      fixture.componentRef.setInput('issue', MOCK_ISSUE);
       fixture.detectChanges();
       const tagComponent = fixture.debugElement.query(By.directive(IssueTypeTagComponent));
 
       expect(tagComponent).toBeTruthy();
-      expect(tagComponent.componentInstance.issueType).toEqual(MOCK_ISSUE.issueType);
+      expect(tagComponent.componentInstance.issueType()).toEqual(MOCK_ISSUE.issueType);
     });
 
     it('should not render the IssueTypeTagComponent when not provided', () => {
-      component.issue = { ...MOCK_ISSUE, issueType: undefined };
+      fixture.componentRef.setInput('issue', { ...MOCK_ISSUE, issueType: undefined });
       fixture.detectChanges();
       const tagComponent = fixture.debugElement.query(By.directive(IssueTypeTagComponent));
 
@@ -96,12 +96,12 @@ describe('IssueTreeBranchComponent', () => {
 
   describe('Expand/Collapse Logic', () => {
     beforeEach(() => {
-      component.issue = MOCK_ISSUE;
+      fixture.componentRef.setInput('issue', MOCK_ISSUE);
       fixture.detectChanges();
     });
 
     it('should start as collapsed by default', () => {
-      expect(component['expanded']).toBeFalse();
+      expect(component['expanded']()).toBeFalse();
       expect(nativeElement.querySelector('.issue-tree-branch.expanded')).toBeFalsy();
     });
 
@@ -111,16 +111,16 @@ describe('IssueTreeBranchComponent', () => {
       foldButton.click();
       fixture.detectChanges();
 
-      expect(component['expanded']).toBeTrue();
+      expect(component['expanded']()).toBeTrue();
 
       foldButton.click();
       fixture.detectChanges();
 
-      expect(component['expanded']).toBeFalse();
+      expect(component['expanded']()).toBeFalse();
     });
 
     it('should not render sub-issues when collapsed', () => {
-      component['expanded'] = false;
+      component['expanded'].set(false);
       fixture.detectChanges();
       const subIssues = nativeElement.querySelectorAll('app-issue-tree-branch');
 
@@ -128,7 +128,7 @@ describe('IssueTreeBranchComponent', () => {
     });
 
     it('should render sub-issues when expanded', () => {
-      component['expanded'] = true;
+      component['expanded'].set(true);
       fixture.detectChanges();
       const subIssues = nativeElement.querySelectorAll('app-issue-tree-branch');
 

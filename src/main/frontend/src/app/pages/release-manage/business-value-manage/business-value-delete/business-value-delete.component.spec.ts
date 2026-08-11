@@ -32,7 +32,7 @@ describe('BusinessValueDeleteComponent', () => {
 
     fixture = TestBed.createComponent(BusinessValueDeleteComponent);
     component = fixture.componentInstance;
-    component.businessValue = mockBusinessValue;
+    fixture.componentRef.setInput('businessValue', mockBusinessValue);
     fixture.detectChanges();
   });
 
@@ -47,8 +47,8 @@ describe('BusinessValueDeleteComponent', () => {
     });
 
     it('should have businessValue input set', () => {
-      expect(component.businessValue).toEqual(mockBusinessValue);
-      expect(component.businessValue.id).toBe('bv-123');
+      expect(component.businessValue()).toEqual(mockBusinessValue);
+      expect(component.businessValue().id).toBe('bv-123');
     });
   });
 
@@ -177,14 +177,14 @@ describe('BusinessValueDeleteComponent', () => {
     });
 
     it('should maintain businessValue reference throughout component lifecycle', () => {
-      const initialBV = component.businessValue;
+      const initialBV = component.businessValue();
 
-      expect(component.businessValue).toBe(initialBV);
-      expect(component.businessValue.id).toBe('bv-123');
+      expect(component.businessValue()).toBe(initialBV);
+      expect(component.businessValue().id).toBe('bv-123');
     });
 
     it('should handle deletion with business value that has associated issues', () => {
-      component.businessValue = {
+      fixture.componentRef.setInput('businessValue', {
         id: 'bv-456',
         title: 'BV with Issues',
         description: 'Has issues',
@@ -193,7 +193,7 @@ describe('BusinessValueDeleteComponent', () => {
           { id: 'issue-1', number: 101, title: 'Issue 1', state: 'OPEN', url: '' },
           { id: 'issue-2', number: 102, title: 'Issue 2', state: 'CLOSED', url: '' },
         ],
-      };
+      });
       mockBusinessValueService.deleteBusinessValue.and.returnValue(of(void 0));
 
       component.confirmDelete();

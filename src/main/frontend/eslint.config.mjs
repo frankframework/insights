@@ -51,7 +51,12 @@ export default [
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'app', style: 'camelCase' }],
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
 
-      '@angular-eslint/prefer-on-push-component-change-detection': 'off',
+      '@angular-eslint/prefer-on-push-component-change-detection': 'warn',
+      '@angular-eslint/prefer-signals': 'error',
+      '@angular-eslint/prefer-output-emitter-ref': 'error',
+      '@angular-eslint/no-input-rename': 'error',
+      '@angular-eslint/no-output-native': 'error',
+      '@angular-eslint/contextual-decorator': 'error',
 
       'prefer-template': 'error',
       'no-undef': 'off',
@@ -116,8 +121,6 @@ export default [
       '@angular-eslint/template/no-interpolation-in-attributes': 'error',
       '@angular-eslint/template/click-events-have-key-events': 'off',
       '@angular-eslint/template/interactive-supports-focus': ['error', { allowList: ['li'] }],
-      '@angular-eslint/contextual-decorator': 'warn',
-      '@angular-eslint/prefer-signals': 'error',
       '@angular-eslint/template/attributes-order': [
         'error',
         {

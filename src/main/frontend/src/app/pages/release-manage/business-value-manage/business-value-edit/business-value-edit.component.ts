@@ -1,14 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output,
-  inject,
-  signal,
-  computed,
-  ChangeDetectionStrategy,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Signal, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../components/modal/modal.component';
@@ -18,23 +8,23 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
 @Component({
   selector: 'app-business-value-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, ModalComponent, MarkdownPipe],
+  imports: [FormsModule, ModalComponent, MarkdownPipe],
   templateUrl: './business-value-edit.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './business-value-edit.component.scss',
 })
 export class BusinessValueEditComponent {
-  @Output() closed = new EventEmitter<void>();
-  @Output() businessValueUpdated = new EventEmitter<BusinessValue>();
+  public readonly businessValue = input.required<BusinessValue>();
 
-  public _businessValue!: BusinessValue;
-  public name = signal<string>('');
-  public description = signal<string>('');
-  public descriptionPreview = signal<boolean>(false);
-  public isSaving = signal<boolean>(false);
-  public errorMessage = signal<string>('');
+  public readonly closed = output<void>();
+  public readonly businessValueUpdated = output<BusinessValue>();
 
-  public isFormValidAndChanged = computed<boolean>(() => {
+  public readonly name = linkedSignal<string>(() => this.businessValue().title);
+  public readonly description = linkedSignal<string>(() => this.businessValue().description);
+  public readonly descriptionPreview = signal<boolean>(false);
+  public readonly isSaving = signal<boolean>(false);
+  public readonly errorMessage = signal<string>('');
+
+  public readonly isFormValidAndChanged: Signal<boolean> = computed(() => {
     const currentName = this.name().trim();
     const currentDescription = this.description().trim();
 
@@ -45,23 +35,10 @@ export class BusinessValueEditComponent {
     return isRequiredFilled && hasChanged;
   });
 
-  private originalName = signal<string>('');
-  private originalDescription = signal<string>('');
+  private readonly originalName: Signal<string> = computed(() => this.businessValue().title);
+  private readonly originalDescription: Signal<string> = computed(() => this.businessValue().description);
 
-  private businessValueService = inject(BusinessValueService);
-
-  get businessValue(): BusinessValue {
-    return this._businessValue;
-  }
-
-  @Input({ required: true })
-  set businessValue(bv: BusinessValue) {
-    this._businessValue = bv;
-    this.name.set(bv.title);
-    this.description.set(bv.description);
-    this.originalName.set(bv.title);
-    this.originalDescription.set(bv.description);
-  }
+  private readonly businessValueService = inject(BusinessValueService);
 
   public close(): void {
     this.closed.emit();
@@ -94,7 +71,7 @@ export class BusinessValueEditComponent {
     this.errorMessage.set('');
 
     this.businessValueService
-      .updateBusinessValue(this._businessValue.id, nameValue, descriptionValue)
+      .updateBusinessValue(this.businessValue().id, nameValue, descriptionValue)
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (businessValue) => {

@@ -1,4 +1,4 @@
-@if (skipNode) {
+@if (skipNode(); as skipNode) {
   <app-modal [title]="'Skipped Releases (' + skipNode.skippedCount + ')'" (closed)="closeModal()">
     <p class="info">
       A skipped release represents unsupported release sequences that are less relevant to the main timeline. They show
@@ -6,10 +6,10 @@
       versions were released but hidden due to their unsupported status.
     </p>
     <div class="skipped-versions-list">
-      @if (releaseTree.length === 0) {
+      @if (releaseTree().length === 0) {
         <div class="no-releases">No actual releases were skipped between these nodes.</div>
       } @else {
-        @for (node of releaseTree; track node.version) {
+        @for (node of releaseTree(); track node.version) {
           <div class="version-root" tabindex="0" (click)="onVersionClick(node.version)">
             {{ node.version }}
             @if (node.type === 'major') {
@@ -49,11 +49,11 @@
       }
     </div>
 
-    @if (releaseTree.length > 0) {
+    @if (releaseTree().length > 0) {
       <app-include-actions
-        [includableRanges]="includableRanges"
-        [pendingCount]="pendingVersions.length"
-        [alreadyIncluded]="isAlreadyIncluded"
+        [includableRanges]="includableRanges()"
+        [pendingCount]="pendingVersions().length"
+        [alreadyIncluded]="isAlreadyIncluded()"
         (includeAll)="includeReleases()"
         (applyPending)="applyPendingIncludes()"
       />

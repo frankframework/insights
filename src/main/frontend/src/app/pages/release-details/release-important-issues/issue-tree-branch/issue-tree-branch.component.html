@@ -1,26 +1,26 @@
-<div class="issue-tree-branch" [class.expanded]="expanded">
-  <a class="issue-row" target="_blank" rel="noopener noreferrer" [style.margin-left]="getIndent()" [href]="issue.url">
-    @if (issue.subIssues?.length) {
+<div class="issue-tree-branch" [class.expanded]="expanded()">
+  <a class="issue-row" target="_blank" rel="noopener noreferrer" [style.margin-left]="indent()" [href]="issue().url">
+    @if (issue().subIssues?.length) {
       <button
         type="button"
         class="issue-fold-icon"
         aria-label="Toggle sub-issues"
-        [class.expanded]="expanded"
-        [attr.aria-expanded]="expanded"
+        [class.expanded]="expanded()"
+        [attr.aria-expanded]="expanded()"
         (click)="toggleExpand($event)"
       >
         ›
       </button>
     }
-    <span class="issue-number">#{{ issue.number }}</span>
-    @if (issue.issueType) {
-      <app-issue-type-tag [issueType]="issue.issueType" />
+    <span class="issue-number">#{{ issue().number }}</span>
+    @if (issue().issueType; as issueType) {
+      <app-issue-type-tag [issueType]="issueType" />
     }
-    <span class="issue-title">{{ issue.title }}</span>
+    <span class="issue-title">{{ issue().title }}</span>
   </a>
-  @if (issue.subIssues?.length && this.expanded) {
-    @for (sub of issue.subIssues; track sub.id) {
-      <app-issue-tree-branch [issue]="sub" [depth]="depth + 1" />
+  @if (issue().subIssues?.length && expanded()) {
+    @for (sub of issue().subIssues; track sub.id) {
+      <app-issue-tree-branch [issue]="sub" [depth]="depth() + 1" />
     }
   }
 </div>

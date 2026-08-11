@@ -87,7 +87,7 @@ describe('ReleaseRoadmapComponent', () => {
     }));
 
     it('should create a special milestone for unplanned epics', () => {
-      const unplannedMilestone = component.milestones.find((m) => m.id === 'unplanned-epics');
+      const unplannedMilestone = component.milestones().find((m) => m.id === 'unplanned-epics');
 
       expect(unplannedMilestone).toBeDefined();
       expect(unplannedMilestone?.title).toBe('Unplanned Epics');
@@ -95,7 +95,7 @@ describe('ReleaseRoadmapComponent', () => {
     });
 
     it('should sort unplanned epics by issue number ascending', () => {
-      const unplannedEpicsIssues = component.milestoneIssues.get('unplanned-epics');
+      const unplannedEpicsIssues = component.milestoneIssues().get('unplanned-epics');
 
       expect(unplannedEpicsIssues).toBeDefined();
       expect(unplannedEpicsIssues?.length).toBe(2);

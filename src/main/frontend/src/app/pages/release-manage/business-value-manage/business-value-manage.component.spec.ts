@@ -1,7 +1,7 @@
 ﻿import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -13,37 +13,34 @@ import { ReleaseService, Release } from '../../../services/release.service';
 @Component({
   selector: 'app-business-value-add',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockBusinessValueAddComponent {
-  @Input() releaseId!: string;
-  @Output() closed = new EventEmitter<void>();
-  @Output() businessValueCreated = new EventEmitter<BusinessValue>();
+  readonly releaseId = input.required<string>();
+  readonly closed = output<void>();
+  readonly businessValueCreated = output<BusinessValue>();
 }
 
 @Component({
   selector: 'app-business-value-edit',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockBusinessValueEditComponent {
-  @Input() businessValue: any;
-  @Output() closed = new EventEmitter<void>();
-  @Output() businessValueUpdated = new EventEmitter<BusinessValue>();
+  readonly businessValue = input<any>();
+  readonly closed = output<void>();
+  readonly businessValueUpdated = output<BusinessValue>();
 }
 
 @Component({
   selector: 'app-business-value-delete',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.Eager,
   template: '',
 })
 class MockBusinessValueDeleteComponent {
-  @Input() businessValue: any;
-  @Output() closed = new EventEmitter<void>();
-  @Output() businessValueDeleted = new EventEmitter<string>();
+  readonly businessValue = input<any>();
+  readonly closed = output<void>();
+  readonly businessValueDeleted = output<string>();
 }
 
 const mockIssues: Issue[] = [
@@ -131,6 +128,7 @@ describe('BusinessValueManageComponent', () => {
       .compileComponents();
 
     fixture = TestBed.createComponent(BusinessValueManageComponent);
+    fixture.componentRef.setInput('id', 'release-123');
     component = fixture.componentInstance;
 
     fixture.detectChanges();

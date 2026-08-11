@@ -68,30 +68,30 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should initialize with empty vulnerabilities', () => {
-      expect(component.vulnerabilities).toBeNull();
-      expect(component.sortedVulnerabilities).toEqual([]);
-      expect(component.selectedVulnerability).toBeNull();
+      expect(component.vulnerabilities()).toBeNull();
+      expect(component.sortedVulnerabilities()).toEqual([]);
+      expect(component.selectedVulnerability()).toBeNull();
     });
 
     it('should initialize with isOffCanvasOpen as false', () => {
-      expect(component.isOffCanvasOpen).toBe(false);
+      expect(component.isOffCanvasOpen()).toBe(false);
     });
   });
 
   describe('Vulnerability Sorting', () => {
     it('should sort vulnerabilities by severity (CRITICAL first)', () => {
-      component.vulnerabilities = mockVulnerabilities;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', mockVulnerabilities);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities[0].severity).toBe(VulnerabilitySeverities.CRITICAL);
-      expect(component.sortedVulnerabilities.at(-1)!.severity).toBe(VulnerabilitySeverities.LOW);
+      expect(component.sortedVulnerabilities()[0].severity).toBe(VulnerabilitySeverities.CRITICAL);
+      expect(component.sortedVulnerabilities().at(-1)!.severity).toBe(VulnerabilitySeverities.LOW);
     });
 
     it('should sort vulnerabilities within same severity by CVSS score (highest first)', () => {
-      component.vulnerabilities = mockVulnerabilities;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', mockVulnerabilities);
+      fixture.detectChanges();
 
-      const criticalVulns = component.sortedVulnerabilities.filter(
+      const criticalVulns = component.sortedVulnerabilities().filter(
         (v) => v.severity === VulnerabilitySeverities.CRITICAL,
       );
 
@@ -100,17 +100,17 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should handle empty vulnerabilities array', () => {
-      component.vulnerabilities = [];
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', []);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities).toEqual([]);
-      expect(component.selectedVulnerability).toBeNull();
+      expect(component.sortedVulnerabilities()).toEqual([]);
+      expect(component.selectedVulnerability()).toBeNull();
     });
 
     it('should show "Not yet scanned" when there are no vulnerabilities and lastScanned is null', () => {
-      component.vulnerabilities = [];
-      component.lastScanned = null;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', []);
+      fixture.componentRef.setInput('lastScanned', null);
+      fixture.detectChanges();
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent;
@@ -120,9 +120,9 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should show "No vulnerabilities found" when there are no vulnerabilities but lastScanned is set', () => {
-      component.vulnerabilities = [];
-      component.lastScanned = new Date('2024-01-01');
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', []);
+      fixture.componentRef.setInput('lastScanned', new Date('2024-01-01'));
+      fixture.detectChanges();
       fixture.detectChanges();
 
       const text = fixture.nativeElement.textContent;
@@ -132,41 +132,46 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should handle single vulnerability', () => {
-      component.vulnerabilities = [mockVulnerabilities[0]];
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', [mockVulnerabilities[0]]);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities.length).toBe(1);
+      expect(component.sortedVulnerabilities().length).toBe(1);
     });
   });
 
   describe('Vulnerability Selection', () => {
     beforeEach(() => {
-      component.vulnerabilities = mockVulnerabilities;
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', mockVulnerabilities);
+      fixture.detectChanges();
       fixture.detectChanges();
     });
 
     it('should select vulnerability and open off-canvas', () => {
-      const targetVuln = component.sortedVulnerabilities[2];
+      const targetVuln = component.sortedVulnerabilities()[2];
       component.selectVulnerability(targetVuln);
 
-      expect(component.selectedVulnerability).toBe(targetVuln);
-      expect(component.isOffCanvasOpen).toBe(true);
+      expect(component.selectedVulnerability()).toBe(targetVuln);
+      expect(component.isOffCanvasOpen()).toBe(true);
     });
 
     it('should close off-canvas', () => {
-      component.isOffCanvasOpen = true;
+      component.isOffCanvasOpen.set(true);
       component.closeOffCanvas();
 
-      expect(component.isOffCanvasOpen).toBe(false);
+      expect(component.isOffCanvasOpen()).toBe(false);
     });
 
-    it('should reset selected vulnerability and close off-canvas on ngOnChanges', () => {
-      component.selectVulnerability(component.sortedVulnerabilities[0]);
-      component.ngOnChanges();
+    it('should reset selected vulnerability and close off-canvas when vulnerabilities change', () => {
+      component.selectVulnerability(component.sortedVulnerabilities()[0]);
 
-      expect(component.selectedVulnerability).toBeNull();
-      expect(component.isOffCanvasOpen).toBe(false);
+      expect(component.selectedVulnerability()).not.toBeNull();
+      expect(component.isOffCanvasOpen()).toBe(true);
+
+      fixture.componentRef.setInput('vulnerabilities', [...mockVulnerabilities]);
+      fixture.detectChanges();
+
+      expect(component.selectedVulnerability()).toBeNull();
+      expect(component.isOffCanvasOpen()).toBe(false);
     });
   });
 
@@ -232,10 +237,10 @@ describe('ReleaseVulnerabilities', () => {
         description: 'No CWEs',
         cwes: [],
       };
-      component.vulnerabilities = [vulnNoCwe];
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', [vulnNoCwe]);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities[0].cwes).toEqual([]);
+      expect(component.sortedVulnerabilities()[0].cwes).toEqual([]);
     });
 
     it('should handle vulnerability with empty description', () => {
@@ -247,10 +252,10 @@ describe('ReleaseVulnerabilities', () => {
         description: '',
         cwes: ['CWE-79'],
       };
-      component.vulnerabilities = [vulnNoDesc];
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', [vulnNoDesc]);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities[0].description).toBe('');
+      expect(component.sortedVulnerabilities()[0].description).toBe('');
     });
 
     it('should handle vulnerability with very long CVE ID', () => {
@@ -262,10 +267,10 @@ describe('ReleaseVulnerabilities', () => {
         description: 'Test',
         cwes: [],
       };
-      component.vulnerabilities = [vulnLongId];
-      component.ngOnChanges();
+      fixture.componentRef.setInput('vulnerabilities', [vulnLongId]);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities[0].cveId).toContain('VERY-LONG');
+      expect(component.sortedVulnerabilities()[0].cveId).toContain('VERY-LONG');
     });
 
     it('should handle negative CVSS score', () => {
@@ -277,7 +282,7 @@ describe('ReleaseVulnerabilities', () => {
     });
 
     it('should handle multiple vulnerabilities with same severity and score', () => {
-      component.vulnerabilities = [
+      fixture.componentRef.setInput('vulnerabilities', [
         {
           cveId: 'CVE-2024-1111',
           title: 'title',
@@ -294,12 +299,12 @@ describe('ReleaseVulnerabilities', () => {
           description: 'Duplicate 2',
           cwes: [],
         },
-      ];
-      component.ngOnChanges();
+      ]);
+      fixture.detectChanges();
 
-      expect(component.sortedVulnerabilities.length).toBe(2);
-      expect(component.sortedVulnerabilities[0].cvssScore).toBe(7.5);
-      expect(component.sortedVulnerabilities[1].cvssScore).toBe(7.5);
+      expect(component.sortedVulnerabilities().length).toBe(2);
+      expect(component.sortedVulnerabilities()[0].cvssScore).toBe(7.5);
+      expect(component.sortedVulnerabilities()[1].cvssScore).toBe(7.5);
     });
   });
 });

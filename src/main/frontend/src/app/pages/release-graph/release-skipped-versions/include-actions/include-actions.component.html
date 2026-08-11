@@ -1,26 +1,26 @@
-@if (pendingCount > 0) {
+@if (pendingCount() > 0) {
   <button
     type="button"
     class="include-button apply-button"
     title="Apply pending includes and reload the graph"
     (click)="applyPending.emit()"
   >
-    Apply {{ pendingLabel }}
+    Apply {{ pendingLabel() }}
   </button>
 }
 
 <button
   type="button"
   class="include-button"
-  [disabled]="alreadyIncluded"
+  [disabled]="alreadyIncluded()"
   [attr.title]="
-    alreadyIncluded
+    alreadyIncluded()
       ? 'These release lines are already shown in the graph'
-      : 'Widens ?range= with ' + includeLabel + ' and draws these release lines'
+      : 'Widens ?range= with ' + includeLabel() + ' and draws these release lines'
   "
   (click)="includeAll.emit()"
 >
-  {{ includeButtonLabel }}
+  {{ includeButtonLabel() }}
 </button>
 
 <span class="include-hint">
