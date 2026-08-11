@@ -159,8 +159,7 @@ jobs:
             type=ref,event=branch
             type=raw,value=0.0.${{ github.run_number }}
 
-      # Build and push both images with Buildx (don't push on PR). They come out of the same
-      # Dockerfile; the target selects which one is built.
+      # Build and push both images with Buildx (don't push on PR).
       # https://github.com/docker/build-push-action
       - name: Build and push the webapp image
         id: build-and-push-webapp
