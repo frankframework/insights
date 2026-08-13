@@ -1,0 +1,1 @@
+spa-fixture/3rdpartylicenses.txt
