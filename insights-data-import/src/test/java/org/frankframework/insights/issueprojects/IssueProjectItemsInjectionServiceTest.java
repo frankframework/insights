@@ -141,8 +141,8 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -161,8 +161,8 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -181,8 +181,8 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -201,8 +201,8 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -218,8 +218,8 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -304,8 +304,8 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(Collections.emptySet())).thenReturn(Collections.emptyList());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -408,7 +408,7 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -426,7 +426,7 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -444,7 +444,7 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issueStateRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issueStateRepository).saveAll(argThat((Set<IssueState> set) -> set.isEmpty()));
+        verify(issueStateRepository).saveAll(argThat((ArgumentMatcher<Set<IssueState>>) Collection::isEmpty));
     }
 
     @Test
@@ -485,7 +485,7 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
     }
 
     @Test
@@ -503,7 +503,7 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
     }
 
     @Test
@@ -521,6 +521,6 @@ public class IssueProjectItemsInjectionServiceTest {
         when(issuePriorityRepository.saveAll(anySet())).thenReturn(List.of());
 
         issueProjectItemsInjectionService.injectIssueProjectItems();
-        verify(issuePriorityRepository).saveAll(argThat((Set<IssuePriority> set) -> set.isEmpty()));
+        verify(issuePriorityRepository).saveAll(argThat((ArgumentMatcher<Set<IssuePriority>>) Collection::isEmpty));
     }
 }

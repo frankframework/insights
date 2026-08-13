@@ -55,12 +55,12 @@ public class MilestoneInjectionServiceTest {
     @Test
     public void injectMilestones_shouldSaveAllMilestones()
             throws MilestoneInjectionException, GitHubGraphQLClientException, MappingException {
-        Set<MilestoneDTO> DTOs = Set.of(milestoneDTO1, milestoneDTO2);
+        Set<MilestoneDTO> dtos = Set.of(milestoneDTO1, milestoneDTO2);
         Set<Milestone> entities = Set.of(milestone1, milestone2);
         List<Milestone> saved = List.of(milestone1, milestone2);
 
-        when(gitHubGraphQLClient.getMilestones()).thenReturn(DTOs);
-        when(mapper.toEntity(DTOs, Milestone.class)).thenReturn(entities);
+        when(gitHubGraphQLClient.getMilestones()).thenReturn(dtos);
+        when(mapper.toEntity(dtos, Milestone.class)).thenReturn(entities);
         when(milestoneRepository.saveAll(entities)).thenReturn(saved);
 
         milestoneInjectionService.injectMilestones();

@@ -199,12 +199,12 @@ public class IssueInjectionServiceTest {
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(issueProjectItemsInjectionService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
-        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(mapper.toEntity(dto1, Issue.class)).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         issueInjectionService.injectIssues();
 
-        verify(mapper).toEntity(eq(dto1), eq(Issue.class));
+        verify(mapper).toEntity(dto1, Issue.class);
         assertEquals("High", issue1.getIssuePriority().getName());
         assertEquals(13.0, issue1.getPoints());
     }
@@ -214,7 +214,7 @@ public class IssueInjectionServiceTest {
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(issueProjectItemsInjectionService.getAllIssuePrioritiesMap()).thenReturn(Collections.emptyMap());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dtoSub));
-        when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
+        when(mapper.toEntity(dtoSub, Issue.class)).thenReturn(issueSub);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         assertDoesNotThrow(() -> issueInjectionService.injectIssues());
@@ -224,7 +224,7 @@ public class IssueInjectionServiceTest {
     public void injectIssues_handlesFieldValuesWithNullNode() throws GitHubGraphQLClientException {
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
-        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(mapper.toEntity(dto1, Issue.class)).thenReturn(issue1);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 
         assertDoesNotThrow(() -> issueInjectionService.injectIssues());
@@ -232,12 +232,12 @@ public class IssueInjectionServiceTest {
 
     @Test
     public void injectIssues_assignsSubIssues() throws GitHubGraphQLClientException, IssueInjectionException {
-        Set<IssueDTO> DTOs = Set.of(dtoSub, dto2);
+        Set<IssueDTO> dtos = Set.of(dtoSub, dto2);
 
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
-        when(gitHubGraphQLClient.getIssues()).thenReturn(DTOs);
-        when(mapper.toEntity(eq(dtoSub), eq(Issue.class))).thenReturn(issueSub);
-        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(gitHubGraphQLClient.getIssues()).thenReturn(dtos);
+        when(mapper.toEntity(dtoSub, Issue.class)).thenReturn(issueSub);
+        when(mapper.toEntity(dto2, Issue.class)).thenReturn(issue2);
         when(milestoneInjectionService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
         when(labelInjectionService.getAllLabelsMap()).thenReturn(Collections.emptyMap());
@@ -274,7 +274,7 @@ public class IssueInjectionServiceTest {
 
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1));
-        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
+        when(mapper.toEntity(dto1, Issue.class)).thenReturn(issue1);
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(Set.of("i1")))
                 .thenReturn(List.of(dbIssue1));
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -288,7 +288,7 @@ public class IssueInjectionServiceTest {
     public void injectIssues_doesNotSetBusinessValueForNewIssues() throws Exception {
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto2));
-        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(mapper.toEntity(dto2, Issue.class)).thenReturn(issue2);
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(Set.of("i2")))
                 .thenReturn(Collections.emptyList());
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
@@ -309,8 +309,8 @@ public class IssueInjectionServiceTest {
 
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto1, dto2));
-        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
-        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(mapper.toEntity(dto1, Issue.class)).thenReturn(issue1);
+        when(mapper.toEntity(dto2, Issue.class)).thenReturn(issue2);
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(Set.of("i1", "i2")))
                 .thenReturn(List.of(dbIssue1));
         when(milestoneInjectionService.getAllMilestonesMap()).thenReturn(Collections.emptyMap());
@@ -328,7 +328,7 @@ public class IssueInjectionServiceTest {
     public void injectIssues_handlesNoIssuesWithBusinessValues() throws Exception {
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(gitHubGraphQLClient.getIssues()).thenReturn(Set.of(dto2));
-        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(mapper.toEntity(dto2, Issue.class)).thenReturn(issue2);
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));
 

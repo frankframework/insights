@@ -405,32 +405,32 @@ public class ReleaseInjectionServiceTest {
 
     @Test
     public void releaseSortingComparator_shouldSortNightlyReleasesToEnd() {
-        Release normal_early = new Release();
-        normal_early.setName("v1.0");
-        normal_early.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
+        Release normalEarly = new Release();
+        normalEarly.setName("v1.0");
+        normalEarly.setPublishedAt(OffsetDateTime.parse("2025-08-10T10:00:00Z"));
 
-        Release nightly_middle = new Release();
-        nightly_middle.setName("A nightly build");
-        nightly_middle.setPublishedAt(OffsetDateTime.parse("2025-08-15T10:00:00Z"));
+        Release nightlyMiddle = new Release();
+        nightlyMiddle.setName("A nightly build");
+        nightlyMiddle.setPublishedAt(OffsetDateTime.parse("2025-08-15T10:00:00Z"));
 
-        Release normal_late = new Release();
-        normal_late.setName("v1.1");
-        normal_late.setPublishedAt(OffsetDateTime.parse("2025-08-20T10:00:00Z"));
+        Release normalLate = new Release();
+        normalLate.setName("v1.1");
+        normalLate.setPublishedAt(OffsetDateTime.parse("2025-08-20T10:00:00Z"));
 
-        Release null_name_release = new Release();
-        null_name_release.setName(null);
-        null_name_release.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
+        Release nullNameRelease = new Release();
+        nullNameRelease.setName(null);
+        nullNameRelease.setPublishedAt(OffsetDateTime.parse("2025-08-01T10:00:00Z"));
 
-        List<Release> releases = Arrays.asList(normal_early, nightly_middle, normal_late, null_name_release);
+        List<Release> releases = Arrays.asList(normalEarly, nightlyMiddle, normalLate, nullNameRelease);
         Collections.shuffle(releases);
 
         Comparator<Release> comparator = releaseInjectionService.getReleaseSortingComparator();
         releases.sort(comparator);
 
-        assertEquals(null_name_release, releases.get(0));
-        assertEquals(normal_early, releases.get(1));
-        assertEquals(normal_late, releases.get(2));
-        assertEquals(nightly_middle, releases.get(3));
+        assertEquals(nullNameRelease, releases.get(0));
+        assertEquals(normalEarly, releases.get(1));
+        assertEquals(normalLate, releases.get(2));
+        assertEquals(nightlyMiddle, releases.get(3));
     }
 
     @Test
