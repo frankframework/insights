@@ -163,16 +163,16 @@ public class IssueInjectionServiceTest {
     @Test
     public void injectIssues_savesAllAndHandlesTypeMilestoneAndLabels()
             throws GitHubGraphQLClientException, IssueInjectionException {
-        Set<IssueDTO> DTOs = Set.of(dto1, dto2);
+        Set<IssueDTO> dtos = Set.of(dto1, dto2);
 
         when(issueRepository.findAllByIdInAndBusinessValueIsNotNull(anySet())).thenReturn(Collections.emptyList());
-        when(mapper.toEntity(eq(dto1), eq(Issue.class))).thenReturn(issue1);
-        when(mapper.toEntity(eq(dto2), eq(Issue.class))).thenReturn(issue2);
+        when(mapper.toEntity(dto1, Issue.class)).thenReturn(issue1);
+        when(mapper.toEntity(dto2, Issue.class)).thenReturn(issue2);
 
         Map<String, Milestone> milestones = Map.of("m1", milestone);
         Map<String, IssueType> issueTypes = Map.of("it1", issueType);
 
-        when(gitHubGraphQLClient.getIssues()).thenReturn(DTOs);
+        when(gitHubGraphQLClient.getIssues()).thenReturn(dtos);
         when(milestoneInjectionService.getAllMilestonesMap()).thenReturn(milestones);
         when(issueTypeInjectionService.getAllIssueTypesMap()).thenReturn(issueTypes);
         when(issueRepository.saveAll(anySet())).thenAnswer(inv -> new ArrayList<>(inv.getArgument(0)));

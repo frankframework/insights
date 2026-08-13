@@ -202,8 +202,8 @@ public class ReleaseInjectionServiceTest {
     public void assignsPullRequestsToCorrectReleaseByTimeframe() throws Exception {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(eq(dto1), eq(Release.class))).thenReturn(rel1);
-        when(mapper.toEntity(eq(dto2), eq(Release.class))).thenReturn(rel2);
+        when(mapper.toEntity(dto1, Release.class)).thenReturn(rel1);
+        when(mapper.toEntity(dto2, Release.class)).thenReturn(rel2);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList()))
                 .thenReturn(Map.of(masterBranch.getId(), Set.of(branchPR1)));
@@ -254,8 +254,8 @@ public class ReleaseInjectionServiceTest {
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(eq(dto1), eq(Release.class))).thenReturn(rel1);
-        when(mapper.toEntity(eq(dto2), eq(Release.class))).thenReturn(rel2);
+        when(mapper.toEntity(dto1, Release.class)).thenReturn(rel1);
+        when(mapper.toEntity(dto2, Release.class)).thenReturn(rel2);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList()))
                 .thenReturn(Map.of(masterBranch.getId(), Set.of(branchPR1)));
@@ -320,8 +320,8 @@ public class ReleaseInjectionServiceTest {
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch, masterBranch, featureBranch));
-        when(mapper.toEntity(eq(tagGood), eq(Release.class))).thenReturn(relGood);
-        when(mapper.toEntity(eq(tagBad), eq(Release.class))).thenReturn(relBad);
+        when(mapper.toEntity(tagGood, Release.class)).thenReturn(relGood);
+        when(mapper.toEntity(tagBad, Release.class)).thenReturn(relBad);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relGood, relBad));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
@@ -332,20 +332,18 @@ public class ReleaseInjectionServiceTest {
     @Test
     public void injectReleases_shouldAssignPRsToCorrectReleases_whenPRsFallInTimeWindows() throws Exception {
         // Arrange
-        ReleaseDTO dto1 = new ReleaseDTO(
+        dto1 = new ReleaseDTO(
                 "id1", "v1.0", "v1.0", new ReleaseTagCommitDTO(OffsetDateTime.parse("2025-08-01T10:00:00Z")));
-        ReleaseDTO dto2 = new ReleaseDTO(
+        dto2 = new ReleaseDTO(
                 "id2", "v1.1", "v1.1", new ReleaseTagCommitDTO(OffsetDateTime.parse("2025-08-10T10:00:00Z")));
         ReleaseDTO dto3 = new ReleaseDTO(
                 "id3", "v1.2", "v1.2", new ReleaseTagCommitDTO(OffsetDateTime.parse("2025-08-20T10:00:00Z")));
 
-        Release rel1 = new Release();
         rel1.setId("r1");
         rel1.setName("v1.0");
         rel1.setPublishedAt(dto1.getReleaseDate());
         rel1.setBranch(masterBranch);
 
-        Release rel2 = new Release();
         rel2.setId("r2");
         rel2.setName("v1.1");
         rel2.setPublishedAt(dto2.getReleaseDate());
@@ -444,7 +442,7 @@ public class ReleaseInjectionServiceTest {
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcRelease, validRelease));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
@@ -455,8 +453,8 @@ public class ReleaseInjectionServiceTest {
         Set<Release> savedReleases = captor.getValue();
 
         assertEquals(1, savedReleases.size());
-        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(rcRelease), eq(Release.class));
+        verify(mapper, times(1)).toEntity(validRelease, Release.class);
+        verify(mapper, never()).toEntity(rcRelease, Release.class);
     }
 
     @Test
@@ -468,7 +466,7 @@ public class ReleaseInjectionServiceTest {
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(betaRelease, validRelease));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
@@ -479,8 +477,8 @@ public class ReleaseInjectionServiceTest {
         Set<Release> savedReleases = captor.getValue();
 
         assertEquals(1, savedReleases.size());
-        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(betaRelease), eq(Release.class));
+        verify(mapper, times(1)).toEntity(validRelease, Release.class);
+        verify(mapper, never()).toEntity(betaRelease, Release.class);
     }
 
     @Test
@@ -493,7 +491,7 @@ public class ReleaseInjectionServiceTest {
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rc1, rc2, beta, validRelease));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
@@ -504,10 +502,10 @@ public class ReleaseInjectionServiceTest {
         Set<Release> savedReleases = captor.getValue();
 
         assertEquals(1, savedReleases.size());
-        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(rc1), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(rc2), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(beta), eq(Release.class));
+        verify(mapper, times(1)).toEntity(validRelease, Release.class);
+        verify(mapper, never()).toEntity(rc1, Release.class);
+        verify(mapper, never()).toEntity(rc2, Release.class);
+        verify(mapper, never()).toEntity(beta, Release.class);
     }
 
     @Test
@@ -535,7 +533,7 @@ public class ReleaseInjectionServiceTest {
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcLowercase, betaUppercase, validRelease));
         when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
-        when(mapper.toEntity(eq(validRelease), eq(Release.class))).thenReturn(rel1);
+        when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
@@ -546,9 +544,9 @@ public class ReleaseInjectionServiceTest {
         Set<Release> savedReleases = captor.getValue();
 
         assertEquals(1, savedReleases.size());
-        verify(mapper, times(1)).toEntity(eq(validRelease), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(rcLowercase), eq(Release.class));
-        verify(mapper, never()).toEntity(eq(betaUppercase), eq(Release.class));
+        verify(mapper, times(1)).toEntity(validRelease, Release.class);
+        verify(mapper, never()).toEntity(rcLowercase, Release.class);
+        verify(mapper, never()).toEntity(betaUppercase, Release.class);
     }
 
     @Test

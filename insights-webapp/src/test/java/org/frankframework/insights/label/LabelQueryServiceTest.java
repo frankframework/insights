@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabel;
 import org.frankframework.insights.common.entityconnection.issuelabel.IssueLabelRepository;
@@ -82,7 +81,8 @@ public class LabelQueryServiceTest {
                         Collections.nCopies(2, labelBug),
                         Collections.nCopies(10, labelWontfix))
                 .flatMap(List::stream)
-                .collect(Collectors.toList());
+                .toList();
+
         when(labelRepository.findLabelsByReleaseId("r1")).thenReturn(releaseLabels);
 
         labelQueryService.getHighlightsByReleaseId("r1");
@@ -110,7 +110,7 @@ public class LabelQueryServiceTest {
                         Collections.nCopies(5, notIncluded),
                         Collections.nCopies(1, includedLower))
                 .flatMap(List::stream)
-                .collect(Collectors.toList());
+                .toList();
 
         when(labelRepository.findLabelsByReleaseId("r2")).thenReturn(labels);
 

@@ -170,9 +170,9 @@ public class PullRequestInjectionService {
                     mergeMasterAndBranchPullRequests(sortedMasterPullRequests, branchPullRequests);
             Set<PullRequest> enrichedPullRequests = enrichAndPersistPullRequests(mergedPullRequests);
             return createBranchPullRequests(branch, enrichedPullRequests);
-        } catch (Exception e) {
-            log.error("Failed to process pull requests for branch: {}", branch.getName(), e);
-            return null;
+        } catch (Exception exception) {
+            log.error("Failed to process pull requests for branch: {}", branch.getName(), exception);
+            return Collections.emptySet();
         }
     }
 

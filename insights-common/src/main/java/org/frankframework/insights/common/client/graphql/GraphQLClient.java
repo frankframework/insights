@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.common.client.ApiClient;
 import org.springframework.core.ParameterizedTypeReference;
@@ -68,7 +67,7 @@ public abstract class GraphQLClient extends ApiClient {
             }
             return rawNodes.stream()
                     .map(node -> objectMapper.convertValue(node, entityType))
-                    .collect(Collectors.toList());
+                    .toList();
         };
 
         return fetchPaginated(query, queryVariables, responseType, entityExtractor, pageInfoExtractor);

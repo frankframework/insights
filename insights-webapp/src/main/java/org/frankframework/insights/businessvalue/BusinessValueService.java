@@ -38,7 +38,7 @@ public class BusinessValueService {
      * Retrieves all business values for a specific release.
      * This is the primary way to fetch business values — they are release-scoped.
      * @param releaseId the ID of the release
-     * @return set of business value responses for the release
+     * @return list of business value responses for the release
      */
     @Transactional(readOnly = true)
     public List<BusinessValueResponse> getBusinessValuesByReleaseId(String releaseId) {
@@ -47,7 +47,7 @@ public class BusinessValueService {
         List<BusinessValue> businessValues = businessValueRepository.findByReleaseId(releaseId);
         log.info("Retrieved {} business values for release {}", businessValues.size(), releaseId);
 
-        return businessValues.stream().map(this::mapToResponseWithIssues).collect(Collectors.toList());
+        return businessValues.stream().map(this::mapToResponseWithIssues).toList();
     }
 
     @Transactional(readOnly = true)
@@ -201,7 +201,7 @@ public class BusinessValueService {
         List<BusinessValue> saved = businessValueRepository.saveAll(duplicated);
         log.info("Duplicated {} business values to release {}", saved.size(), targetReleaseId);
 
-        return saved.stream().map(this::mapToResponse).collect(Collectors.toList());
+        return saved.stream().map(this::mapToResponse).toList();
     }
 
     private BusinessValue findBusinessValueById(UUID id) throws BusinessValueNotFoundException {
