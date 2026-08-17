@@ -33,6 +33,79 @@ const rangesOf = (specification: string): VersionRange[] => parseVersionRanges(s
 
 const errorOf = (specification: string): string | null => parseVersionRanges(specification).error;
 
+/**
+ * Every row of https://maven.apache.org/enforcer/enforcer-rules/versionRanges.html, checked against
+ * the releases the notation is meant to select.
+ */
+describe('the Maven enforcer version range rules', () => {
+  const releases = ['8.9.9', '9.0.0', '9.0.1', '9.0.5', '9.1.0', '9.1.1', '9.2.0', '10.0.0', '10.0.1'];
+
+  const selects = (specification: string): string[] =>
+    releases.filter((release) => {
+      const [major, minor, patch] = release.split('.').map(Number);
+      return isVersionInRanges(rangesOf(specification), major, minor, patch);
+    });
+
+  it('reads 9.0 as x >= 9.0', () => {
+    expect(selects('9.0')).toEqual(['9.0.0', '9.0.1', '9.0.5', '9.1.0', '9.1.1', '9.2.0', '10.0.0', '10.0.1']);
+  });
+
+  it('reads (,9.0] as x <= 9.0', () => {
+    expect(selects('(,9.0]')).toEqual(['8.9.9', '9.0.0']);
+  });
+
+  it('reads (,9.0) as x < 9.0', () => {
+    expect(selects('(,9.0)')).toEqual(['8.9.9']);
+  });
+
+  it('reads [9.0] as x == 9.0', () => {
+    expect(selects('[9.0]')).toEqual(['9.0.0']);
+  });
+
+  it('reads [9.0,) as x >= 9.0', () => {
+    expect(selects('[9.0,)')).toEqual(['9.0.0', '9.0.1', '9.0.5', '9.1.0', '9.1.1', '9.2.0', '10.0.0', '10.0.1']);
+  });
+
+  it('reads (9.0,) as x > 9.0', () => {
+    expect(selects('(9.0,)')).toEqual(['9.0.1', '9.0.5', '9.1.0', '9.1.1', '9.2.0', '10.0.0', '10.0.1']);
+  });
+
+  it('reads (9.0,10.0) as 9.0 < x < 10.0', () => {
+    expect(selects('(9.0,10.0)')).toEqual(['9.0.1', '9.0.5', '9.1.0', '9.1.1', '9.2.0']);
+  });
+
+  it('reads [9.0,10.0] as 9.0 <= x <= 10.0', () => {
+    expect(selects('[9.0,10.0]')).toEqual(['9.0.0', '9.0.1', '9.0.5', '9.1.0', '9.1.1', '9.2.0', '10.0.0']);
+  });
+
+  it('reads (,9.0],[9.2,) as x <= 9.0 or x >= 9.2, comma separating the sets', () => {
+    expect(selects('(,9.0],[9.2,)')).toEqual(['8.9.9', '9.0.0', '9.2.0', '10.0.0', '10.0.1']);
+  });
+
+  it('reads (,9.1),(9.1,) as x != 9.1', () => {
+    expect(selects('(,9.1),(9.1,)')).toEqual([
+      '8.9.9',
+      '9.0.0',
+      '9.0.1',
+      '9.0.5',
+      '9.1.1',
+      '9.2.0',
+      '10.0.0',
+      '10.0.1',
+    ]);
+  });
+
+  it('equates 9, 9.0 and 9.0.0 the way Maven does', () => {
+    expect(selects('[9]')).toEqual(['9.0.0']);
+    expect(selects('[9.0]')).toEqual(['9.0.0']);
+    expect(selects('[9.0.0]')).toEqual(['9.0.0']);
+  });
+
+  it('writes a whole patch line as the half open range Maven uses for it', () => {
+    expect(selects('[9.0,9.1)')).toEqual(['9.0.0', '9.0.1', '9.0.5']);
+  });
+});
+
 describe('parseVersionRanges', () => {
   it('returns nothing for an absent or empty parameter', () => {
     const queryParameters: Record<string, string> = {};
@@ -42,79 +115,87 @@ describe('parseVersionRanges', () => {
     expect(parseVersionRanges('   ')).toEqual({ ranges: [], error: null });
   });
 
-  it('reads a pinned release line as every patch of that line', () => {
-    expect(rangesOf('[9.0]')).toEqual([line(9, 0)]);
+  it('reads a pinned version as that single release', () => {
+    expect(rangesOf('[9.0]')).toEqual([exact(9, 0, 0)]);
   });
 
   it('reads a pinned exact version as that single release', () => {
     expect(rangesOf('[9.3.2]')).toEqual([exact(9, 3, 2)]);
   });
 
-  it('reads a pinned major as every release of that major', () => {
-    expect(rangesOf('[9]')).toEqual([range(9, 0, 0, 9, MAX_SEGMENT, MAX_SEGMENT)]);
+  it('reads a pinned major as the zero release of that major', () => {
+    expect(rangesOf('[9]')).toEqual([exact(9, 0, 0)]);
   });
 
   it('ignores a leading v', () => {
     expect(rangesOf('[v9.3.2]')).toEqual([exact(9, 3, 2)]);
   });
 
-  it('reads an open ended range as everything from that line on', () => {
+  it('reads an open ended range as everything from that release on', () => {
     expect(rangesOf('[10.0,)')).toEqual([{ from: { major: 10, minor: 0, patch: 0 }, to: null }]);
   });
 
-  it('reads an open beginning as everything up to that line', () => {
-    expect(rangesOf('(,9.4]')).toEqual([{ from: null, to: { major: 9, minor: 4, patch: MAX_SEGMENT } }]);
+  it('reads an open beginning as everything up to that release', () => {
+    expect(rangesOf('(,9.4]')).toEqual([{ from: null, to: { major: 9, minor: 4, patch: 0 } }]);
   });
 
   it('reads a bare version as a minimum version', () => {
     expect(rangesOf('9.0')).toEqual([{ from: { major: 9, minor: 0, patch: 0 }, to: null }]);
   });
 
-  it('keeps an inclusive upper bound on the whole release line', () => {
-    expect(rangesOf('[9.0,9.4]')).toEqual([range(9, 0, 0, 9, 4, MAX_SEGMENT)]);
+  it('keeps an inclusive upper bound on the release it names', () => {
+    expect(rangesOf('[9.0,9.4]')).toEqual([range(9, 0, 0, 9, 4, 0)]);
   });
 
-  it('stops an exclusive upper bound before the release line starts', () => {
+  it('stops an exclusive upper bound one release before the one it names', () => {
     expect(rangesOf('[9.0,9.4)')).toEqual([range(9, 0, 0, 9, 3, MAX_SEGMENT)]);
   });
 
-  it('starts an exclusive lower bound after the release line ends', () => {
-    expect(rangesOf('(9.4,)')).toEqual([{ from: { major: 9, minor: 5, patch: 0 }, to: null }]);
+  it('starts an exclusive lower bound one release after the one it names', () => {
+    expect(rangesOf('(9.4,)')).toEqual([{ from: { major: 9, minor: 4, patch: 1 }, to: null }]);
+  });
+
+  it('reads a release line written as a half open range', () => {
+    expect(rangesOf('[9.0,9.1)')).toEqual([line(9, 0)]);
   });
 
   it('reads a list of ranges without splitting the commas inside them', () => {
     expect(rangesOf('[9.0],[9.4],[10.0,)')).toEqual([
-      line(9, 0),
-      line(9, 4),
+      exact(9, 0, 0),
+      exact(9, 4, 0),
       { from: { major: 10, minor: 0, patch: 0 }, to: null },
     ]);
   });
 
   it('tolerates whitespace around and inside entries', () => {
     expect(rangesOf(' [9.0] , [ 10.0 , ) ')).toEqual([
-      line(9, 0),
+      exact(9, 0, 0),
       { from: { major: 10, minor: 0, patch: 0 }, to: null },
     ]);
   });
 
   it('sorts entries that arrive out of order', () => {
-    expect(rangesOf('[9.3],[7.1]')).toEqual([line(7, 1), line(9, 3)]);
+    expect(rangesOf('[9.3],[7.1]')).toEqual([exact(7, 1, 0), exact(9, 3, 0)]);
   });
 
   it('folds overlapping ranges together', () => {
-    expect(rangesOf('[7.0,8.0],[7.5,9.0]')).toEqual([range(7, 0, 0, 9, 0, MAX_SEGMENT)]);
+    expect(rangesOf('[7.0,8.0],[7.5,9.0]')).toEqual([range(7, 0, 0, 9, 0, 0)]);
   });
 
-  it('folds touching release lines together', () => {
-    expect(rangesOf('[8.0],[8.1]')).toEqual([range(8, 0, 0, 8, 1, MAX_SEGMENT)]);
+  it('folds ranges that touch at the next release together', () => {
+    expect(rangesOf('[8.0],[8.0.1]')).toEqual([range(8, 0, 0, 8, 0, 1)]);
   });
 
-  it('keeps release lines with a gap between them apart', () => {
-    expect(rangesOf('[8.0],[8.3]')).toEqual([line(8, 0), line(8, 3)]);
+  it('folds neighbouring release lines together', () => {
+    expect(rangesOf('[8.0,8.1),[8.1,8.2)')).toEqual([range(8, 0, 0, 8, 1, MAX_SEGMENT)]);
+  });
+
+  it('keeps releases with a gap between them apart', () => {
+    expect(rangesOf('[8.0],[8.3]')).toEqual([exact(8, 0, 0), exact(8, 3, 0)]);
   });
 
   it('drops a range that is contained in another', () => {
-    expect(rangesOf('[7.0,9.0],[8.1.4]')).toEqual([range(7, 0, 0, 9, 0, MAX_SEGMENT)]);
+    expect(rangesOf('[7.0,9.0],[8.1.4]')).toEqual([range(7, 0, 0, 9, 0, 0)]);
   });
 
   it('lets an open ended range swallow the ranges after it', () => {
@@ -182,13 +263,16 @@ describe('serializeVersionRanges', () => {
   const roundTrips = [
     '[9.0]',
     '[9.3.2]',
-    '[9]',
     '[10.0,)',
     '(,9.4]',
+    '(,9.4)',
     '[9.0,9.4]',
+    '[9.0,9.4)',
+    '[9.0,9.1)',
     '[7.0,9.3.2]',
     '[9.0],[9.4],[10.0,)',
     '[7.1],[9.3.2]',
+    '(,)',
   ];
 
   for (const parameter of roundTrips) {
@@ -201,16 +285,20 @@ describe('serializeVersionRanges', () => {
     expect(serializeVersionRanges(rangesOf('9.0'))).toBe('[9.0,)');
   });
 
-  it('canonicalises an exclusive upper bound to the release line before it', () => {
-    expect(serializeVersionRanges(rangesOf('[9.0,9.4)'))).toBe('[9.0,9.3]');
+  it('canonicalises a pinned major to the release it means', () => {
+    expect(serializeVersionRanges(rangesOf('[9]'))).toBe('[9.0]');
   });
 
-  it('canonicalises an exclusive lower bound to the release line after it', () => {
-    expect(serializeVersionRanges(rangesOf('(9.4,)'))).toBe('[9.5,)');
+  it('canonicalises an exclusive lower bound to the release after it', () => {
+    expect(serializeVersionRanges(rangesOf('(9.4,)'))).toBe('[9.4.1,)');
   });
 
-  it('writes an unbounded range', () => {
-    expect(serializeVersionRanges(rangesOf('(,)'))).toBe('(,)');
+  it('writes a bound on the last patch of a line as an exclusive bound on the next line', () => {
+    expect(serializeVersionRanges([line(9, 0)])).toBe('[9.0,9.1)');
+  });
+
+  it('writes a whole major as an exclusive bound on the next major', () => {
+    expect(serializeVersionRanges([range(9, 0, 0, 9, MAX_SEGMENT, MAX_SEGMENT)])).toBe('[9.0,10.0)');
   });
 });
 
@@ -219,8 +307,16 @@ describe('isVersionInRanges', () => {
     expect(isVersionInRanges([], 7, 1, 0)).toBeTrue();
   });
 
-  it('matches every patch of a pinned release line', () => {
+  it('matches only the named release for a pinned version', () => {
     const ranges = rangesOf('[7.1]');
+
+    expect(isVersionInRanges(ranges, 7, 1, 0)).toBeTrue();
+    expect(isVersionInRanges(ranges, 7, 1, 14)).toBeFalse();
+    expect(isVersionInRanges(ranges, 7, 2, 0)).toBeFalse();
+  });
+
+  it('matches every patch of a release line written as a half open range', () => {
+    const ranges = rangesOf('[7.1,7.2)');
 
     expect(isVersionInRanges(ranges, 7, 1, 0)).toBeTrue();
     expect(isVersionInRanges(ranges, 7, 1, 14)).toBeTrue();
@@ -247,8 +343,8 @@ describe('isVersionInRanges', () => {
     const ranges = rangesOf('(,9.4]');
 
     expect(isVersionInRanges(ranges, 1, 0, 0)).toBeTrue();
-    expect(isVersionInRanges(ranges, 9, 4, 7)).toBeTrue();
-    expect(isVersionInRanges(ranges, 9, 5, 0)).toBeFalse();
+    expect(isVersionInRanges(ranges, 9, 4, 0)).toBeTrue();
+    expect(isVersionInRanges(ranges, 9, 4, 7)).toBeFalse();
   });
 
   it('cuts a release line off at a patch bound', () => {
@@ -261,7 +357,7 @@ describe('isVersionInRanges', () => {
   });
 
   it('skips a release line that is left out of a list', () => {
-    const ranges = rangesOf('[8.0],[8.3]');
+    const ranges = rangesOf('[8.0,8.1),[8.3,8.4)');
 
     expect(isVersionInRanges(ranges, 8, 0, 3)).toBeTrue();
     expect(isVersionInRanges(ranges, 8, 2, 0)).toBeFalse();
@@ -287,9 +383,9 @@ describe('mergeVersionRanges', () => {
   });
 
   it('widens a range that is partly covered', () => {
-    const merged = mergeVersionRanges(rangesOf('[7.0,9.3.2]'), rangesOf('[9.3]'));
+    const merged = mergeVersionRanges(rangesOf('[7.0,9.3.2]'), rangesOf('[9.3,9.4)'));
 
-    expect(serializeVersionRanges(merged)).toBe('[7.0,9.3]');
+    expect(serializeVersionRanges(merged)).toBe('[7.0,9.4)');
   });
 
   it('adds a skipped release line to the default range', () => {
@@ -304,8 +400,8 @@ describe('createReleaseLineRanges', () => {
     expect(createReleaseLineRanges(['v7.1.0', 'v7.1.4'])).toEqual([line(7, 1)]);
   });
 
-  it('does not bridge a gap between release lines', () => {
-    expect(serializeVersionRanges(createReleaseLineRanges(['v8.0.0', 'v8.1.0', 'v8.3.0']))).toBe('[8.0,8.1],[8.3]');
+  it('writes the lines it covers as half open Maven ranges', () => {
+    expect(serializeVersionRanges(createReleaseLineRanges(['v8.0.0', 'v8.1.0', 'v8.3.0']))).toBe('[8.0,8.2),[8.3,8.4)');
   });
 
   it('ignores names without a version', () => {
@@ -329,7 +425,7 @@ describe('createExactVersionRanges', () => {
 
 describe('createLineRange and createOpenEndedRange', () => {
   it('writes a release line', () => {
-    expect(serializeVersionRanges([createLineRange(9, 4)])).toBe('[9.4]');
+    expect(serializeVersionRanges([createLineRange(9, 4)])).toBe('[9.4,9.5)');
   });
 
   it('writes an open ended range', () => {
