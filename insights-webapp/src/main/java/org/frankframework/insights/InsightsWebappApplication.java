@@ -23,9 +23,9 @@ import org.springframework.web.servlet.function.ServerResponse;
 @EnableWebSecurity
 @NullMarked
 public class InsightsWebappApplication {
-	private static final String FRONTEND_LOCATION = "frontend/";
+    private static final String FRONTEND_LOCATION = "frontend/";
 
-	public static void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication app = configureApplication();
         app.run(args);
     }
