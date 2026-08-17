@@ -46,9 +46,13 @@ The backend is split into two independently deployable Spring Boot services that
 
 A third module, **insights-common**, holds what both need: the JPA entities and repositories, the Flyway migrations, the object mapper and the shared HTTP client infrastructure. It is a plain library jar, not a runnable application.
 
-Splitting the two means the import job — which is long running, memory hungry and runs Trivy and Maven as subprocesses — can be restarted, scaled or taken down without touching the site that users are looking at.
+Splitting the two means the import job, which is long running, memory hungry and runs Trivy and Maven as subprocesses, can be restarted, scaled or taken down without touching the site that users are looking at.
 
 Currently, the application primarily uses the **GitHub API** to retrieve data about Frank!Framework's repository. However, the architecture is designed to be extensible, meaning other external data sources can be integrated in a similar way in the future. This allows the application to be scaled with new integrations as needed.
+
+> **Before changing anything substantial, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).** It covers
+> how the modules fit together, how data gets in, and most importantly, the business rules and
+> decisions behind the insights. Those cannot be worked out from the code alone.
 
 ## Project Structure
 
@@ -166,9 +170,9 @@ For active development, a manual setup provides more granular control over the i
 For a manual setup, you will need:
 
 - **Git** - Version control system
-- **Java Development Kit (JDK 21)** - Required for the backend
-- **Node.js** (version 23 or higher) - Required for the frontend
-- **pnpm** (version 10.4.0 or higher) - Package manager (`npm install -g pnpm`)
+- **Java Development Kit (JDK 25)** - Required for the backend (`java.version` in the parent POM)
+- **Node.js** (version 24) - Required for the frontend
+- **pnpm** (version 10.33.0) - Package manager (`npm install -g pnpm`)
 - **PostgreSQL** - Database instance
 - **Trivy** - Security vulnerability scanner ([Installation guide](https://aquasecurity.github.io/trivy/latest/getting-started/installation/))
 - **IDE** - Recommended: **IntelliJ IDEA**, **WebStorm**, **VS Code**, or **Eclipse**
@@ -199,7 +203,7 @@ For a manual setup, you will need:
 
 3.  **Create & Configure the Database**
 
-    Create a single, empty PostgreSQL database — both services use the same one. Then set the
+    Create a single, empty PostgreSQL database. Both services use the same one. Then set the
     datasource properties in **both** `application-local.properties` files:
     ```properties
     spring.datasource.url=jdbc:postgresql://localhost:5432/your_database_name
@@ -257,6 +261,49 @@ For a manual setup, you will need:
         ```
 
     The frontend will be available at `http://localhost:4200` with live reloading enabled.
+
+<br>
+
+## Configuration Reference
+
+Settings both services share live in `insights-common/src/main/resources/insights-common.properties`
+(Flyway, JPA, actuator, GitHub URLs, and the branch and label filters). Both services import it via
+`spring.config.import`; anything a module sets itself wins over it.
+
+> **The `application-local.properties` files are tracked in Git with placeholder values.** Fill in your
+> own credentials locally, but never commit real secrets to them.
+
+### Properties you need to set
+
+| Property | Service | What it does                                                                                    |
+| --- | --- |-------------------------------------------------------------------------------------------------|
+| `spring.datasource.url` / `.username` / `.password` | both | The shared database. Both point at the same one.                                                |
+| `data.fetch-enabled` | data-import | Master switch for all GitHub fetching. `false` disables startup, nightly and webhook refreshes. |
+| `github.graphql.secret` | data-import | GitHub PAT, needs `read:org` and `project`                                                      |
+| `github.graphql.project-id` | data-import | The GitHub Project the roadmap is built from                                                    |
+| `insights.webhook.secret` | data-import | Shared secret for GitHub webhook HMAC signatures                                                |
+| `trivy.path` | data-import | Path to the Trivy executable. Not needed in Docker, the image ships it on the `PATH`.           |
+| `release.archive.directory` | data-import | Where downloaded release zips are cached. Must be persistent storage.                           |
+| `trivy.scan.workspace` / `trivy.db.cache` / `maven.local-repo` | data-import | Scratch space, Trivy DB cache, and the Maven repo used to pre-cache dependencies                |
+| `spring.security.oauth2.client.registration.github.client-id` / `.client-secret` | webapp | GitHub OAuth app, used to log users in                                                          |
+| `cors.allowed.origins[n]` | webapp | Allowed browser origins. Credentials are allowed, so this can never be `*`.                     |
+| `frankframework.security.csrf.secure` | webapp | `secure` flag on the CSRF cookie. `false` locally so plain HTTP works, `true` in production.    |
+
+Two settings in `insights-common.properties` are **business rules, not just config**
+`github.graphql.branch-protection-regexes` and `github.graphql.includedLabels`. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#business-rules) before changing either.
+
+### Environment variables (the `prod` profile)
+
+| Variable | Service |
+| --- | --- |
+| `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` | both |
+| `GITHUB_API_SECRET`, `GITHUB_PROJECT_ID`, `INSIGHTS_WEBHOOK_SECRET` | data-import |
+| `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | webapp |
+| `SERVER_PORT` (optional), `JAVA_OPTS` (optional) | both |
+
+There is **no default Spring profile**. A service started without one has no datasource and will not
+boot, always pass `local`, `local-seed` or `prod`.
 
 <br>
 
@@ -372,11 +419,13 @@ The project uses GitHub Actions to run automated workflows for every pull reques
 The CI pipeline (`ci.yaml`) runs the following checks on every pull request:
 
 1. **Code Linting**
-   - Backend: Checkstyle for Java code style enforcement
+   - Backend: Checkstyle for Java code style enforcement (`mvn checkstyle:check`, fails the build)
    - Frontend: ESLint for TypeScript/JavaScript code quality
 
 2. **Code Formatting**
-   - Spotless validates Java code formatting
+   - Spotless (palantir-java-format) is configured in the parent POM but has **no lifecycle binding**,
+     so it does not run in CI and never fails a build. Run it yourself: `mvn spotless:apply` to format,
+     `mvn spotless:check` to verify.
 
 3. **Automated Testing**
    - Backend unit and integration tests (JUnit 5)
@@ -394,10 +443,16 @@ The CI pipeline (`ci.yaml`) runs the following checks on every pull request:
 On every merge to master, two Docker images are built from `docker/Dockerfile` (one target each) and
 pushed to the GitHub Container Registry:
 
-- `ghcr.io/frankframework/insights-webapp` — API and frontend, plain JRE image
-- `ghcr.io/frankframework/insights-data-import` — importer, includes Trivy and Maven for vulnerability scanning
+- `ghcr.io/frankframework/insights-webapp`: API and frontend, plain JRE image
+- `ghcr.io/frankframework/insights-data-import`: importer, includes Trivy and Maven for vulnerability scanning
 
-Both images are signed with cosign.
+Each image is pushed with three tags: `0.0.<run number>` (the immutable build, matching the Maven
+`revision` baked into the JAR), `latest` and `master`. Pin production deployments to the versioned
+tag; `latest` always points at the most recent master build.
+
+Both images are signed with cosign, once per digest, so every tag on that digest is covered.
+The local `docker compose` build reuses the same two names with a `:local` tag, so a locally built
+image never shadows a pulled release.
 
 ### Security
 
@@ -435,7 +490,12 @@ working on the frontend, always use **pnpm** as the package manager (not npm or 
 When adding backend code, put it in the module that matches what it does: shared entities and
 repositories in `insights-common`, anything that writes imported data in `insights-data-import`,
 anything that serves data to the frontend in `insights-webapp`. The two services must not depend on
-each other.
+each other, and Flyway migrations always belong in `insights-common`. The reasoning behind those rules
+is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-rules-that-keep-this-honest).
+
+If you add an API endpoint, add its row to the endpoint table in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-api) there is no OpenAPI spec, so that table is the
+API documentation.
 
 **Code Conventions**
 <br>
