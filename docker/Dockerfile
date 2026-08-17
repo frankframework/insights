@@ -28,7 +28,7 @@ ENTRYPOINT ["/scripts/entrypoint.sh"]
 CMD ["java","-jar","/app/insights-webapp.jar"]
 
 
-FROM aquasec/trivy:0.73.0 AS trivy-downloader
+FROM aquasec/trivy:0.74.0 AS trivy-downloader
 
 FROM base AS data-import
 
