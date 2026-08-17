@@ -24,7 +24,7 @@ public class InsightsApplicationSpaRouterTest {
     private static final String FIXTURE_LOCATION = "spa-fixture/";
     private static final String INDEX = FIXTURE_LOCATION + "index.html";
 
-    private final RouterFunction<ServerResponse> router = InsightsApplication.spaRouter(FIXTURE_LOCATION);
+    private final RouterFunction<ServerResponse> router = InsightsWebappApplication.spaRouter(FIXTURE_LOCATION);
 
     @ParameterizedTest(name = "/graph/{0}")
     @ValueSource(
@@ -199,7 +199,7 @@ public class InsightsApplicationSpaRouterTest {
 
     @Test
     public void applicationBean_fallsBackToTheAngularBuildOutput() {
-        RouterFunction<ServerResponse> bean = new InsightsApplication().spaRouter();
+        RouterFunction<ServerResponse> bean = new InsightsWebappApplication().spaRouter();
         ServerRequest request = request("GET", "/graph/10.2-nightly", null);
 
         ServerResponse response = handle(bean.route(request).orElseThrow(), request);
