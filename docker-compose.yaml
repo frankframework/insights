@@ -1,10 +1,81 @@
 services:
-    insights:
-        image: ghcr.io/frankframework/insights:latest
-        build:
-            dockerfile: ./docker/Dockerfile
-            context: .
-        environment:
-            SPRING_PROFILES_ACTIVE: local-seed
-        ports:
-            - "8080:8080"
+  postgres-db:
+    image: postgres:15
+    container_name: insights-postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: insightsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d insightsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  insights-webapp:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      target: webapp
+    image: ghcr.io/frankframework/insights-webapp:local
+    container_name: insights-webapp
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_HOST: postgres-db
+      JAVA_OPTS: "-XX:MaxRAMPercentage=50.0"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  insights-data-import:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+      target: data-import
+    image: ghcr.io/frankframework/insights-data-import:local
+    container_name: insights-data-import
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_HOST: postgres-db
+      TRIVY_PATH: "trivy"
+      GOMAXPROCS: "1"
+      JAVA_OPTS: "-XX:MaxRAMPercentage=50.0"
+    volumes:
+      - release-archive-vol:/release-archive
+      - trivy-cache-vol:/tmp/trivy-cache
+    tmpfs:
+      - /tmp/trivy-scan
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          memory: 1G
+
+volumes:
+  postgres-data:
+  release-archive-vol:
+  trivy-cache-vol:

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.frankframework</groupId>
+		<artifactId>insights-parent</artifactId>
+		<version>${revision}</version>
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>insights-data-import</artifactId>
+	<name>insights-data-import</name>
+	<description>Standalone service that gathers GitHub and vulnerability data and writes it to the Insights database</description>
+
+	<properties>
+		<config.image.name>insights-data-import</config.image.name>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.frankframework</groupId>
+			<artifactId>insights-common</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<properties>
+				<config.image.repository>ghcr.io/frankframework</config.image.repository>
+				<config.image.tag>${config.image.name}</config.image.tag>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>build-data-import-image</id>
+								<phase>package</phase>
+								<configuration>
+									<target>
+										<exec executable="docker" failonerror="true" dir="${project.basedir}/..">
+											<arg value="build"/>
+											<arg value="-f"/>
+											<arg value="docker/Dockerfile"/>
+											<arg value="--target"/>
+											<arg value="data-import"/>
+											<arg value="--no-cache"/>
+											<arg value="-t"/>
+											<arg value="${config.image.tag}:latest"/>
+											<arg value="-t"/>
+											<arg value="${config.image.tag}:${revision}"/>
+											<arg value="-t"/>
+											<arg value="${config.image.repository}/${config.image.tag}:latest"/>
+											<arg value="-t"/>
+											<arg value="${config.image.repository}/${config.image.tag}:${revision}"/>
+											<arg value="."/>
+										</exec>
+									</target>
+								</configuration>
+								<goals>
+									<goal>run</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>

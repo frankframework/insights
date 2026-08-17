@@ -1,0 +1,66 @@
+package org.frankframework.insights.issue;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import java.time.OffsetDateTime;
+import java.util.HashSet;
+import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
+import org.frankframework.insights.businessvalue.BusinessValue;
+import org.frankframework.insights.common.enums.GitHubPropertyState;
+import org.frankframework.insights.issueprojects.IssuePriority;
+import org.frankframework.insights.issueprojects.IssueState;
+import org.frankframework.insights.issuetype.IssueType;
+import org.frankframework.insights.milestone.Milestone;
+
+@Entity
+@JsonIgnoreProperties(ignoreUnknown = true)
+@Getter
+@Setter
+public class Issue {
+    @Id
+    private String id;
+
+    @Column(nullable = false)
+    private int number;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false)
+    private GitHubPropertyState state;
+
+    private OffsetDateTime closedAt;
+
+    @Column(nullable = false)
+    private String url;
+
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("businessValue-issue")
+    private BusinessValue businessValue;
+
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("milestone-issue")
+    private Milestone milestone;
+
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("issueType-issue")
+    private IssueType issueType;
+
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("issuePriority-issue")
+    private IssuePriority issuePriority;
+
+    @ManyToOne(cascade = CascadeType.MERGE)
+    @JsonBackReference("issueState-issue")
+    private IssueState issueState;
+
+    private Double points;
+
+    @OneToMany(cascade = CascadeType.MERGE)
+    @JsonIgnore
+    private Set<Issue> subIssues = new HashSet<>();
+}

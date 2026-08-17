@@ -14,7 +14,7 @@ overrides:
 
 importers:
 
-  src/main/frontend:
+  insights-webapp/src/main/frontend:
     dependencies:
       '@angular/animations':
         specifier: ^22.1.0
@@ -165,7 +165,7 @@ importers:
         specifier: ^8.66.0
         version: 8.66.0(eslint@10.8.0(jiti@2.6.1)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
 
-  src/main/frontend/cypress:
+  insights-webapp/src/main/frontend/cypress:
     devDependencies:
       cypress:
         specifier: ^15.20.0

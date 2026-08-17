@@ -37,50 +37,76 @@ The application integrates **Trivy** to automatically scan Frank!Framework relea
 
 ## System Architecture
 
-The backend fetches data from external APIs, processes it, and stores it in a database. The backend then serves this data to the frontend, where it is visualized for the user.
+The backend is split into two independently deployable Spring Boot services that share one PostgreSQL database:
 
-Currently, the application primarily uses the **GitHub API** to retrieve data about the Frank!Framework's development. However, the architecture is designed to be extensible, meaning other external data sources can be integrated in a similar way in the future. This allows the application to be scaled with new integrations as needed.
+| Service | Responsibility | Port |
+| --- | --- | --- |
+| **insights-data-import** | Gathers data from external sources (GitHub API, Trivy) and writes it to the database. Runs on a schedule and on a GitHub release webhook. Exposes no read API. | 8081 |
+| **insights-webapp** | Reads from the database and serves it through the REST API and the bundled Angular single page application. Never writes imported data. | 8080 |
 
-![Insights-components-without-text](https://github.com/user-attachments/assets/278d03eb-d230-4246-93fe-705b0343dce6)
-<em>A high-level overview of the data flow from external APIs to the user.</em>
+A third module, **insights-common**, holds what both need: the JPA entities and repositories, the Flyway migrations, the object mapper and the shared HTTP client infrastructure. It is a plain library jar, not a runnable application.
 
+Splitting the two means the import job, which is long running, memory hungry and runs Trivy and Maven as subprocesses, can be restarted, scaled or taken down without touching the site that users are looking at.
+
+Currently, the application primarily uses the **GitHub API** to retrieve data about Frank!Framework's repository. However, the architecture is designed to be extensible, meaning other external data sources can be integrated in a similar way in the future. This allows the application to be scaled with new integrations as needed.
+
+> **Before changing anything substantial, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).** It covers
+> how the modules fit together, how data gets in, and most importantly, the business rules and
+> decisions behind the insights. Those cannot be worked out from the code alone.
 
 ## Project Structure
 
-The application is structured as a single Maven project with an integrated Angular frontend:
+The application is a Maven multi-module project with an integrated Angular frontend:
 
 ```
 insights/
 ├── docker/
-│   ├── Dockerfile                  # Container definition
-│   └── scripts/                    # Container startup scripts
-├── src/
-│   ├── main/
-│   │   ├── java/                   # Backend Java source code
-│   │   ├── resources/              # Backend configuration and static resources
-│   │   └── frontend/               # Angular frontend application
-│   │       ├── src/                # Frontend source code
-│   │       ├── cypress/            # E2E tests
-│   │       ├── package.json        # Frontend dependencies (pnpm)
-│   │       └── angular.json        # Angular configuration
-│   └── test/
-│       └── java/                   # Backend tests
-├── pom.xml                         # Maven build configuration
-├── docker-compose.yaml             # Local Docker setup
-└── pnpm-lock.yaml                  # pnpm lock file
+│   ├── Dockerfile                       # One file, two build targets: webapp and data-import
+│   └── scripts/                         # Container startup scripts
+├── insights-common/                     # Shared library (no main class)
+│   └── src/main/
+│       ├── java/                        # JPA entities, repositories, mapper, HTTP clients
+│       └── resources/
+│           ├── db/migration/            # Flyway migrations
+│           └── insights-common.properties
+├── insights-data-import/                # Gathers data and writes it to the database
+│   └── src/main/
+│       ├── java/                        # GitHub GraphQL client, *InjectionService, Trivy scanning
+│       └── resources/
+│           ├── graphql-documents/       # GitHub GraphQL queries
+│           └── application*.properties
+├── insights-webapp/                     # Serves the data: REST API + frontend
+│   └── src/main/
+│       ├── java/                        # Controllers, *QueryService, security, rate limiting
+│       ├── resources/application*.properties
+│       └── frontend/                    # Angular frontend application
+│           ├── src/                     # Frontend source code
+│           ├── cypress/                 # E2E tests
+│           ├── package.json             # Frontend dependencies (pnpm)
+│           └── angular.json             # Angular configuration
+├── pom.xml                              # Parent POM / reactor
+├── docker-compose.yaml                  # Local Docker setup (database + both services)
+└── pnpm-lock.yaml                       # pnpm lock file
 ```
 
+Within a domain package such as `org.frankframework.insights.release`, the classes are divided over
+the modules by what they do: the entity and repository live in `insights-common`, everything that
+writes (`ReleaseInjectionService`, the GitHub DTOs) in `insights-data-import`, and everything that
+reads (`ReleaseController`, `ReleaseQueryService`, `ReleaseResponse`) in `insights-webapp`.
+
 **Build Process:**
-1. Maven triggers pnpm to install frontend dependencies
-2. Maven triggers pnpm to build the Angular application
-3. The built frontend is packaged as static resources in the JAR
-4. Spring Boot serves both the API and the frontend from a single application
+1. `insights-common` is built first and both services depend on it
+2. While building `insights-webapp`, Maven triggers pnpm to install frontend dependencies
+3. Maven triggers pnpm to build the Angular application
+4. The built frontend is packaged as static resources inside the `insights-webapp` JAR
+5. The webapp serves both the API and the frontend; `insights-data-import` is packaged as a separate JAR
 
 <br>
 
 ## Quick Local Setup with Docker
 
-For a fast and easy setup, you can use Docker Compose to run the entire application stack. This is the recommended method for most users.
+For a fast and easy setup, you can use Docker Compose to run the entire stack: the database, the
+import service and the web application.
 
 1.  Ensure you have **Docker Desktop** installed, as it includes Docker and Docker Compose.
 2.  Clone the repository:
@@ -88,22 +114,50 @@ For a fast and easy setup, you can use Docker Compose to run the entire applicat
     git clone https://github.com/frankframework/insights.git
     cd insights
     ```
-3.  From the root of the project, run the following command. The `--build` flag forces a rebuild of the images to ensure you are running the latest version of the code, and the `-d` flag runs the containers in "detached mode" in the background.
+3.  Fill in your GitHub token, project id, webhook secret and OAuth client in the
+    `application-local.properties` of each module. Both services run with the `local` Spring profile.
+4.  Build the JARs. The images copy them out of the `target` directories, so Maven has to run first:
+    ```bash
+    ./mvnw clean package -DskipTests
+    ```
+5.  Start everything. The `--build` flag forces a rebuild of the images so you are running the latest
+    code, and `-d` runs the containers in the background:
     ```bash
     docker compose up -d --build
     ```
 
-The application will be available at `http://localhost:8080`. The backend serves both the API and the frontend application as static resources.
+| What | Where |
+| --- | --- |
+| Application (API + frontend) | `http://localhost:8080` |
+| Import service health | `http://localhost:8081/actuator/health` |
+| GitHub release webhook | `http://localhost:8081/api/webhooks/github` |
+| PostgreSQL | `localhost:5432` |
 
-> **Note:** When running via Docker, Trivy is automatically included in the container image (as defined in the Dockerfile), so no additional installation or path configuration is required.
+Both services run their own Flyway migrations against the shared database. Flyway locks the schema
+history table while migrating, so it does not matter which of the two starts first.
+
+> **Note:** Trivy and Maven are baked into the `insights-data-import` image only (see
+> `docker/Dockerfile`), so no additional installation or path configuration is required. The
+> `insights-webapp` image is a plain JRE image and does not carry them.
+
+### Running only one of the services
+
+Because the two are independent, you can start just the part you need:
+
+```bash
+docker compose up -d insights-webapp        # site only, serves whatever is already in the database
+docker compose up -d insights-data-import   # importer only
+```
 
 ### Database Seeding
 
-By default, the application automatically seeds the database with mock data on startup when running via Docker. This allows you to explore the features immediately without needing to configure GitHub API access or fetch real data.
+If you prefer to start with a clean database and fetch real data from GitHub, configure your GitHub
+API token in `insights-data-import/src/main/resources/application-local.properties`, which also sets
+`data.fetch-enabled=true`. To browse the application with mock data instead, run the webapp with the
+`local-seed` Spring profile, which loads `db/e2e/R__Seed_Data.sql` into an in-memory database.
 
-Please note that not all releases in the mock data set have detailed content. For a full example of a release with associated issues and pull requests, check release **v9.0.1**.
-
-If you prefer to start with a clean, empty database and fetch real data from GitHub, you will need to configure your GitHub API token in the application properties and set `github.fetch=true`.
+Please note that not all releases in the mock data set have detailed content. For a full example of
+a release with associated issues and pull requests, check release **v9.0.1**.
 
 <br>
 
@@ -116,9 +170,9 @@ For active development, a manual setup provides more granular control over the i
 For a manual setup, you will need:
 
 - **Git** - Version control system
-- **Java Development Kit (JDK 21)** - Required for the backend
-- **Node.js** (version 23 or higher) - Required for the frontend
-- **pnpm** (version 10.4.0 or higher) - Package manager (`npm install -g pnpm`)
+- **Java Development Kit (JDK 25)** - Required for the backend (`java.version` in the parent POM)
+- **Node.js** (version 24) - Required for the frontend
+- **pnpm** (version 10.33.0) - Package manager (`npm install -g pnpm`)
 - **PostgreSQL** - Database instance
 - **Trivy** - Security vulnerability scanner ([Installation guide](https://aquasecurity.github.io/trivy/latest/getting-started/installation/))
 - **IDE** - Recommended: **IntelliJ IDEA**, **WebStorm**, **VS Code**, or **Eclipse**
@@ -133,51 +187,69 @@ For a manual setup, you will need:
     cd insights
     ```
 
-2.  **Backend Setup**
-    * **Open Project:** Open the project root directory in your Java IDE. It will automatically detect it as a Maven project.
+2.  **Open the Project**
 
-    * **Spring Profile:** The application is pre-configured to use the `local` Spring profile by default (set in `application.properties`). This automatically loads configuration from `application-local.properties` for your local environment. No additional configuration is needed.
+    Open the repository root in your Java IDE. It will detect it as a Maven project with three
+    modules. There are two runnable applications:
 
-    * **Create & Configure Database:**
-        * Create a new, empty database in your PostgreSQL instance.
-        * Open `src/main/resources/application-local.properties`.
-        * Update the datasource properties with your database credentials:
-            ```properties
-            spring.datasource.url=jdbc:postgresql://localhost:5432/your_database_name
-            spring.datasource.username=your_username
-            spring.datasource.password=your_password
-            ```
+    | Module | Main class | Profile files |
+    | --- | --- | --- |
+    | `insights-webapp` | `org.frankframework.insights.InsightsWebappApplication` | `insights-webapp/src/main/resources/application-local.properties` |
+    | `insights-data-import` | `org.frankframework.insights.InsightsDataImportApplication` | `insights-data-import/src/main/resources/application-local.properties` |
 
-	* **Initial Data Injection:**
-	  To populate your database with GitHub data on first run, set:
-	    ```properties
-		 github.fetch=true
-		```
-	  After the first successful run, set this to `false` to avoid refetching on every startup.
+    Settings that both share (Flyway, JPA, actuator, GitHub URLs) live in
+    `insights-common/src/main/resources/insights-common.properties`, which both applications pull in
+    through `spring.config.import`. Anything you set in a module's own properties file wins over it.
 
-    * **Configure GitHub API Access:**
-        The application needs a GitHub token to fetch data from the Frank!Framework organization.
-        * Create a **GitHub Personal Access Token (PAT)** with permissions: `read:org`, `project`. Follow the official guide: [Managing your personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
-        * Add your token and GitHub Project ID to `application-local.properties`:
-            ```properties
-            github.token=YOUR_PERSONAL_ACCESS_TOKEN_HERE
-            github.project.id=YOUR_GITHUB_PROJECT_ID_HERE
-            ```
+3.  **Create & Configure the Database**
 
-    * **Configure Trivy Path:**
-        For local development, you need to configure the full path to your locally installed Trivy executable in `application-local.properties`:
-        ```properties
-        trivy.path=C:/Program Files/trivy/trivy.exe
-        ```
-        > **Note:** Replace with the actual path to your Trivy executable. This is only required for manual local setup. When running via Docker, Trivy is automatically included in the container (as defined in the Dockerfile), so no path configuration is needed.
+    Create a single, empty PostgreSQL database. Both services use the same one. Then set the
+    datasource properties in **both** `application-local.properties` files:
+    ```properties
+    spring.datasource.url=jdbc:postgresql://localhost:5432/your_database_name
+    spring.datasource.username=your_username
+    spring.datasource.password=your_password
+    ```
 
-3.  **Frontend Development (Optional)**
+4.  **Configure the Import Service** (`insights-data-import/src/main/resources/application-local.properties`)
 
-    The frontend is automatically built by Maven during the build process. However, for active frontend development with live reloading:
+    * **GitHub API access:** create a **GitHub Personal Access Token (PAT)** with the `read:org` and
+      `project` permissions ([official guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)),
+      then set:
+      ```properties
+      github.graphql.secret=YOUR_PERSONAL_ACCESS_TOKEN_HERE
+      github.graphql.project-id=YOUR_GITHUB_PROJECT_ID_HERE
+      ```
+
+    * **Initial data injection:** to populate the database with GitHub data on startup, set:
+      ```properties
+      data.fetch-enabled=true
+      ```
+      After the first successful run you can set this to `false` to avoid refetching on every start.
+      The daily job at midnight runs regardless.
+
+    * **Trivy path:** point at your locally installed Trivy executable:
+      ```properties
+      trivy.path=C:/Program Files/trivy/trivy.exe
+      ```
+      > **Note:** only needed for a manual setup. The Docker image ships Trivy on the `PATH`.
+
+5.  **Configure the Web Application** (`insights-webapp/src/main/resources/application-local.properties`)
+
+    Set the GitHub OAuth app used to log users in:
+    ```properties
+    spring.security.oauth2.client.registration.github.client-id=YOUR_CLIENT_ID
+    spring.security.oauth2.client.registration.github.client-secret=YOUR_CLIENT_SECRET
+    ```
+
+6.  **Frontend Development (Optional)**
+
+    The frontend is built by Maven as part of `insights-webapp`. For active frontend development with
+    live reloading:
 
     * Navigate to the frontend directory:
         ```bash
-        cd src/main/frontend
+        cd insights-webapp/src/main/frontend
         ```
     * Install dependencies:
         ```bash
@@ -192,31 +264,77 @@ For a manual setup, you will need:
 
 <br>
 
+## Configuration Reference
+
+Settings both services share live in `insights-common/src/main/resources/insights-common.properties`
+(Flyway, JPA, actuator, GitHub URLs, and the branch and label filters). Both services import it via
+`spring.config.import`; anything a module sets itself wins over it.
+
+> **The `application-local.properties` files are tracked in Git with placeholder values.** Fill in your
+> own credentials locally, but never commit real secrets to them.
+
+### Properties you need to set
+
+| Property | Service | What it does                                                                                    |
+| --- | --- |-------------------------------------------------------------------------------------------------|
+| `spring.datasource.url` / `.username` / `.password` | both | The shared database. Both point at the same one.                                                |
+| `data.fetch-enabled` | data-import | Master switch for all GitHub fetching. `false` disables startup, nightly and webhook refreshes. |
+| `github.graphql.secret` | data-import | GitHub PAT, needs `read:org` and `project`                                                      |
+| `github.graphql.project-id` | data-import | The GitHub Project the roadmap is built from                                                    |
+| `insights.webhook.secret` | data-import | Shared secret for GitHub webhook HMAC signatures                                                |
+| `trivy.path` | data-import | Path to the Trivy executable. Not needed in Docker, the image ships it on the `PATH`.           |
+| `release.archive.directory` | data-import | Where downloaded release zips are cached. Must be persistent storage.                           |
+| `trivy.scan.workspace` / `trivy.db.cache` / `maven.local-repo` | data-import | Scratch space, Trivy DB cache, and the Maven repo used to pre-cache dependencies                |
+| `spring.security.oauth2.client.registration.github.client-id` / `.client-secret` | webapp | GitHub OAuth app, used to log users in                                                          |
+| `cors.allowed.origins[n]` | webapp | Allowed browser origins. Credentials are allowed, so this can never be `*`.                     |
+| `frankframework.security.csrf.secure` | webapp | `secure` flag on the CSRF cookie. `false` locally so plain HTTP works, `true` in production.    |
+
+Two settings in `insights-common.properties` are **business rules, not just config**
+`github.graphql.branch-protection-regexes` and `github.graphql.includedLabels`. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#business-rules) before changing either.
+
+### Environment variables (the `prod` profile)
+
+| Variable | Service |
+| --- | --- |
+| `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USERNAME`, `DATABASE_PASSWORD` | both |
+| `GITHUB_API_SECRET`, `GITHUB_PROJECT_ID`, `INSIGHTS_WEBHOOK_SECRET` | data-import |
+| `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | webapp |
+| `SERVER_PORT` (optional), `JAVA_OPTS` (optional) | both |
+
+There is **no default Spring profile**. A service started without one has no datasource and will not
+boot, always pass `local`, `local-seed` or `prod`.
+
+<br>
+
 ## Building & Testing
 
 ### Building the Application
 
-The application uses Maven to build both the backend and frontend into a single executable JAR file.
+Maven builds the three modules in one reactor: `insights-common` first, then the two services.
+The Angular frontend is built into the `insights-webapp` JAR.
 
 **Full Build with Tests:**
 ```bash
-mvn clean package "-Dspring.profiles.active=local-seed"
+./mvnw clean package "-Dspring.profiles.active=local-seed"
 ```
 or
 ```bash
-mvn clean install "-Dspring.profiles.active=local-seed"
+./mvnw clean install "-Dspring.profiles.active=local-seed"
 ```
 
 This command:
-1. Installs frontend dependencies using pnpm
-2. Builds the Angular frontend application
-3. Compiles the Java backend
-4. Runs backend unit/integration tests and E2E tests
-5. Packages everything into a single JAR file with the frontend as static resources
+1. Builds and installs `insights-common`
+2. Builds `insights-data-import` and runs its tests
+3. Installs frontend dependencies using pnpm and builds the Angular application
+4. Compiles `insights-webapp`, runs its tests and the E2E tests
+5. Produces two executable JARs:
+   - `insights-webapp/target/insights-webapp-<version>.jar` (API + frontend as static resources)
+   - `insights-data-import/target/insights-data-import-<version>.jar`
 
 > **Automated Testing:** Running `mvn package` or `mvn install` with the `local-seed` profile automatically executes:
-> - **Backend Tests:** JUnit 5 unit and integration tests with Mockito
-> - **End-to-End Tests:** Cypress tests using Testcontainers
+> - **Backend Tests:** JUnit 5 unit and integration tests with Mockito, per module
+> - **End-to-End Tests:** Cypress tests using Testcontainers (in `insights-webapp`)
 >
 > **Important:** The Cypress E2E tests require the `local-seed` Spring profile to seed the database with test data. This is because the E2E tests verify the complete user interface and workflows, which require actual data to be present in the database (releases, issues, pull requests, etc.). Without seeded data, the tests would have nothing to interact with and would fail. The tests run in a containerized environment via Testcontainers, so no additional setup or running application is required.
 >
@@ -226,47 +344,69 @@ This command:
 
 For faster iteration during development, you can skip tests:
 ```bash
-mvn clean package -DskipTests
+./mvnw clean package -DskipTests
 ```
+
+**Building a Single Module:**
+
+`-am` ("also make") builds the modules the requested one depends on:
+```bash
+./mvnw clean package -pl insights-data-import -am        # importer + common
+./mvnw clean package -pl insights-webapp -am             # webapp + common (builds the frontend)
+```
+
+To skip the pnpm steps while working on the backend only, add `-Dexec.skip=true`.
 
 ### Running Tests Individually
 
-**Backend Tests Only:**
+**All Backend Tests:**
 ```bash
-mvn test
+./mvnw test
+```
+
+**One Module's Tests:**
+```bash
+./mvnw test -pl insights-data-import
+./mvnw test -pl insights-webapp
 ```
 
 **Frontend Tests Only:**
 ```bash
-cd src/main/frontend
+cd insights-webapp/src/main/frontend
 pnpm test
 ```
 
 **E2E Tests Interactively:**
 ```bash
-cd src/main/frontend
+cd insights-webapp/src/main/frontend
 pnpm run cypress:open  # Interactive mode with UI
 pnpm run cypress:run   # Headless mode
 ```
 
 ### Running the Application
 
-After building, you can run the application:
+The two services are started separately. The web application works on its own against whatever is
+already in the database; you only need the import service when you want to refresh that data.
 
-**Option 1 - Run JAR:**
+**Option 1 - Run the JARs:**
 ```bash
-java -jar target/insights-*.jar
+java -jar insights-webapp/target/insights-webapp-*.jar
+java -jar insights-data-import/target/insights-data-import-*.jar
 ```
 
 **Option 2 - IDE:**
-Start the Spring Boot application directly from your IDE (with the `local` profile active by default).
+Start `InsightsWebappApplication` and/or `InsightsDataImportApplication` directly from your IDE with
+the `local` profile active.
 
 **Option 3 - Maven:**
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run -pl insights-webapp
+./mvnw spring-boot:run -pl insights-data-import
 ```
 
-The application will be available at `http://localhost:8080`. If you're running the frontend development server separately, it will be at `http://localhost:4200` and proxy API calls to the backend.
+The web application will be available at `http://localhost:8080` and the import service at
+`http://localhost:8081`. If you're running the frontend development server separately, it will be at
+`http://localhost:4200` and proxy API calls to the backend.
 
 <br>
 
@@ -279,11 +419,13 @@ The project uses GitHub Actions to run automated workflows for every pull reques
 The CI pipeline (`ci.yaml`) runs the following checks on every pull request:
 
 1. **Code Linting**
-   - Backend: Checkstyle for Java code style enforcement
+   - Backend: Checkstyle for Java code style enforcement (`mvn checkstyle:check`, fails the build)
    - Frontend: ESLint for TypeScript/JavaScript code quality
 
 2. **Code Formatting**
-   - Spotless validates Java code formatting
+   - Spotless (palantir-java-format) is configured in the parent POM but has **no lifecycle binding**,
+     so it does not run in CI and never fails a build. Run it yourself: `mvn spotless:apply` to format,
+     `mvn spotless:check` to verify.
 
 3. **Automated Testing**
    - Backend unit and integration tests (JUnit 5)
@@ -298,7 +440,19 @@ The CI pipeline (`ci.yaml`) runs the following checks on every pull request:
 
 **Docker Image Creation**
 <br>
-On every merge to master, a Docker image is automatically built and pushed to the GitHub Container Registry (`ghcr.io/frankframework/insights`). The image includes both the application and Trivy for vulnerability scanning.
+On every merge to master, two Docker images are built from `docker/Dockerfile` (one target each) and
+pushed to the GitHub Container Registry:
+
+- `ghcr.io/frankframework/insights-webapp`: API and frontend, plain JRE image
+- `ghcr.io/frankframework/insights-data-import`: importer, includes Trivy and Maven for vulnerability scanning
+
+Each image is pushed with three tags: `0.0.<run number>` (the immutable build, matching the Maven
+`revision` baked into the JAR), `latest` and `master`. Pin production deployments to the versioned
+tag; `latest` always points at the most recent master build.
+
+Both images are signed with cosign, once per digest, so every tag on that digest is covered.
+The local `docker compose` build reuses the same two names with a `:local` tag, so a locally built
+image never shadows a pulled release.
 
 ### Security
 
@@ -329,7 +483,19 @@ For general guidelines like commit messages and pull request procedures, see the
 
 **Project Structure**
 <br>
-The project is a Maven monorepo with an integrated Angular frontend in `src/main/frontend`. When working on the frontend, always use **pnpm** as the package manager (not npm or yarn).
+The project is a Maven multi-module monorepo (`insights-common`, `insights-data-import`,
+`insights-webapp`) with an integrated Angular frontend in `insights-webapp/src/main/frontend`. When
+working on the frontend, always use **pnpm** as the package manager (not npm or yarn).
+
+When adding backend code, put it in the module that matches what it does: shared entities and
+repositories in `insights-common`, anything that writes imported data in `insights-data-import`,
+anything that serves data to the frontend in `insights-webapp`. The two services must not depend on
+each other, and Flyway migrations always belong in `insights-common`. The reasoning behind those rules
+is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-rules-that-keep-this-honest).
+
+If you add an API endpoint, add its row to the endpoint table in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#the-api) there is no OpenAPI spec, so that table is the
+API documentation.
 
 **Code Conventions**
 <br>

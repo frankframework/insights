@@ -1,0 +1,155 @@
+package org.frankframework.insights.issue;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Collections;
+import java.util.Set;
+import org.frankframework.insights.common.configuration.TestSecurityConfig;
+import org.frankframework.insights.milestone.MilestoneNotFoundException;
+import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(
+        controllers = IssueController.class,
+        excludeAutoConfiguration = {SecurityAutoConfiguration.class, OAuth2ClientAutoConfiguration.class})
+@Import(TestSecurityConfig.class)
+public class IssueControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private IssueQueryService issueQueryService;
+
+    @TestConfiguration
+    public static class MockConfig {
+        @Bean
+        public IssueQueryService issueQueryService() {
+            return mock(IssueQueryService.class);
+        }
+    }
+
+    @BeforeEach
+    public void resetMocks() {
+        reset(issueQueryService);
+    }
+
+    @Test
+    public void getIssuesByReleaseId_returnsOkWithIssues() throws Exception {
+        IssueResponse response1 = new IssueResponse();
+        IssueResponse response2 = new IssueResponse();
+        Set<IssueResponse> issues = Set.of(response1, response2);
+
+        when(issueQueryService.getIssuesByReleaseId("rel1")).thenReturn(issues);
+
+        mockMvc.perform(get("/api/issues/release/rel1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    public void getIssuesByReleaseId_returnsEmptySet() throws Exception {
+        when(issueQueryService.getIssuesByReleaseId("rel1")).thenReturn(Collections.emptySet());
+
+        mockMvc.perform(get("/api/issues/release/rel1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    public void getIssuesByReleaseId_returnsNull_treatedAsEmptySet() throws Exception {
+        when(issueQueryService.getIssuesByReleaseId("rel1")).thenReturn(null);
+
+        mockMvc.perform(get("/api/issues/release/rel1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    public void getIssuesByReleaseId_throwsReleaseNotFoundException_returns404() throws Exception {
+        when(issueQueryService.getIssuesByReleaseId("relX")).thenThrow(new ReleaseNotFoundException("Not found", null));
+
+        mockMvc.perform(get("/api/issues/release/relX")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void getIssuesByMilestoneId_returnsOkWithIssues() throws Exception {
+        IssueResponse response1 = new IssueResponse();
+        Set<IssueResponse> issues = Set.of(response1);
+
+        when(issueQueryService.getIssuesByMilestoneId("mil1")).thenReturn(issues);
+
+        mockMvc.perform(get("/api/issues/milestone/mil1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    public void getIssuesByMilestoneId_returnsEmptySet() throws Exception {
+        when(issueQueryService.getIssuesByMilestoneId("mil1")).thenReturn(Collections.emptySet());
+
+        mockMvc.perform(get("/api/issues/milestone/mil1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    public void getIssuesByMilestoneId_returnsNull_treatedAsEmptySet() throws Exception {
+        when(issueQueryService.getIssuesByMilestoneId("mil1")).thenReturn(null);
+
+        mockMvc.perform(get("/api/issues/milestone/mil1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    public void getIssuesByMilestoneId_throwsMilestoneNotFoundException_returns404() throws Exception {
+        when(issueQueryService.getIssuesByMilestoneId("milX"))
+                .thenThrow(new MilestoneNotFoundException("Not found", null));
+
+        mockMvc.perform(get("/api/issues/milestone/milX")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void getFutureEpicIssues_returnsOkWithIssues() throws Exception {
+        IssueResponse epic1 = new IssueResponse();
+        epic1.setId("epic1");
+        Set<IssueResponse> futureIssues = Set.of(epic1);
+        when(issueQueryService.getFutureEpicIssues()).thenReturn(futureIssues);
+
+        mockMvc.perform(get("/api/issues/future"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value("epic1"));
+    }
+
+    @Test
+    public void getFutureEpicIssues_returnsEmptySet() throws Exception {
+        when(issueQueryService.getFutureEpicIssues()).thenReturn(Collections.emptySet());
+
+        mockMvc.perform(get("/api/issues/future"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+}

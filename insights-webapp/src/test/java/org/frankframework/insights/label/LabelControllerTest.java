@@ -1,0 +1,101 @@
+package org.frankframework.insights.label;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Collections;
+import java.util.Set;
+import org.frankframework.insights.common.configuration.TestSecurityConfig;
+import org.frankframework.insights.common.mapper.MappingException;
+import org.frankframework.insights.release.ReleaseNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
+import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(
+        controllers = LabelController.class,
+        excludeAutoConfiguration = {SecurityAutoConfiguration.class, OAuth2ClientAutoConfiguration.class})
+@Import(TestSecurityConfig.class)
+public class LabelControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private LabelQueryService labelQueryService;
+
+    @TestConfiguration
+    public static class MockConfig {
+        @Bean
+        public LabelQueryService labelQueryService() {
+            return mock(LabelQueryService.class);
+        }
+    }
+
+    @BeforeEach
+    public void resetMocks() {
+        reset(labelQueryService);
+    }
+
+    @Test
+    public void getHighlightsByReleaseId_returnsSet() throws Exception {
+        LabelResponse label1 = new LabelResponse("id1", "label1", "description1", "color1");
+        LabelResponse label2 = new LabelResponse("id2", "label2", "description2", "color2");
+        Set<LabelResponse> highlights = Set.of(label1, label2);
+
+        when(labelQueryService.getHighlightsByReleaseId("rel1")).thenReturn(highlights);
+
+        mockMvc.perform(get("/api/labels/release/rel1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(2)));
+    }
+
+    @Test
+    public void getHighlightsByReleaseId_returnsEmptySet() throws Exception {
+        when(labelQueryService.getHighlightsByReleaseId("rel2")).thenReturn(Collections.emptySet());
+
+        mockMvc.perform(get("/api/labels/release/rel2"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    public void getHighlightsByReleaseId_serviceReturnsNull_treatedAsEmptySet() throws Exception {
+        when(labelQueryService.getHighlightsByReleaseId("rel3")).thenReturn(null);
+
+        mockMvc.perform(get("/api/labels/release/rel3"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+    @Test
+    public void getHighlightsByReleaseId_serviceThrowsReleaseNotFoundException_returns500() throws Exception {
+        when(labelQueryService.getHighlightsByReleaseId("notfound"))
+                .thenThrow(new ReleaseNotFoundException("Not found", null));
+
+        mockMvc.perform(get("/api/labels/release/notfound")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void getHighlightsByReleaseId_serviceThrowsMa1ppingException_returns500() throws Exception {
+        when(labelQueryService.getHighlightsByReleaseId("badmap"))
+                .thenThrow(new MappingException("Mapping failed", null));
+
+        mockMvc.perform(get("/api/labels/release/badmap")).andExpect(status().isBadRequest());
+    }
+}
