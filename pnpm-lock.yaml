@@ -94,7 +94,7 @@ importers:
         version: 22.1.0(@angular/compiler@22.1.0)(typescript@6.0.3)
       '@cypress/schematic':
         specifier: 5.0.0
-        version: 5.0.0(@angular/cli@22.1.2(@types/node@25.5.2)(chokidar@5.0.0)(supports-color@8.1.1))(@angular/core@22.1.0(@angular/compiler@22.1.0)(rxjs@7.8.2)(zone.js@0.16.2))(cypress@15.20.0)
+        version: 5.0.0(@angular/cli@22.1.2(@types/node@25.5.2)(chokidar@5.0.0)(supports-color@8.1.1))(@angular/core@22.1.0(@angular/compiler@22.1.0)(rxjs@7.8.2)(zone.js@0.16.2))(cypress@15.20.1)
       '@eslint/eslintrc':
         specifier: ^3.3.6
         version: 3.3.6(supports-color@8.1.1)
@@ -168,8 +168,8 @@ importers:
   insights-webapp/src/main/frontend/cypress:
     devDependencies:
       cypress:
-        specifier: ^15.20.0
-        version: 15.20.0
+        specifier: ^15.20.1
+        version: 15.20.1
       cypress-multi-reporters:
         specifier: ^2.0.5
         version: 2.0.5(mocha@11.8.0)(supports-color@8.1.1)
@@ -2257,8 +2257,8 @@ packages:
     peerDependencies:
       mocha: '>=3.1.2'
 
-  cypress@15.20.0:
-    resolution: {integrity: sha512-yrt6z9YERlggq5FReDx+PkbjrNoEQPeM03MQC1GvLlFGItk8ervC0A/7fjzWoWVRRXjsem+Pj3cunknARl/37g==}
+  cypress@15.20.1:
+    resolution: {integrity: sha512-7GV3O7vQQG+EVVv9BGs6lCHY49x25jVi/z1+zdjuuq/o3eZeDwmGPJpRYnOWeGvQxTCtkydXWHBPhV8xuGXPLg==}
     engines: {node: ^20.1.0 || ^22.0.0 || >=24.0.0}
     hasBin: true
 
@@ -4827,11 +4827,11 @@ snapshots:
       tough-cookie: 5.1.2
       tunnel-agent: 0.6.0
 
-  '@cypress/schematic@5.0.0(@angular/cli@22.1.2(@types/node@25.5.2)(chokidar@5.0.0)(supports-color@8.1.1))(@angular/core@22.1.0(@angular/compiler@22.1.0)(rxjs@7.8.2)(zone.js@0.16.2))(cypress@15.20.0)':
+  '@cypress/schematic@5.0.0(@angular/cli@22.1.2(@types/node@25.5.2)(chokidar@5.0.0)(supports-color@8.1.1))(@angular/core@22.1.0(@angular/compiler@22.1.0)(rxjs@7.8.2)(zone.js@0.16.2))(cypress@15.20.1)':
     dependencies:
       '@angular/cli': 22.1.2(@types/node@25.5.2)(chokidar@5.0.0)(supports-color@8.1.1)
       '@angular/core': 22.1.0(@angular/compiler@22.1.0)(rxjs@7.8.2)(zone.js@0.16.2)
-      cypress: 15.20.0
+      cypress: 15.20.1
       jsonc-parser: 3.3.1
       rxjs: 7.8.2
       semver: 7.7.4
@@ -6233,7 +6233,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  cypress@15.20.0:
+  cypress@15.20.1:
     dependencies:
       '@cypress/request': 4.0.1
       '@cypress/xvfb': 1.2.4(supports-color@8.1.1)
