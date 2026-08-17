@@ -14,6 +14,10 @@ COPY --chown=spring --chmod=774 ./docker/scripts/ /scripts/
 
 FROM base AS webapp
 
+LABEL org.opencontainers.image.title="insights-webapp" \
+      org.opencontainers.image.description="Frank!Framework Insights webapp: REST API and Angular frontend" \
+      org.opencontainers.image.source="https://github.com/frankframework/insights"
+
 USER spring
 
 COPY --chown=spring ./insights-webapp/target/insights-webapp-*.jar /app/insights-webapp.jar
@@ -27,6 +31,10 @@ CMD ["java","-jar","/app/insights-webapp.jar"]
 FROM aquasec/trivy:0.73.0 AS trivy-downloader
 
 FROM base AS data-import
+
+LABEL org.opencontainers.image.title="insights-data-import" \
+      org.opencontainers.image.description="Frank!Framework Insights data import service: GitHub ingestion and Trivy vulnerability scanning" \
+      org.opencontainers.image.source="https://github.com/frankframework/insights"
 
 USER root
 RUN apt-get update && \

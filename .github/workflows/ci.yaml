@@ -12,7 +12,9 @@ env:
   NODE_VERSION: 24
   PNPM_VERSION: 10.33.0
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME_WEBAPP: ${{ github.repository }}-webapp
+  IMAGE_NAME_DATA_IMPORT: ${{ github.repository }}-data-import
+  APP_VERSION: 0.0.${{ github.run_number }}
 
 
 jobs:
@@ -51,7 +53,10 @@ jobs:
         run: pnpm lint
         working-directory: insights-webapp/src/main/frontend
 
-      - name: Lint Backend
+      - name: Spotless
+        run: mvn spotless:check
+
+      - name: Checkstyle
         run: mvn checkstyle:check
 
       - name: Test Frontend
@@ -113,7 +118,7 @@ jobs:
         working-directory: insights-webapp/src/main/frontend
 
       - name: Build
-        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod" -Drevision="0.0.${{ github.run_number }}"
+        run: mvn clean package -DskipTests "-Dspring.profiles.active=prod" -Drevision="${{ env.APP_VERSION }}"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
@@ -145,19 +150,29 @@ jobs:
         id: meta-webapp
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-webapp
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEBAPP }}
           tags: |
+            type=raw,value=${{ env.APP_VERSION }}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
-            type=raw,value=0.0.${{ github.run_number }}
+          labels: |
+            org.opencontainers.image.title=insights-webapp
+            org.opencontainers.image.description=Frank!Framework Insights webapp: REST API and Angular frontend
+            org.opencontainers.image.version=${{ env.APP_VERSION }}
 
       - name: Extract Docker metadata for the data import service
         id: meta-data-import
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-data-import
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_DATA_IMPORT }}
           tags: |
+            type=raw,value=${{ env.APP_VERSION }}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
-            type=raw,value=0.0.${{ github.run_number }}
+          labels: |
+            org.opencontainers.image.title=insights-data-import
+            org.opencontainers.image.description=Frank!Framework Insights data import service: GitHub ingestion and Trivy vulnerability scanning
+            org.opencontainers.image.version=${{ env.APP_VERSION }}
 
       # Build and push both images with Buildx (don't push on PR).
       # https://github.com/docker/build-push-action
@@ -171,6 +186,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-webapp.outputs.tags }}
           labels: ${{ steps.meta-webapp.outputs.labels }}
+          annotations: ${{ steps.meta-webapp.outputs.annotations }}
           cache-from: type=gha,scope=webapp
           cache-to: type=gha,mode=max,scope=webapp
 
@@ -184,6 +200,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-data-import.outputs.tags }}
           labels: ${{ steps.meta-data-import.outputs.labels }}
+          annotations: ${{ steps.meta-data-import.outputs.annotations }}
           cache-from: type=gha,scope=data-import
           cache-to: type=gha,mode=max,scope=data-import
 
@@ -192,19 +209,20 @@ jobs:
       # repository is public to avoid leaking data.  If you would like to publish
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
+      # Signing happens per digest, so one call covers every tag pointing at it.
       - name: Sign the published webapp image
         if: ${{ github.event_name != 'pull_request' }}
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-          TAGS: ${{ steps.meta-webapp.outputs.tags }}
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_WEBAPP }}
           DIGEST: ${{ steps.build-and-push-webapp.outputs.digest }}
           # This step uses the identity token to provision an ephemeral certificate
           # against the sigstore community Fulcio instance.
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
 
       - name: Sign the published data import image
         if: ${{ github.event_name != 'pull_request' }}
         env:
-          TAGS: ${{ steps.meta-data-import.outputs.tags }}
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_DATA_IMPORT }}
           DIGEST: ${{ steps.build-and-push-data-import.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
