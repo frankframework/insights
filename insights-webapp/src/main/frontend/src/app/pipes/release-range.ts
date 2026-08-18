@@ -174,7 +174,7 @@ function parseSoftRequirement(entry: string): EntryOutcome {
   const version = parseVersionToken(entry);
   if (!version) return failure(entry, `"${entry}" is not a version number`);
 
-  return { from: toBound(lowerKeyOfToken(version)), to: null };
+  return { from: toBound(keyOfToken(version)), to: null };
 }
 
 function parseSingleVersion(
@@ -190,7 +190,8 @@ function parseSingleVersion(
   const version = parseVersionToken(text);
   if (!version) return failure(entry, `"${text.trim()}" is not a version number`);
 
-  return { from: toBound(lowerKeyOfToken(version)), to: toBound(upperKeyOfToken(version)) };
+  const key = keyOfToken(version);
+  return { from: toBound(key), to: toBound(key) };
 }
 
 function parseBoundedRange(
@@ -231,10 +232,10 @@ function parseBoundary(
 }
 
 function toBoundaryKey(version: VersionToken, isInclusive: boolean, side: 'lower' | 'upper'): number {
-  if (side === 'lower') {
-    return isInclusive ? lowerKeyOfToken(version) : upperKeyOfToken(version) + 1;
-  }
-  return isInclusive ? upperKeyOfToken(version) : lowerKeyOfToken(version) - 1;
+  const key = keyOfToken(version);
+  if (isInclusive) return key;
+
+  return side === 'lower' ? key + 1 : key - 1;
 }
 
 function parseVersionToken(text: string): VersionToken | null {
@@ -279,34 +280,23 @@ function normaliseRanges(ranges: VersionRange[]): VersionRange[] {
 
 function serializeRange(range: VersionRange): string {
   if (range.from === null && range.to === null) return '(,)';
-  if (range.from === null) return `(,${formatUpperBound(range.to!)}]`;
-  if (range.to === null) return `[${formatLowerBound(range.from)},)`;
+  if (range.to === null) return `[${formatBound(range.from!)},)`;
 
-  const singleVersion = toSingleVersionToken(range.from, range.to);
-  if (singleVersion) return `[${singleVersion}]`;
+  const upper = formatUpperBoundary(range.to);
+  if (range.from === null) return `(,${upper}`;
+  if (toKey(range.from) === toKey(range.to)) return `[${formatBound(range.from)}]`;
 
-  return `[${formatLowerBound(range.from)},${formatUpperBound(range.to)}]`;
+  return `[${formatBound(range.from)},${upper}`;
 }
 
-function toSingleVersionToken(from: VersionBound, to: VersionBound): string | null {
-  if (from.major !== to.major) return null;
+function formatUpperBoundary(to: VersionBound): string {
+  const next = toBound(toKey(to) + 1);
 
-  const isWholeMajor = from.minor === 0 && from.patch === 0 && to.minor === MAX_SEGMENT && to.patch === MAX_SEGMENT;
-  if (isWholeMajor) return `${from.major}`;
-
-  if (from.minor !== to.minor) return null;
-  if (from.patch === 0 && to.patch === MAX_SEGMENT) return `${from.major}.${from.minor}`;
-
-  return from.patch === to.patch ? `${from.major}.${from.minor}.${from.patch}` : null;
+  return next.patch === 0 ? `${formatBound(next)})` : `${formatBound(to)}]`;
 }
 
-function formatLowerBound(bound: VersionBound): string {
+function formatBound(bound: VersionBound): string {
   return bound.patch === 0 ? `${bound.major}.${bound.minor}` : `${bound.major}.${bound.minor}.${bound.patch}`;
-}
-
-function formatUpperBound(bound: VersionBound): string {
-  if (bound.minor === MAX_SEGMENT && bound.patch === MAX_SEGMENT) return `${bound.major}`;
-  return bound.patch === MAX_SEGMENT ? `${bound.major}.${bound.minor}` : `${bound.major}.${bound.minor}.${bound.patch}`;
 }
 
 function lowerKeyOf(range: VersionRange): number {
@@ -317,16 +307,8 @@ function upperKeyOf(range: VersionRange): number {
   return range.to === null ? Number.POSITIVE_INFINITY : toKey(range.to);
 }
 
-function lowerKeyOfToken(token: VersionToken): number {
+function keyOfToken(token: VersionToken): number {
   return toKey({ major: token.major, minor: token.minor ?? 0, patch: token.patch ?? 0 });
-}
-
-function upperKeyOfToken(token: VersionToken): number {
-  return toKey({
-    major: token.major,
-    minor: token.minor ?? MAX_SEGMENT,
-    patch: token.patch ?? MAX_SEGMENT,
-  });
 }
 
 function toKey(bound: VersionBound): number {
