@@ -9,13 +9,16 @@ export class ReadableUrlSerializer extends DefaultUrlSerializer {
     const queryStart = url.indexOf('?');
     if (queryStart === -1) return url;
 
+    const fragmentStart = url.indexOf('#', queryStart);
+    const queryEnd = fragmentStart === -1 ? url.length : fragmentStart;
+
     const query = url
-      .slice(queryStart)
+      .slice(queryStart, queryEnd)
       .replaceAll(
         ReadableUrlSerializer.ENCODED_BRACKET_PATTERN,
         (encoded) => ReadableUrlSerializer.BRACKETS_BY_ENCODING[encoded.toLowerCase()],
       );
 
-    return `${url.slice(0, queryStart)}${query}`;
+    return `${url.slice(0, queryStart)}${query}${fragmentStart === -1 ? '' : url.slice(fragmentStart)}`;
   }
 }

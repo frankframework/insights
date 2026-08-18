@@ -134,6 +134,6 @@ export class AppComponent implements OnInit {
     const canonicalUrl = this.router.serializeUrl(tree);
     if (queryStringOf(browserUrl) === queryStringOf(canonicalUrl)) return;
 
-    this.location.replaceState(canonicalUrl);
+    this.router.navigateByUrl(canonicalUrl, { replaceUrl: true });
   }
 }
