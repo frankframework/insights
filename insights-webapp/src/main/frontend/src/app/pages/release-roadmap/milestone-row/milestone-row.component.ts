@@ -35,11 +35,9 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
 })
 export class MilestoneRowComponent {
   private static readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
-  // Kept in sync with the track-area utilities in the template: py-6, gap-1 and the h-9/h-10 lanes.
   private static readonly TRACK_AREA_PADDING_REM = 3;
-  private static readonly TRACK_GAP_REM = 0.25;
-  private static readonly TRACK_HEIGHT_REM = 2.25;
-  private static readonly MONTHLY_TRACK_HEIGHT_REM = 2.5;
+  private static readonly TRACK_HEIGHT_REM = 2;
+  private static readonly MONTHLY_TRACK_HEIGHT_REM = 2.25;
 
   public readonly milestone = input.required<Milestone>();
   public readonly issues = input.required<Issue[]>();
@@ -68,11 +66,7 @@ export class MilestoneRowComponent {
       : MilestoneRowComponent.TRACK_HEIGHT_REM;
     const trackCount = this.trackCount();
 
-    return (
-      MilestoneRowComponent.TRACK_AREA_PADDING_REM +
-      trackCount * trackHeight +
-      (trackCount - 1) * MilestoneRowComponent.TRACK_GAP_REM
-    );
+    return MilestoneRowComponent.TRACK_AREA_PADDING_REM + trackCount * trackHeight;
   });
   public readonly isUnplannedEpicMilestone: Signal<boolean> = computed(
     () => this.milestone().id === MilestoneRowComponent.UNPLANNED_EPICS_ID,

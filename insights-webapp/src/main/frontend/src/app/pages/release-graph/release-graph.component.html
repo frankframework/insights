@@ -1,4 +1,4 @@
-<div class="graph-container h-[calc(100vh-1rem)] w-[calc(100vw-1rem)]">
+<div class="graph-container m-2 h-[calc(100vh-1rem)] w-[calc(100vw-1rem)]">
   @if (isLoading()) {
     <app-loader />
   } @else if (showNotFoundError()) {
@@ -180,7 +180,7 @@
     </div>
 
     <div
-      class="hidden min-[992px]:pointer-events-none min-[992px]:fixed min-[992px]:top-[75px] min-[992px]:left-0 min-[992px]:h-full min-[992px]:w-[120px] min-[992px]:flex-col min-[992px]:items-center min-[992px]:justify-start min-[992px]:bg-white min-[992px]:px-4 min-[992px]:after:pointer-events-none min-[992px]:after:absolute min-[992px]:after:top-0 min-[992px]:after:-right-[25px] min-[992px]:after:z-[1] min-[992px]:after:h-full min-[992px]:after:w-10 min-[992px]:after:bg-[linear-gradient(to_right,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_10%,rgba(255,255,255,0.85)_30%,rgba(255,255,255,0.6)_55%,rgba(255,255,255,0.25)_80%,rgba(255,255,255,0)_100%)] min-[992px]:after:blur-[3px] min-[992px]:after:content-[''] min-[992px]:flex"
+      class="hidden min-[992px]:pointer-events-none min-[992px]:fixed min-[992px]:top-[75px] min-[992px]:left-0 min-[992px]:h-full min-[992px]:w-[152px] min-[992px]:flex-col min-[992px]:items-center min-[992px]:justify-start min-[992px]:bg-white min-[992px]:px-4 min-[992px]:after:pointer-events-none min-[992px]:after:absolute min-[992px]:after:top-0 min-[992px]:after:-right-[25px] min-[992px]:after:z-[1] min-[992px]:after:h-full min-[992px]:after:w-10 min-[992px]:after:bg-[linear-gradient(to_right,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_10%,rgba(255,255,255,0.85)_30%,rgba(255,255,255,0.6)_55%,rgba(255,255,255,0.25)_80%,rgba(255,255,255,0)_100%)] min-[992px]:after:blur-[3px] min-[992px]:after:content-[''] min-[992px]:flex"
     >
       @for (stickyLabel of stickyBranchLabels(); track stickyLabel.label) {
         <div class="absolute z-2 flex -translate-y-1/2 items-center gap-2" [style.top.px]="stickyLabel.screenY - 75">
