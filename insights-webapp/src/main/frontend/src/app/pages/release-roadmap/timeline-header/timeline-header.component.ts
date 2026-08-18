@@ -6,7 +6,6 @@ import { DatePipe } from '@angular/common';
   standalone: true,
   imports: [DatePipe],
   templateUrl: './timeline-header.component.html',
-  styleUrls: ['./timeline-header.component.scss'],
 })
 export class TimelineHeaderComponent {
   public readonly months = input<Date[]>([]);

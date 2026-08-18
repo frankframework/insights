@@ -1,8 +1,8 @@
-<div class="roadmap-container">
+<div class="flex h-full flex-col px-6 pt-[10vh] pb-[8vh] max-md:px-3">
   @if (isLoading()) {
     <app-loader />
   } @else {
-    <div class="header">
+    <div class="mb-6 flex shrink-0 items-center">
       <app-roadmap-toolbar
         [periodLabel]="currentPeriodLabel()"
         [viewMode]="viewMode()"
@@ -12,24 +12,29 @@
       />
     </div>
 
-    <div class="content">
+    <div
+      class="mb-6 flex min-h-0 grow flex-col overflow-hidden rounded-xl border border-gray-300 bg-white shadow-[0_10px_15px_-3px_rgb(0_0_0/0.07),0_4px_6px_-4px_rgb(0_0_0/0.1)]"
+    >
       @if (visibleMilestones().length > 0) {
-        <div #scrollContainer class="scroll-container">
+        <div #scrollContainer class="grow overflow-x-auto overflow-y-visible pb-4">
           <app-timeline-header [months]="months()" [quarters]="quarters()" />
 
-          <div class="body">
-            <div class="background">
+          <div class="relative min-w-[1800px]">
+            <div class="absolute top-0 right-0 bottom-0 left-[150px] z-1 lg:left-[300px]">
               @if (todayOffsetPercentage() > 0 && todayOffsetPercentage() < 100) {
-                <div class="today-marker" [style.left.%]="todayOffsetPercentage()"></div>
+                <div
+                  class="today-marker absolute top-0 bottom-0 w-0.5 bg-amber-500"
+                  [style.left.%]="todayOffsetPercentage()"
+                ></div>
               }
-              <div class="grid-lines" [style.grid-template-columns]="'repeat(' + months().length + ', 1fr)'">
+              <div class="absolute inset-0 grid" [style.grid-template-columns]="'repeat(' + months().length + ', 1fr)'">
                 @for (month of months(); track $index) {
-                  <div class="grid-line"></div>
+                  <div class="border-r border-slate-200"></div>
                 }
               </div>
             </div>
 
-            <div class="milestone-lanes">
+            <div class="milestone-lanes relative z-10">
               @for (milestone of visibleMilestones(); track milestone.id; let isLast = $last) {
                 <app-milestone-row
                   [milestone]="milestone"
@@ -46,8 +51,8 @@
           </div>
         </div>
       } @else {
-        <div class="empty-state">
-          <h3>No open milestones</h3>
+        <div class="empty-state flex grow flex-col items-center justify-start p-16 text-center text-slate-500">
+          <h3 class="mb-2 text-xl font-semibold text-gray-800">No open milestones</h3>
           <p>There are no scheduled releases to display in this period.</p>
         </div>
       }

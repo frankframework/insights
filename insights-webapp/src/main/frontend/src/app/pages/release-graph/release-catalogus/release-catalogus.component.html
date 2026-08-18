@@ -3,10 +3,12 @@
 @if (modalOpen()) {
   <app-modal [title]="'Release Support'" [hideScrollBar]="true" (closed)="toggleModal()">
     <ng-container>
-      <div class="release-modal-content">
-        <h3 class="legend-section-title">Graph Navigation</h3>
-        <span>You can navigate inside the release graph on multiple ways.</span>
-        <div class="animation-container">
+      <div class="flex flex-col gap-3 py-2">
+        <h3 class="mt-0 mb-2 border-b-2 border-gray-200 pb-1 text-[1.1rem] font-semibold text-gray-800">
+          Graph Navigation
+        </h3>
+        <span class="text-center">You can navigate inside the release graph on multiple ways.</span>
+        <div class="mx-auto flex flex-row justify-between max-[992px]:flex-col">
           <app-gesture
             imageSrc="/assets/icons/grab-gesture.png"
             gestureDescription="You can grab and hold your mouse in the canvas and swipe to the left or right to navigate inside the release graph"
@@ -17,98 +19,122 @@
           />
         </div>
 
-        <h3 class="legend-section-title">Status</h3>
+        <h3 class="mt-4 mb-2 border-b-2 border-gray-200 pb-1 text-[1.1rem] font-semibold text-gray-800">Status</h3>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-bleeding-edge.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>Bleeding Edge</strong> - Master nightly build with latest features, may contain bugs</p>
+          <p class="overflow-x-auto p-2">
+            <strong>Bleeding Edge</strong> - Master nightly build with latest features, may contain bugs
+          </p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-latest-stable.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>Latest Stable</strong> - Most recent stable release with full support</p>
+          <p class="overflow-x-auto p-2">
+            <strong>Latest Stable</strong> - Most recent stable release with full support
+          </p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-supported.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>Supported</strong> - Receives bug fixes and technical support</p>
+          <p class="overflow-x-auto p-2"><strong>Supported</strong> - Receives bug fixes and technical support</p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-lts.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>LTS</strong> - Major versions with extended support period</p>
+          <p class="overflow-x-auto p-2"><strong>LTS</strong> - Major versions with extended support period</p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-eol.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>EOL</strong> - Only receives critical CVE security updates</p>
+          <p class="overflow-x-auto p-2"><strong>EOL</strong> - Only receives critical CVE security updates</p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-historical.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>Historical</strong> - No support, later patches are available</p>
+          <p class="overflow-x-auto p-2"><strong>Historical</strong> - No support, later patches are available</p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon">
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
             <img src="assets/icons/status-skipped.svg" alt="" width="40" height="40" />
           </div>
-          <p><strong>Skipped Versions</strong> - Represents multiple unsupported versions</p>
+          <p class="overflow-x-auto p-2">
+            <strong>Skipped Versions</strong> - Represents multiple unsupported versions
+          </p>
         </div>
 
-        <h3 class="legend-section-title">Branch Timeline</h3>
+        <h3 class="mt-4 mb-2 border-b-2 border-gray-200 pb-1 text-[1.1rem] font-semibold text-gray-800">
+          Branch Timeline
+        </h3>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon support-timeline-icon">
-            <div class="support-rectangle support-active"></div>
+        <div class="flex flex-row items-center gap-3 py-1">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
+            <div
+              class="h-5 w-9 rounded-[3px] border-[1.5px] border-[rgba(144,238,144,0.6)] bg-[rgba(144,238,144,0.35)]"
+            ></div>
           </div>
-          <p><strong>Active support window</strong> - Branch is receiving active development and bug fixes</p>
+          <p class="overflow-x-auto p-2">
+            <strong>Active support window</strong> - Branch is receiving active development and bug fixes
+          </p>
         </div>
 
         @if (showExtendedSupport()) {
-          <div class="release-content-item">
-            <div class="release-content-item-icon support-timeline-icon">
-              <div class="support-rectangle support-extended"></div>
+          <div class="flex flex-row items-center gap-3">
+            <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
+              <div
+                class="support-extended h-5 w-9 rounded-[3px] border-[1.5px] border-blue-500/40 bg-blue-500/20"
+              ></div>
             </div>
-            <p><strong>Extended support window</strong> - Branch receives extended active development and bug fixes</p>
+            <p class="overflow-x-auto p-2">
+              <strong>Extended support window</strong> - Branch receives extended active development and bug fixes
+            </p>
           </div>
         }
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon support-timeline-icon">
-            <div class="support-rectangle support-security"></div>
+        <div class="flex flex-row items-center gap-3">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
+            <div
+              class="h-5 w-9 rounded-[3px] border-[1.5px] border-[rgba(239,147,2,0.5)] bg-[rgba(239,147,2,0.25)]"
+            ></div>
           </div>
-          <p><strong>Security support window</strong> - Branch receives only security updates</p>
+          <p class="overflow-x-auto p-2">
+            <strong>Security support window</strong> - Branch receives only security updates
+          </p>
         </div>
 
-        <div class="release-content-item">
-          <div class="release-content-item-icon support-timeline-icon">
-            <div class="support-rectangle support-unsupported"></div>
+        <div class="flex flex-row items-center gap-3">
+          <div class="flex size-10 max-w-10 min-w-10 items-center justify-center">
+            <div
+              class="h-5 w-9 rounded-[3px] border-[1.5px] border-[rgba(169,169,169,0.5)] bg-[rgba(169,169,169,0.25)]"
+            ></div>
           </div>
-          <p><strong>Historical support window</strong> - Shows when the branch was supported in the past</p>
+          <p class="overflow-x-auto p-2">
+            <strong>Historical support window</strong> - Shows when the branch was supported in the past
+          </p>
         </div>
 
         @if (showExtendedSupport()) {
-          <p class="policy-text">
+          <p class="policy-text mt-4 border-l-[3px] border-gray-700 px-4 py-1 text-[0.9rem] text-gray-500">
             Our extended support policy provides major versions with {{ majorTotalMonths() }} months total support (6
             months active + {{ majorExtendedMonths() }} months extended + 6 months security). For minor versions, the
             total support period is {{ minorTotalMonths() }} months (3 months active +
             {{ minorExtendedMonths() }} months extended + 3 months security).
           </p>
         } @else {
-          <p class="policy-text">
+          <p class="policy-text mt-4 border-l-[3px] border-gray-700 px-4 py-1 text-[0.9rem] text-gray-500">
             Our policy is to provide major versions with one year of security support and six months of technical
             support. For minor versions, these support periods are six months for security support and three months for
             technical support.
@@ -117,12 +143,14 @@
 
         @if (buildInfo(); as buildInfo) {
           @if (buildInfo.version && buildInfo.time) {
-            <h3 class="legend-section-title">Build Information</h3>
+            <h3 class="mt-4 mb-2 border-b-2 border-gray-200 pb-1 text-[1.1rem] font-semibold text-gray-800">
+              Build Information
+            </h3>
 
-            <span>
+            <span class="text-center text-sm text-gray-500">
               The current release build: <strong>{{ buildInfo.version }}</strong>
             </span>
-            <span>
+            <span class="text-center text-sm text-gray-500">
               Made on:
               <strong>
                 {{ buildInfo.time | date: 'd MMMM y' }}

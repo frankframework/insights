@@ -1,4 +1,6 @@
-<div class="business-value-manage-container">
+<div
+  class="flex min-h-[calc(100vh-10rem)] flex-col px-[10vw] pt-24 pb-6 max-[992px]:min-h-[calc(100vh-9rem)] max-[992px]:px-[5vw] max-[992px]:pt-20 max-sm:min-h-[calc(100vh-8rem)] max-sm:px-4 max-sm:pt-24 max-sm:pb-4 max-[480px]:min-h-[calc(100vh-6rem)] max-[480px]:px-2 max-[480px]:pt-20"
+>
   @if (showCreateForm()) {
     <app-business-value-add
       [releaseId]="releaseId()"
@@ -35,19 +37,32 @@
   }
 
   @if (!isLoading()) {
-    <header class="header">
-      <button class="back-button" (click)="goBack()">
-        <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
+    <header class="mb-4 flex items-center justify-between border-b-2 border-gray-200 pb-3 max-md:mb-3 max-md:pb-2">
+      <button
+        class="back-button group flex cursor-pointer items-center gap-2 rounded-lg border-[1.5px] border-gray-300 bg-white px-5 py-2.5 text-[0.95rem] leading-none font-medium text-gray-700 transition-all duration-200 hover:-translate-x-0.5 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:-translate-x-px active:bg-gray-100"
+        (click)="goBack()"
+      >
+        <img
+          class="transition-transform duration-200 group-hover:-translate-x-0.5"
+          src="assets/icons/chevron-left.svg"
+          alt=""
+          width="20"
+          height="20"
+        />
         Back to Overview
       </button>
 
-      <div class="header-titles">
-        <h1>{{ releaseTitle() }}</h1>
-        <p class="subtitle">Manage Business Values</p>
+      <div class="flex flex-col items-end gap-1 text-right max-md:w-full">
+        <h1 class="text-[1.75rem]/tight font-bold tracking-tight text-gray-800 max-md:text-2xl max-[480px]:text-xl">
+          {{ releaseTitle() }}
+        </h1>
+        <p class="text-base leading-none font-medium text-gray-500 max-[480px]:text-[0.9rem]">Manage Business Values</p>
       </div>
     </header>
 
-    <div class="content">
+    <div
+      class="grid flex-1 grid-cols-[2fr_3fr] items-start gap-4 overflow-hidden max-[1200px]:grid-cols-1 max-sm:gap-3"
+    >
       <app-business-value-panel
         [businessValues]="businessValues()"
         [selectedBusinessValue]="selectedBusinessValue()"

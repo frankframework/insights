@@ -5,7 +5,6 @@ import { Component, ElementRef, afterNextRender, input, output, viewChild } from
   standalone: true,
   imports: [],
   templateUrl: './modal.component.html',
-  styleUrl: './modal.component.scss',
 })
 export class ModalComponent {
   public readonly title = input('');

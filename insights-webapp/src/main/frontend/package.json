@@ -45,6 +45,7 @@
     "@cypress/schematic": "5.0.0",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/dompurify": "^3.2.0",
     "@types/jasmine": "~6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.66.0",
@@ -63,7 +64,9 @@
     "karma-coverage": "~2.2.1",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.2.0",
+    "postcss": "^8.5.26",
     "prettier": "^3.9.6",
+    "tailwindcss": "4.3.3",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.66.0"
   },

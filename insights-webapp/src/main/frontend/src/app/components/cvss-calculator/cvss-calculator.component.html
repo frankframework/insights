@@ -1,35 +1,43 @@
 <app-modal title="CVSS 3.1 Calculator" (closed)="close()">
-  <div class="cvss-calculator">
+  <div class="flex flex-col gap-5 overflow-x-hidden">
     @if (referenceScore() !== null) {
-      <p class="reference-note">
-        Original NVD score for reference: <strong>{{ referenceScore() }}</strong>
+      <p class="text-sm text-gray-500">
+        Original NVD score for reference: <strong class="text-gray-800">{{ referenceScore() }}</strong>
       </p>
     }
 
-    <div class="vector-field">
-      <label for="cvssVectorInput">Paste a CVSS vector string (optional)</label>
-      <div class="vector-input-row">
+    <div class="flex flex-col gap-2">
+      <label class="text-[0.85rem] font-semibold text-gray-800" for="cvssVectorInput">
+        Paste a CVSS vector string (optional)
+      </label>
+      <div class="flex gap-2">
         <input
           id="cvssVectorInput"
           type="text"
-          class="vector-input"
+          class="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
           placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
           [ngModel]="vectorInput()"
           (ngModelChange)="vectorInput.set($event)"
           (keydown.enter)="applyVectorInput()"
         />
-        <button type="button" class="load-btn" (click)="applyVectorInput()">Load</button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-[0.85rem] font-semibold text-gray-800 transition-all duration-200 hover:bg-gray-200"
+          (click)="applyVectorInput()"
+        >
+          Load
+        </button>
       </div>
       @if (vectorError()) {
-        <span class="error-message">{{ vectorError() }}</span>
+        <span class="error-message text-[0.8rem] font-semibold text-red-600">{{ vectorError() }}</span>
       }
     </div>
 
-    <div class="metrics-grid">
+    <div class="grid grid-cols-2 gap-4 max-[540px]:grid-cols-1">
       @for (metric of metrics; track metric.key) {
-        <div class="metric-group">
+        <div class="flex flex-col gap-1.5">
           <span
-            class="metric-label"
+            class="w-fit cursor-help text-[0.8rem] font-semibold text-gray-500"
             tabindex="0"
             (mouseenter)="showTooltip($event, metric.label, metric.description)"
             (focus)="showTooltip($event, metric.label, metric.description)"
@@ -38,12 +46,16 @@
           >
             {{ metric.label }}
           </span>
-          <div class="metric-options">
+          <div class="flex flex-wrap gap-1.5">
             @for (option of metric.options; track option.key) {
               <button
                 type="button"
-                class="metric-option"
-                [class.active]="selection()[metric.key] === option.key"
+                [class]="
+                  'min-w-18 flex-1 cursor-pointer rounded-md border px-1.5 py-1.5 text-xs font-semibold transition-all duration-150 ' +
+                  (selection()[metric.key] === option.key
+                    ? 'active border-blue-500 bg-blue-500 text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50')
+                "
                 (click)="selectMetric(metric.key, option.key)"
                 (mouseenter)="showTooltip($event, option.fullLabel, option.description)"
                 (focus)="showTooltip($event, option.fullLabel, option.description)"
@@ -58,19 +70,37 @@
       }
     </div>
 
-    <div class="result-row">
-      <div class="result-score" [attr.data-severity]="result()?.severity ?? 'Incomplete'">
-        <span class="score-value">{{ result()?.score ?? '—' }}</span>
-        <span class="score-severity">{{ result()?.severity ?? 'Incomplete' }}</span>
+    <div class="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-2">
+      <div
+        class="flex items-baseline gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-gray-700 data-[severity=Critical]:bg-red-100 data-[severity=Critical]:text-red-800 data-[severity=High]:bg-orange-200 data-[severity=High]:text-orange-800 data-[severity=Low]:bg-blue-100 data-[severity=Low]:text-blue-800 data-[severity=Medium]:bg-amber-100 data-[severity=Medium]:text-amber-800 data-[severity=None]:text-gray-500"
+        [attr.data-severity]="result()?.severity ?? 'Incomplete'"
+      >
+        <span class="text-[1.2rem] font-bold">{{ result()?.score ?? '—' }}</span>
+        <span class="text-[0.8rem] font-semibold tracking-[0.02em] uppercase">
+          {{ result()?.severity ?? 'Incomplete' }}
+        </span>
       </div>
       @if (currentVectorString()) {
-        <code class="result-vector">{{ currentVectorString() }}</code>
+        <code class="text-[0.8125rem] break-all text-gray-500">{{ currentVectorString() }}</code>
       }
     </div>
 
-    <div class="actions-row">
-      <button type="button" class="cancel-btn" (click)="close()">Cancel</button>
-      <button type="button" class="use-btn" [disabled]="!result()" (click)="useScore()">Use this score</button>
+    <div class="flex justify-end gap-3">
+      <button
+        type="button"
+        class="cursor-pointer rounded-lg border border-gray-300 bg-transparent px-5 py-2.5 text-[0.85rem] font-semibold text-gray-700 transition-all duration-200 hover:bg-gray-100"
+        (click)="close()"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="cursor-pointer rounded-lg bg-blue-500 px-5 py-2.5 text-[0.85rem] font-semibold text-white transition-all duration-200 enabled:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="!result()"
+        (click)="useScore()"
+      >
+        Use this score
+      </button>
     </div>
   </div>
 </app-modal>

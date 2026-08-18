@@ -1,8 +1,12 @@
 @if (tooltip(); as state) {
-  <div class="tooltip" [style.top]="state.top" [style.left]="state.left">
-    <h4 class="tooltip-title">{{ state.title }}</h4>
+  <div
+    class="tooltip pointer-events-none fixed z-100 w-[300px] max-w-[50vw] -translate-x-1/2 -translate-y-full rounded-lg bg-gray-800 p-4 text-gray-50 shadow-lg"
+    [style.top]="state.top"
+    [style.left]="state.left"
+  >
+    <h4 class="tooltip-title mb-2 text-base font-semibold whitespace-normal">{{ state.title }}</h4>
     @for (detail of state.details; track detail.value) {
-      <p class="tooltip-detail">
+      <p class="tooltip-detail my-1 text-sm text-gray-300">
         @if (detail.label) {
           <strong>{{ detail.label }}:</strong>
         }

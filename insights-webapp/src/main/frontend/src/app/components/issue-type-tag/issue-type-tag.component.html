@@ -1,3 +1,7 @@
-<span class="issue-type-tag" [style.backgroundColor]="issueType().color" [style.color]="textColor()">
+<span
+  class="issue-type-tag inline-flex items-center rounded-full border border-black/10 px-2.5 py-1.5 text-xs leading-none font-semibold tracking-wide whitespace-nowrap capitalize shadow-sm"
+  [style.backgroundColor]="issueType().color"
+  [style.color]="textColor()"
+>
   {{ issueType().name }}
 </span>

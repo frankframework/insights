@@ -32,10 +32,14 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
   standalone: true,
   imports: [DatePipe, IssueBarComponent],
   templateUrl: './milestone-row.component.html',
-  styleUrls: ['./milestone-row.component.scss'],
 })
 export class MilestoneRowComponent {
   private static readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
+  // Kept in sync with the track-area utilities in the template: py-6, gap-1 and the h-9/h-10 lanes.
+  private static readonly TRACK_AREA_PADDING_REM = 3;
+  private static readonly TRACK_GAP_REM = 0.25;
+  private static readonly TRACK_HEIGHT_REM = 2.25;
+  private static readonly MONTHLY_TRACK_HEIGHT_REM = 2.5;
 
   public readonly milestone = input.required<Milestone>();
   public readonly issues = input.required<Issue[]>();
@@ -57,9 +61,19 @@ export class MilestoneRowComponent {
   public readonly tracks: Signal<number[]> = computed(() =>
     Array.from({ length: this.trackCount() }, (_, index) => index),
   );
-  public readonly trackAreaHeight: Signal<number> = computed(() =>
-    this.viewMode() === ViewMode.MONTHLY ? this.trackCount() * 2.5 : this.trackCount() * 2.25,
-  );
+  public readonly isMonthlyView: Signal<boolean> = computed(() => this.viewMode() === ViewMode.MONTHLY);
+  public readonly trackAreaHeight: Signal<number> = computed(() => {
+    const trackHeight = this.isMonthlyView()
+      ? MilestoneRowComponent.MONTHLY_TRACK_HEIGHT_REM
+      : MilestoneRowComponent.TRACK_HEIGHT_REM;
+    const trackCount = this.trackCount();
+
+    return (
+      MilestoneRowComponent.TRACK_AREA_PADDING_REM +
+      trackCount * trackHeight +
+      (trackCount - 1) * MilestoneRowComponent.TRACK_GAP_REM
+    );
+  });
   public readonly isUnplannedEpicMilestone: Signal<boolean> = computed(
     () => this.milestone().id === MilestoneRowComponent.UNPLANNED_EPICS_ID,
   );
@@ -109,7 +123,7 @@ export class MilestoneRowComponent {
       return this.layoutUnplannedEpics();
     }
 
-    if (this.viewMode() === ViewMode.MONTHLY) {
+    if (this.isMonthlyView()) {
       return this.layoutMonthlyView();
     }
 

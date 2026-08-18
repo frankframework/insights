@@ -1,14 +1,24 @@
-<div class="right-panel">
+<div
+  class="flex h-[calc(100vh-15rem)] max-h-[calc(100vh-15rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white max-[1200px]:h-auto max-[1200px]:max-h-none max-[1200px]:min-h-100 max-[992px]:h-[calc(100vh-12rem)] max-[992px]:max-h-[calc(100vh-12rem)] max-sm:min-h-[350px]"
+>
   @if (selectedBusinessValue()) {
-    <header class="panel-header">
-      <h2>Issues</h2>
-      <span class="count">{{ sortedIssues().length }}</span>
+    <header
+      class="panel-header flex shrink-0 items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-50 p-4 max-sm:p-3"
+    >
+      <h2 class="text-xl leading-none font-semibold text-gray-800 max-[480px]:text-lg">Issues</h2>
+      <span
+        class="rounded-xl bg-gray-200 px-3 py-2 text-sm leading-none font-semibold text-gray-600 max-[480px]:px-2.5 max-[480px]:py-1.5 max-[480px]:text-[0.8125rem]"
+      >
+        {{ sortedIssues().length }}
+      </span>
     </header>
 
-    <div class="search-and-save-section">
-      <div class="search-input-wrapper">
+    <div
+      class="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 max-sm:flex-col max-sm:items-stretch max-sm:px-3 max-sm:py-2"
+    >
+      <div class="relative min-w-0 flex-1">
         <svg
-          class="search-icon"
+          class="pointer-events-none absolute top-1/2 left-3 z-1 -translate-y-1/2 text-gray-400"
           width="16"
           height="16"
           viewBox="0 0 24 24"
@@ -23,14 +33,18 @@
         </svg>
         <input
           type="text"
-          class="search-input"
+          class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-3 pl-10 text-sm text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
           placeholder="Search issues by title or number..."
           [value]="issueSearchQuery()"
           (input)="updateSearchQuery($event)"
         />
       </div>
 
-      <button class="save-button" [disabled]="!hasChanges() || isSaving()" (click)="onSaveClick()">
+      <button
+        class="shrink-0 cursor-pointer rounded-lg bg-blue-500 px-5 py-2.5 text-[0.9375rem] leading-none font-semibold whitespace-nowrap text-white transition-all duration-200 enabled:hover:-translate-y-px enabled:hover:bg-blue-600 enabled:hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)] enabled:active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full"
+        [disabled]="!hasChanges() || isSaving()"
+        (click)="onSaveClick()"
+      >
         @if (isSaving()) {
           <span>Saving...</span>
         } @else {
@@ -39,56 +53,91 @@
       </button>
     </div>
 
-    <div class="issues-list">
+    <div class="min-h-0 flex-1 overflow-y-auto p-3 max-sm:p-2">
       @if (sortedIssues().length === 0) {
-        <div class="empty-state">
-          <p>No issues available for this release.</p>
+        <div class="empty-state flex flex-col items-center justify-center px-4 py-8 text-center text-gray-500">
+          <p class="max-w-75 text-[0.9375rem]">No issues available for this release.</p>
         </div>
       } @else {
         @for (issue of sortedIssues(); track issue.id) {
           <div
-            class="issue-item"
             role="button"
             tabindex="0"
-            [class.selected]="issue.isSelected"
-            [class.connected]="issue.isConnected"
-            [class.assigned-to-other]="issue.assignedToOther"
+            [class]="
+              'issue-item mb-2 flex min-w-0 items-start gap-3 rounded-lg border p-3 transition-all duration-200 max-sm:gap-2 max-sm:p-2.5 ' +
+              (issue.isConnected ? 'connected border-l-[3px] border-l-blue-500 max-sm:border-l-2 ' : '') +
+              (issue.assignedToOther
+                ? 'assigned-to-other cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
+                : issue.isSelected
+                  ? 'selected cursor-pointer border-blue-500 bg-blue-50'
+                  : 'cursor-pointer border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50')
+            "
             (click)="toggleIssue(issue)"
             (keydown.enter)="toggleIssue(issue)"
             (keydown.space)="toggleIssue(issue)"
           >
             <input
               type="checkbox"
+              class="relative mt-1 flex size-[1.125rem] shrink-0 cursor-pointer appearance-none items-center justify-center rounded border-[1.5px] border-gray-300 bg-white transition-all duration-200 enabled:hover:border-blue-500 checked:border-blue-500 checked:bg-blue-500 checked:after:block checked:after:h-[0.55rem] checked:after:w-[0.3rem] checked:after:-translate-y-px checked:after:rotate-45 checked:after:border-white checked:after:content-[''] checked:after:[border-style:solid] checked:after:[border-width:0_2px_2px_0] disabled:cursor-not-allowed disabled:after:opacity-50 max-sm:size-4 max-sm:border max-sm:checked:after:h-[0.5rem] max-sm:checked:after:w-[0.275rem] max-sm:checked:after:[border-width:0_1.5px_1.5px_0]"
               [checked]="issue.isSelected"
               [disabled]="issue.assignedToOther"
               (click)="$event.stopPropagation()"
               (change)="toggleIssue(issue)"
             />
-            <div class="issue-content">
-              <div class="issue-header">
-                <span class="issue-number">#{{ issue.number }}</span>
+            <div class="min-w-0 flex-1 overflow-hidden">
+              <div class="mb-1.5 flex flex-wrap items-center gap-2 max-sm:mb-1 max-sm:gap-1.5">
+                <span
+                  class="issue-number shrink-0 text-sm leading-none font-semibold text-gray-500 max-sm:text-[0.8125rem]"
+                >
+                  #{{ issue.number }}
+                </span>
                 @if (issue.issueType?.name) {
-                  <span class="issue-type">{{ issue.issueType?.name }}</span>
+                  <span
+                    class="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-xs leading-none font-semibold whitespace-nowrap text-gray-600 uppercase max-sm:px-1.5 max-sm:text-[0.6875rem]"
+                  >
+                    {{ issue.issueType?.name }}
+                  </span>
                 }
                 @if (issue.assignedToOther) {
-                  <span class="assigned-badge">Assigned to {{ issue.assignedBusinessValueTitle }}</span>
+                  <span
+                    class="shrink-0 rounded-xl bg-sky-100 px-2 py-0.5 text-xs leading-none font-semibold whitespace-nowrap text-sky-700 max-sm:px-1.5 max-sm:text-[0.6875rem]"
+                  >
+                    Assigned to {{ issue.assignedBusinessValueTitle }}
+                  </span>
                 }
               </div>
-              <h4>{{ issue.title }}</h4>
+              <h4
+                [class]="
+                  ' text-[0.9375rem]/normal font-medium break-words max-sm:text-sm/snug ' +
+                  (issue.assignedToOther ? 'text-gray-400' : 'text-gray-800')
+                "
+              >
+                {{ issue.title }}
+              </h4>
             </div>
           </div>
         }
       }
     </div>
   } @else {
-    <div class="no-selection">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <div class="flex flex-col items-center justify-center px-4 py-8 text-center text-gray-500">
+      <svg
+        class="mb-3 text-gray-300"
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+      >
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
         <path d="M2 17l10 5 10-5" />
         <path d="M2 12l10 5 10-5" />
       </svg>
-      <h3>Select a Business Value</h3>
-      <p>Choose a business value from the left panel to manage its connected issues.</p>
+      <h3 class="mb-2 text-lg leading-none font-semibold text-gray-600">Select a Business Value</h3>
+      <p class="max-w-75 text-[0.9375rem]">
+        Choose a business value from the left panel to manage its connected issues.
+      </p>
     </div>
   }
 </div>

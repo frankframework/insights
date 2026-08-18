@@ -9,7 +9,6 @@ import { BusinessValue, BusinessValueService } from '../../../../services/busine
   standalone: true,
   imports: [TitleCasePipe, ModalComponent],
   templateUrl: './business-value-delete.component.html',
-  styleUrl: './business-value-delete.component.scss',
 })
 export class BusinessValueDeleteComponent {
   public readonly businessValue = input.required<BusinessValue>();

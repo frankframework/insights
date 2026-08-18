@@ -1,14 +1,14 @@
 <button
   type="button"
-  class="include-version-button"
-  [class.pending]="pending()"
+  class="group"
+  [class]="buttonClasses()"
   [disabled]="included()"
   [attr.title]="title()"
   (click)="onClick($event)"
 >
   @if (pending()) {
-    <span class="pending-label">pending…</span>
-    <span class="pending-undo">× undo</span>
+    <span class="group-hover:hidden">pending…</span>
+    <span class="hidden group-hover:inline">× undo</span>
   } @else {
     {{ included() ? 'included' : '+ include' }}
   }

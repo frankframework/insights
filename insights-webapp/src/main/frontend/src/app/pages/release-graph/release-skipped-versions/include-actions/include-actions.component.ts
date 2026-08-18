@@ -6,7 +6,7 @@ import { serializeVersionRanges, VersionRange } from '../../../../pipes/release-
   standalone: true,
   imports: [],
   templateUrl: './include-actions.component.html',
-  styleUrl: './include-actions.component.scss',
+  host: { class: 'mt-4 flex flex-col gap-1.5 border-t border-gray-200 pt-4' },
 })
 export class IncludeActionsComponent {
   public readonly includableRanges = input<VersionRange[]>([]);

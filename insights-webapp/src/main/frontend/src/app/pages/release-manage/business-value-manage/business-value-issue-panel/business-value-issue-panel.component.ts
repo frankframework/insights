@@ -14,7 +14,6 @@ export interface IssueWithSelection extends Issue {
   standalone: true,
   imports: [],
   templateUrl: './business-value-issue-panel.component.html',
-  styleUrl: './business-value-issue-panel.component.scss',
 })
 export class BusinessValueIssuePanelComponent {
   public readonly selectedBusinessValue = input.required<BusinessValue | null>();

@@ -1,27 +1,54 @@
 <app-modal title="Delete Business Value" (closed)="close()">
-  <div class="delete-container">
+  <div class="w-full py-4 max-md:py-2">
     @if (errorMessage()) {
-      <div class="error-message">
+      <div
+        class="error-message mb-6 rounded-md border border-red-200 bg-red-100 px-4 py-3 text-sm text-red-800 max-sm:mb-4 max-sm:px-3.5 max-sm:py-2.5 max-sm:text-[0.8125rem]"
+      >
         {{ errorMessage() }}
       </div>
     }
 
-    <div class="confirmation-text">
-      <p>Are you sure you want to delete business value</p>
-      <h4>{{ businessValue().title | titlecase }} ?</h4>
-      <div class="warning-box">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+    <div class="mb-6 max-sm:mb-5">
+      <p class="mb-4 text-base leading-normal text-gray-700 max-sm:mb-3 max-sm:text-[0.9375rem]">
+        Are you sure you want to delete business value
+      </p>
+      <h4 class="text-base font-bold">{{ businessValue().title | titlecase }} ?</h4>
+      <div
+        class="flex items-start gap-3 rounded-lg border border-red-200 bg-rose-50 p-4 text-red-800 max-sm:gap-2.5 max-sm:p-3.5"
+      >
+        <svg
+          class="mt-0.5 shrink-0 max-sm:size-[18px]"
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          fill="currentColor"
+          viewBox="0 0 16 16"
+        >
           <path
             d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"
           />
         </svg>
-        <p>This action is permanent. All connections to issues will be removed.</p>
+        <p class="text-sm text-red-800 max-sm:text-[0.8125rem]">
+          This action is permanent. All connections to issues will be removed.
+        </p>
       </div>
     </div>
 
-    <div class="form-actions">
-      <button class="btn btn-cancel" [disabled]="isDeleting()" (click)="close()">Cancel</button>
-      <button class="btn btn-delete" [disabled]="isDeleting()" (click)="confirmDelete()">
+    <div
+      class="mt-8 flex justify-end gap-3 border-t border-gray-200 pt-4 max-sm:mt-6 max-sm:flex-col-reverse max-sm:gap-2 max-sm:pt-3"
+    >
+      <button
+        class="cursor-pointer rounded-lg border-[1.5px] border-gray-300 bg-white px-5 py-2.5 text-[0.9375rem] font-semibold text-gray-700 transition-all duration-200 enabled:hover:border-gray-400 enabled:hover:bg-gray-50 enabled:active:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full max-sm:px-4 max-sm:py-3 max-sm:text-sm"
+        [disabled]="isDeleting()"
+        (click)="close()"
+      >
+        Cancel
+      </button>
+      <button
+        class="cursor-pointer rounded-lg bg-red-600 px-5 py-2.5 text-[0.9375rem] font-semibold text-white transition-all duration-200 enabled:hover:bg-red-700 enabled:hover:shadow-[0_4px_12px_rgba(220,38,38,0.3)] enabled:active:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full max-sm:px-4 max-sm:py-3 max-sm:text-sm"
+        [disabled]="isDeleting()"
+        (click)="confirmDelete()"
+      >
         @if (isDeleting()) {
           <span>Deleting...</span>
         } @else {

@@ -1,16 +1,24 @@
 <app-modal [title]="businessValue()?.title || 'Business Value Details'" (closed)="close()">
-  <div class="business-value-modal-content">
+  <div class="scrollbar-none max-h-[70vh] min-h-50 w-full overflow-y-auto max-sm:max-h-[75vh]">
     @if (businessValue()) {
-      <div class="business-value-details">
-        <section class="description-section">
-          <h3>Description</h3>
-          <div class="description-text" [innerHTML]="businessValue()!.description | markdown"></div>
+      <div class="flex w-full min-w-0 flex-col gap-10 max-sm:gap-8">
+        <section class="min-w-0 border-b border-gray-200 pb-8 max-sm:pb-6">
+          <h3 class="mb-4 text-lg font-semibold tracking-tight text-slate-900 max-sm:mb-3.5 max-sm:text-[1.0625rem]">
+            Description
+          </h3>
+          <div
+            class="markdown-body text-base leading-relaxed break-words text-slate-600 max-sm:text-[0.9375rem]"
+            [innerHTML]="businessValue()!.description | markdown"
+          ></div>
         </section>
 
-        <section class="issues-section">
-          <div class="issues-header">
-            <h3>Connected Issues</h3>
-            <span class="issue-count"
+        <section class="w-full min-w-0">
+          <div class="mb-6 flex items-center justify-between gap-3 max-sm:mb-5">
+            <h3 class="text-lg font-semibold tracking-tight text-slate-900 max-sm:text-[1.0625rem]">
+              Connected Issues
+            </h3>
+            <span
+              class="shrink-0 rounded-md bg-slate-100 px-3.5 py-1.5 text-sm font-semibold text-slate-600 max-sm:px-3 max-sm:py-[0.3125rem] max-sm:text-[0.8125rem]"
               >{{ businessValue()!.issues?.length || 0 }} issue{{
                 businessValue()!.issues?.length === 1 ? '' : 's'
               }}</span
@@ -18,10 +26,10 @@
           </div>
 
           @if (businessValue()!.issues && businessValue()!.issues!.length > 0) {
-            <div class="issues-tree">
+            <div class="flex w-full min-w-0 flex-col gap-2">
               @for (issue of businessValue()!.issues; track issue.id) {
                 <div
-                  class="issue-tree-item"
+                  class="w-full min-w-0"
                   role="button"
                   tabindex="0"
                   (click)="openIssue(issue)"
@@ -33,8 +41,10 @@
               }
             </div>
           } @else {
-            <div class="no-issues">
-              <p>No issues connected to this business value.</p>
+            <div class="px-8 py-12 text-center max-sm:px-6 max-sm:py-10">
+              <p class="text-base font-normal text-slate-500 max-sm:text-[0.9375rem]">
+                No issues connected to this business value.
+              </p>
             </div>
           }
         </section>

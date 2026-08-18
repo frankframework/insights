@@ -5,6 +5,5 @@ import { NgOptimizedImage } from '@angular/common';
   selector: 'app-not-found',
   imports: [NgOptimizedImage],
   templateUrl: './not-found.component.html',
-  styleUrl: './not-found.component.scss',
 })
 export class NotFoundComponent {}

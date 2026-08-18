@@ -1,31 +1,51 @@
-<div class="release-details-container">
+<div
+  class="flex w-full flex-col overflow-x-hidden px-[10vw] pt-32 pb-8 max-[992px]:px-[2vw] max-[992px]:pt-24 max-sm:px-4"
+>
   @if (isLoading()) {
     <app-loader />
   } @else if (release(); as release) {
-    <header class="release-details-header">
-      <div class="header-actions">
-        <a class="back-button" [routerLink]="['/graph']" [queryParams]="graphQueryParams()">
-          <img src="assets/icons/chevron-left.svg" alt="" width="20" height="20" />
+    <header
+      class="release-details-header mb-8 flex items-center justify-between border-b-2 border-gray-200 pb-6 max-md:mb-6 max-md:pb-4"
+    >
+      <div class="flex items-center gap-3 max-md:w-full max-md:justify-start">
+        <a
+          class="back-button group flex cursor-pointer items-center gap-2 rounded-lg border-[1.5px] border-gray-300 bg-white px-5 py-2.5 text-[0.95rem] font-medium text-gray-700 transition-all duration-200 hover:-translate-x-0.5 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:-translate-x-px active:bg-gray-100 max-[480px]:px-4 max-[480px]:text-sm"
+          [routerLink]="['/graph']"
+          [queryParams]="graphQueryParams()"
+        >
+          <img
+            class="transition-transform duration-200 group-hover:-translate-x-0.5"
+            src="assets/icons/chevron-left.svg"
+            alt=""
+            width="20"
+            height="20"
+          />
           Back
         </a>
         @if (authService.currentUser()?.isFrankFrameworkMember) {
-          <a class="manage-button" [routerLink]="['/release-manage', release.id]">Manage</a>
+          <a
+            class="flex cursor-pointer items-center gap-2 rounded-lg border-[1.5px] border-gray-300 bg-white px-5 py-[0.725rem] text-[0.95rem] font-medium text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800 active:translate-y-0 active:bg-gray-100 active:shadow-sm max-[480px]:px-4 max-[480px]:text-sm"
+            [routerLink]="['/release-manage', release.id]"
+          >
+            Manage
+          </a>
         }
       </div>
-      <div class="header-details">
-        <div class="version-nav">
+      <div class="header-details flex flex-col items-end gap-1 max-md:w-full">
+        <div class="flex items-baseline justify-end gap-1.5">
           @if (previousRelease()) {
             <a
-              class="version-nav-btn"
+              class="version-nav-btn cursor-pointer text-[1.1rem] font-medium whitespace-nowrap text-gray-400"
               [title]="'Go to ' + previousRelease()!.name"
               [routerLink]="releaseGraphLink(previousRelease())"
               [queryParams]="graphQueryParams()"
             >
               {{ previousRelease()!.name }}
             </a>
-            <span class="version-sep">&lt;</span>
+            <span class="text-[1.1rem] font-normal text-gray-300 select-none">&lt;</span>
           }
           <a
+            class="text-3xl font-bold tracking-tight text-gray-800 hover:text-[#083f98] hover:underline max-md:text-2xl max-[480px]:text-xl"
             target="_blank"
             rel="noopener noreferrer"
             [href]="'https://github.com/frankframework/frankframework/releases/tag/' + release.tagName"
@@ -33,9 +53,9 @@
             {{ release.name }}
           </a>
           @if (nextRelease()) {
-            <span class="version-sep">&gt;</span>
+            <span class="text-[1.1rem] font-normal text-gray-300 select-none">&gt;</span>
             <a
-              class="version-nav-btn"
+              class="version-nav-btn cursor-pointer text-[1.1rem] font-medium whitespace-nowrap text-gray-400"
               [title]="'Go to ' + nextRelease()!.name"
               [routerLink]="releaseGraphLink(nextRelease())"
               [queryParams]="graphQueryParams()"
@@ -44,40 +64,50 @@
             </a>
           }
         </div>
-        <span>{{ release.publishedAt | date: 'longDate' }}</span>
+        <span class="mt-2 block text-[1.1rem] text-gray-600 max-md:mt-1 max-md:text-base max-[480px]:text-[0.9rem]">
+          {{ release.publishedAt | date: 'longDate' }}
+        </span>
       </div>
     </header>
 
-    <div class="release-details-body">
-      <div class="release-details-content">
-        <section class="left-panel">
+    <div class="flex min-w-0 flex-row max-[992px]:flex-col">
+      <div class="grid w-full min-w-0 grid-cols-2 gap-8 max-[968px]:grid-cols-1">
+        <section class="flex min-w-0 flex-col gap-8">
           @if (highlightedLabels() === null && releaseIssues() === null && !businessValues()) {
-            <div class="no-new-features">
-              <p>No new features found towards previous release.</p>
+            <div class="rounded-lg bg-gray-50 p-8 text-center">
+              <p class="my-2 text-gray-500">No new features found towards previous release.</p>
             </div>
           } @else {
             @if (highlightedLabels(); as highlightedLabels) {
               <app-release-highlights [highlightedLabels]="highlightedLabels" [releaseIssues]="releaseIssues()" />
             } @else {
-              <div class="no-highlights">
-                <p>No new highlights found for this release.</p>
+              <div class="rounded-lg bg-gray-50 p-8 text-center">
+                <p class="my-2 text-gray-500">No new highlights found for this release.</p>
               </div>
             }
 
             @if (businessValues()) {
-              <div class="section-view-toggle">
+              <div class="section-view-toggle flex gap-1 rounded-lg bg-gray-100 p-1">
                 <button
-                  class="view-tab"
                   title="Grouped issues that contribute to one functional item."
-                  [class.active]="activeView() === 'business-value'"
+                  [class]="
+                    'view-tab flex-1 cursor-pointer rounded-md px-4 py-2.5 text-[0.9375rem] whitespace-nowrap transition-all duration-200 max-[480px]:px-3 max-[480px]:py-2 max-[480px]:text-sm ' +
+                    (activeView() === 'business-value'
+                      ? 'active bg-white font-semibold text-gray-800'
+                      : 'bg-transparent text-gray-500 hover:bg-white/60 hover:text-gray-700')
+                  "
                   (click)="setActiveView('business-value')"
                 >
                   Business Values
                 </button>
                 <button
-                  class="view-tab"
                   title="Subsets of issues that might be relevant to you."
-                  [class.active]="activeView() === 'issues'"
+                  [class]="
+                    'view-tab flex-1 cursor-pointer rounded-md px-4 py-2.5 text-[0.9375rem] whitespace-nowrap transition-all duration-200 max-[480px]:px-3 max-[480px]:py-2 max-[480px]:text-sm ' +
+                    (activeView() === 'issues'
+                      ? 'active bg-white font-semibold text-gray-800'
+                      : 'bg-transparent text-gray-500 hover:bg-white/60 hover:text-gray-700')
+                  "
                   (click)="setActiveView('issues')"
                 >
                   Important Issues
@@ -86,22 +116,22 @@
             }
 
             @if (activeView() === 'business-value') {
-              <div class="section-content">
+              <div class="mb-8 animate-[slide-in_0.3s_ease-out]">
                 <app-release-business-value [businessValues]="businessValues()" />
               </div>
             } @else if (releaseIssues(); as releaseIssues) {
-              <div class="section-content">
+              <div class="mb-8 animate-[slide-in_0.3s_ease-out]">
                 <app-release-important-issues [releaseIssues]="releaseIssues" />
               </div>
             }
           }
         </section>
 
-        <section class="right-panel">
+        <section class="min-w-0">
           @if (vulnerabilities(); as vulnerabilities) {
             <app-release-vulnerabilities [vulnerabilities]="vulnerabilities" [lastScanned]="release.lastScanned" />
           } @else {
-            <div class="placeholder">
+            <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
               <p>Loading vulnerability information...</p>
             </div>
           }
