@@ -7,7 +7,7 @@ const PILL_BASE =
   'transition-all duration-200 ease-in-out enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60';
 
 const PILL_ACTIVE =
-  'border-blue-900 bg-blue-900 shadow-[0_3px_6px_rgba(30,58,138,0.3)] ' +
+  'active border-blue-900 bg-blue-900 shadow-[0_3px_6px_rgba(30,58,138,0.3)] ' +
   'enabled:hover:border-[#1d3680] enabled:hover:bg-[#1d3680]';
 
 const PILL_IDLE =
