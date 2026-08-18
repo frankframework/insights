@@ -323,19 +323,19 @@ describe('ReleaseSkippedVersions', () => {
     it('should label the release lines it can include', () => {
       buildReleaseTree(fixture, ['v7.1.0', 'v7.2.0', 'v7.3.0']);
 
-      expect(component.includeLabel()).toBe('[7.1,7.3]');
+      expect(component.includeLabel()).toBe('[7.1,7.4)');
     });
 
     it('should label a single release line', () => {
       buildReleaseTree(fixture, ['v7.1.0', 'v7.1.1']);
 
-      expect(component.includeLabel()).toBe('[7.1]');
+      expect(component.includeLabel()).toBe('[7.1,7.2)');
     });
 
     it('should label release lines with a gap between them apart', () => {
       buildReleaseTree(fixture, ['v7.1.0', 'v7.3.0']);
 
-      expect(component.includeLabel()).toBe('[7.1],[7.3]');
+      expect(component.includeLabel()).toBe('[7.1,7.2),[7.3,7.4)');
     });
 
     it('should emit a release line per skipped root release', () => {
@@ -344,7 +344,7 @@ describe('ReleaseSkippedVersions', () => {
 
       component.includeReleases();
 
-      expect(component.rangeRequested.emit).toHaveBeenCalledWith(rangesOf('[7.1],[7.3]'));
+      expect(component.rangeRequested.emit).toHaveBeenCalledWith(rangesOf('[7.1,7.2),[7.3,7.4)'));
     });
 
     it('should emit every patch of a release line, not only the listed ones', () => {
@@ -353,7 +353,7 @@ describe('ReleaseSkippedVersions', () => {
 
       component.includeReleases();
 
-      expect(component.rangeRequested.emit).toHaveBeenCalledWith(rangesOf('[7.1]'));
+      expect(component.rangeRequested.emit).toHaveBeenCalledWith(rangesOf('[7.1,7.2)'));
     });
 
     it('should not emit when there is nothing to include', () => {
@@ -422,7 +422,7 @@ describe('ReleaseSkippedVersions', () => {
     });
 
     it('should report a single version as included when the range covers it', () => {
-      fixture.componentRef.setInput('releaseRanges', rangesOf('[9.3]'));
+      fixture.componentRef.setInput('releaseRanges', rangesOf('[9.3,9.4)'));
 
       expect(component.isVersionIncluded('v9.3.2')).toBeTrue();
       expect(component.isVersionIncluded('v9.4.0')).toBeFalse();

@@ -492,10 +492,10 @@ describe('ReleaseGraphComponent', () => {
       fixture.detectChanges();
       queryParametersSubject.next({ range: '[1.0,9.3.2]' });
 
-      component.onRangeRequested(rangesOf('[9.3]'));
+      component.onRangeRequested(rangesOf('[9.3,9.4)'));
 
       expect(mockRouter.navigate).toHaveBeenCalledWith([], {
-        queryParams: { range: '[1.0,9.3]' },
+        queryParams: { range: '[1.0,9.4)' },
         replaceUrl: true,
       });
     });

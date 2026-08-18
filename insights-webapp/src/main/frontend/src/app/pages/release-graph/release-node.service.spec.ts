@@ -373,7 +373,7 @@ describe('ReleaseNodeService', () => {
     });
 
     it('should keep the whole release line when the range pins the line', () => {
-      const branchNodes = service.structureReleaseData(mockReleases, rangesOf('[9.0]'))
+      const branchNodes = service.structureReleaseData(mockReleases, rangesOf('[9.0,9.1)'))
         .find((map) => map.has('release/9.0'))!.get('release/9.0')!;
 
       expect(branchNodes.map((n) => n.id)).toEqual(['9.0-anchor', '9.0-node-1', '9.0-nightly']);
@@ -410,11 +410,13 @@ describe('ReleaseNodeService', () => {
 
   describe('getDefaultRanges', () => {
     it('should pin the branches that fell out of support and leave the supported ones open ended', () => {
-      expect(serializeVersionRanges(service.getDefaultRanges(mockReleases))).toBe('[7.2],[8.4,)');
+      expect(serializeVersionRanges(service.getDefaultRanges(mockReleases))).toBe('[7.2,7.3),[8.4,)');
     });
 
     it('should keep the latest 2 major branches and the most recently unsupported one', () => {
-      expect(serializeVersionRanges(service.getDefaultRanges(createMajorOnlyMockData()))).toBe('[7.0],[8.0],[9.0,)');
+      expect(serializeVersionRanges(service.getDefaultRanges(createMajorOnlyMockData()))).toBe(
+        '[7.0,7.1),[8.0,8.1),[9.0,)',
+      );
     });
 
     it('should end open ended on the newest branch when nothing is supported anymore', () => {
@@ -442,7 +444,7 @@ describe('ReleaseNodeService', () => {
 
     it('should start the open end at the newest run of supported lines, not at an older supported major', () => {
       expect(serializeVersionRanges(service.getDefaultRanges(createMultiMajorMockData()))).toBe(
-        '[10.0],[10.4],[11.0,)',
+        '[10.0,10.1),[10.4,10.5),[11.0,)',
       );
     });
 

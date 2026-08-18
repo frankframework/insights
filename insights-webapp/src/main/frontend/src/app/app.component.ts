@@ -1,4 +1,5 @@
 import { Component, OnInit, Signal, inject } from '@angular/core';
+import { Location } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   RouterOutlet,
@@ -22,6 +23,18 @@ import { parseVersionRanges, serializeVersionRanges } from './pipes/release-rang
 const isNavigationSettled = (event: RouterEvent): boolean =>
   event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError;
 
+const GRAPH_QUERY_PARAMETERS = new Set(['extended', 'nightly', 'range']);
+
+const queryStringOf = (url: string): string => {
+  const start = url.indexOf('?');
+  return start === -1 ? '' : url.slice(start);
+};
+
+const isGraphPath = (url: string): boolean => {
+  const path = url.split(/[#?]/)[0];
+  return path === '' || path === '/' || path === '/graph' || path.startsWith('/graph/');
+};
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, LoaderComponent, FeedbackComponent, HeaderComponent, TooltipComponent],
@@ -34,6 +47,7 @@ export class AppComponent implements OnInit {
 
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
   private readonly authService = inject(AuthService);
   private readonly graphStateService = inject(GraphStateService);
 
@@ -91,7 +105,35 @@ export class AppComponent implements OnInit {
         );
         this.graphStateService.setShowNightlies(parameters.has('nightly'));
         this.graphStateService.setReleaseRanges(parseVersionRanges(parameters.get('range')).ranges);
+        this.canonicaliseGraphUrl();
       }
     });
+  }
+
+  private canonicaliseGraphUrl(): void {
+    const browserUrl = this.location.path(true);
+    if (!isGraphPath(browserUrl)) return;
+
+    const tree = this.router.parseUrl(browserUrl);
+    const parsedRanges = parseVersionRanges(tree.queryParams['range']);
+    if (parsedRanges.error) return;
+
+    const canonical: Record<string, string> = Object.fromEntries(
+      Object.entries(tree.queryParams).filter(([name]) => !GRAPH_QUERY_PARAMETERS.has(name)),
+    );
+
+    const level = GraphStateService.parseExtendedSupportLevel(tree.queryParams['extended']);
+    if (level > 0) canonical['extended'] = String(level);
+    if ('nightly' in tree.queryParams) canonical['nightly'] = '';
+
+    const range = serializeVersionRanges(parsedRanges.ranges);
+    if (range) canonical['range'] = range;
+
+    tree.queryParams = canonical;
+
+    const canonicalUrl = this.router.serializeUrl(tree);
+    if (queryStringOf(browserUrl) === queryStringOf(canonicalUrl)) return;
+
+    this.router.navigateByUrl(canonicalUrl, { replaceUrl: true });
   }
 }
