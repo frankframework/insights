@@ -723,7 +723,7 @@ export class ReleaseNodeService {
 
   /**
    * Checks if a release is a nightly release based on:
-   * 1. Contains"nightly" in the name
+   * 1. Contains "nightly" in the name
    * 2. Matches pattern vX.Y.Z-YYYYMMDD.HHMMSS (nightly)
    */
   private isNightlyRelease(label: string): boolean {

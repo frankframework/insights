@@ -20,7 +20,7 @@
           <app-timeline-header [months]="months()" [quarters]="quarters()" />
 
           <div class="relative min-w-[1800px]">
-            <div class="absolute top-0 right-0 bottom-0 left-[150px] z-1 lg:left-[300px]">
+            <div class="absolute top-0 right-0 bottom-0 left-[150px] z-[1] lg:left-[300px]">
               @if (todayOffsetPercentage() > 0 && todayOffsetPercentage() < 100) {
                 <div
                   class="today-marker absolute top-0 bottom-0 w-0.5 bg-amber-500"
@@ -34,7 +34,7 @@
               </div>
             </div>
 
-            <div class="milestone-lanes relative z-10">
+            <div class="milestone-lanes relative z-[10]">
               @for (milestone of visibleMilestones(); track milestone.id; let isLast = $last) {
                 <app-milestone-row
                   [milestone]="milestone"

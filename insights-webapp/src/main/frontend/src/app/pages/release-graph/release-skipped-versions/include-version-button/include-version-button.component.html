@@ -1,7 +1,6 @@
 <button
   type="button"
-  class="group"
-  [class]="buttonClasses()"
+  [class]="'group ' + buttonClasses()"
   [disabled]="included()"
   [attr.title]="title()"
   (click)="onClick($event)"

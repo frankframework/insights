@@ -61,7 +61,7 @@
       </div>
       @if (descriptionPreview()) {
         <div
-          class="markdown-body min-h-30 rounded-lg border-[1.5px] border-gray-300 px-4 py-3 text-[0.9375rem] text-gray-800"
+          class="markdown-body min-h-[120px] rounded-lg border-[1.5px] border-gray-300 px-4 py-3 text-[0.9375rem] text-gray-800"
           [innerHTML]="description() | markdown"
         ></div>
       } @else {
