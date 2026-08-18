@@ -1,10 +1,10 @@
 package org.frankframework.insights;
 
 import static org.springframework.web.servlet.function.RequestPredicates.path;
-import static org.springframework.web.servlet.function.RequestPredicates.pathExtension;
 import static org.springframework.web.servlet.function.RouterFunctions.route;
 
 import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -16,19 +16,15 @@ import org.springframework.web.servlet.function.RequestPredicate;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
-/**
- * Entry point of the Insights web application.
- * <p>
- * This module only reads from the Insights database and serves it through the REST API and the
- * bundled Angular single page application. Filling the database is the responsibility of the
- * separate {@code insights-data-import} module.
- */
 @SpringBootApplication
 @EnableScheduling
 @EnableSchedulerLock(defaultLockAtMostFor = "PT2H", proxyTargetClass = true)
 @ConfigurationPropertiesScan
 @EnableWebSecurity
+@NullMarked
 public class InsightsWebappApplication {
+    private static final String FRONTEND_LOCATION = "frontend/";
+
     public static void main(String[] args) {
         SpringApplication app = configureApplication();
         app.run(args);
@@ -38,23 +34,12 @@ public class InsightsWebappApplication {
         return new SpringApplication(InsightsWebappApplication.class);
     }
 
-    /**
-     * This is a custom router function to accommodate to our single page application that we serve from this spring boot backend as well.
-     * This RouterFunction will make sure that we serve `frontend/index.html` whenever the path does not start with `/api/`, is not `/error` and does
-     * not have a non-numeric path extension (to exclude static resources like JS/CSS/images).
-     * Version strings like "v9.0.0" are intentionally not treated as file extensions since their suffix is numeric.
-     *
-     * @see <a href="https://github.com/spring-projects/spring-framework/issues/27257">Spring framework issue 27257</a> for more details.
-     */
     @Bean
     RouterFunction<ServerResponse> spaRouter() {
-        ClassPathResource index = new ClassPathResource("frontend/index.html");
-        RequestPredicate spaPredicate = path("/api/**")
-                .or(path("/error"))
-                .or(pathExtension(
-                        extension -> !extension.isBlank() && !extension.chars().allMatch(Character::isDigit)))
-                .negate();
+        RequestPredicate clientSideRoute = path("/api/**").or(path("/error")).negate();
 
-        return route().resource(spaPredicate, index).build();
+        return route().resources("/**", new ClassPathResource(FRONTEND_LOCATION))
+                .resource(clientSideRoute, new ClassPathResource(FRONTEND_LOCATION + "index.html"))
+                .build();
     }
 }
