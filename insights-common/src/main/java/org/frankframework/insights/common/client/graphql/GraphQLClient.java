@@ -51,16 +51,16 @@ public abstract class GraphQLClient extends ApiClient {
      * @return a set of all fetched entities across all pages.
      * @throws GraphQLClientException if the request fails.
      */
-    protected <RAW, T> Set<T> fetchPaginatedCollection(
+    protected <R, T> Set<T> fetchPaginatedCollection(
             GraphQLQuery query,
             Map<String, Object> queryVariables,
             Class<T> entityType,
-            ParameterizedTypeReference<RAW> responseType,
-            Function<RAW, Collection<Map<String, Object>>> collectionExtractor,
-            Function<RAW, GraphQLPageInfoDTO> pageInfoExtractor)
+            ParameterizedTypeReference<R> responseType,
+            Function<R, Collection<Map<String, Object>>> collectionExtractor,
+            Function<R, GraphQLPageInfoDTO> pageInfoExtractor)
             throws GraphQLClientException {
 
-        Function<RAW, Collection<T>> entityExtractor = response -> {
+        Function<R, Collection<T>> entityExtractor = response -> {
             Collection<Map<String, Object>> rawNodes = collectionExtractor.apply(response);
             if (rawNodes == null) {
                 return Set.of();
@@ -73,12 +73,12 @@ public abstract class GraphQLClient extends ApiClient {
         return fetchPaginated(query, queryVariables, responseType, entityExtractor, pageInfoExtractor);
     }
 
-    private <RAW, T> Set<T> fetchPaginated(
+    private <R, T> Set<T> fetchPaginated(
             GraphQLQuery query,
             Map<String, Object> queryVariables,
-            ParameterizedTypeReference<RAW> responseType,
-            Function<RAW, Collection<T>> entityExtractor,
-            Function<RAW, GraphQLPageInfoDTO> pageInfoExtractor)
+            ParameterizedTypeReference<R> responseType,
+            Function<R, Collection<T>> entityExtractor,
+            Function<R, GraphQLPageInfoDTO> pageInfoExtractor)
             throws GraphQLClientException {
         try {
             Set<T> allEntities = new HashSet<>();
@@ -87,7 +87,7 @@ public abstract class GraphQLClient extends ApiClient {
 
             while (hasNextPage) {
                 queryVariables.put("after", cursor);
-                RAW response = getHttpGraphQlClient()
+                R response = getHttpGraphQlClient()
                         .documentName(query.getDocumentName())
                         .variables(queryVariables)
                         .retrieve(query.getRetrievePath())

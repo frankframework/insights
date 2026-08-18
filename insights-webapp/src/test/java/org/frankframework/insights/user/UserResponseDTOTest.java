@@ -27,9 +27,8 @@ class UserResponseDTOTest {
         UserResponseDTO dto2 = new UserResponseDTO(12345L, "user", "url", true);
         UserResponseDTO dto3 = new UserResponseDTO(99999L, "other", "other-url", false);
 
-        assertThat(dto1).isEqualTo(dto2);
-        assertThat(dto1).isNotEqualTo(dto3);
-        assertThat(dto1.hashCode()).isEqualTo(dto2.hashCode());
+        assertThat(dto1).isEqualTo(dto2).isNotEqualTo(dto3);
+        assertThat(dto1.hashCode()).hasSameHashCodeAs(dto2.hashCode());
     }
 
     @Test
@@ -38,9 +37,10 @@ class UserResponseDTOTest {
 
         String toString = dto.toString();
 
-        assertThat(toString).contains("12345");
-        assertThat(toString).contains("testuser");
-        assertThat(toString).contains("https://avatar.url");
-        assertThat(toString).contains("true");
+        assertThat(toString)
+                .contains("12345")
+                .contains("testuser")
+                .contains("https://avatar.url")
+                .contains("true");
     }
 }

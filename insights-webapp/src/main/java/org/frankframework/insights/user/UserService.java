@@ -92,12 +92,13 @@ public class UserService extends DefaultOAuth2UserService {
 
             return isMember;
 
-        } catch (GitHubRestClientException e) {
+        } catch (GitHubRestClientException exception) {
             log.error(
                     "Failed to verify organization membership for user '{}' - marking as non-member. " + "Reason: {}",
                     username,
-                    e.getMessage(),
-                    e);
+                    exception.getMessage(),
+                    exception);
+
             return false;
         }
     }
@@ -127,11 +128,12 @@ public class UserService extends DefaultOAuth2UserService {
                     savedUser.getId(),
                     isFrankFrameworkMember);
 
-        } catch (DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException exception) {
             log.warn(
-                    "Concurrent user creation detected for '{}' (GitHub ID: {}). Retrying with update.",
+                    "Concurrent user creation detected for '{}' (GitHub ID: {}). Retrying with update. {}",
                     attributes.username(),
-                    attributes.githubId());
+                    attributes.githubId(),
+                    exception.getMessage());
 
             try {
                 User existingUser = userRepository

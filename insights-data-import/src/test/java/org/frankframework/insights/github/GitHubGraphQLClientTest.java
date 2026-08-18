@@ -49,7 +49,7 @@ public class GitHubGraphQLClientTest {
         }
 
         @Override
-        protected HttpGraphQlClient getGraphQlClient() {
+        protected HttpGraphQlClient getHttpGraphQlClient() {
             return httpGraphQlClient;
         }
     }

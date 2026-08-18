@@ -1,6 +1,7 @@
 package org.frankframework.insights.webhook;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import javax.crypto.Mac;
@@ -102,7 +103,7 @@ public class GitHubWebhookController {
         }
     }
 
-    private String parseAction(byte[] body) throws Exception {
+    private String parseAction(byte[] body) throws IOException {
         return objectMapper.readTree(body).path("action").asText();
     }
 

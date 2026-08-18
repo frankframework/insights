@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.MockedStatic;
 
 public class FileTreeDeleterTest {
 
@@ -202,7 +201,7 @@ public class FileTreeDeleterTest {
         Files.createDirectories(dir);
         Files.writeString(dir.resolve("file.txt"), "content");
 
-        try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation -> {
+        try (var _ = mockStatic(Files.class, invocation -> {
             if (invocation.getMethod().getName().equals("walkFileTree")) {
                 throw new IOException("Simulated walkFileTree failure");
             }
