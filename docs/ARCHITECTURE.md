@@ -617,6 +617,12 @@ released together. A generator plus annotations on every controller has not paid
 table above is maintained by hand and will rot if nobody updates it. Revisit the moment anything
 outside this repo consumes the API.
 
+**Literal `[` and `]` in the graph query string.** The graph encodes its selected version ranges as
+`?range=[9.0],[9.4,10.0)`. Percent-encoded that reads `%5B9.0%5D,%5B9.4,10.0%29`, which nobody can
+read, hand-edit or sanity check in a pasted link, and shareable range links are the entire point of
+the parameter. `ReadableUrlSerializer` (`services/readable-url.serializer.ts`) therefore subclasses
+`DefaultUrlSerializer` and turns `%5B`/`%5D` back into `[`/`]`, in the query segment only.
+
 **Stay on current versions** (Java 25, Spring Boot 4.1, Angular 22), kept moving by Renovate. The
 project is young with no external API consumers, so staying current is cheap and falling behind
 compounds. When bumping Java, four places must move **together**: the Docker base image, the CI
