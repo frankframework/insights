@@ -36,15 +36,10 @@ public class InsightsWebappApplication {
 
     @Bean
     RouterFunction<ServerResponse> spaRouter() {
-        return spaRouter(FRONTEND_LOCATION);
-    }
-
-    public static RouterFunction<ServerResponse> spaRouter(String frontendLocation) {
-        String location = frontendLocation.endsWith("/") ? frontendLocation : frontendLocation + "/";
         RequestPredicate clientSideRoute = path("/api/**").or(path("/error")).negate();
 
-        return route().resources("/**", new ClassPathResource(location))
-                .resource(clientSideRoute, new ClassPathResource(location + "index.html"))
+        return route().resources("/**", new ClassPathResource(FRONTEND_LOCATION))
+                .resource(clientSideRoute, new ClassPathResource(FRONTEND_LOCATION + "index.html"))
                 .build();
     }
 }

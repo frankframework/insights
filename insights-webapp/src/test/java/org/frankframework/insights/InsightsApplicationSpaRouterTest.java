@@ -2,11 +2,18 @@ package org.frankframework.insights;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -21,10 +28,10 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 public class InsightsApplicationSpaRouterTest {
 
-    private static final String FIXTURE_LOCATION = "spa-fixture/";
-    private static final String INDEX = FIXTURE_LOCATION + "index.html";
+    private static final String BUILD_OUTPUT = "frontend/";
+    private static final String INDEX = BUILD_OUTPUT + "index.html";
 
-    private final RouterFunction<ServerResponse> router = InsightsWebappApplication.spaRouter(FIXTURE_LOCATION);
+    private final RouterFunction<ServerResponse> router = new InsightsWebappApplication().spaRouter();
 
     @ParameterizedTest(name = "/graph/{0}")
     @ValueSource(
@@ -97,45 +104,80 @@ public class InsightsApplicationSpaRouterTest {
         assertThat(servedResource(path)).contains(INDEX);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @ValueSource(
-            strings = {
-                "/index.html",
-                "/main-B7QM4KUC.js",
-                "/polyfills-B6TNHZQ6.js",
-                "/chunk-EWTVZH6O.mjs",
-                "/styles-5INURTSO.css",
-                "/main-B7QM4KUC.js.map",
-                "/3rdpartylicenses.txt",
-                "/favicon.ico",
-                "/manifest.webmanifest",
-                "/assets/favicon.svg",
-                "/assets/icons/grab-gesture.png",
-                "/media/inter-latin.woff2"
-            })
-    public void existingFile_isServedAsItself(String path) {
-        assertThat(servedResource(path)).contains(FIXTURE_LOCATION + path.substring(1));
+    @ParameterizedTest(name = "/{0}")
+    @MethodSource("everyFileInTheAngularBuild")
+    public void existingFile_isServedAsItself(String file) {
+        assertThat(servedResource("/" + file)).contains(BUILD_OUTPUT + file);
+    }
+
+    private static List<String> everyFileInTheAngularBuild() throws IOException {
+        ClassPathResource buildOutput = new ClassPathResource(BUILD_OUTPUT);
+        assertThat(buildOutput.exists())
+                .as(
+                        "Angular build output is missing from the classpath at \"%s\"; run `mvn generate-resources` first",
+                        BUILD_OUTPUT)
+                .isTrue();
+
+        Path root = buildOutput.getFile().toPath();
+
+        try (Stream<Path> files = Files.walk(root)) {
+            return files.filter(Files::isRegularFile)
+                    .map(file -> root.relativize(file).toString().replace(File.separatorChar, '/'))
+                    .toList();
+        }
     }
 
     @Test
-    public void existingFileWithoutExtension_isServedAsItself() {
-        assertThat(servedResource("/robots")).contains(FIXTURE_LOCATION + "robots");
+    public void existingFile_withQueryParameters_isServedAsItself() throws IOException {
+        String bundle = anyJavaScriptBundle();
+
+        assertThat(servedResource("/" + bundle, "v=2")).contains(BUILD_OUTPUT + bundle);
     }
 
     @Test
-    public void existingFile_withQueryParameters_isServedAsItself() {
-        assertThat(servedResource("/main-B7QM4KUC.js", "v=2")).contains(FIXTURE_LOCATION + "main-B7QM4KUC.js");
+    public void existingFile_withTrailingSlash_isServedAsItself() throws IOException {
+        String bundle = anyJavaScriptBundle();
+
+        assertThat(servedResource("/" + bundle + "/")).contains(BUILD_OUTPUT + bundle);
+    }
+
+    private static String anyJavaScriptBundle() throws IOException {
+        return everyFileInTheAngularBuild().stream()
+                .filter(file -> file.endsWith(".js"))
+                .findFirst()
+                .orElseThrow();
     }
 
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"/does-not-exist.js", "/assets/missing.svg", "/styles-OUTDATED.css"})
+    @ValueSource(strings = {"/does-not-exist.js", "/assets/missing.svg", "/main-STALEHASH.js"})
     public void missingFile_fallsBackToTheIndex(String path) {
         assertThat(servedResource(path)).contains(INDEX);
     }
 
-    @Test
-    public void pathTraversal_fallsBackToTheIndex() {
-        assertThat(servedResource("/assets/../../application.properties")).contains(INDEX);
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "/../application.properties",
+                "/assets/../../application.properties",
+                "/%2e%2e%2fapplication.properties",
+                "/..%2fapplication.properties",
+                "/assets/%2e%2e/%2e%2e/application.properties",
+                "/assets/..%2f..%2fapplication.properties"
+            })
+    public void pathTraversal_fallsBackToTheIndex(String path) {
+        assertThat(servedResource(path)).contains(INDEX);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "/application.properties",
+                "/application-prod.properties",
+                "/db/migration",
+                "/org/frankframework/insights/InsightsWebappApplication.class"
+            })
+    public void classpathResourceOutsideTheBuildOutput_fallsBackToTheIndex(String path) {
+        assertThat(servedResource(path)).contains(INDEX);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -164,13 +206,40 @@ public class InsightsApplicationSpaRouterTest {
     }
 
     @Test
+    public void errorPathWithTrailingSlash_isServedTheIndex() {
+        assertThat(servedResource("/error/")).contains(INDEX);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"/api/", "/api/releases/"})
+    public void excludedApiPathWithTrailingSlash_isNotRouted(String path) {
+        assertThat(route(path)).isEmpty();
+    }
+
+    @Test
+    public void excludedPath_withQueryParameters_isNotRouted() {
+        assertThat(route("GET", "/api/releases", "page=2&size=20")).isEmpty();
+    }
+
+    @Test
     public void headRequest_forClientSideRoute_isRouted() {
         assertThat(route("HEAD", "/graph/10.2-nightly", null)).isPresent();
     }
 
     @Test
-    public void postRequest_forClientSideRoute_isRejectedAsMethodNotAllowed() {
-        ServerResponse response = handle("POST", "/graph/10.2-nightly");
+    public void headRequest_forExistingFile_isRouted() throws IOException {
+        assertThat(route("HEAD", "/" + anyJavaScriptBundle(), null)).isPresent();
+    }
+
+    @Test
+    public void getRequest_forClientSideRoute_isServedWithStatusOk() {
+        assertThat(handle("GET", "/graph/10.2-nightly").statusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"POST", "PUT", "PATCH", "DELETE"})
+    public void writeRequest_forClientSideRoute_isRejectedAsMethodNotAllowed(String method) {
+        ServerResponse response = handle(method, "/graph/10.2-nightly");
 
         assertThat(response.statusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
     }
@@ -195,17 +264,6 @@ public class InsightsApplicationSpaRouterTest {
     public void tagWithExtensionLikeSuffix_isServedTheIndex(String tagName, String extensionLikeSuffix) {
         assertThat(tagName).endsWith("." + extensionLikeSuffix);
         assertThat(servedResource("/graph/" + tagName)).contains(INDEX);
-    }
-
-    @Test
-    public void applicationBean_fallsBackToTheAngularBuildOutput() {
-        RouterFunction<ServerResponse> bean = new InsightsWebappApplication().spaRouter();
-        ServerRequest request = request("GET", "/graph/10.2-nightly", null);
-
-        ServerResponse response = handle(bean.route(request).orElseThrow(), request);
-        Resource resource = (Resource) ((EntityResponse<?>) response).entity();
-
-        assertThat(((ClassPathResource) resource).getPath()).isEqualTo("frontend/index.html");
     }
 
     private Optional<String> servedResource(String path) {
