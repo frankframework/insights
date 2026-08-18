@@ -134,7 +134,7 @@ public class InsightsApplicationSpaRouterTest {
     }
 
     @Test
-    public void pathTraversal_isNotServed() {
+    public void pathTraversal_fallsBackToTheIndex() {
         assertThat(servedResource("/assets/../../application.properties")).contains(INDEX);
     }
 

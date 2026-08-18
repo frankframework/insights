@@ -40,10 +40,11 @@ public class InsightsWebappApplication {
     }
 
     public static RouterFunction<ServerResponse> spaRouter(String frontendLocation) {
+        String location = frontendLocation.endsWith("/") ? frontendLocation : frontendLocation + "/";
         RequestPredicate clientSideRoute = path("/api/**").or(path("/error")).negate();
 
-        return route().resources("/**", new ClassPathResource(frontendLocation))
-                .resource(clientSideRoute, new ClassPathResource(frontendLocation + "index.html"))
+        return route().resources("/**", new ClassPathResource(location))
+                .resource(clientSideRoute, new ClassPathResource(location + "index.html"))
                 .build();
     }
 }
