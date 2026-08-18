@@ -535,10 +535,13 @@ throwaway in-memory database.
 | Profile | Database | GitHub fetching | Used for |
 |---|---|---|---|
 | `local` | Postgres on localhost / `DB_HOST` | **on** in the importer | development, and `docker compose` |
-| `local-seed` | H2 in memory, seeded from `db/e2e` | off | E2E tests, CI, Sonar |
+| `local-seed` | H2 in memory, seeded from `db/e2e` | off | E2E tests, CI, Sonar, reviewing a PR |
 | `prod` | Postgres from env vars | on | deployment |
 
 `local-seed` is in-memory, so changes vanish on restart, and every test run starts from the same state.
+That is also what makes it the review profile: `docker-compose.seed.yaml` starts the webapp alone on this
+profile, without Postgres, the importer, a GitHub token or Trivy. See the
+[README](../README.md#reviewing-a-pull-request-with-seeded-data).
 
 Two settings in `insights-common.properties` are real decisions, not just config:
 `github.graphql.branch-protection-regexes` and `github.graphql.includedLabels`, both explained under
