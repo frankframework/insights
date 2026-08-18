@@ -15,19 +15,19 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Slf4j
 public abstract class GraphQLClient extends ApiClient {
-    private final HttpGraphQlClient graphQlClient;
+    private final HttpGraphQlClient httpGraphQlClient;
     private final ObjectMapper objectMapper;
 
-    public GraphQLClient(String baseUrl, Consumer<WebClient.Builder> configurer, ObjectMapper objectMapper) {
+    protected GraphQLClient(String baseUrl, Consumer<WebClient.Builder> configurer, ObjectMapper objectMapper) {
         super(baseUrl, configurer);
-        this.graphQlClient = HttpGraphQlClient.builder(this.webClient).build();
+        this.httpGraphQlClient = HttpGraphQlClient.builder(this.webClient).build();
         this.objectMapper = objectMapper;
     }
 
     protected <T> T fetchSingleEntity(GraphQLQuery query, Map<String, Object> queryVariables, Class<T> entityType)
             throws GraphQLClientException {
         try {
-            return getGraphQlClient()
+            return getHttpGraphQlClient()
                     .documentName(query.getDocumentName())
                     .variables(queryVariables)
                     .retrieve(query.getRetrievePath())
@@ -87,7 +87,7 @@ public abstract class GraphQLClient extends ApiClient {
 
             while (hasNextPage) {
                 queryVariables.put("after", cursor);
-                RAW response = getGraphQlClient()
+                RAW response = getHttpGraphQlClient()
                         .documentName(query.getDocumentName())
                         .variables(queryVariables)
                         .retrieve(query.getRetrievePath())
@@ -123,7 +123,7 @@ public abstract class GraphQLClient extends ApiClient {
         }
     }
 
-    protected HttpGraphQlClient getGraphQlClient() {
-        return graphQlClient;
+    protected HttpGraphQlClient getHttpGraphQlClient() {
+        return httpGraphQlClient;
     }
 }

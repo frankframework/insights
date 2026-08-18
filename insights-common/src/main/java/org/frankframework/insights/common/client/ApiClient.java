@@ -20,7 +20,7 @@ public abstract class ApiClient {
      * @param baseUrl the base URL of the external server (mandatory).
      * @param configurer a Consumer that configures the WebClient.Builder, e.g., for auth headers.
      */
-    public ApiClient(String baseUrl, Consumer<WebClient.Builder> configurer) {
+    protected ApiClient(String baseUrl, Consumer<WebClient.Builder> configurer) {
         if (baseUrl == null || baseUrl.trim().isEmpty()) {
             throw new IllegalArgumentException("Base URL cannot be null or empty.");
         }
