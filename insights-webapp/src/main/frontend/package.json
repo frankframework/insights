@@ -9,6 +9,7 @@
     "test": "ng test",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
+    "typecheck": "ngc -p tsconfig.app.json --noEmit && ngc -p tsconfig.spec.json --noEmit && tsc -p cypress/tsconfig.json --noEmit",
     "e2e": "ng e2e",
     "cypress:open": "cypress open --project cypress",
     "cypress:run": "cypress run --project cypress"
