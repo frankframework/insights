@@ -4,7 +4,6 @@ import { Component, input, output } from '@angular/core';
   selector: 'app-off-canvas',
   imports: [],
   templateUrl: './off-canvas.component.html',
-  styleUrl: './off-canvas.component.scss',
   standalone: true,
 })
 export class OffCanvasComponent {

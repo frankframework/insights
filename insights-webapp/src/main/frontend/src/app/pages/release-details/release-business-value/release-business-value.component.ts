@@ -8,7 +8,6 @@ import { MarkdownPipe } from '../../../pipes/markdown.pipe';
   standalone: true,
   imports: [ReleaseBusinessValueModalComponent, MarkdownPipe],
   templateUrl: './release-business-value.component.html',
-  styleUrl: './release-business-value.component.scss',
 })
 export class ReleaseBusinessValueComponent {
   public readonly businessValues = input<BusinessValue[] | null>(null);

@@ -15,7 +15,6 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
   standalone: true,
   imports: [RouterLink, ReleaseBusinessValueComponent, ReleaseImportantIssuesComponent, ReleaseVulnerabilities],
   templateUrl: './release-manage.component.html',
-  styleUrl: './release-manage.component.scss',
 })
 export class ReleaseManageComponent implements OnInit {
   public static readonly releaseManagePath = '/release-manage';

@@ -1,16 +1,18 @@
-<div class="roadmap-legend">
-  <div class="legend-content">
-    <div class="legend-column">
-      <h3 class="legend-title">Legend</h3>
+<div class="roadmap-legend mt-8 flex w-full justify-end max-xs:justify-stretch">
+  <div
+    class="legend-content flex w-auto flex-col gap-8 rounded-lg border border-gray-200 bg-white p-8 shadow-sm max-xs:w-full max-xs:flex-wrap max-xs:items-start"
+  >
+    <div class="legend-column flex flex-col gap-2">
+      <h3 class="legend-title mb-4 text-base font-semibold whitespace-nowrap text-gray-700 max-xs:w-full">Legend</h3>
       @for (item of issueStateItems; track item.label) {
-        <div class="legend-item">
+        <div class="legend-item flex items-center gap-4">
           <div
-            class="legend-color-box"
+            class="legend-color-box h-6 w-8 shrink-0 rounded border"
             [style.background-color]="item.style['background-color']"
             [style.color]="item.style.color"
             [style.border-color]="item.style['border-color']"
           ></div>
-          <span class="legend-label">{{ item.label }}</span>
+          <span class="legend-label text-sm whitespace-nowrap text-gray-600">{{ item.label }}</span>
         </div>
       }
     </div>

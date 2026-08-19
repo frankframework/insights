@@ -32,10 +32,12 @@ type QuarterIssueMap = Map<string, { open: Issue[]; closed: Issue[] }>;
   standalone: true,
   imports: [DatePipe, IssueBarComponent],
   templateUrl: './milestone-row.component.html',
-  styleUrls: ['./milestone-row.component.scss'],
 })
 export class MilestoneRowComponent {
   private static readonly UNPLANNED_EPICS_ID = 'unplanned-epics';
+  private static readonly TRACK_AREA_PADDING_REM = 3;
+  private static readonly TRACK_HEIGHT_REM = 2;
+  private static readonly MONTHLY_TRACK_HEIGHT_REM = 2.25;
 
   public readonly milestone = input.required<Milestone>();
   public readonly issues = input.required<Issue[]>();
@@ -57,9 +59,15 @@ export class MilestoneRowComponent {
   public readonly tracks: Signal<number[]> = computed(() =>
     Array.from({ length: this.trackCount() }, (_, index) => index),
   );
-  public readonly trackAreaHeight: Signal<number> = computed(() =>
-    this.viewMode() === ViewMode.MONTHLY ? this.trackCount() * 2.5 : this.trackCount() * 2.25,
-  );
+  public readonly isMonthlyView: Signal<boolean> = computed(() => this.viewMode() === ViewMode.MONTHLY);
+  public readonly trackAreaHeight: Signal<number> = computed(() => {
+    const trackHeight = this.isMonthlyView()
+      ? MilestoneRowComponent.MONTHLY_TRACK_HEIGHT_REM
+      : MilestoneRowComponent.TRACK_HEIGHT_REM;
+    const trackCount = this.trackCount();
+
+    return MilestoneRowComponent.TRACK_AREA_PADDING_REM + trackCount * trackHeight;
+  });
   public readonly isUnplannedEpicMilestone: Signal<boolean> = computed(
     () => this.milestone().id === MilestoneRowComponent.UNPLANNED_EPICS_ID,
   );
@@ -109,7 +117,7 @@ export class MilestoneRowComponent {
       return this.layoutUnplannedEpics();
     }
 
-    if (this.viewMode() === ViewMode.MONTHLY) {
+    if (this.isMonthlyView()) {
       return this.layoutMonthlyView();
     }
 

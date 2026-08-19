@@ -7,7 +7,6 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
   standalone: true,
   imports: [MarkdownPipe],
   templateUrl: './business-value-panel.component.html',
-  styleUrl: './business-value-panel.component.scss',
 })
 export class BusinessValuePanelComponent {
   public readonly businessValues = input.required<BusinessValue[]>();

@@ -22,7 +22,6 @@ interface IssueTypeOption {
   selector: 'app-release-important-issues',
   imports: [IssueTreeBranchComponent, FormsModule],
   templateUrl: './release-important-issues.component.html',
-  styleUrl: './release-important-issues.component.scss',
 })
 export class ReleaseImportantIssuesComponent {
   public readonly releaseIssues = input<Issue[] | null>(null);

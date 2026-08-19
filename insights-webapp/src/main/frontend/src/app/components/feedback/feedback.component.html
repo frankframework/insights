@@ -1,7 +1,15 @@
-<div class="feedback-wrapper">
-  <span class="feedback-label">Request a change</span>
+<div class="group fixed right-5 bottom-5 z-1000 flex items-center justify-end gap-3">
+  <span
+    class="pointer-events-none translate-x-2.5 rounded bg-white px-3 py-1.5 text-sm font-medium whitespace-nowrap text-black opacity-0 shadow-md transition-[opacity,transform] duration-200 ease-in group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100"
+  >
+    Request a change
+  </span>
 
-  <button class="feedback-button" aria-label="Report a bug" (click)="openFeedback()">
+  <button
+    class="flex size-12 cursor-pointer items-center justify-center rounded-full bg-black text-white shadow-md transition-[background-color,transform] duration-200 group-hover:bg-[#fdc300]"
+    aria-label="Report a bug"
+    (click)="openFeedback()"
+  >
     <img ngSrc="assets/icons/feedback.svg" alt="feedback-icon" width="24" height="24" />
   </button>
 </div>

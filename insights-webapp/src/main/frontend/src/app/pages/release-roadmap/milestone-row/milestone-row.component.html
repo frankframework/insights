@@ -1,51 +1,64 @@
-<div class="milestone-row" [class.milestone-row--last]="isLast()">
-  <div class="title-cell">
+<div
+  class="grid grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)]"
+  [class.border-b]="!isLast()"
+  [class.border-slate-200]="!isLast()"
+>
+  <div class="relative left-0 z-2 border-r border-slate-200 bg-white p-4 transition-colors duration-200">
     @if (milestone().url) {
-      <a target="_blank" class="title-link" [href]="milestone().url + '?closed=1'">
+      <a
+        target="_blank"
+        class="title-link font-semibold text-blue-900 hover:underline"
+        [href]="milestone().url + '?closed=1'"
+      >
         {{ milestone().title }}
       </a>
     } @else {
-      <span class="title-link">{{ milestone().title }}</span>
+      <span class="title-link font-semibold text-blue-900">{{ milestone().title }}</span>
     }
     @if (isUnplannedEpicMilestone()) {
-      <p class="detail unplanned">Unplanned</p>
+      <p class="mt-1 flex items-center gap-2 text-sm text-slate-400 italic">Unplanned</p>
     } @else if (milestone().dueOn) {
-      <p class="detail">
+      <p class="mt-1 flex items-center gap-2 text-sm text-gray-500">
         Due: {{ milestone().dueOn | date: 'dd-MM-yyyy' }}
         @if (milestone().isEstimated) {
-          <span class="estimated-icon" title="Estimated date">
+          <span class="cursor-help text-amber-500" title="Estimated date">
             <img src="assets/icons/clock.svg" alt="" width="14" height="14" />
           </span>
         }
       </p>
     } @else {
-      <p class="detail unplanned">Unplanned</p>
+      <p class="mt-1 flex items-center gap-2 text-sm text-slate-400 italic">Unplanned</p>
     }
     @if (!isUnplannedEpicMilestone()) {
-      <div class="progress-bar-container">
+      <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
         <div
-          class="progress-bar"
+          class="h-full bg-indigo-600 transition-[width] duration-500"
           [style.width.%]="progressPercentage()"
           [title]="progressPercentage() + '% completed'"
         ></div>
       </div>
-      <div class="counts">
+      <div class="mt-2 flex gap-1 text-xs text-gray-400">
         <span>{{ milestone().openIssueCount }} open</span>
         <span>/</span>
         <span>{{ milestone().closedIssueCount }} closed</span>
       </div>
     }
   </div>
-  <div class="issue-track-area" [style.height.rem]="trackAreaHeight()">
+  <div
+    class="issue-track-area relative flex min-h-14 flex-col py-6 pr-6 transition-colors duration-200"
+    [style.height.rem]="trackAreaHeight()"
+  >
     @if (milestone().dueOn) {
       @for (trackNumber of tracks(); track trackNumber) {
-        <div class="issue-track">
+        <div class="relative w-full shrink-0" [class.h-9]="isMonthlyView()" [class.h-8]="!isMonthlyView()">
           @for (
             positionedIssue of getIssuesForTrack(trackNumber);
             track positionedIssue.isLabel ? positionedIssue.labelText : positionedIssue.issue!.id
           ) {
             @if (positionedIssue.isLabel) {
-              <div class="issue-group-label">{{ positionedIssue.labelText }}</div>
+              <div class="issue-group-label pt-4 pb-1 pl-[1.75%] text-xs font-bold text-gray-600 uppercase">
+                {{ positionedIssue.labelText }}
+              </div>
             } @else {
               <app-issue-bar
                 [issue]="positionedIssue.issue!"

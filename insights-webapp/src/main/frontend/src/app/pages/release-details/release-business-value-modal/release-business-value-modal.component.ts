@@ -10,7 +10,6 @@ import { IssueTreeBranchComponent } from '../release-important-issues/issue-tree
   standalone: true,
   imports: [ModalComponent, IssueTreeBranchComponent, MarkdownPipe],
   templateUrl: './release-business-value-modal.component.html',
-  styleUrl: './release-business-value-modal.component.scss',
 })
 export class ReleaseBusinessValueModalComponent {
   public readonly businessValue = input.required<BusinessValue | null>();

@@ -8,7 +8,6 @@ import { NgOptimizedImage } from '@angular/common';
   selector: 'app-feedback',
   imports: [NgOptimizedImage],
   templateUrl: './feedback.component.html',
-  styleUrl: './feedback.component.scss',
   host: { '(document:mouseup)': 'onTextSelection()' },
 })
 export class FeedbackComponent {

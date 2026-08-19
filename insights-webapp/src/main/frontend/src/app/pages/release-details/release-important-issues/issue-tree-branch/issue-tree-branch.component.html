@@ -1,22 +1,41 @@
-<div class="issue-tree-branch" [class.expanded]="expanded()">
-  <a class="issue-row" target="_blank" rel="noopener noreferrer" [style.margin-left]="indent()" [href]="issue().url">
+<div
+  [class]="
+    'issue-tree-branch flex w-full min-w-0 flex-col gap-2 max-sm:gap-1.5 ' +
+    (expanded() ? 'expanded mb-3 max-sm:mb-2' : '')
+  "
+>
+  <a
+    class="issue-row flex w-full min-w-0 cursor-pointer items-center gap-3.5 rounded-lg border-[1.5px] border-gray-200 bg-white px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:border-gray-300 hover:shadow-e3 max-sm:gap-2.5 max-sm:border max-sm:px-3.5 max-sm:py-3"
+    target="_blank"
+    rel="noopener noreferrer"
+    [style.margin-left]="indent()"
+    [href]="issue().url"
+  >
     @if (issue().subIssues?.length) {
       <button
         type="button"
-        class="issue-fold-icon"
+        class="issue-fold-icon flex size-6 shrink-0 cursor-pointer items-center justify-center rounded p-1 text-xl text-gray-500 transition-all duration-200 outline-none select-none hover:bg-gray-100 hover:text-gray-700 max-sm:size-5 max-sm:p-0.5 max-sm:text-lg"
         aria-label="Toggle sub-issues"
         [class.expanded]="expanded()"
+        [class.rotate-90]="expanded()"
         [attr.aria-expanded]="expanded()"
         (click)="toggleExpand($event)"
       >
         ›
       </button>
     }
-    <span class="issue-number">#{{ issue().number }}</span>
+    <span
+      class="issue-number block shrink-0 rounded px-2 py-1 text-sm font-semibold whitespace-nowrap text-gray-700 transition-all duration-150 max-sm:px-1.5 max-sm:text-[0.8125rem]"
+    >
+      #{{ issue().number }}
+    </span>
     @if (issue().issueType; as issueType) {
       <app-issue-type-tag [issueType]="issueType" />
     }
-    <span class="issue-title">{{ issue().title }}</span>
+    <span
+      class="issue-title min-w-0 flex-1 text-[0.9375rem] leading-normal font-medium tracking-tight break-words text-gray-900 max-sm:text-sm max-sm:leading-snug"
+      >{{ issue().title }}</span
+    >
   </a>
   @if (issue().subIssues?.length && expanded()) {
     @for (sub of issue().subIssues; track sub.id) {

@@ -60,7 +60,7 @@ describe('Release Vulnerabilities Component', () => {
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
     cy.get('.cve-item').first().as('firstCve');
-    cy.get('@firstCve').find('.cve-id').invoke('text').as('cveId');
+    cy.get('@firstCve').find('.cve-id').invoke('text').invoke('trim').as('cveId');
     cy.get('@firstCve').click();
 
     cy.get('@cveId').then((cveId) => {
@@ -82,7 +82,7 @@ describe('Release Vulnerabilities Component', () => {
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
-    cy.get('.cve-item').first().find('.severity-badge').invoke('text').as('listSeverity');
+    cy.get('.cve-item').first().find('.severity-badge').invoke('text').invoke('trim').as('listSeverity');
     cy.get('.cve-item').first().click();
 
     cy.get('@listSeverity').then((severity) => {
@@ -96,7 +96,7 @@ describe('Release Vulnerabilities Component', () => {
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
     cy.get('.cve-score').each(($score) => {
-      cy.wrap($score).invoke('text').should('match', /CVSS Score: \d+(\.\d)?$/);
+      cy.wrap($score).invoke('text').invoke('trim').should('match', /CVSS Score: \d+(\.\d)?$/);
     });
   });
 
@@ -333,14 +333,14 @@ describe('Release Vulnerabilities Component', () => {
 
     cy.get('.cve-item').then(($items) => {
       if ($items.length >= 2) {
-        cy.get('.cve-item').eq(0).find('.cve-id').invoke('text').as('firstCveId');
+        cy.get('.cve-item').eq(0).find('.cve-id').invoke('text').invoke('trim').as('firstCveId');
         cy.get('.cve-item').eq(0).click({ force: true });
 
         cy.get('@firstCveId').then((firstId) => {
           cy.get('app-off-canvas .off-canvas-title').should('contain.text', firstId);
         });
 
-        cy.get('.cve-item').eq(1).find('.cve-id').invoke('text').as('secondCveId');
+        cy.get('.cve-item').eq(1).find('.cve-id').invoke('text').invoke('trim').as('secondCveId');
         cy.get('.cve-item').eq(1).click({ force: true });
 
         cy.get('@secondCveId').then((secondId) => {

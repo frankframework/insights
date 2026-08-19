@@ -1,3 +1,4 @@
+import { SeverityChipPipe, toSeverityKey } from '../../../pipes/severity-chip.pipe';
 import { Component, Signal, WritableSignal, computed, input, linkedSignal } from '@angular/core';
 import { Vulnerability, VulnerabilitySeverities, VulnerabilitySeverity } from '../../../services/vulnerability.service';
 import { DatePipe, NgClass } from '@angular/common';
@@ -15,9 +16,8 @@ const SEVERITY_ORDER: Record<VulnerabilitySeverity, number> = {
 @Component({
   selector: 'app-release-vulnerabilities',
   standalone: true,
-  imports: [DatePipe, NgClass, VulnerabilityDetailsOffCanvas],
+  imports: [SeverityChipPipe, DatePipe, NgClass, VulnerabilityDetailsOffCanvas],
   templateUrl: './release-vulnerabilities.html',
-  styleUrl: './release-vulnerabilities.scss',
 })
 export class ReleaseVulnerabilities {
   public readonly vulnerabilities = input<Vulnerability[] | null>(null);
@@ -58,7 +58,7 @@ export class ReleaseVulnerabilities {
   }
 
   public getSeverityClass(severity: VulnerabilitySeverity): string {
-    return `severity-${severity.toLowerCase()}`;
+    return toSeverityKey(severity);
   }
 
   public formatCvssScore(score: number | null): string {

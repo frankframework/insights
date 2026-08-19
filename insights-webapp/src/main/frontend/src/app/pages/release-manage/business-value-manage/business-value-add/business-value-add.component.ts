@@ -10,7 +10,6 @@ import { MarkdownPipe } from '../../../../pipes/markdown.pipe';
   standalone: true,
   imports: [FormsModule, ModalComponent, MarkdownPipe],
   templateUrl: './business-value-add.component.html',
-  styleUrl: './business-value-add.component.scss',
 })
 export class BusinessValueAddComponent {
   public readonly releaseId = input.required<string>();

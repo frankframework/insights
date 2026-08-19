@@ -1,7 +1,7 @@
 @if (pendingCount() > 0) {
   <button
     type="button"
-    class="include-button apply-button"
+    class="cursor-pointer self-start rounded-full border border-teal-700 bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out enabled:hover:border-accent-hover enabled:hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-white disabled:text-gray-500"
     title="Apply pending includes and reload the graph"
     (click)="applyPending.emit()"
   >
@@ -11,7 +11,7 @@
 
 <button
   type="button"
-  class="include-button"
+  class="cursor-pointer self-start rounded-full border border-blue-900 bg-blue-900 px-4 py-2 text-sm font-semibold text-white transition-all duration-200 ease-in-out enabled:hover:border-brand-hover enabled:hover:bg-brand-hover disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-white disabled:text-gray-500"
   [disabled]="alreadyIncluded()"
   [attr.title]="
     alreadyIncluded()
@@ -23,7 +23,9 @@
   {{ includeButtonLabel() }}
 </button>
 
-<span class="include-hint">
-  The graph shows what <code>?range=</code> asks for, with master as reference. Ranges are written the Maven way, for
-  example <code>[9.0],[10.0,)</code> or <code>[7.0,9.3.2]</code>.
+<span class="text-[0.8rem] text-gray-500">
+  The graph shows what <code class="rounded-[0.2rem] bg-gray-100 px-1 py-0.25 font-mono">?range=</code> asks for, with
+  master as reference. Ranges are written the Maven way, for example
+  <code class="rounded-[0.2rem] bg-gray-100 px-1 py-0.25 font-mono">[9.0],[10.0,)</code> or
+  <code class="rounded-[0.2rem] bg-gray-100 px-1 py-0.25 font-mono">[7.0,9.3.2]</code>.
 </span>

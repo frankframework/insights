@@ -1,9 +1,11 @@
-<div class="off-canvas open">
-  <div class="off-canvas-content">
+<div
+  class="fixed top-0 right-0 z-25 h-screen w-[30vw] translate-x-0 overflow-hidden bg-white/98 shadow-drawer transition-transform duration-[350ms] ease-[cubic-bezier(0.4,0,0.2,1)] max-lg:left-0 max-lg:z-19 max-lg:w-screen max-lg:min-w-0 max-lg:max-w-none max-lg:rounded-none max-lg:bg-white/99 max-lg:pt-[9vh] max-lg:shadow-none"
+>
+  <div class="relative h-full px-6 pt-12 pb-6">
     @if (title(); as canvasTitle) {
-      <h4 class="off-canvas-title">{{ canvasTitle }}</h4>
+      <h4 class="off-canvas-title absolute top-2 left-2 m-2 ml-6 text-[1.1rem] font-bold">{{ canvasTitle }}</h4>
     }
-    <button class="off-canvas-close" (click)="onClose()">✕</button>
+    <button class="absolute top-2 right-2 cursor-pointer text-2xl hover:text-red-700" (click)="onClose()">✕</button>
     <ng-content />
   </div>
 </div>

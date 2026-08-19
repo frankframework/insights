@@ -1,17 +1,29 @@
-<div class="timeline-header">
-  <div class="row quarters-row">
-    <div class="title-cell">Release</div>
-    <div class="grid-area" [style.grid-template-columns]="quartersGridStyle()">
+<div class="sticky top-0 z-5 min-w-450 border-b border-slate-200">
+  <div class="quarters-row grid grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)]">
+    <div class="relative left-0 z-3 border-r border-b border-slate-200 bg-slate-50 p-4 font-semibold">Release</div>
+    <div
+      class="grid-area grid border-b border-slate-200 bg-slate-50"
+      [style.grid-template-columns]="quartersGridStyle()"
+    >
       @for (quarter of quarters(); track quarter.name) {
-        <div class="quarter-cell">{{ quarter.name }}</div>
+        <div class="quarter-cell border-r border-blue-50 bg-slate-50 py-2 text-center font-semibold last:border-r-0">
+          {{ quarter.name }}
+        </div>
       }
     </div>
   </div>
-  <div class="row months-row">
-    <div class="title-cell"></div>
-    <div class="grid-area" [style.grid-template-columns]="'repeat(' + months().length + ', minmax(0, 1fr))'">
+  <div class="months-row grid grid-cols-[150px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)]">
+    <div class="relative left-0 z-3 border-r border-slate-200 bg-slate-50 p-4 font-semibold"></div>
+    <div
+      class="grid-area grid bg-slate-50"
+      [style.grid-template-columns]="'repeat(' + months().length + ', minmax(0, 1fr))'"
+    >
       @for (month of months(); track month) {
-        <div class="month-cell">{{ month | date: 'MMM' }}</div>
+        <div
+          class="month-cell border-r border-blue-50 bg-slate-50 py-2 text-center text-sm font-medium last:border-r-0"
+        >
+          {{ month | date: 'MMM' }}
+        </div>
       }
     </div>
   </div>
