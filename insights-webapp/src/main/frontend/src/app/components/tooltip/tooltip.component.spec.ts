@@ -1,5 +1,5 @@
 import { WritableSignal, signal } from '@angular/core';
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { TooltipComponent } from './tooltip.component';
@@ -83,7 +83,7 @@ describe('TooltipComponent', () => {
     expect(tooltipElement).toBeNull();
   });
 
-  it('should display the tooltip with correct data when service emits state', fakeAsync(() => {
+  it('should display the tooltip with correct data when service emits state', () => {
     const tooltipData: TooltipData = {
       title: 'Tooltip Test Issue',
       details: [
@@ -95,7 +95,6 @@ describe('TooltipComponent', () => {
     };
     tooltipState.set(tooltipData);
     fixture.detectChanges();
-    tick();
 
     const tooltipElement = fixture.debugElement.query(By.css('.tooltip'));
 
@@ -108,9 +107,9 @@ describe('TooltipComponent', () => {
     expect(detailsElement.length).toBe(2);
     expect(detailsElement[0].nativeElement.textContent).toContain('Priority: High');
     expect(detailsElement[1].nativeElement.textContent).toContain('Points: 8');
-  }));
+  });
 
-  it('should render a detail without a label as plain text', fakeAsync(() => {
+  it('should render a detail without a label as plain text', () => {
     const tooltipData: TooltipData = {
       title: 'Attack Vector',
       details: [{ value: 'How the vulnerability is exploited' }],
@@ -119,18 +118,16 @@ describe('TooltipComponent', () => {
     };
     tooltipState.set(tooltipData);
     fixture.detectChanges();
-    tick();
 
     const detailElement = fixture.debugElement.query(By.css('.tooltip-detail'));
 
     expect(detailElement.nativeElement.textContent.trim()).toBe('How the vulnerability is exploited');
-  }));
+  });
 
-  it('should hide the tooltip when service emits null after showing', fakeAsync(() => {
+  it('should hide the tooltip when service emits null after showing', () => {
     const tooltipData: TooltipData = { title: 'Tooltip Test Issue', details: [], top: '100px', left: '200px' };
     tooltipState.set(tooltipData);
     fixture.detectChanges();
-    tick();
 
     let tooltipElement = fixture.debugElement.query(By.css('.tooltip'));
 
@@ -138,10 +135,9 @@ describe('TooltipComponent', () => {
 
     tooltipState.set(null);
     fixture.detectChanges();
-    tick();
 
     tooltipElement = fixture.debugElement.query(By.css('.tooltip'));
 
     expect(tooltipElement).toBeNull();
-  }));
+  });
 });
