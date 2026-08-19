@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, UrlSerializer, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
 import { ReadableUrlSerializer } from './services/readable-url.serializer';
@@ -13,7 +13,7 @@ import { HttpInterceptorService } from './services/http-interceptor.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideZonelessChangeDetection(),
     provideRouter(routes, withComponentInputBinding()),
     { provide: UrlSerializer, useClass: ReadableUrlSerializer },
     provideHttpClient(

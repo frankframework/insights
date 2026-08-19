@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { HttpClient, HTTP_INTERCEPTORS, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
@@ -45,7 +45,7 @@ describe('HttpInterceptorService', () => {
     httpTestingController.verify();
   });
 
-  it('should logout and redirect on 401 Unauthorized error', fakeAsync(() => {
+  it('should logout and redirect on 401 Unauthorized error', () => {
     httpClient.get('/api/data').subscribe({
       error: () => {},
     });
@@ -53,13 +53,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
-    tick();
-
     expect(authService.logout).toHaveBeenCalledWith();
     expect(router.navigate).toHaveBeenCalledWith(['/graph']);
-  }));
+  });
 
-  it('should logout and redirect on 403 Forbidden error', fakeAsync(() => {
+  it('should logout and redirect on 403 Forbidden error', () => {
     httpClient.get('/api/data').subscribe({
       error: () => {},
     });
@@ -67,13 +65,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
 
-    tick();
-
     expect(authService.logout).toHaveBeenCalledWith();
     expect(router.navigate).toHaveBeenCalledWith(['/graph']);
-  }));
+  });
 
-  it('should NOT logout on 500 Internal Server Error', fakeAsync(() => {
+  it('should NOT logout on 500 Internal Server Error', () => {
     httpClient.get('/api/data').subscribe({
       error: () => {},
     });
@@ -81,13 +77,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Something went wrong' }, { status: 500, statusText: 'Internal Server Error' });
 
-    tick();
-
     expect(authService.logout).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
-  }));
+  });
 
-  it('should NOT logout on 400 error (even with "invalid token" message)', fakeAsync(() => {
+  it('should NOT logout on 400 error (even with "invalid token" message)', () => {
     httpClient.get('/api/data').subscribe({
       error: () => {},
     });
@@ -95,13 +89,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Invalid token provided' }, { status: 400, statusText: 'Bad Request' });
 
-    tick();
-
     expect(authService.logout).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
-  }));
+  });
 
-  it('should NOT logout on other errors like 404', fakeAsync(() => {
+  it('should NOT logout on other errors like 404', () => {
     httpClient.get('/api/data').subscribe({
       error: () => {},
     });
@@ -109,13 +101,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
 
-    tick();
-
     expect(authService.logout).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
-  }));
+  });
 
-  it('should NOT logout on 429 rate limiting error', fakeAsync(() => {
+  it('should NOT logout on 429 rate limiting error', () => {
     httpClient.get('/api/data').subscribe({
       error: () => {},
     });
@@ -123,13 +113,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Too many requests' }, { status: 429, statusText: 'Too Many Requests' });
 
-    tick();
-
     expect(authService.logout).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
-  }));
+  });
 
-  it('should NOT logout if request is to /auth/logout endpoint', fakeAsync(() => {
+  it('should NOT logout if request is to /auth/logout endpoint', () => {
     httpClient.post('/api/auth/logout', {}).subscribe({
       error: () => {},
     });
@@ -137,13 +125,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/auth/logout');
     request.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
-    tick();
-
     expect(authService.logout).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
-  }));
+  });
 
-  it('should NOT logout if request is to /auth/user endpoint', fakeAsync(() => {
+  it('should NOT logout if request is to /auth/user endpoint', () => {
     httpClient.get('/api/auth/user').subscribe({
       error: () => {},
     });
@@ -151,13 +137,11 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/auth/user');
     request.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
-    tick();
-
     expect(authService.logout).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
-  }));
+  });
 
-  it('should navigate to login even if logout fails', fakeAsync(() => {
+  it('should navigate to login even if logout fails', () => {
     authService.logout.and.returnValue(throwError(() => new Error('Logout failed')));
 
     httpClient.get('/api/data').subscribe({
@@ -167,9 +151,7 @@ describe('HttpInterceptorService', () => {
     const request = httpTestingController.expectOne('/api/data');
     request.flush({ message: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
 
-    tick();
-
     expect(authService.logout).toHaveBeenCalledWith();
     expect(router.navigate).toHaveBeenCalledWith(['/graph']);
-  }));
+  });
 });

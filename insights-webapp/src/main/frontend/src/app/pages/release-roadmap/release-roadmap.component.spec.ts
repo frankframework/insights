@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ReleaseRoadmapComponent } from './release-roadmap.component';
@@ -55,6 +55,12 @@ describe('ReleaseRoadmapComponent', () => {
     milestoneService.getMilestones.and.returnValue(of([]));
     issueService.getIssuesByMilestoneId.and.returnValue(of([]));
     issueService.getFutureEpicIssues.and.callFake(() => of(getEpicsCopy()));
+
+    jasmine.clock().install();
+  });
+
+  afterEach(() => {
+    jasmine.clock().uninstall();
   });
 
   it('should create', () => {
@@ -66,7 +72,7 @@ describe('ReleaseRoadmapComponent', () => {
   });
 
   describe('Unplanned Epics Milestone', () => {
-    beforeEach(fakeAsync(() => {
+    beforeEach(() => {
       jasmine.clock().mockDate(new Date(2025, 6, 10, 12, 0, 0));
 
       const MOCK_MILESTONE = {
@@ -82,9 +88,8 @@ describe('ReleaseRoadmapComponent', () => {
       issueService.getIssuesByMilestoneId.withArgs('m1').and.returnValue(of([]));
 
       fixture.detectChanges();
-      tick();
       fixture.detectChanges();
-    }));
+    });
 
     it('should create a special milestone for unplanned epics', () => {
       const unplannedMilestone = component.milestones().find((m) => m.id === 'unplanned-epics');

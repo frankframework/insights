@@ -222,7 +222,7 @@ describe('Graph Rendering and Interaction', () => {
         cy.get('@graphSvg').then(($svg) => {
           const nightlyNodes = $svg.find('a[data-cy*="-nightly"]');
           if (nightlyNodes.length > 0) {
-            nightlyNodes.each((idx, node) => {
+            nightlyNodes.each((idx: number, node: HTMLElement) => {
               const transform = Cypress.$(node).attr('transform');
               const yPos = transform?.match(/translate\([^,]+,([^)]+)\)/)?.[1];
               const isOnMasterBranch = yPos === '0';
