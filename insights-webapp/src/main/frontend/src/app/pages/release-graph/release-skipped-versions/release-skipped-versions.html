@@ -18,13 +18,11 @@
         >
           {{ node.version }}
           @if (node.type === 'major') {
-            <span class="rounded-[0.2rem] bg-red-600 px-1.5 py-[0.1rem] text-[0.7rem] font-bold text-white uppercase">
+            <span class="rounded-[0.2rem] bg-red-600 px-1.5 py-0.5 text-[0.7rem] font-bold text-white uppercase">
               MAJOR
             </span>
           } @else if (node.type === 'minor') {
-            <span
-              class="rounded-[0.2rem] bg-orange-500 px-1.5 py-[0.1rem] text-[0.7rem] font-bold text-white uppercase"
-            >
+            <span class="rounded-[0.2rem] bg-orange-500 px-1.5 py-0.5 text-[0.7rem] font-bold text-white uppercase">
               MINOR
             </span>
           }
@@ -45,9 +43,7 @@
             >
               <span class="font-mono text-[0.8rem] text-gray-400">└─</span>
               <span>{{ patch.name.startsWith('v') ? patch.name : 'v' + patch.name }}</span>
-              <span
-                class="rounded-[0.2rem] bg-green-700 px-1.5 py-[0.1rem] text-[0.7rem] font-bold text-white uppercase"
-              >
+              <span class="rounded-[0.2rem] bg-green-700 px-1.5 py-0.5 text-[0.7rem] font-bold text-white uppercase">
                 PATCH
               </span>
               <app-include-version-button

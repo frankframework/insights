@@ -15,7 +15,7 @@
       <input
         id="bv-name"
         type="text"
-        class="w-full rounded-lg border-[1.5px] border-gray-300 px-4 py-3 font-[inherit] text-[0.9375rem] text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 max-sm:border max-sm:px-3.5 max-sm:py-2.5 max-sm:text-sm"
+        class="w-full rounded-lg border-[1.5px] border-gray-300 px-4 py-3 font-[inherit] text-[0.9375rem] text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-ring focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 max-sm:border max-sm:px-3.5 max-sm:py-2.5 max-sm:text-sm"
         placeholder="Enter business value title"
         [value]="name()"
         [disabled]="isSaving()"
@@ -30,14 +30,12 @@
         <label class="text-[0.9375rem] font-semibold text-gray-700 max-sm:text-sm" for="bv-description">
           Description <span class="text-red-600">*</span>
         </label>
-        <div class="flex gap-[0.15rem] rounded-md bg-gray-100 p-[0.15rem]">
+        <div class="flex gap-0.5 rounded-md bg-gray-100 p-0.5">
           <button
             type="button"
             [class]="
               'cursor-pointer rounded px-3 py-1 text-[0.8rem] font-medium ' +
-              (!descriptionPreview()
-                ? 'active bg-white text-gray-800 shadow-[0_1px_2px_rgba(0,0,0,0.07)]'
-                : 'bg-transparent text-gray-500')
+              (!descriptionPreview() ? 'active bg-white text-gray-800 shadow-e1' : 'bg-transparent text-gray-500')
             "
             (click)="descriptionPreview.set(false)"
             (keydown)="$event.stopPropagation()"
@@ -48,9 +46,7 @@
             type="button"
             [class]="
               'cursor-pointer rounded px-3 py-1 text-[0.8rem] font-medium ' +
-              (descriptionPreview()
-                ? 'active bg-white text-gray-800 shadow-[0_1px_2px_rgba(0,0,0,0.07)]'
-                : 'bg-transparent text-gray-500')
+              (descriptionPreview() ? 'active bg-white text-gray-800 shadow-e1' : 'bg-transparent text-gray-500')
             "
             (click)="descriptionPreview.set(true)"
             (keydown)="$event.stopPropagation()"
@@ -61,13 +57,13 @@
       </div>
       @if (descriptionPreview()) {
         <div
-          class="markdown-body min-h-[120px] rounded-lg border-[1.5px] border-gray-300 px-4 py-3 text-[0.9375rem] text-gray-800"
+          class="markdown-body min-h-30 rounded-lg border-[1.5px] border-gray-300 px-4 py-3 text-[0.9375rem] text-gray-800"
           [innerHTML]="description() | markdown"
         ></div>
       } @else {
         <textarea
           id="bv-description"
-          class="min-h-55 w-full resize-y rounded-lg border-[1.5px] border-gray-300 px-4 py-3 font-[inherit] text-[0.9375rem] text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 max-md:min-h-45 max-sm:border max-sm:px-3.5 max-sm:py-2.5 max-sm:text-sm max-[480px]:min-h-[150px]"
+          class="min-h-55 w-full resize-y rounded-lg border-[1.5px] border-gray-300 px-4 py-3 font-[inherit] text-[0.9375rem] text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-ring focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-50 max-md:min-h-45 max-sm:border max-sm:px-3.5 max-sm:py-2.5 max-sm:text-sm max-xs:min-h-37.5"
           placeholder="Enter business value description (markdown supported)"
           rows="4"
           [value]="description()"
@@ -90,7 +86,7 @@
         Cancel
       </button>
       <button
-        class="cursor-pointer rounded-lg bg-blue-500 px-5 py-2.5 text-[0.9375rem] font-semibold text-white transition-all duration-200 enabled:hover:bg-blue-600 enabled:hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)] enabled:active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full max-sm:px-4 max-sm:py-3 max-sm:text-sm"
+        class="cursor-pointer rounded-lg bg-blue-500 px-5 py-2.5 text-[0.9375rem] font-semibold text-white transition-all duration-200 enabled:hover:bg-blue-600 enabled:hover:shadow-glow enabled:active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 max-sm:w-full max-sm:px-4 max-sm:py-3 max-sm:text-sm"
         [disabled]="isSaving() || !name().trim() || !description().trim()"
         (click)="save()"
       >

@@ -7,12 +7,10 @@ const PILL_BASE =
   'transition-all duration-200 ease-in-out enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60';
 
 const PILL_ACTIVE =
-  'active border-blue-900 bg-blue-900 shadow-[0_3px_6px_rgba(30,58,138,0.3)] ' +
-  'enabled:hover:border-[#1d3680] enabled:hover:bg-[#1d3680]';
+  'active border-blue-900 bg-blue-900 shadow-glow-brand ' +
+  'enabled:hover:border-brand-hover enabled:hover:bg-brand-hover';
 
-const PILL_IDLE =
-  'border-gray-300 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.08)] ' +
-  'enabled:hover:bg-gray-50 enabled:hover:shadow-[0_3px_6px_rgba(0,0,0,0.12)]';
+const PILL_IDLE = 'border-gray-300 bg-white shadow-e2 enabled:hover:bg-gray-50 enabled:hover:shadow-e4';
 
 const ICON_BASE = 'size-5 shrink-0 mask-contain mask-center mask-no-repeat transition-colors duration-200 ease-in-out';
 

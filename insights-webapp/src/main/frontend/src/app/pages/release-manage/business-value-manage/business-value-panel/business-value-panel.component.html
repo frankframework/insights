@@ -1,13 +1,13 @@
 <div
-  class="flex h-[calc(100vh-15rem)] max-h-[calc(100vh-15rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white max-[1200px]:h-auto max-[1200px]:max-h-none max-[1200px]:min-h-100 max-[992px]:h-[calc(100vh-12rem)] max-[992px]:max-h-[calc(100vh-12rem)] max-sm:min-h-[350px]"
+  class="flex h-[calc(100vh-15rem)] max-h-[calc(100vh-15rem)] min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white max-xl:h-auto max-xl:max-h-none max-xl:min-h-100 max-lg:h-[calc(100vh-12rem)] max-lg:max-h-[calc(100vh-12rem)] max-sm:min-h-87.5"
 >
   <header
     class="panel-header flex shrink-0 items-center justify-between rounded-t-xl border-b border-gray-200 bg-gray-50 p-4 max-sm:p-3"
   >
-    <h2 class="text-xl leading-none font-semibold text-gray-800 max-[480px]:text-lg">Business Values</h2>
+    <h2 class="text-xl leading-none font-semibold text-gray-800 max-xs:text-lg">Business Values</h2>
     <div class="flex items-center gap-2">
       <span
-        class="rounded-xl bg-gray-200 px-3 py-2 text-sm leading-none font-semibold text-gray-600 max-[480px]:px-2.5 max-[480px]:py-1.5 max-[480px]:text-[0.8125rem]"
+        class="rounded-xl bg-gray-200 px-3 py-2 text-sm leading-none font-semibold text-gray-600 max-xs:px-2.5 max-xs:py-1.5 max-xs:text-[0.8125rem]"
       >
         {{ filteredBusinessValues().length }}
       </span>
@@ -57,7 +57,7 @@
   <div class="shrink-0 border-b border-gray-200 bg-white px-4 py-3 max-sm:px-3 max-sm:py-2">
     <div class="relative">
       <svg
-        class="pointer-events-none absolute top-1/2 left-3 z-[1] -translate-y-1/2 text-gray-400"
+        class="pointer-events-none absolute top-1/2 left-3 z-1 -translate-y-1/2 text-gray-400"
         width="16"
         height="16"
         viewBox="0 0 24 24"
@@ -72,7 +72,7 @@
       </svg>
       <input
         type="text"
-        class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-3 pl-10 text-sm text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] focus:outline-none"
+        class="w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-3 pl-10 text-sm text-gray-800 transition-all duration-200 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-ring focus:outline-none"
         placeholder="Search business values..."
         [value]="businessValueSearchQuery()"
         (input)="updateSearchQuery($event)"
@@ -93,7 +93,7 @@
           [class]="
             'business-value-item mb-2 flex cursor-pointer flex-col gap-2 rounded-lg border-[1.5px] p-3.5 transition-all duration-200 max-sm:border max-sm:p-3 ' +
             (selectedBusinessValue()?.id === businessValue.id
-              ? 'selected border-blue-500 bg-blue-50 shadow-[0_2px_8px_rgba(59,130,246,0.15)]'
+              ? 'selected border-blue-500 bg-blue-50 shadow-glow-sm'
               : 'border-gray-200 hover:border-indigo-200 hover:bg-gray-50')
           "
           (click)="selectBusinessValue(businessValue)"
@@ -115,7 +115,7 @@
                   (click)="onEditClick($event)"
                 >
                   <svg
-                    class="max-sm:size-[13px]"
+                    class="max-sm:size-3.25"
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
                     height="16"
@@ -134,7 +134,7 @@
                   (click)="onDeleteClick(businessValue, $event)"
                 >
                   <svg
-                    class="max-sm:size-[13px]"
+                    class="max-sm:size-3.25"
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
                     height="16"

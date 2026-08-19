@@ -1,4 +1,4 @@
-<div class="px-[10vw] pt-32 pb-4 max-[992px]:px-4 max-[992px]:pt-[12vh]">
+<div class="px-[10vw] pt-32 pb-4 max-lg:px-4 max-lg:pt-[12vh]">
   @if (!isLoading() && release()) {
     <header class="mb-12 flex items-start justify-between border-b-2 border-gray-200 pb-6">
       <a
@@ -28,13 +28,13 @@
           <div class="mb-4 flex items-center gap-4">
             <h2 class="text-2xl font-bold tracking-tight text-gray-800">Manage Release Content</h2>
           </div>
-          <p class="max-w-[800px] text-base leading-relaxed text-gray-600">
+          <p class="max-w-200 text-base leading-relaxed text-gray-600">
             As a FrankFramework member, you have permission to manage and edit content for this release. Select one of
             the sections below to view and modify business values, important issues, or vulnerability information.
           </p>
         </div>
 
-        <div class="grid grid-cols-2 items-start gap-8 max-[992px]:grid-cols-1">
+        <div class="grid grid-cols-2 items-start gap-8 max-lg:grid-cols-1">
           <div class="ml-1 flex h-full flex-col">
             <div class="mb-6 shrink-0 border-b-2 border-gray-200 pb-4">
               <h3 class="mb-1.5 text-[1.375rem] font-bold tracking-tight text-gray-800">Release Specific Management</h3>
@@ -42,7 +42,7 @@
             </div>
             <div class="management-sections flex flex-1 flex-col">
               <a
-                class="business-value-card group relative flex h-full cursor-pointer flex-col rounded-xl border-[1.5px] border-gray-200 bg-white p-8 text-inherit transition-all duration-250 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_8px_24px_rgba(102,126,234,0.12)] active:-translate-y-0.5"
+                class="business-value-card group relative flex h-full cursor-pointer flex-col rounded-xl border-[1.5px] border-gray-200 bg-white p-8 text-inherit transition-all duration-250 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-e5 active:-translate-y-0.5"
                 [routerLink]="businessValueLink()"
               >
                 <div
@@ -93,14 +93,14 @@
             </div>
           </div>
 
-          <div class="flex h-full flex-col max-[992px]:ml-1">
+          <div class="flex h-full flex-col max-lg:ml-1">
             <div class="mb-6 shrink-0 border-b-2 border-gray-200 pb-4">
               <h3 class="mb-1.5 text-[1.375rem] font-bold tracking-tight text-gray-800">General Management</h3>
               <p class="text-[0.9375rem] font-medium text-gray-500">Applies to all releases</p>
             </div>
             <div class="management-sections flex flex-1 flex-col">
               <a
-                class="vulnerabilities-card group relative flex h-full cursor-pointer flex-col rounded-xl border-[1.5px] border-gray-200 bg-white p-8 text-inherit transition-all duration-250 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-[0_8px_24px_rgba(102,126,234,0.12)] active:-translate-y-0.5"
+                class="vulnerabilities-card group relative flex h-full cursor-pointer flex-col rounded-xl border-[1.5px] border-gray-200 bg-white p-8 text-inherit transition-all duration-250 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-e5 active:-translate-y-0.5"
                 [routerLink]="vulnerabilitiesLink()"
                 [queryParams]="vulnerabilitiesLinkQueryParams()"
               >
@@ -153,7 +153,7 @@
     }
 
     @if (activeSection() === 'business-value') {
-      <div class="animate-[slide-in_0.3s_ease-out]">
+      <div class="animate-slide-in">
         <div class="mb-8 flex items-center gap-4 border-b border-gray-200 pb-4">
           <button
             class="close-button flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-2 text-[0.9rem] font-medium text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-100"
@@ -192,7 +192,7 @@
     }
 
     @if (activeSection() === 'vulnerabilities') {
-      <div class="animate-[slide-in_0.3s_ease-out]">
+      <div class="animate-slide-in">
         <div class="mb-8 flex items-center gap-4 border-b border-gray-200 pb-4">
           <button
             class="close-button flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-4 py-2 text-[0.9rem] font-medium text-gray-700 transition-all duration-200 hover:border-gray-400 hover:bg-gray-100"

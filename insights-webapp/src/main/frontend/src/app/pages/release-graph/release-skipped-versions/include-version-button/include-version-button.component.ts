@@ -24,7 +24,7 @@ export class IncludeVersionButtonComponent {
 
   public readonly buttonClasses: Signal<string> = computed(() => {
     const base =
-      'ml-auto cursor-pointer rounded-xl border px-2 py-[0.1rem] text-[0.7rem] font-semibold whitespace-nowrap ' +
+      'ml-auto cursor-pointer rounded-xl border px-2 py-0.5 text-[0.7rem] font-semibold whitespace-nowrap ' +
       'transition-all duration-200 ease-in-out disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400';
 
     if (this.pending()) {

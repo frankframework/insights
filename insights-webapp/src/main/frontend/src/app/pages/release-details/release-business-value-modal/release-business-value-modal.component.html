@@ -1,5 +1,5 @@
 <app-modal [title]="businessValue()?.title || 'Business Value Details'" (closed)="close()">
-  <div class="scrollbar-none max-h-[70vh] min-h-[12.5rem] w-full overflow-y-auto max-sm:max-h-[75vh]">
+  <div class="scrollbar-none max-h-[70vh] min-h-50 w-full overflow-y-auto max-sm:max-h-[75vh]">
     @if (businessValue()) {
       <div class="flex w-full min-w-0 flex-col gap-10 max-sm:gap-8">
         <section class="min-w-0 border-b border-gray-200 pb-8 max-sm:pb-6">
@@ -18,7 +18,7 @@
               Connected Issues
             </h3>
             <span
-              class="shrink-0 rounded-md bg-slate-100 px-3.5 py-1.5 text-sm font-semibold text-slate-600 max-sm:px-3 max-sm:py-[0.3125rem] max-sm:text-[0.8125rem]"
+              class="shrink-0 rounded-md bg-slate-100 px-3.5 py-1.5 text-sm font-semibold text-slate-600 max-sm:px-3 max-sm:py-1.25 max-sm:text-[0.8125rem]"
               >{{ businessValue()!.issues?.length || 0 }} issue{{
                 businessValue()!.issues?.length === 1 ? '' : 's'
               }}</span

@@ -1,6 +1,6 @@
 <nav
   id="header"
-  class="fixed top-0 left-0 z-20 flex h-20 max-h-20 min-h-20 w-full flex-row items-center gap-6 bg-white py-2 pl-4 shadow-[0_0.1rem_0.5rem_rgba(0,0,0,0.15)] max-md:h-18 max-md:max-h-18 max-md:min-h-18 max-md:gap-4 max-md:text-[0.8rem]"
+  class="fixed top-0 left-0 z-20 flex h-20 max-h-20 min-h-20 w-full flex-row items-center gap-6 bg-white py-2 pl-4 shadow-header max-md:h-18 max-md:max-h-18 max-md:min-h-18 max-md:gap-4 max-md:text-[0.8rem]"
 >
   <a
     class="logo-container flex cursor-pointer flex-row items-center gap-2 text-inherit"
@@ -14,40 +14,34 @@
   <ul class="flex gap-4">
     <li>
       <a
-        class="relative block cursor-pointer px-[3px] py-2 opacity-60 hover:text-black hover:opacity-100"
+        class="relative block cursor-pointer px-0.75 py-2 opacity-60 hover:text-black hover:opacity-100"
         routerLinkActive="active border-b-2 border-gray-900 opacity-100"
         [routerLink]="['/graph']"
         [queryParams]="graphStateService.graphQueryParams()"
       >
-        <h3
-          class="text-base font-semibold text-gray-700 transition-[color,opacity] duration-200 max-[540px]:text-[0.85rem]"
-        >
+        <h3 class="text-base font-semibold text-gray-700 transition-[color,opacity] duration-200 max-xs:text-[0.85rem]">
           Release graph
         </h3>
       </a>
     </li>
     <li>
       <a
-        class="relative block cursor-pointer px-[3px] py-2 opacity-60 hover:text-black hover:opacity-100"
+        class="relative block cursor-pointer px-0.75 py-2 opacity-60 hover:text-black hover:opacity-100"
         routerLinkActive="active border-b-2 border-gray-900 opacity-100"
         [routerLink]="['/roadmap']"
       >
-        <h3
-          class="text-base font-semibold text-gray-700 transition-[color,opacity] duration-200 max-[540px]:text-[0.85rem]"
-        >
+        <h3 class="text-base font-semibold text-gray-700 transition-[color,opacity] duration-200 max-xs:text-[0.85rem]">
           Roadmap
         </h3>
       </a>
     </li>
     <li>
       <a
-        class="relative block cursor-pointer px-[3px] py-2 opacity-60 hover:text-black hover:opacity-100"
+        class="relative block cursor-pointer px-0.75 py-2 opacity-60 hover:text-black hover:opacity-100"
         routerLinkActive="active border-b-2 border-gray-900 opacity-100"
         [routerLink]="['/cve-overview']"
       >
-        <h3
-          class="text-base font-semibold text-gray-700 transition-[color,opacity] duration-200 max-[540px]:text-[0.85rem]"
-        >
+        <h3 class="text-base font-semibold text-gray-700 transition-[color,opacity] duration-200 max-xs:text-[0.85rem]">
           CVE Overview
         </h3>
       </a>
@@ -69,13 +63,13 @@
           [src]="authService.currentUser()?.avatarUrl"
           [alt]="authService.currentUser()?.username"
         />
-        <span class="username text-[0.9rem] font-semibold text-gray-800 max-[540px]:hidden">{{
+        <span class="username text-[0.9rem] font-semibold text-gray-800 max-xs:hidden">{{
           authService.currentUser()?.username
         }}</span>
 
         @if (showUserMenu()) {
           <menu
-            class="user-menu absolute top-[calc(100%+0.5rem)] right-0 z-[50] min-w-70 rounded-lg border border-gray-300 bg-white py-2 shadow-[0_8px_24px_rgba(140,149,159,0.2)]"
+            class="user-menu absolute top-[calc(100%+0.5rem)] right-0 z-50 min-w-70 rounded-lg border border-gray-300 bg-white py-2 shadow-e5"
             tabindex="0"
             (click)="$event.stopPropagation()"
           >
@@ -121,7 +115,7 @@
 
 @if (authService.authError()) {
   <div
-    class="fixed top-20 left-1/2 z-30 w-[600px] max-w-[90%] -translate-x-1/2 rounded-lg border border-red-100 bg-red-50 p-4 shadow-md max-md:top-18 max-md:w-[calc(100%-2rem)] max-md:p-3"
+    class="fixed top-20 left-1/2 z-30 w-150 max-w-[90%] -translate-x-1/2 rounded-lg border border-red-100 bg-red-50 p-4 shadow-md max-md:top-18 max-md:w-[calc(100%-2rem)] max-md:p-3"
   >
     <div class="flex items-center gap-3">
       <svg class="shrink-0 text-red-600" height="20" width="20" viewBox="0 0 16 16" fill="currentColor">

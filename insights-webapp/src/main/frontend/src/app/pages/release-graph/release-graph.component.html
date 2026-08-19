@@ -154,7 +154,7 @@
     </svg>
 
     <div
-      class="fixed top-6 z-25 flex items-center gap-3 max-[991px]:top-auto max-[991px]:bottom-6 max-[991px]:left-1/2 max-[991px]:right-auto max-[991px]:-translate-x-1/2"
+      class="fixed top-6 z-25 flex items-center gap-3 max-lg:top-auto max-lg:bottom-6 max-lg:left-1/2 max-lg:right-auto max-lg:-translate-x-1/2"
       [class.right-34]="!authService.isAuthenticated()"
       [class.right-48]="authService.isAuthenticated()"
     >
@@ -180,7 +180,7 @@
     </div>
 
     <div
-      class="hidden min-[992px]:pointer-events-none min-[992px]:fixed min-[992px]:top-[75px] min-[992px]:left-0 min-[992px]:h-full min-[992px]:w-[152px] min-[992px]:flex-col min-[992px]:items-center min-[992px]:justify-start min-[992px]:bg-white min-[992px]:px-4 min-[992px]:after:pointer-events-none min-[992px]:after:absolute min-[992px]:after:top-0 min-[992px]:after:-right-[25px] min-[992px]:after:z-[1] min-[992px]:after:h-full min-[992px]:after:w-10 min-[992px]:after:bg-[linear-gradient(to_right,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_10%,rgba(255,255,255,0.85)_30%,rgba(255,255,255,0.6)_55%,rgba(255,255,255,0.25)_80%,rgba(255,255,255,0)_100%)] min-[992px]:after:blur-[3px] min-[992px]:after:content-[''] min-[992px]:flex"
+      class="hidden lg:pointer-events-none lg:fixed lg:top-18.75 lg:left-0 lg:h-full lg:w-38 lg:flex-col lg:items-center lg:justify-start lg:bg-white lg:px-4 lg:after:pointer-events-none lg:after:absolute lg:after:top-0 lg:after:-right-6.25 lg:after:z-1 lg:after:h-full lg:after:w-10 lg:after:bg-[linear-gradient(to_right,rgba(255,255,255,1)_0%,rgba(255,255,255,1)_10%,rgba(255,255,255,0.85)_30%,rgba(255,255,255,0.6)_55%,rgba(255,255,255,0.25)_80%,rgba(255,255,255,0)_100%)] lg:after:blur-[3px] lg:after:content-[''] lg:flex"
     >
       @for (stickyLabel of stickyBranchLabels(); track stickyLabel.label) {
         <div class="absolute z-2 flex -translate-y-1/2 items-center gap-2" [style.top.px]="stickyLabel.screenY - 75">

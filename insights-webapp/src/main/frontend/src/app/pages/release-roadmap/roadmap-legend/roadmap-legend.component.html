@@ -1,11 +1,9 @@
-<div class="roadmap-legend mt-8 flex w-full justify-end max-[442px]:justify-stretch">
+<div class="roadmap-legend mt-8 flex w-full justify-end max-xs:justify-stretch">
   <div
-    class="legend-content flex w-auto flex-col gap-8 rounded-lg border border-gray-200 bg-white p-8 shadow-sm max-[442px]:w-full max-[442px]:flex-wrap max-[442px]:items-start"
+    class="legend-content flex w-auto flex-col gap-8 rounded-lg border border-gray-200 bg-white p-8 shadow-sm max-xs:w-full max-xs:flex-wrap max-xs:items-start"
   >
     <div class="legend-column flex flex-col gap-2">
-      <h3 class="legend-title mb-4 text-base font-semibold whitespace-nowrap text-gray-700 max-[442px]:w-full">
-        Legend
-      </h3>
+      <h3 class="legend-title mb-4 text-base font-semibold whitespace-nowrap text-gray-700 max-xs:w-full">Legend</h3>
       @for (item of issueStateItems; track item.label) {
         <div class="legend-item flex items-center gap-4">
           <div

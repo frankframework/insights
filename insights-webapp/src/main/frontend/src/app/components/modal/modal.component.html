@@ -1,5 +1,5 @@
 <div
-  class="fixed inset-0 z-30 flex items-center justify-center bg-black/22 p-4 outline-none max-md:p-3 max-[480px]:p-2"
+  class="fixed inset-0 z-30 flex items-center justify-center bg-black/22 p-4 outline-none max-md:p-3 max-xs:p-2"
   tabindex="0"
   role="button"
   aria-label="Close modal"
@@ -9,7 +9,7 @@
 >
   <div
     #modalContent
-    class="relative max-h-[85vh] w-[680px] max-w-[90vw] overflow-y-auto rounded-[0.7rem] bg-white px-10 pt-20 pb-10 shadow-[0_2px_18px_#0002] outline-none max-md:w-[500px] max-md:rounded-lg max-md:px-6 max-md:pt-18 max-md:pb-8 max-[540px]:w-[350px] max-[540px]:px-5 max-[540px]:pt-16 max-[540px]:pb-6"
+    class="relative max-h-[85vh] w-170 max-w-[90vw] overflow-y-auto rounded-[0.7rem] bg-white px-10 pt-20 pb-10 shadow-e4 outline-none max-md:w-125 max-md:rounded-lg max-md:px-6 max-md:pt-18 max-md:pb-8 max-xs:w-87.5 max-xs:px-5 max-xs:pt-16 max-xs:pb-6"
     tabindex="0"
     role="dialog"
     aria-modal="true"
@@ -19,13 +19,13 @@
   >
     @if (title().length > 0) {
       <h2
-        class="absolute top-6 left-10 text-xl font-semibold text-gray-800 max-md:top-5 max-md:left-6 max-sm:text-lg max-[540px]:top-4 max-[540px]:left-5"
+        class="absolute top-6 left-10 text-xl font-semibold text-gray-800 max-md:top-5 max-md:left-6 max-sm:text-lg max-xs:top-4 max-xs:left-5"
       >
         {{ title() }}
       </h2>
     }
     <button
-      class="close-btn absolute top-5 right-5 flex size-8 cursor-pointer items-center justify-center rounded-md text-2xl text-gray-400 transition-all duration-200 hover:bg-gray-100 hover:text-gray-800 active:bg-gray-200 max-sm:size-7 max-sm:text-[1.375rem] max-[540px]:top-4 max-[540px]:right-4"
+      class="close-btn absolute top-5 right-5 flex size-8 cursor-pointer items-center justify-center rounded-md text-2xl text-gray-400 transition-all duration-200 hover:bg-gray-100 hover:text-gray-800 active:bg-gray-200 max-sm:size-7 max-sm:text-[1.375rem] max-xs:top-4 max-xs:right-4"
       type="button"
       aria-label="Close modal"
       (click)="close()"
