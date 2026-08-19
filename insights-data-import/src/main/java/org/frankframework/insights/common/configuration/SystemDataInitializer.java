@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchInjectionService;
+import org.frankframework.insights.common.exception.ApiException;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionService;
@@ -280,6 +281,6 @@ public class SystemDataInitializer implements CommandLineRunner {
 
     @FunctionalInterface
     private interface InjectionStep {
-        void run() throws Exception;
+        void run() throws ApiException;
     }
 }

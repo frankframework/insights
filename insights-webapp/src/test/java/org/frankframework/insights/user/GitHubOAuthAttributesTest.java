@@ -49,14 +49,14 @@ public class GitHubOAuthAttributesTest {
     public void from_withMissingLogin_isEqualToNull() {
         Map<String, Object> attributes = Map.of("id", 12345L, "avatar_url", "https://github.com/avatars/testuser.png");
 
-        assertThat(GitHubOAuthAttributes.from(attributes).username()).isEqualTo(null);
+        assertThat(GitHubOAuthAttributes.from(attributes).username()).isNull();
     }
 
     @Test
     public void from_withMissingAvatarUrl_isEqualToNull() {
         Map<String, Object> attributes = Map.of("id", 12345L, "login", "testuser");
 
-        assertThat(GitHubOAuthAttributes.from(attributes).avatarUrl()).isEqualTo(null);
+        assertThat(GitHubOAuthAttributes.from(attributes).avatarUrl()).isNull();
     }
 
     @Test
@@ -76,7 +76,7 @@ public class GitHubOAuthAttributesTest {
         attributes.put("login", null);
         attributes.put("avatar_url", "https://github.com/avatars/testuser.png");
 
-        assertThat(GitHubOAuthAttributes.from(attributes).username()).isEqualTo(null);
+        assertThat(GitHubOAuthAttributes.from(attributes).username()).isNull();
     }
 
     @Test
@@ -85,8 +85,7 @@ public class GitHubOAuthAttributesTest {
         GitHubOAuthAttributes attrs2 = new GitHubOAuthAttributes(12345L, "testuser", "https://avatar.url");
         GitHubOAuthAttributes attrs3 = new GitHubOAuthAttributes(99999L, "otheruser", "https://other.url");
 
-        assertThat(attrs1).isEqualTo(attrs2);
-        assertThat(attrs1).isNotEqualTo(attrs3);
-        assertThat(attrs1.hashCode()).isEqualTo(attrs2.hashCode());
+        assertThat(attrs1).isEqualTo(attrs2).isNotEqualTo(attrs3);
+        assertThat(attrs1.hashCode()).hasSameHashCodeAs(attrs2.hashCode());
     }
 }

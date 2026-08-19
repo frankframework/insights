@@ -50,20 +50,6 @@ public class GitHubWebhookControllerTest {
     }
 
     @Test
-    public void handleWebhook_whenJobAlreadyRunning_stillReturns202AndQueues() throws Exception {
-        byte[] body = RELEASE_PUBLISHED_PAYLOAD.getBytes(StandardCharsets.UTF_8);
-
-        mockMvc.perform(post("/api/webhooks/github")
-                        .header("X-GitHub-Event", "release")
-                        .header("X-Hub-Signature-256", sign(body))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isAccepted());
-
-        verify(systemDataInitializer).triggerRefresh();
-    }
-
-    @Test
     public void handleWebhook_whenRefreshFails_returns202Anyway() throws Exception {
         doThrow(new RuntimeException("GitHub unreachable"))
                 .when(systemDataInitializer)

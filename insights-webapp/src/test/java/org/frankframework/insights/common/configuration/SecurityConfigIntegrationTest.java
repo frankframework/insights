@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import java.util.Map;
 import org.frankframework.insights.user.User;
 import org.frankframework.insights.user.UserRepository;
@@ -122,9 +123,8 @@ public class SecurityConfigIntegrationTest {
         createAndRegisterAuthenticatedSession();
         createAndRegisterAuthenticatedSession();
 
-        var allSessions = sessionRegistry.getAllSessions(oauth2User, false);
-        assertThat(allSessions).hasSize(3);
-        assertThat(allSessions).noneMatch(SessionInformation::isExpired);
+        List<SessionInformation> allSessions = sessionRegistry.getAllSessions(oauth2User, false);
+        assertThat(allSessions).hasSize(3).noneMatch(SessionInformation::isExpired);
 
         MockHttpSession session4 = createAuthenticatedSession();
 

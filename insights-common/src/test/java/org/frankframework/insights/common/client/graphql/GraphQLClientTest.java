@@ -69,7 +69,7 @@ public class GraphQLClientTest {
         }
 
         @Override
-        protected HttpGraphQlClient getGraphQlClient() {
+        protected HttpGraphQlClient getHttpGraphQlClient() {
             return httpGraphQlClientMock;
         }
     }

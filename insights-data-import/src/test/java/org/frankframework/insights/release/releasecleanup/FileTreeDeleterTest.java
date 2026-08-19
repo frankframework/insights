@@ -202,7 +202,7 @@ public class FileTreeDeleterTest {
         Files.createDirectories(dir);
         Files.writeString(dir.resolve("file.txt"), "content");
 
-        try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation -> {
+        try (MockedStatic<Files> _ = mockStatic(Files.class, invocation -> {
             if (invocation.getMethod().getName().equals("walkFileTree")) {
                 throw new IOException("Simulated walkFileTree failure");
             }

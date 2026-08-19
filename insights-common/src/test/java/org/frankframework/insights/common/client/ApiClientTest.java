@@ -1,6 +1,7 @@
 package org.frankframework.insights.common.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.function.Consumer;
@@ -57,8 +58,6 @@ public class ApiClientTest {
     public void constructor_withNullConfigurer_doesNotThrowException() {
         String baseUrl = "https://api.example.com";
 
-        TestApiClient client = new TestApiClient(baseUrl, null);
-
-        assertThat(client.webClient).isNotNull();
+        assertThatNoException().isThrownBy(() -> new TestApiClient(baseUrl, null));
     }
 }

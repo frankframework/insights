@@ -1,6 +1,9 @@
 package org.frankframework.insights.webhook;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
@@ -70,12 +73,18 @@ public class GitHubWebhookSecurityIntegrationTest {
                         .header("X-Hub-Signature-256", sign(body))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isAccepted());
+                .andExpect(status().isAccepted())
+                .andExpect(content().string("Refresh scheduled"));
+
+        verify(systemDataInitializer).triggerRefresh();
     }
 
     @Test
     public void webhookEndpoint_whenJobAlreadyRunning_stillReturns202() throws Exception {
         byte[] body = RELEASE_PUBLISHED_PAYLOAD.getBytes(StandardCharsets.UTF_8);
+        doThrow(new IllegalStateException("a refresh job is already running"))
+                .when(systemDataInitializer)
+                .triggerRefresh();
 
         mockMvc.perform(post("/api/webhooks/github")
                         .header("X-GitHub-Event", "release")

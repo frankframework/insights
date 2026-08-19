@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.frankframework.insights.ratelimit.RateLimitExceededException;
 import org.frankframework.insights.ratelimit.RateLimitService;
@@ -45,7 +46,11 @@ public class RateLimitInterceptorTest {
 
     @BeforeEach
     public void setUp() {
-        interceptor = new RateLimitInterceptor(rateLimitService);
+        RateLimitProperties rateLimitProperties = new RateLimitProperties();
+        rateLimitProperties.setProtectedPaths(List.of("/api/auth", "/api/business-value", "/api/vulnerabilities"));
+        rateLimitProperties.setExemptPaths(List.of("/api/business-value/release", "/api/vulnerabilities/release"));
+
+        interceptor = new RateLimitInterceptor(rateLimitService, rateLimitProperties);
 
         oauth2User = new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")), Map.of("login", "testuser"), "login");
