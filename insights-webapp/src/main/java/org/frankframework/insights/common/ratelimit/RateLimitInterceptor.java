@@ -2,6 +2,7 @@ package org.frankframework.insights.common.ratelimit;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.frankframework.insights.ratelimit.RateLimitExceededException;
@@ -18,25 +19,15 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @RequiredArgsConstructor
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private static final String API_AUTH_PATH = "/api/auth";
-    private static final String API_BUSINESS_VALUE_PATH = "/api/business-value";
-    private static final String API_BUSINESS_VALUE_RELEASE_PATH = "/api/business-value/release";
-    private static final String API_VULNERABILITIES_PATH = "/api/vulnerabilities";
-    private static final String API_VULNERABILITIES_RELEASE_PATH = "/api/vulnerabilities/release";
-
     private final RateLimitService rateLimitService;
+    private final RateLimitProperties rateLimitProperties;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws RateLimitExceededException {
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)
-                || requestURI.startsWith(API_VULNERABILITIES_RELEASE_PATH)) {
-            return true;
-        }
-
-        if (shouldSkipRateLimiting(requestURI)) {
+        if (!isRateLimited(requestURI)) {
             return true;
         }
 
@@ -55,12 +46,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         String requestURI = request.getRequestURI();
 
-        if (requestURI.startsWith(API_BUSINESS_VALUE_RELEASE_PATH)
-                || requestURI.startsWith(API_VULNERABILITIES_RELEASE_PATH)) {
-            return;
-        }
-
-        if (shouldSkipRateLimiting(requestURI)) {
+        if (!isRateLimited(requestURI)) {
             return;
         }
 
@@ -91,12 +77,15 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * Checks if rate limiting should be skipped for this request URI.
+     * Checks if rate limiting applies to this request URI.
      */
-    private boolean shouldSkipRateLimiting(String requestURI) {
-        return !requestURI.startsWith(API_AUTH_PATH)
-                && !requestURI.startsWith(API_BUSINESS_VALUE_PATH)
-                && !requestURI.startsWith(API_VULNERABILITIES_PATH);
+    private boolean isRateLimited(String requestURI) {
+        return startsWithAny(requestURI, rateLimitProperties.getProtectedPaths())
+                && !startsWithAny(requestURI, rateLimitProperties.getExemptPaths());
+    }
+
+    private boolean startsWithAny(String requestURI, List<String> paths) {
+        return paths != null && paths.stream().anyMatch(requestURI::startsWith);
     }
 
     /**

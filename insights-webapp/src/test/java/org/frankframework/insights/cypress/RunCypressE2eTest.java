@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import lombok.extern.log4j.Log4j2;
 import org.frankframework.insights.InsightsWebappApplication;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,6 +40,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * @author Sergi Philipsen
  * @see "https://github.com/wimdeblauwe/testcontainers-cypress"
  */
+@Log4j2
 @Testcontainers(disabledWithoutDocker = true)
 @Tag("integration")
 public class RunCypressE2eTest {
@@ -75,6 +77,9 @@ public class RunCypressE2eTest {
             HttpResponse<String> resp = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
             return resp.statusCode() == 200 && resp.body().contains("UP");
         } catch (Exception e) {
+            log.warn(
+                    "Due to an error while checking the health of the application, it is assumed to be unhealthy. {}",
+                    e.getMessage());
             return false;
         }
     }

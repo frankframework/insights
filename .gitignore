@@ -38,4 +38,5 @@ insights-webapp/src/main/resources/frontend/
 
 .flattened-pom.xml
 
-.env
+.env.*
+!.env.example

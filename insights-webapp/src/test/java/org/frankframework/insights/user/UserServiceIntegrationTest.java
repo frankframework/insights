@@ -166,7 +166,7 @@ public class UserServiceIntegrationTest {
                 .isEqualTo(originalCreatedAt.truncatedTo(ChronoUnit.SECONDS));
         assertThat(updatedUser.get().getUpdatedAt()).isAfter(originalCreatedAt);
 
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.count()).isOne();
     }
 
     @Test
@@ -190,7 +190,7 @@ public class UserServiceIntegrationTest {
         assertThat(updatedUser).isPresent();
         assertThat(updatedUser.get().getUsername()).isEqualTo("newusername");
 
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(userRepository.count()).isOne();
     }
 
     @Test
