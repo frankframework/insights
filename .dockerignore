@@ -22,6 +22,3 @@ release.properties
 
 # Log files
 *.log
-
-# Local secrets
-.env

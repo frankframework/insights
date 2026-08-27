@@ -69,7 +69,8 @@ public class ReleaseArtifactService {
         } catch (IOException | URISyntaxException e) {
             try {
                 Files.deleteIfExists(tempZipPath);
-            } catch (IOException ignored) {
+            } catch (IOException cleanupException) {
+                log.warn("Could not delete partial download {}, leaving it behind", tempZipPath, cleanupException);
             }
             throw new IOException("Could not download release ZIP for " + tagName, e);
         }

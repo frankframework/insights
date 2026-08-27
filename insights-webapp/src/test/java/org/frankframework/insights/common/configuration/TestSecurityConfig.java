@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 
 import net.javacrumbs.shedlock.core.LockProvider;
 import org.frankframework.insights.common.ratelimit.RateLimitInterceptor;
+import org.frankframework.insights.common.ratelimit.RateLimitProperties;
 import org.frankframework.insights.ratelimit.RateLimitService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class TestSecurityConfig {
 
     @Bean
-    public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
         return http.build();
@@ -37,6 +38,6 @@ public class TestSecurityConfig {
 
     @Bean
     public RateLimitInterceptor rateLimitInterceptor(RateLimitService rateLimitService) {
-        return new RateLimitInterceptor(rateLimitService);
+        return new RateLimitInterceptor(rateLimitService, new RateLimitProperties());
     }
 }

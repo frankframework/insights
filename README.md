@@ -115,7 +115,7 @@ import service and the web application.
     git clone https://github.com/frankframework/insights.git
     cd insights
     ```
-3.  Fill in your GitHub token, project id, webhook secret and OAuth client in the
+3.  Copy `.env.example` to `.env.local` and fill in your GitHub token, project id, webhook secret and OAuth client, this will be used in the
     `application-local.properties` of each module. Both services run with the `local` Spring profile.
 4.  Build the JARs. The images copy them out of the `target` directories, so Maven has to run first:
     ```bash

@@ -13,7 +13,7 @@ public abstract class RestClient extends ApiClient {
      * @param baseUrl the base URL of the external REST server (mandatory).
      * @param configurer a Consumer that receives the WebClient.Builder for further configuration, such as adding authentication headers. Can be null.
      */
-    public RestClient(String baseUrl, Consumer<WebClient.Builder> configurer) {
+    protected RestClient(String baseUrl, Consumer<WebClient.Builder> configurer) {
         super(baseUrl, configurer);
     }
 

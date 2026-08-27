@@ -62,11 +62,11 @@ public class RateLimitServiceTest {
     public void trackFailedRequest_shouldCreateBucketForNewUser() {
         String userKey = "user1";
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
 
         rateLimitService.trackFailedRequest(userKey);
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(1);
+        assertThat(rateLimitService.getBucketCount()).isOne();
     }
 
     @Test
@@ -137,11 +137,11 @@ public class RateLimitServiceTest {
         rateLimitService.trackFailedRequest(userKey);
         rateLimitService.trackFailedRequest(userKey);
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(1);
+        assertThat(rateLimitService.getBucketCount()).isOne();
 
         rateLimitService.resetRateLimit(userKey);
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
     }
 
     @Test
@@ -169,11 +169,11 @@ public class RateLimitServiceTest {
     public void resetRateLimit_shouldHandleNonExistentUser() {
         String userKey = "nonexistent";
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
 
         rateLimitService.resetRateLimit(userKey);
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
     }
 
     @Test
@@ -205,7 +205,7 @@ public class RateLimitServiceTest {
 
         rateLimitService.resetRateLimit(user1);
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(1);
+        assertThat(rateLimitService.getBucketCount()).isOne();
 
         rateLimitService.checkIfBlocked(user2);
     }
@@ -231,27 +231,27 @@ public class RateLimitServiceTest {
         String userKey = "user1";
 
         rateLimitService.trackFailedRequest(userKey);
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(1);
+        assertThat(rateLimitService.getBucketCount()).isOne();
 
         rateLimitService.resetRateLimit(userKey);
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
 
         rateLimitService.cleanupOldBuckets();
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
     }
 
     @Test
     public void cleanupOldBuckets_shouldHandleEmptyBuckets() {
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
 
         rateLimitService.cleanupOldBuckets();
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
     }
 
     @Test
     public void getBucketCount_shouldReturnZero_initially() {
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
     }
 
     @Test
@@ -269,7 +269,7 @@ public class RateLimitServiceTest {
         rateLimitService.trackFailedRequest("user1");
         rateLimitService.trackFailedRequest("user1");
 
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(1);
+        assertThat(rateLimitService.getBucketCount()).isOne();
     }
 
     @Test
@@ -279,10 +279,10 @@ public class RateLimitServiceTest {
         assertThat(rateLimitService.getBucketCount()).isEqualTo(2);
 
         rateLimitService.resetRateLimit("user1");
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(1);
+        assertThat(rateLimitService.getBucketCount()).isOne();
 
         rateLimitService.resetRateLimit("user2");
-        assertThat(rateLimitService.getBucketCount()).isEqualTo(0);
+        assertThat(rateLimitService.getBucketCount()).isZero();
     }
 
     @Test

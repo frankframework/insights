@@ -42,6 +42,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=trivy-downloader /usr/local/bin/trivy /usr/local/bin/trivy
 
+RUN mkdir -p /release-archive && chown -R spring /release-archive
+RUN mkdir -p /tmp/trivy-cache && chown -R spring /tmp/trivy-cache
+
 USER spring
 
 COPY --chown=spring ./insights-data-import/target/insights-data-import-*.jar /app/insights-data-import.jar

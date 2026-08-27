@@ -1,6 +1,6 @@
 services:
   postgres-db:
-    image: postgres:15
+    image: postgres:18
     container_name: insights-postgres
     environment:
       POSTGRES_USER: user
@@ -53,6 +53,7 @@ services:
     container_name: insights-data-import
     ports:
       - "8081:8081"
+    env_file: ".env.local"
     environment:
       SPRING_PROFILES_ACTIVE: local
       DB_HOST: postgres-db
