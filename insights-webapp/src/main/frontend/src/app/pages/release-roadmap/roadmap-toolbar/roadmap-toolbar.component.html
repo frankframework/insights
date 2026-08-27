@@ -5,7 +5,8 @@
       title="Quarterly view (6 months)"
       class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md bg-transparent px-3 py-2 text-sm font-medium transition-all duration-200"
       [class]="{
-        'active bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.QUARTERLY,
+        active: viewModeVar === ViewMode.QUARTERLY,
+        'bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.QUARTERLY,
         'text-gray-500 hover:bg-white/50 hover:opacity-100': viewModeVar !== ViewMode.QUARTERLY,
       }"
       (click)="viewModeVar === ViewMode.MONTHLY && toggleViewMode.emit()"
@@ -17,7 +18,8 @@
       title="Monthly view (1 month)"
       class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md bg-transparent px-3 py-2 text-sm font-medium transition-all duration-200"
       [class]="{
-        'active bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.MONTHLY,
+        active: viewModeVar === ViewMode.MONTHLY,
+        'bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.MONTHLY,
         'text-gray-500 hover:bg-white/50 hover:opacity-100': viewModeVar !== ViewMode.MONTHLY,
       }"
       (click)="viewModeVar === ViewMode.QUARTERLY && toggleViewMode.emit()"

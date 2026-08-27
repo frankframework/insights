@@ -146,17 +146,17 @@ describe('RoadmapToolbarComponent', () => {
       fixture.detectChanges();
 
       const toggleButtons = fixture.debugElement.queryAll(By.css('.toggle-button'));
-      const quarterlyButton = toggleButtons[0];
-      const monthlyButton = toggleButtons[1];
+      const quarterlyButton = toggleButtons[0].nativeElement as HTMLButtonElement;
+      const monthlyButton = toggleButtons[1].nativeElement as HTMLButtonElement;
 
-      expect(quarterlyButton.classes['active']).toBeTrue();
-      expect(monthlyButton.classes['active']).toBeFalsy();
+      expect(quarterlyButton.classList.contains('active')).toBeTrue();
+      expect(monthlyButton.classList.contains('active')).toBeFalse();
 
       fixture.componentRef.setInput('viewMode', ViewMode.MONTHLY);
       fixture.detectChanges();
 
-      expect(quarterlyButton.classes['active']).toBeFalsy();
-      expect(monthlyButton.classes['active']).toBeTrue();
+      expect(quarterlyButton.classList.contains('active')).toBeFalse();
+      expect(monthlyButton.classList.contains('active')).toBeTrue();
     });
   });
 });
