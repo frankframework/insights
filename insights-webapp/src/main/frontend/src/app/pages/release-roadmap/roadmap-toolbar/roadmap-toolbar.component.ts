@@ -5,9 +5,7 @@ import { ViewMode } from '../roadmap.types';
 @Component({
   selector: 'app-roadmap-toolbar',
   standalone: true,
-  imports: [
-    NgOptimizedImage
-  ],
+  imports: [NgOptimizedImage],
   templateUrl: './roadmap-toolbar.component.html',
 })
 export class RoadmapToolbarComponent {

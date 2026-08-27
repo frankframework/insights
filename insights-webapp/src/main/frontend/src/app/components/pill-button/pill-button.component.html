@@ -3,8 +3,9 @@
   type="button"
   class="flex h-9 cursor-pointer items-center justify-start gap-2 rounded-full border py-1.5 pr-3.5 pl-2.5 transition-all duration-200 ease-in-out enabled:active:scale-[0.98] disabled:opacity-60"
   [class]="{
-    'active border-blue-900 bg-blue-900 shadow-glow-brand enabled:hover:border-brand-hover enabled:hover:bg-brand-hover': isActive,
-    'border-gray-300 bg-white shadow-e2 enabled:hover:bg-gray-50 enabled:hover:shadow-e4': !isActive
+    'active border-blue-900 bg-blue-900 shadow-glow-brand enabled:hover:border-brand-hover enabled:hover:bg-brand-hover':
+      isActive,
+    'border-gray-300 bg-white shadow-e2 enabled:hover:bg-gray-50 enabled:hover:shadow-e4': !isActive,
   }"
   [disabled]="disabled() || loading()"
   [attr.title]="tooltip() || null"
@@ -16,7 +17,7 @@
     [class]="{
       'bg-white': isActive,
       'bg-gray-500': !isActive,
-      'animate-spin': loading()
+      'animate-spin': loading(),
     }"
     [style.maskImage]="iconMask()"
   ></span>
@@ -24,7 +25,8 @@
     class="toggle-label text-sm font-semibold whitespace-nowrap transition-colors duration-200 ease-in-out"
     [class]="{
       'text-white': isActive,
-      'text-gray-600': !isActive
+      'text-gray-600': !isActive,
     }"
-  >{{ label() }}</span>
+    >{{ label() }}</span
+  >
 </button>
