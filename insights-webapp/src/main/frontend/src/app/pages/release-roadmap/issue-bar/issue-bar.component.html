@@ -1,16 +1,24 @@
+@let isMonthly = viewMode() === ViewMode.MONTHLY;
 <a
   #issueLink
   target="_blank"
   class="issue-bar absolute top-0 block"
-  [class.h-8]="viewMode() === ViewMode.MONTHLY"
-  [class.h-7]="viewMode() !== ViewMode.MONTHLY"
+  [class.h-8]="isMonthly"
+  [class.h-7]="!isMonthly"
   [href]="issue().url"
   [ngStyle]="issueStyle()"
   (mouseenter)="onMouseEnter()"
   (mouseleave)="onMouseLeave()"
 >
-  <div [class]="innerClasses()" [ngStyle]="priorityStyle()">
-    @if (viewMode() === ViewMode.MONTHLY) {
+  <div
+    class="relative flex h-full w-full cursor-pointer items-center border transition-[transform,box-shadow] duration-200"
+    [class]="{
+      'justify-between rounded-lg border-[1.5px] px-4': isMonthly,
+      'justify-center rounded': !isMonthly
+    }"
+    [ngStyle]="priorityStyle()"
+  >
+    @if (isMonthly) {
       <span
         class="min-w-0 flex-1 overflow-hidden pr-3 text-left text-sm leading-tight font-semibold text-ellipsis whitespace-nowrap"
       >

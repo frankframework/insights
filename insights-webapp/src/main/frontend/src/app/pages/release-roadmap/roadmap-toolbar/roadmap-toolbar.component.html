@@ -1,32 +1,40 @@
+@let viewModeVar = viewMode();
 <div class="flex w-[calc(100vw-5rem)] flex-row items-center justify-between">
   <div class="flex gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1">
     <button
       title="Quarterly view (6 months)"
-      [class]="quarterlyToggleClasses()"
-      (click)="viewMode() === ViewMode.MONTHLY && toggleViewMode.emit()"
+      class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md bg-transparent px-3 py-2 text-sm font-medium transition-all duration-200"
+      [class]="{
+        'active bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.QUARTERLY,
+        'text-gray-500 hover:bg-white/50 hover:opacity-100': viewModeVar !== ViewMode.QUARTERLY
+      }"
+      (click)="viewModeVar === ViewMode.MONTHLY && toggleViewMode.emit()"
     >
-      <img class="shrink-0" src="assets/icons/quarterly-view.svg" alt="" width="18" height="18" />
+      <img class="shrink-0" ngSrc="assets/icons/quarterly-view.svg" alt="" width="18" height="18" />
       <span class="font-semibold">6M</span>
     </button>
     <button
-      title="Monthly view (1 month)"
-      [class]="monthlyToggleClasses()"
-      (click)="viewMode() === ViewMode.QUARTERLY && toggleViewMode.emit()"
+      title="Monthly view (1 month)" class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md bg-transparent px-3 py-2 text-sm font-medium transition-all duration-200"
+      [class]="{
+        'active bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.MONTHLY,
+        'text-gray-500 hover:bg-white/50 hover:opacity-100': viewModeVar !== ViewMode.MONTHLY
+      }"
+      (click)="viewModeVar === ViewMode.QUARTERLY && toggleViewMode.emit()"
     >
-      <img class="shrink-0" src="assets/icons/monthly-view.svg" alt="" width="18" height="18" />
+      <img class="shrink-0" ngSrc="assets/icons/monthly-view.svg" alt="" width="18" height="18" />
       <span class="font-semibold">1M</span>
     </button>
   </div>
 
   <div
-    class="z-15 flex items-center justify-between gap-2 max-md:fixed max-md:bottom-4 max-md:left-1/2 max-md:-translate-x-1/2 max-md:rounded-[2rem] max-md:border max-md:border-gray-200 max-md:bg-white/90 max-md:px-6 max-md:py-2 max-md:shadow-lg max-md:backdrop-blur-lg"
+    class="z-15 flex items-center justify-between gap-2 max-md:fixed max-md:bottom-4 max-md:left-1/2 max-md:-translate-x-1/2 max-md:rounded-4xl max-md:border max-md:border-gray-200 max-md:bg-white/90 max-md:px-6 max-md:py-2 max-md:shadow-lg max-md:backdrop-blur-lg"
   >
     <button
       class="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-[background-color,color] duration-200 hover:bg-gray-50 hover:text-gray-800"
-      [title]="viewMode() === ViewMode.QUARTERLY ? 'Previous quarter' : 'Previous month'"
-      (click)="changePeriod.emit(viewMode() === ViewMode.QUARTERLY ? -3 : -1)"
+      [title]="viewModeVar === ViewMode.QUARTERLY ? 'Previous quarter' : 'Previous month'"
+      (click)="changePeriod.emit(viewModeVar === ViewMode.QUARTERLY ? -3 : -1)"
     >
-      <img src="assets/icons/chevron-left.svg" alt="" width="18" height="18" />
+      <img ngSrc="assets/icons/chevron-left.svg" alt="" width="18" height="18" />
     </button>
     <button
       class="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-[background-color,color] duration-200 hover:bg-gray-50 hover:text-gray-800"
@@ -37,10 +45,10 @@
     </button>
     <button
       class="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-gray-300 bg-white text-gray-600 transition-[background-color,color] duration-200 hover:bg-gray-50 hover:text-gray-800"
-      [title]="viewMode() === ViewMode.QUARTERLY ? 'Next quarter' : 'Next month'"
-      (click)="changePeriod.emit(viewMode() === ViewMode.QUARTERLY ? 3 : 1)"
+      [title]="viewModeVar === ViewMode.QUARTERLY ? 'Next quarter' : 'Next month'"
+      (click)="changePeriod.emit(viewModeVar === ViewMode.QUARTERLY ? 3 : 1)"
     >
-      <img src="assets/icons/chevron-right.svg" alt="" width="18" height="18" />
+      <img ngSrc="assets/icons/chevron-right.svg" alt="" width="18" height="18" />
     </button>
     <span class="period-label min-w-20 px-4 text-center font-semibold text-gray-700">{{ periodLabel() }}</span>
   </div>

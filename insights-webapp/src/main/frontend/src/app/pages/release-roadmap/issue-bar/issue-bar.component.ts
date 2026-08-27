@@ -24,15 +24,6 @@ export class IssueBarComponent {
   public readonly isClosed: Signal<boolean> = computed(() => this.issue().state === GitHubStates.CLOSED);
   public readonly priorityStyle: Signal<Record<string, string>> = computed(() => this.getStyleForState());
 
-  public readonly innerClasses: Signal<string> = computed(() => {
-    const base =
-      'relative flex h-full w-full cursor-pointer items-center border transition-[transform,box-shadow] duration-200';
-
-    return this.viewMode() === ViewMode.MONTHLY
-      ? `${base} justify-between rounded-lg border-[1.5px] px-4`
-      : `${base} justify-center rounded`;
-  });
-
   private tooltipService = inject(TooltipService);
   private readonly CLOSED_STYLE = CLOSED_STYLE;
   private readonly OPEN_STYLE = OPEN_STYLE;

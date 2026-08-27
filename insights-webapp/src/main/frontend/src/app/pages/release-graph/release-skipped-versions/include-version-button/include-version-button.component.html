@@ -1,6 +1,12 @@
+@let isPending = pending();
 <button
   type="button"
-  [class]="'group ' + buttonClasses()"
+  class="group ml-auto cursor-pointer rounded-xl border px-2 py-0.5 text-[0.7rem] font-semibold whitespace-nowrap ' +
+      'transition-all duration-200 ease-in-out disabled:border-gray-200 disabled:text-gray-400"
+  [class]="{
+    'border-teal-700 bg-white text-teal-700 hover:border-red-600 hover:bg-red-50 hover:text-red-600': isPending,
+    'border-gray-300 bg-white text-gray-600 enabled:hover:border-blue-900 enabled:hover:text-blue-900': !isPending
+  }"
   [disabled]="included()"
   [attr.title]="title()"
   (click)="onClick($event)"
