@@ -21,7 +21,8 @@ describe('TooltipService', () => {
     const mockElement = document.createElement('div');
 
     spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
-      top: 100,
+      top: 300,
+      bottom: 320,
       left: 200,
       width: 50,
       height: 20,
@@ -32,9 +33,45 @@ describe('TooltipService', () => {
     expect(service.tooltip()).toEqual({
       title: 'Test Title',
       details: [{ label: 'Priority', value: 'High' }],
-      top: '92px',
+      top: '292px',
       left: '225px',
+      placement: 'above',
     });
+  });
+
+  it('should place the tooltip below the host when there is no room above', () => {
+    const mockElement = document.createElement('div');
+
+    spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+      top: 20,
+      bottom: 40,
+      left: 200,
+      width: 50,
+      height: 20,
+    } as DOMRect);
+
+    service.show(mockElement, 'Test Title');
+
+    expect(service.tooltip()?.placement).toBe('below');
+    expect(service.tooltip()?.top).toBe('48px');
+  });
+
+  it('should clamp the tooltip within the viewport horizontally', () => {
+    const mockElement = document.createElement('div');
+
+    spyOn(mockElement, 'getBoundingClientRect').and.returnValue({
+      top: 300,
+      bottom: 320,
+      left: 0,
+      width: 10,
+      height: 20,
+    } as DOMRect);
+
+    service.show(mockElement, 'Test Title');
+
+    const halfWidth = Math.min(300, window.innerWidth / 2) / 2;
+
+    expect(service.tooltip()?.left).toBe(`${halfWidth + 8}px`);
   });
 
   it('should default to an empty details array', () => {
@@ -92,6 +129,7 @@ describe('TooltipComponent', () => {
       ],
       top: '100px',
       left: '200px',
+      placement: 'above',
     };
     tooltipState.set(tooltipData);
     fixture.detectChanges();
@@ -116,6 +154,7 @@ describe('TooltipComponent', () => {
       details: [{ value: 'How the vulnerability is exploited' }],
       top: '100px',
       left: '200px',
+      placement: 'above',
     };
     tooltipState.set(tooltipData);
     fixture.detectChanges();
@@ -127,7 +166,13 @@ describe('TooltipComponent', () => {
   }));
 
   it('should hide the tooltip when service emits null after showing', fakeAsync(() => {
-    const tooltipData: TooltipData = { title: 'Tooltip Test Issue', details: [], top: '100px', left: '200px' };
+    const tooltipData: TooltipData = {
+      title: 'Tooltip Test Issue',
+      details: [],
+      top: '100px',
+      left: '200px',
+      placement: 'above',
+    };
     tooltipState.set(tooltipData);
     fixture.detectChanges();
     tick();
