@@ -69,7 +69,7 @@ describe('TooltipService', () => {
 
     service.show(mockElement, 'Test Title');
 
-    const halfWidth = Math.min(300, window.innerWidth / 2) / 2;
+    const halfWidth = Math.min(300, globalThis.innerWidth / 2) / 2;
 
     expect(service.tooltip()?.left).toBe(`${halfWidth + 8}px`);
   });
