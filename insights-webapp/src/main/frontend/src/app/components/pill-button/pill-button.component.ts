@@ -1,3 +1,4 @@
+import { NgClass } from '@angular/common';
 import { Component, computed, input, output } from '@angular/core';
 
 export type PillButtonIcon = 'moon' | 'help' | 'github' | 'list';
@@ -5,7 +6,7 @@ export type PillButtonIcon = 'moon' | 'help' | 'github' | 'list';
 @Component({
   selector: 'app-pill-button',
   standalone: true,
-  imports: [],
+  imports: [NgClass],
   templateUrl: './pill-button.component.html',
   host: { class: 'inline-flex items-center' },
 })

@@ -2,7 +2,7 @@
 <button
   type="button"
   class="flex h-9 cursor-pointer items-center justify-start gap-2 rounded-full border py-1.5 pr-3.5 pl-2.5 transition-all duration-200 ease-in-out enabled:active:scale-[0.98] disabled:opacity-60"
-  [class]="{
+  [ngClass]="{
     'active border-blue-900 bg-blue-900 shadow-glow-brand enabled:hover:border-brand-hover enabled:hover:bg-brand-hover':
       isActive,
     'border-gray-300 bg-white shadow-e2 enabled:hover:bg-gray-50 enabled:hover:shadow-e4': !isActive,
@@ -14,7 +14,7 @@
   <span
     aria-hidden="true"
     class="size-5 shrink-0 mask-contain mask-center mask-no-repeat transition-colors duration-200 ease-in-out"
-    [class]="{
+    [ngClass]="{
       'bg-white': isActive,
       'bg-gray-500': !isActive,
       'animate-spin': loading(),
@@ -23,7 +23,7 @@
   ></span>
   <span
     class="toggle-label text-sm font-semibold whitespace-nowrap transition-colors duration-200 ease-in-out"
-    [class]="{
+    [ngClass]="{
       'text-white': isActive,
       'text-gray-600': !isActive,
     }"
