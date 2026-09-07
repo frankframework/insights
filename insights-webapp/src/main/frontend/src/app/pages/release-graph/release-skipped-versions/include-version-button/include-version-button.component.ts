@@ -5,7 +5,7 @@ import { Component, Signal, computed, input, output } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './include-version-button.component.html',
-  styleUrl: './include-version-button.component.scss',
+  host: { class: 'contents' },
 })
 export class IncludeVersionButtonComponent {
   public readonly version = input<string>('');

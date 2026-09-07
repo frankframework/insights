@@ -27,7 +27,7 @@ import {
   standalone: true,
   imports: [FormsModule, ModalComponent],
   templateUrl: './cvss-calculator.component.html',
-  styleUrl: './cvss-calculator.component.scss',
+  host: { class: 'block' },
 })
 export class CvssCalculatorComponent {
   public readonly referenceScore = input<number | null>(null);

@@ -39,7 +39,6 @@ const isGraphPath = (url: string): boolean => {
   selector: 'app-root',
   imports: [RouterOutlet, LoaderComponent, FeedbackComponent, HeaderComponent, TooltipComponent],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
   public readonly title = 'FF! Insights';

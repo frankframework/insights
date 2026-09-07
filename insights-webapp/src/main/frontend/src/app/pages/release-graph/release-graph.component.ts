@@ -24,6 +24,7 @@ import { ReleaseSkippedVersions } from './release-skipped-versions/release-skipp
 import { AuthService } from '../../services/auth.service';
 import { GraphStateService } from '../../services/graph-state.service';
 import { PillButtonComponent } from '../../components/pill-button/pill-button.component';
+import { LtsBadgeComponent } from '../../components/lts-badge/lts-badge.component';
 import {
   isVersionInRanges,
   mergeVersionRanges,
@@ -50,8 +51,14 @@ export interface BranchLifecycle {
   selector: 'app-release-graph',
   standalone: true,
   templateUrl: './release-graph.component.html',
-  styleUrls: ['./release-graph.component.scss'],
-  imports: [LoaderComponent, ReleaseCatalogusComponent, ReleaseSkippedVersions, PillButtonComponent, RouterLink],
+  imports: [
+    LoaderComponent,
+    ReleaseCatalogusComponent,
+    ReleaseSkippedVersions,
+    PillButtonComponent,
+    LtsBadgeComponent,
+    RouterLink,
+  ],
 })
 export class ReleaseGraphComponent implements OnInit, OnDestroy, AfterViewInit {
   private static readonly MAX_GRAPH_NAVIGATION_PADDING: number = 55;

@@ -117,7 +117,12 @@ describe('Graph Rendering and Interaction', () => {
       it('should display quarter labels with proper format (Q[1-4] YYYY)', () => {
         cy.get('body').then(($body) => {
           if ($body.find('text.quarter-label').length > 0) {
-            cy.get('@graphSvg').find('text.quarter-label').first().invoke('text').should('match', /^Q[1-4] \d{4}$/);
+            cy.get('@graphSvg')
+              .find('text.quarter-label')
+              .first()
+              .invoke('text')
+              .invoke('trim')
+              .should('match', /^Q[1-4] \d{4}$/);
           }
         });
       });
@@ -219,7 +224,7 @@ describe('Graph Rendering and Interaction', () => {
       it('should hide nightly nodes when toggle is inactive', () => {
         getToggleButton().should('not.have.class', 'active');
 
-        cy.get('@graphSvg').then(($svg) => {
+        cy.get('@graphSvg').then(($svg: JQuery<HTMLElement>) => {
           const nightlyNodes = $svg.find('a[data-cy*="-nightly"]');
           if (nightlyNodes.length > 0) {
             nightlyNodes.each((idx, node) => {

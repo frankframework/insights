@@ -1,13 +1,14 @@
-import { Component, input, output } from '@angular/core';
+import { NgClass } from '@angular/common';
+import { Component, computed, input, output } from '@angular/core';
 
 export type PillButtonIcon = 'moon' | 'help' | 'github' | 'list';
 
 @Component({
   selector: 'app-pill-button',
   standalone: true,
-  imports: [],
+  imports: [NgClass],
   templateUrl: './pill-button.component.html',
-  styleUrl: './pill-button.component.scss',
+  host: { class: 'inline-flex items-center' },
 })
 export class PillButtonComponent {
   readonly icon = input<PillButtonIcon>('help');
@@ -18,4 +19,6 @@ export class PillButtonComponent {
   readonly tooltip = input('');
 
   readonly clicked = output<void>();
+
+  public readonly iconMask = computed(() => `url(/assets/icons/${this.loading() ? 'spinner' : this.icon()}.svg)`);
 }

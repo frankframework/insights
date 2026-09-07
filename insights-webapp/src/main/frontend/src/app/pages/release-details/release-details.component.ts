@@ -31,7 +31,6 @@ import { BusinessValue, BusinessValueService } from '../../services/business-val
     ReleaseVulnerabilities,
   ],
   templateUrl: './release-details.component.html',
-  styleUrl: './release-details.component.scss',
 })
 export class ReleaseDetailsComponent implements OnInit {
   public readonly authService = inject(AuthService);

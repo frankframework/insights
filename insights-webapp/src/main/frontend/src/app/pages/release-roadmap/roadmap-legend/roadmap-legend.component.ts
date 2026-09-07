@@ -15,7 +15,6 @@ const ISSUE_STATE_LEGEND_ITEMS: LegendItem[] = Object.entries(ISSUE_STATE_STYLES
   selector: 'app-roadmap-legend',
   imports: [],
   templateUrl: './roadmap-legend.component.html',
-  styleUrl: './roadmap-legend.component.scss',
 })
 export class RoadmapLegend {
   public readonly issueStateItems: LegendItem[] = ISSUE_STATE_LEGEND_ITEMS;

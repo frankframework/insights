@@ -7,7 +7,6 @@ import { IssueTypeTagComponent } from '../../../../components/issue-type-tag/iss
   standalone: true,
   imports: [IssueTypeTagComponent],
   templateUrl: './issue-tree-branch.component.html',
-  styleUrl: './issue-tree-branch.component.scss',
 })
 export class IssueTreeBranchComponent {
   private static readonly MAX_SUB_ISSUE_DEPTH = 8;

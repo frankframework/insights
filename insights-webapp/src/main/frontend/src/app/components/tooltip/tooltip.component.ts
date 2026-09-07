@@ -6,7 +6,6 @@ import { TooltipService } from './tooltip.service';
   standalone: true,
   imports: [],
   templateUrl: './tooltip.component.html',
-  styleUrls: ['./tooltip.component.scss'],
 })
 export class TooltipComponent {
   public readonly tooltip = inject(TooltipService).tooltip;

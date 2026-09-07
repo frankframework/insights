@@ -11,7 +11,6 @@ import { PillButtonComponent } from '../../components/pill-button/pill-button.co
   standalone: true,
   imports: [NgOptimizedImage, RouterLink, RouterLinkActive, PillButtonComponent],
   templateUrl: './header.component.html',
-  styleUrl: './header.component.scss',
   host: { '(document:click)': 'onDocumentClick($event)' },
 })
 export class HeaderComponent {

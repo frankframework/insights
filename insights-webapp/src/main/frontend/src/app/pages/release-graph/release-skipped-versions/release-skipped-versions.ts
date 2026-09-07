@@ -31,7 +31,6 @@ interface ReleaseTreeNode {
   standalone: true,
   imports: [ModalComponent, IncludeVersionButtonComponent, IncludeActionsComponent],
   templateUrl: './release-skipped-versions.html',
-  styleUrls: ['./release-skipped-versions.scss'],
 })
 export class ReleaseSkippedVersions {
   public readonly skipNode = input<SkipNode | null>(null);

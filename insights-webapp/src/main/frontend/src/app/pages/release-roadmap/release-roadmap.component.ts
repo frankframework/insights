@@ -28,7 +28,6 @@ export interface Version {
     RoadmapLegend,
   ],
   templateUrl: './release-roadmap.component.html',
-  styleUrls: ['./release-roadmap.component.scss'],
 })
 export class ReleaseRoadmapComponent implements OnInit {
   readonly scrollContainer = viewChild.required<ElementRef<HTMLDivElement>>('scrollContainer');

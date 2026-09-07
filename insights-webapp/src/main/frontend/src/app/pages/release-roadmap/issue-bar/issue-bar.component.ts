@@ -10,7 +10,6 @@ import { ISSUE_STATE_STYLES, CLOSED_STYLE, OPEN_STYLE, ViewMode } from '../roadm
   standalone: true,
   imports: [NgStyle],
   templateUrl: './issue-bar.component.html',
-  styleUrls: ['./issue-bar.component.scss'],
 })
 export class IssueBarComponent {
   public readonly issue = input.required<Issue>();

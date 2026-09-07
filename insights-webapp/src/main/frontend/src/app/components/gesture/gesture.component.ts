@@ -5,7 +5,6 @@ import { Component, input } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './gesture.component.html',
-  styleUrl: './gesture.component.scss',
 })
 export class GestureComponent {
   readonly imageSrc = input('');

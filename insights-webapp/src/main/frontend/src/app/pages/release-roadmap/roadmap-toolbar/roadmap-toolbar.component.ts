@@ -1,12 +1,12 @@
+import { NgOptimizedImage } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 import { ViewMode } from '../roadmap.types';
 
 @Component({
   selector: 'app-roadmap-toolbar',
   standalone: true,
-  imports: [],
+  imports: [NgOptimizedImage],
   templateUrl: './roadmap-toolbar.component.html',
-  styleUrls: ['./roadmap-toolbar.component.scss'],
 })
 export class RoadmapToolbarComponent {
   public readonly periodLabel = input('');

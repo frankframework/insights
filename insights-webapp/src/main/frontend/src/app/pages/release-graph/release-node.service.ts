@@ -791,7 +791,7 @@ export class ReleaseNodeService {
 
   /**
    * Transforms the release tagName into the final display label based on a set of rules:
-   * 1. Strips "release/" prefix.
+   * 1. Strips"release/" prefix.
    * 2. Formats nightly releases as vX.Y.X-nightly using the version from release.name.
    */
   private transformNodeLabel(release: Release): string {

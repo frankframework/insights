@@ -86,6 +86,7 @@ insights/
 │           └── angular.json             # Angular configuration
 ├── pom.xml                              # Parent POM / reactor
 ├── docker-compose.yaml                  # Local Docker setup (database + both services)
+├── docker-compose.seed.yaml             # Review setup (webapp only, seeded in-memory database)
 └── pnpm-lock.yaml                       # pnpm lock file
 ```
 
@@ -158,6 +159,54 @@ API token in `insights-data-import/src/main/resources/application-local.properti
 
 Please note that not all releases in the mock data set have detailed content. For a full example of
 a release with associated issues and pull requests, check release **v9.0.1**.
+
+### Reviewing a pull request with seeded data
+
+`docker-compose.seed.yaml` runs the webapp on its own against that seeded in-memory database, which
+is the quickest way to click through someone's changes: no Postgres, no import service, no GitHub
+token and no Trivy.
+
+```bash
+./mvnw clean package -DskipTests -pl insights-webapp -am
+docker compose -f docker-compose.seed.yaml up -d --build
+```
+
+The application is at `http://localhost:8080`.
+
+This is a separate Compose project (`insights-seed`), so it never touches the containers or the
+Postgres volume of the main `docker compose` stack. Both publish port 8080, so run one at a time.
+
+Because of that project name, **every** command for this stack needs the `-f` flag. A plain
+`docker compose ps` looks at the default project and reports an empty list even while the seeded
+webapp is running:
+
+```bash
+docker compose -f docker-compose.seed.yaml ps
+docker compose -f docker-compose.seed.yaml logs -f
+docker compose -f docker-compose.seed.yaml down
+```
+
+Set `COMPOSE_FILE=docker-compose.seed.yaml` in your shell if you would rather not repeat it, or use
+`docker compose ls` to see which projects are running.
+
+Two things to keep in mind while reviewing:
+
+- The database lives in memory. Every restart starts from the same seeded state and anything you
+  changed is gone.
+- The read-only pages work without logging in. The `/release-manage` pages need a real GitHub OAuth
+  login, which the `local-seed` profile cannot provide because its client id is a placeholder.
+
+Without Docker, the same profile works straight from the JAR or from Maven:
+
+```bash
+java -jar insights-webapp/target/insights-webapp-*.jar --spring.profiles.active=local-seed
+./mvnw spring-boot:run -pl insights-webapp "-Dspring-boot.run.profiles=local-seed"
+```
+
+For a frontend pull request you can point the Angular dev server at it: start the backend as above,
+then run `pnpm start` in `insights-webapp/src/main/frontend`. The dev server is at
+`http://localhost:4200` and `src/proxy.conf.json` forwards `/api`, `/oauth2`, `/login` and
+`/actuator` to port 8080.
 
 <br>
 
@@ -388,10 +437,13 @@ pnpm run cypress:run   # Headless mode
 The two services are started separately. The web application works on its own against whatever is
 already in the database; you only need the import service when you want to refresh that data.
 
+There is no default profile, so every option below has to pass one. Swap `local` for `local-seed` to
+run the webapp against the seeded in-memory database instead of Postgres.
+
 **Option 1 - Run the JARs:**
 ```bash
-java -jar insights-webapp/target/insights-webapp-*.jar
-java -jar insights-data-import/target/insights-data-import-*.jar
+java -jar insights-webapp/target/insights-webapp-*.jar --spring.profiles.active=local
+java -jar insights-data-import/target/insights-data-import-*.jar --spring.profiles.active=local
 ```
 
 **Option 2 - IDE:**
@@ -400,8 +452,8 @@ the `local` profile active.
 
 **Option 3 - Maven:**
 ```bash
-./mvnw spring-boot:run -pl insights-webapp
-./mvnw spring-boot:run -pl insights-data-import
+./mvnw spring-boot:run -pl insights-webapp "-Dspring-boot.run.profiles=local"
+./mvnw spring-boot:run -pl insights-data-import "-Dspring-boot.run.profiles=local"
 ```
 
 The web application will be available at `http://localhost:8080` and the import service at

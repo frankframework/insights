@@ -36,7 +36,6 @@ const normalizeColor = (color: string): string => color.replace('#', '').toLower
   standalone: true,
   imports: [BaseChartDirective],
   templateUrl: './release-highlights.component.html',
-  styleUrl: './release-highlights.component.scss',
 })
 export class ReleaseHighlightsComponent {
   public readonly highlightedLabels = input<Label[] | null>(null);

@@ -5,6 +5,6 @@ import { Component } from '@angular/core';
   standalone: true,
   imports: [],
   templateUrl: './filter-icon.component.html',
-  styleUrl: './filter-icon.component.scss',
+  host: { class: 'inline-flex leading-none' },
 })
 export class FilterIconComponent {}

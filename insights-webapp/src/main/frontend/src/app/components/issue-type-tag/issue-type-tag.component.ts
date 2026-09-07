@@ -11,7 +11,7 @@ interface IssueType {
   standalone: true,
   imports: [],
   templateUrl: './issue-type-tag.component.html',
-  styleUrls: ['./issue-type-tag.component.scss'],
+  host: { class: 'inline-block' },
 })
 export class IssueTypeTagComponent {
   public readonly issueType = input.required<IssueType>();

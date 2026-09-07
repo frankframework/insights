@@ -29,7 +29,6 @@ import { ReleaseManageComponent } from '../release-manage.component';
     LoaderComponent,
   ],
   templateUrl: './business-value-manage.component.html',
-  styleUrl: './business-value-manage.component.scss',
 })
 export class BusinessValueManageComponent implements OnInit {
   public readonly id = input<string | undefined>();

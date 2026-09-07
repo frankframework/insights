@@ -1,53 +1,63 @@
 @if (skipNode(); as skipNode) {
   <app-modal [title]="'Skipped Releases (' + skipNode.skippedCount + ')'" (closed)="closeModal()">
-    <p class="info">
+    <p class="border-l-[3px] border-gray-700 px-4 py-1">
       A skipped release represents unsupported release sequences that are less relevant to the main timeline. They show
       how many unsupported releases were collapsed between major graph nodes. Click on skip nodes to see which specific
       versions were released but hidden due to their unsupported status.
     </p>
-    <div class="skipped-versions-list">
-      @if (releaseTree().length === 0) {
-        <div class="no-releases">No actual releases were skipped between these nodes.</div>
-      } @else {
-        @for (node of releaseTree(); track node.version) {
-          <div class="version-root" tabindex="0" (click)="onVersionClick(node.version)">
-            {{ node.version }}
-            @if (node.type === 'major') {
-              <span class="version-type-badge major">MAJOR</span>
-            } @else if (node.type === 'minor') {
-              <span class="version-type-badge minor">MINOR</span>
-            }
-            <app-include-version-button
-              [version]="node.version"
-              [included]="isVersionIncluded(node.version)"
-              [pending]="isVersionPending(node.version)"
-              (include)="includeVersion(node.version)"
-              (remove)="removeFromPending(node.version)"
-            />
-          </div>
-          @if (node.patches.length > 0) {
-            @for (patch of node.patches; track patch.id) {
-              <div
-                class="version-patch"
-                tabindex="0"
-                (click)="onVersionClick(patch.name.startsWith('v') ? patch.name : 'v' + patch.name)"
-              >
-                <span class="patch-indent">└─</span>
-                <span>{{ patch.name.startsWith('v') ? patch.name : 'v' + patch.name }}</span>
-                <span class="version-type-badge patch">PATCH</span>
-                <app-include-version-button
-                  [version]="patch.name"
-                  [included]="isVersionIncluded(patch.name)"
-                  [pending]="isVersionPending(patch.name)"
-                  (include)="includeVersion(patch.name)"
-                  (remove)="removeFromPending(patch.name)"
-                />
-              </div>
-            }
+    @if (releaseTree().length === 0) {
+      <div class="p-8 text-center text-base text-gray-500 italic">
+        No actual releases were skipped between these nodes.
+      </div>
+    } @else {
+      @for (node of releaseTree(); track node.version) {
+        <div
+          class="version-root mt-3 flex cursor-pointer items-center gap-2 rounded p-2 text-base font-bold transition-colors duration-200 hover:bg-gray-50 max-md:flex-col max-md:items-start max-md:gap-1"
+          tabindex="0"
+          (click)="onVersionClick(node.version)"
+        >
+          {{ node.version }}
+          @if (node.type === 'major') {
+            <span class="rounded-[0.2rem] bg-red-600 px-1.5 py-0.5 text-[0.7rem] font-bold text-white uppercase">
+              MAJOR
+            </span>
+          } @else if (node.type === 'minor') {
+            <span class="rounded-[0.2rem] bg-orange-500 px-1.5 py-0.5 text-[0.7rem] font-bold text-white uppercase">
+              MINOR
+            </span>
+          }
+          <app-include-version-button
+            [version]="node.version"
+            [included]="isVersionIncluded(node.version)"
+            [pending]="isVersionPending(node.version)"
+            (include)="includeVersion(node.version)"
+            (remove)="removeFromPending(node.version)"
+          />
+        </div>
+        @if (node.patches.length > 0) {
+          @for (patch of node.patches; track patch.id) {
+            <div
+              class="version-patch mt-1 ml-6 flex cursor-pointer items-center gap-2 rounded p-2 text-[0.9rem] text-gray-800 transition-colors duration-200 hover:bg-gray-50 max-md:ml-4 max-md:flex-col max-md:items-start max-md:gap-1"
+              tabindex="0"
+              (click)="onVersionClick(patch.name.startsWith('v') ? patch.name : 'v' + patch.name)"
+            >
+              <span class="font-mono text-[0.8rem] text-gray-400">└─</span>
+              <span>{{ patch.name.startsWith('v') ? patch.name : 'v' + patch.name }}</span>
+              <span class="rounded-[0.2rem] bg-green-700 px-1.5 py-0.5 text-[0.7rem] font-bold text-white uppercase">
+                PATCH
+              </span>
+              <app-include-version-button
+                [version]="patch.name"
+                [included]="isVersionIncluded(patch.name)"
+                [pending]="isVersionPending(patch.name)"
+                (include)="includeVersion(patch.name)"
+                (remove)="removeFromPending(patch.name)"
+              />
+            </div>
           }
         }
       }
-    </div>
+    }
 
     @if (releaseTree().length > 0) {
       <app-include-actions

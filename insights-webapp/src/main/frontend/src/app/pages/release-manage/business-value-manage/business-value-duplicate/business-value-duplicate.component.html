@@ -1,13 +1,15 @@
 <app-modal title="Duplicate business values from release" (closed)="close()">
-  <div class="duplicate-container">
+  <div>
     @if (errorMessage()) {
-      <div class="error-message">{{ errorMessage() }}</div>
+      <div class="error-message rounded-md border border-red-300 bg-red-100 px-3.5 py-2.5 text-sm text-red-700">
+        {{ errorMessage() }}
+      </div>
     }
 
     @if (releases().length === 0) {
-      <p class="empty-state">No other releases available.</p>
+      <p class="empty-state px-4 py-3 text-center text-sm text-gray-500">No other releases available.</p>
     } @else {
-      <p class="description">
+      <p class="description text-[0.9rem] leading-normal text-gray-600">
         Select a release to copy its business values (title &amp; description only) into
         <strong>{{ targetReleaseTitle() }}</strong
         >. Business values whose title already exists in this release will be skipped.
@@ -15,19 +17,23 @@
 
       <input
         type="text"
-        class="search-input"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:shadow-ring focus:outline-none"
         placeholder="Search releases..."
         [value]="searchQuery()"
         (input)="updateSearchQuery($event)"
       />
 
-      <ul class="release-list">
+      <ul class="max-h-75 overflow-y-auto rounded-lg border border-gray-200">
         @if (filteredReleases().length === 0) {
-          <li class="no-results">No releases match your search.</li>
+          <li class="px-4 py-3 text-center text-sm text-gray-500">No releases match your search.</li>
         }
         @for (release of filteredReleases(); track release.id) {
-          <li class="release-item">
-            <button class="release-button" [disabled]="isDuplicating()" (click)="selectRelease(release)">
+          <li class="border-b border-gray-100 last:border-b-0">
+            <button
+              class="w-full cursor-pointer px-4 py-3.5 text-left text-gray-800 transition-colors duration-150 enabled:hover:bg-blue-50 enabled:hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              [disabled]="isDuplicating()"
+              (click)="selectRelease(release)"
+            >
               {{ release.name }}
             </button>
           </li>
@@ -36,7 +42,7 @@
     }
 
     @if (isDuplicating()) {
-      <p class="duplicating-message">Duplicating...</p>
+      <p class="px-4 py-3 text-center text-sm text-gray-500">Duplicating...</p>
     }
   </div>
 </app-modal>

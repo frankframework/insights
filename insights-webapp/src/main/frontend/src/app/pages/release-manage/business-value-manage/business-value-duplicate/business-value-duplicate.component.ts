@@ -7,7 +7,6 @@ import { Release } from '../../../../services/release.service';
   standalone: true,
   imports: [ModalComponent],
   templateUrl: './business-value-duplicate.component.html',
-  styleUrl: './business-value-duplicate.component.scss',
 })
 export class BusinessValueDuplicateComponent {
   public readonly targetReleaseTitle = input.required<string>();

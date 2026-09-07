@@ -10,7 +10,7 @@ import { PillButtonComponent } from '../../../components/pill-button/pill-button
   selector: 'app-release-catalogus',
   standalone: true,
   templateUrl: './release-catalogus.component.html',
-  styleUrl: './release-catalogus.component.scss',
+  host: { class: 'inline-flex items-center' },
   imports: [ModalComponent, DatePipe, LowerCasePipe, GestureComponent, PillButtonComponent],
 })
 export class ReleaseCatalogusComponent implements OnInit {
