@@ -90,13 +90,13 @@ describe('Release Vulnerabilities Component', () => {
     });
   });
 
-  it('should display CVSS score formatted correctly in list', () => {
+  it('should display reported score formatted correctly in list', () => {
     cy.get('[data-cy="node-v9.0.1"]').should('exist').click({ force: true });
     cy.get('app-release-details', { timeout: 10000 }).should('be.visible');
     cy.get('app-loader', { timeout: 10000 }).should('not.exist');
 
     cy.get('.cve-score').each(($score) => {
-      cy.wrap($score).invoke('text').invoke('trim').should('match', /CVSS Score: \d+(\.\d)?$/);
+      cy.wrap($score).invoke('text').invoke('trim').should('match', /Reported Score: \d+(\.\d)?$/);
     });
   });
 

@@ -53,12 +53,13 @@
             </span>
           </header>
           <div class="flex flex-wrap items-center gap-4 max-sm:gap-3">
-            <div class="cve-score shrink-0 text-xs text-gray-500 max-sm:text-[0.6875rem]">
-              CVSS Score: {{ formatCvssScore(vulnerability.cvssScore) }}
-            </div>
             @if (vulnerability.impactScore !== null && vulnerability.impactScore !== undefined) {
               <div class="shrink-0 text-xs font-medium text-green-600 max-sm:text-[0.6875rem]">
-                Impact Score: {{ formatCvssScore(vulnerability.impactScore) }}
+                Assessed Score: {{ formatCvssScore(vulnerability.impactScore) }}
+              </div>
+            } @else {
+              <div class="cve-score shrink-0 text-xs text-gray-500 max-sm:text-[0.6875rem]">
+                Reported Score: {{ formatCvssScore(vulnerability.cvssScore) }}
               </div>
             }
           </div>
