@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25.0.3_9-jre-jammy AS base
+FROM eclipse-temurin:25.0.4_7-jre-jammy AS base
 ARG GID=2000
 ARG UID=2000
 
@@ -28,7 +28,7 @@ ENTRYPOINT ["/scripts/entrypoint.sh"]
 CMD ["java","-jar","/app/insights-webapp.jar"]
 
 
-FROM aquasec/trivy:0.74.0 AS trivy-downloader
+FROM aquasec/trivy:0.75.0 AS trivy-downloader
 
 FROM base AS data-import
 
