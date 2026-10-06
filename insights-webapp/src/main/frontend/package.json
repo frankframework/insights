@@ -42,7 +42,7 @@
     "@angular/build": "^22.1.4",
     "@angular/cli": "^22.1.4",
     "@angular/compiler-cli": "^22.1.2",
-    "@cypress/schematic": "5.0.0",
+    "@cypress/schematic": "6.0.0",
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "4.3.3",
