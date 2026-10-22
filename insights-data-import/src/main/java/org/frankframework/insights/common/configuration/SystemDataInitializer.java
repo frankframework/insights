@@ -103,7 +103,6 @@ public class SystemDataInitializer implements CommandLineRunner {
     /**
      * Scheduled job that runs daily at midnight.
      */
-    @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         if (!tryAcquireJobLock()) {
@@ -235,7 +234,6 @@ public class SystemDataInitializer implements CommandLineRunner {
     /**
      * Initializes system data by fetching labels, milestones, branches, issues, pull requests, releases, dependencies and vulnerabilities.
      */
-    @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
             if (!dataFetchEnabled) {

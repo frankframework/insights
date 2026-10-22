@@ -21,7 +21,7 @@ public class RateLimitCleanupConfiguration {
      * Scheduled cleanup job that runs daily at midnight to remove fully refilled buckets.
      * This prevents memory leaks by removing buckets that are no longer actively rate limiting.
      */
-    @Scheduled(cron = "0 0 0 * * *")
+	//@Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "rateLimitCleanup", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void cleanupOldBuckets() {
         log.debug("Starting rate limit bucket cleanup");
