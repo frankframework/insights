@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.ratelimit.RateLimitService;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Configuration for cleaning up old rate limit buckets to prevent memory leaks.
@@ -21,7 +20,7 @@ public class RateLimitCleanupConfiguration {
      * Scheduled cleanup job that runs daily at midnight to remove fully refilled buckets.
      * This prevents memory leaks by removing buckets that are no longer actively rate limiting.
      */
-	//@Scheduled(cron = "0 0 0 * * *")
+    // @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = "rateLimitCleanup", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void cleanupOldBuckets() {
         log.debug("Starting rate limit bucket cleanup");
