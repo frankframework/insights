@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchInjectionService;
 import org.frankframework.insights.common.exception.ApiException;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
@@ -82,12 +81,12 @@ public class SystemDataInitializer implements CommandLineRunner {
      * @param args command line arguments
      */
     @Override
-    @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
         if (!tryAcquireJobLock()) {
             log.warn("Startup job skipped: another job is already running");
             return;
         }
+
         try {
             log.info("Startup: Fetching GitHub statistics");
             fetchGitHubStatistics();
@@ -102,12 +101,12 @@ public class SystemDataInitializer implements CommandLineRunner {
     /**
      * Scheduled job that runs daily at midnight.
      */
-    @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         if (!tryAcquireJobLock()) {
             log.warn("Daily job skipped: another job is already running");
             return;
         }
+
         try {
             log.info("Daily fetch job started");
             fetchGitHubStatistics();
@@ -216,7 +215,6 @@ public class SystemDataInitializer implements CommandLineRunner {
     /**
      * Fetches GitHub statistics and updates the database.
      */
-    @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
             if (!dataFetchEnabled) {
