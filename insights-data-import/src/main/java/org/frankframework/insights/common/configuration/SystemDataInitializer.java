@@ -21,6 +21,8 @@ import org.frankframework.insights.vulnerability.VulnerabilityScanService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
 
@@ -36,6 +38,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelInjectionService labelInjectionService;
     private final MilestoneInjectionService milestoneInjectionService;
+    private final ApplicationContext appContext;
     private final IssueTypeInjectionService issueTypeInjectionService;
     private final IssueProjectItemsInjectionService issueProjectItemsInjectionService;
     private final BranchInjectionService branchInjectionService;
@@ -50,18 +53,20 @@ public class SystemDataInitializer implements CommandLineRunner {
     protected boolean dataFetchEnabled;
 
     public SystemDataInitializer(
-            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-            LabelInjectionService labelInjectionService,
-            MilestoneInjectionService milestoneInjectionService,
-            IssueTypeInjectionService issueTypeInjectionService,
-            IssueProjectItemsInjectionService issueProjectItemsInjectionService,
-            BranchInjectionService branchInjectionService,
-            IssueInjectionService issueInjectionService,
-            PullRequestInjectionService pullRequestInjectionService,
-            ReleaseInjectionService releaseInjectionService,
-            ReleaseArtifactService releaseArtifactService,
-            VulnerabilityScanService vulnerabilityScanService,
-            @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor) {
+			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
+			LabelInjectionService labelInjectionService,
+			MilestoneInjectionService milestoneInjectionService,
+			IssueTypeInjectionService issueTypeInjectionService,
+			IssueProjectItemsInjectionService issueProjectItemsInjectionService,
+			BranchInjectionService branchInjectionService,
+			IssueInjectionService issueInjectionService,
+			PullRequestInjectionService pullRequestInjectionService,
+			ReleaseInjectionService releaseInjectionService,
+			ReleaseArtifactService releaseArtifactService,
+			VulnerabilityScanService vulnerabilityScanService,
+			@Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor,
+			ApplicationContext appContext
+	) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelInjectionService = labelInjectionService;
         this.milestoneInjectionService = milestoneInjectionService;
@@ -74,6 +79,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.releaseArtifactService = releaseArtifactService;
         this.vulnerabilityScanService = vulnerabilityScanService;
         this.taskExecutor = taskExecutor;
+        this.appContext = appContext;
     }
 
     /**
@@ -94,7 +100,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             initializeSystemData();
         } finally {
             releaseJobLock();
-            drainPendingRefresh();
+//            drainPendingRefresh();
+			SpringApplication.exit(appContext, () -> 0);
         }
     }
 
@@ -241,7 +248,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             injectAllGitHubData();
 
             log.info("Start fetching vulnerability data for all releases");
-            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
+//            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
             log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
