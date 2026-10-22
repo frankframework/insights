@@ -62,8 +62,8 @@ public class SystemDataInitializerTest {
     @Mock
     private VulnerabilityScanService vulnerabilityScanService;
 
-	@Mock
-	private ApplicationContext appContext;
+    @Mock
+    private ApplicationContext appContext;
 
     private final TaskExecutor taskExecutor = new SyncTaskExecutor();
 
@@ -223,7 +223,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-	@Disabled("Trivy scan is disabled for now, so this test will always fail")
+    @Disabled("Trivy scan is disabled for now, so this test will always fail")
     public void run_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
         systemDataInitializer.pendingRefresh.set(true);
 

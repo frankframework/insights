@@ -53,20 +53,19 @@ public class SystemDataInitializer implements CommandLineRunner {
     protected boolean dataFetchEnabled;
 
     public SystemDataInitializer(
-			GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
-			LabelInjectionService labelInjectionService,
-			MilestoneInjectionService milestoneInjectionService,
-			IssueTypeInjectionService issueTypeInjectionService,
-			IssueProjectItemsInjectionService issueProjectItemsInjectionService,
-			BranchInjectionService branchInjectionService,
-			IssueInjectionService issueInjectionService,
-			PullRequestInjectionService pullRequestInjectionService,
-			ReleaseInjectionService releaseInjectionService,
-			ReleaseArtifactService releaseArtifactService,
-			VulnerabilityScanService vulnerabilityScanService,
-			@Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor,
-			ApplicationContext appContext
-	) {
+            GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService,
+            LabelInjectionService labelInjectionService,
+            MilestoneInjectionService milestoneInjectionService,
+            IssueTypeInjectionService issueTypeInjectionService,
+            IssueProjectItemsInjectionService issueProjectItemsInjectionService,
+            BranchInjectionService branchInjectionService,
+            IssueInjectionService issueInjectionService,
+            PullRequestInjectionService pullRequestInjectionService,
+            ReleaseInjectionService releaseInjectionService,
+            ReleaseArtifactService releaseArtifactService,
+            VulnerabilityScanService vulnerabilityScanService,
+            @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor,
+            ApplicationContext appContext) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelInjectionService = labelInjectionService;
         this.milestoneInjectionService = milestoneInjectionService;
@@ -100,8 +99,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             initializeSystemData();
         } finally {
             releaseJobLock();
-//            drainPendingRefresh();
-			SpringApplication.exit(appContext, () -> 0);
+            //            drainPendingRefresh();
+            SpringApplication.exit(appContext, () -> 0);
         }
     }
 
@@ -248,7 +247,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             injectAllGitHubData();
 
             log.info("Start fetching vulnerability data for all releases");
-//            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
+            //            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
             log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
