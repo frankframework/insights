@@ -97,29 +97,10 @@ public class SystemDataInitializer implements CommandLineRunner {
             fetchGitHubStatistics();
             log.info("Startup: Fetching full system data");
             initializeSystemData();
+			doWebhookRefresh("queued after scheduled job");
         } finally {
             releaseJobLock();
-            //            drainPendingRefresh();
             SpringApplication.exit(appContext, () -> 0);
-        }
-    }
-
-    /**
-     * Scheduled job that runs daily at midnight.
-     */
-    public void dailyJob() {
-        if (!tryAcquireJobLock()) {
-            log.warn("Daily job skipped: another job is already running");
-            return;
-        }
-
-        try {
-            log.info("Daily fetch job started");
-            fetchGitHubStatistics();
-            initializeSystemData();
-        } finally {
-            releaseJobLock();
-            drainPendingRefresh();
         }
     }
 

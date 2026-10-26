@@ -233,28 +233,10 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void dailyJob_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
-        systemDataInitializer.pendingRefresh.set(true);
-
-        systemDataInitializer.dailyJob();
-
-        assertFalse(systemDataInitializer.pendingRefresh.get());
-    }
-
-    @Test
     public void run_whenJobAlreadyRunning_skipsAllWork() {
         setJobRunning(true);
 
         systemDataInitializer.run();
-
-        verifyNoInteractions(gitHubRepositoryStatisticsService, labelInjectionService, vulnerabilityScanService);
-    }
-
-    @Test
-    public void dailyJob_whenJobAlreadyRunning_skipsAllWork() {
-        setJobRunning(true);
-
-        systemDataInitializer.dailyJob();
 
         verifyNoInteractions(gitHubRepositoryStatisticsService, labelInjectionService, vulnerabilityScanService);
     }
