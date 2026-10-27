@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.frankframework.insights.branch.BranchInjectionService;
 import org.frankframework.insights.common.exception.ApiException;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
@@ -22,9 +21,10 @@ import org.frankframework.insights.vulnerability.VulnerabilityScanService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 @Slf4j
@@ -38,6 +38,7 @@ public class SystemDataInitializer implements CommandLineRunner {
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final LabelInjectionService labelInjectionService;
     private final MilestoneInjectionService milestoneInjectionService;
+    private final ApplicationContext appContext;
     private final IssueTypeInjectionService issueTypeInjectionService;
     private final IssueProjectItemsInjectionService issueProjectItemsInjectionService;
     private final BranchInjectionService branchInjectionService;
@@ -63,7 +64,8 @@ public class SystemDataInitializer implements CommandLineRunner {
             ReleaseInjectionService releaseInjectionService,
             ReleaseArtifactService releaseArtifactService,
             VulnerabilityScanService vulnerabilityScanService,
-            @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor) {
+            @Qualifier("applicationTaskExecutor") TaskExecutor taskExecutor,
+            ApplicationContext appContext) {
         this.gitHubRepositoryStatisticsService = gitHubRepositoryStatisticsService;
         this.labelInjectionService = labelInjectionService;
         this.milestoneInjectionService = milestoneInjectionService;
@@ -76,6 +78,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         this.releaseArtifactService = releaseArtifactService;
         this.vulnerabilityScanService = vulnerabilityScanService;
         this.taskExecutor = taskExecutor;
+        this.appContext = appContext;
     }
 
     /**
@@ -83,12 +86,12 @@ public class SystemDataInitializer implements CommandLineRunner {
      * @param args command line arguments
      */
     @Override
-    @SchedulerLock(name = "startUpGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void run(String... args) {
         if (!tryAcquireJobLock()) {
             log.warn("Startup job skipped: another job is already running");
             return;
         }
+
         try {
             log.info("Startup: Fetching GitHub statistics");
             fetchGitHubStatistics();
@@ -96,20 +99,20 @@ public class SystemDataInitializer implements CommandLineRunner {
             initializeSystemData();
         } finally {
             releaseJobLock();
-            drainPendingRefresh();
+            //            drainPendingRefresh();
+            SpringApplication.exit(appContext, () -> 0);
         }
     }
 
     /**
      * Scheduled job that runs daily at midnight.
      */
-    @Scheduled(cron = "0 0 0 * * *")
-    @SchedulerLock(name = "dailyGitHubUpdate", lockAtMostFor = "PT2H", lockAtLeastFor = "PT30M")
     public void dailyJob() {
         if (!tryAcquireJobLock()) {
             log.warn("Daily job skipped: another job is already running");
             return;
         }
+
         try {
             log.info("Daily fetch job started");
             fetchGitHubStatistics();
@@ -218,7 +221,6 @@ public class SystemDataInitializer implements CommandLineRunner {
     /**
      * Fetches GitHub statistics and updates the database.
      */
-    @SchedulerLock(name = "fetchGitHubStatistics", lockAtMostFor = "PT10M")
     public void fetchGitHubStatistics() {
         try {
             if (!dataFetchEnabled) {
@@ -235,7 +237,6 @@ public class SystemDataInitializer implements CommandLineRunner {
     /**
      * Initializes system data by fetching labels, milestones, branches, issues, pull requests, releases, dependencies and vulnerabilities.
      */
-    @SchedulerLock(name = "initializeSystemData", lockAtMostFor = "PT2H")
     public void initializeSystemData() {
         try {
             if (!dataFetchEnabled) {
@@ -246,7 +247,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             injectAllGitHubData();
 
             log.info("Start fetching vulnerability data for all releases");
-            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
+            //            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
             log.info("Done fetching all vulnerability data");
         } catch (Exception e) {
             log.error("Error initializing system data", e);
