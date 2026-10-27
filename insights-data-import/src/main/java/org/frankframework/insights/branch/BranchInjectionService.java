@@ -52,9 +52,11 @@ public class BranchInjectionService {
             throw new BranchInjectionException("GitHub repository statistics are not available", null);
         }
 
-        if (gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubBranchCount(branchProtectionRegexes)
+		int branchCountInGitHub = gitHubRepositoryStatisticsService
+				.getGitHubRepositoryStatisticsDTO()
+				.getGitHubBranchCount(branchProtectionRegexes);
+
+        if (branchCountInGitHub
                 == branchRepository.count()) {
             log.info("Branches already found in the in database");
             return;
@@ -64,9 +66,7 @@ public class BranchInjectionService {
             log.info("Amount of branches found in database: {}", branchRepository.count());
             log.info(
                     "Amount of branches found in GitHub: {}",
-                    gitHubRepositoryStatisticsService
-                            .getGitHubRepositoryStatisticsDTO()
-                            .getGitHubBranchCount(branchProtectionRegexes));
+                    branchCountInGitHub);
 
             log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubGraphQLClient.getBranches();
