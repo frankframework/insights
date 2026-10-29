@@ -21,11 +21,11 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class BranchInjectionService {
+    public final List<String> branchProtectionRegexes;
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final BranchRepository branchRepository;
-    private final List<String> branchProtectionRegexes;
     private final BranchPullRequestRepository branchPullRequestRepository;
 
     public BranchInjectionService(

@@ -31,6 +31,7 @@ public class ReleaseInjectionService {
     private final BranchInjectionService branchInjectionService;
     private final ReleasePullRequestRepository releasePullRequestRepository;
     private final ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
+	private final List<String> branchProtectionRegexes;
 
     private static final String MASTER_BRANCH_NAME = "master";
     private static final String NIGHTLY_RELEASE_NAME = "nightly";
@@ -61,6 +62,7 @@ public class ReleaseInjectionService {
         this.branchInjectionService = branchInjectionService;
         this.releasePullRequestRepository = releasePullRequestRepository;
         this.releaseVulnerabilityRepository = releaseVulnerabilityRepository;
+        this.branchProtectionRegexes = branchInjectionService.branchProtectionRegexes;
     }
 
     /**
@@ -96,7 +98,12 @@ public class ReleaseInjectionService {
             deleteObsoleteReleases(releases);
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
-                    .filter(release -> release.getBranch() != null)
+                    .filter(
+							release -> release.getBranch() != null &&
+							branchProtectionRegexes.stream().anyMatch(regex ->
+									Pattern.compile(regex).matcher(release.getBranch().getName()).find()
+							)
+					)
                     .collect(Collectors.groupingBy(
                             Release::getBranch, Collectors.collectingAndThen(Collectors.toList(), list -> list.stream()
                                     .sorted(Comparator.comparing(Release::getPublishedAt))
