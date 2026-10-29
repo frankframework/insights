@@ -19,6 +19,7 @@ public class GitHubProperties {
         private String secret;
         private String projectId;
         private List<String> branchProtectionRegexes;
+		private String releaseNameRegex;
         private List<String> includedLabels;
 
         public List<String> getIncludedLabels() {

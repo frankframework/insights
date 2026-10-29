@@ -116,7 +116,6 @@ public class PullRequestInjectionServiceTest {
                 branchInjectionService,
                 milestoneInjectionService,
                 issueInjectionService,
-                gitHubProperties,
                 pullRequestLabelRepository,
                 pullRequestIssueRepository,
                 labelInjectionService);
@@ -769,7 +768,6 @@ public class PullRequestInjectionServiceTest {
                 branchInjectionService,
                 milestoneInjectionService,
                 issueInjectionService,
-                gitHubProperties,
                 pullRequestLabelRepository,
                 pullRequestIssueRepository,
                 labelInjectionService);
@@ -795,7 +793,6 @@ public class PullRequestInjectionServiceTest {
                 branchInjectionService,
                 milestoneInjectionService,
                 issueInjectionService,
-                gitHubProperties,
                 pullRequestLabelRepository,
                 pullRequestIssueRepository,
                 labelInjectionService);
@@ -821,7 +818,6 @@ public class PullRequestInjectionServiceTest {
                 branchInjectionService,
                 milestoneInjectionService,
                 issueInjectionService,
-                gitHubProperties,
                 pullRequestLabelRepository,
                 pullRequestIssueRepository,
                 labelInjectionService);
@@ -847,7 +843,6 @@ public class PullRequestInjectionServiceTest {
                 branchInjectionService,
                 milestoneInjectionService,
                 issueInjectionService,
-                gitHubProperties,
                 pullRequestLabelRepository,
                 pullRequestIssueRepository,
                 labelInjectionService);

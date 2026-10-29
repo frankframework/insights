@@ -13,6 +13,7 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.entityconnection.releasevulnerability.ReleaseVulnerabilityRepository;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.pullrequest.PullRequest;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class ReleaseInjectionService {
     private final ReleasePullRequestRepository releasePullRequestRepository;
     private final ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
 	private final List<String> branchProtectionRegexes;
+	private final String releaseNameRegex;
 
     private static final String MASTER_BRANCH_NAME = "master";
     private static final String NIGHTLY_RELEASE_NAME = "nightly";
@@ -55,7 +57,8 @@ public class ReleaseInjectionService {
             ReleaseRepository releaseRepository,
             BranchInjectionService branchInjectionService,
             ReleasePullRequestRepository releasePullRequestRepository,
-            ReleaseVulnerabilityRepository releaseVulnerabilityRepository) {
+            ReleaseVulnerabilityRepository releaseVulnerabilityRepository,
+            GitHubProperties gitHubProperties) {
         this.gitHubGraphQLClient = gitHubGraphQLClient;
         this.mapper = mapper;
         this.releaseRepository = releaseRepository;
@@ -63,6 +66,7 @@ public class ReleaseInjectionService {
         this.releasePullRequestRepository = releasePullRequestRepository;
         this.releaseVulnerabilityRepository = releaseVulnerabilityRepository;
         this.branchProtectionRegexes = branchInjectionService.branchProtectionRegexes;
+		this.releaseNameRegex = gitHubProperties.getGraphql().getReleaseNameRegex();
     }
 
     /**
@@ -73,11 +77,13 @@ public class ReleaseInjectionService {
      */
     public void injectReleases() throws ReleaseInjectionException {
         try {
-            Set<ReleaseDTO> releaseDTOs = gitHubGraphQLClient.getReleases();
+            Set<ReleaseDTO> releaseDTOs = gitHubGraphQLClient.getReleases().stream()
+                    .filter(releaseDto -> Pattern.compile(releaseNameRegex).matcher(releaseDto.name()).find())
+                    .collect(Collectors.toSet());
 
-            List<Branch> allBranches = branchInjectionService.getAllBranches();
+            List<Branch> releaseBranches = branchInjectionService.getReleaseBranches();
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
-                    branchInjectionService.getBranchPullRequestsByBranches(allBranches);
+                    branchInjectionService.getBranchPullRequestsByBranches(releaseBranches);
 
             Map<Boolean, List<ReleaseDTO>> partitionedReleases =
                     releaseDTOs.stream().collect(Collectors.partitioningBy(ReleaseDTO::isValid));
@@ -86,7 +92,7 @@ public class ReleaseInjectionService {
             List<ReleaseDTO> invalidReleaseDTOs = partitionedReleases.getOrDefault(false, Collections.emptyList());
 
             Set<Release> releases = validReleaseDTOs.stream()
-                    .map(dto -> mapToRelease(dto, allBranches))
+                    .map(dto -> mapToRelease(dto, releaseBranches))
                     .collect(Collectors.toSet());
 
             if (releases.isEmpty()) {

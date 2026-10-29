@@ -108,6 +108,13 @@ public class BranchInjectionService {
         return branchRepository.findAll();
     }
 
+	public List<Branch> getReleaseBranches() {
+		return branchRepository.findAll().stream()
+				.filter(branch -> branchProtectionRegexes.stream()
+						.anyMatch(regex -> Pattern.compile(regex).matcher(branch.getName()).find()))
+				.toList();
+	}
+
     /**
      * Fetches all branch pull requests by branch
      * @param branches the list of branches to fetch pull requests for

@@ -12,6 +12,7 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.entityconnection.releasevulnerability.ReleaseVulnerabilityRepository;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -40,6 +41,9 @@ public class ReleaseInjectionServiceTest {
 
     @Mock
     private ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
+
+	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
+	private GitHubProperties gitHubProperties;
 
     private ReleaseInjectionService releaseInjectionService;
 
@@ -110,7 +114,9 @@ public class ReleaseInjectionServiceTest {
                 releaseRepository,
                 branchInjectionService,
                 releasePullRequestRepository,
-                releaseVulnerabilityRepository);
+                releaseVulnerabilityRepository,
+				gitHubProperties
+		);
     }
 
     @Test

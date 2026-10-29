@@ -241,13 +241,13 @@ public class SystemDataInitializer implements CommandLineRunner {
      */
     private void injectAllGitHubData() {
         log.info("Start injecting all GitHub data");
-//        runInjectionStep("labels", labelInjectionService::injectLabels);
-//        runInjectionStep("milestones", milestoneInjectionService::injectMilestones);
-//        runInjectionStep("issueTypes", issueTypeInjectionService::injectIssueTypes);
-//        runInjectionStep("issueProjectItems", issueProjectItemsInjectionService::injectIssueProjectItems);
+        runInjectionStep("labels", labelInjectionService::injectLabels);
+        runInjectionStep("milestones", milestoneInjectionService::injectMilestones);
+        runInjectionStep("issueTypes", issueTypeInjectionService::injectIssueTypes);
+        runInjectionStep("issueProjectItems", issueProjectItemsInjectionService::injectIssueProjectItems);
         runInjectionStep("branches", branchInjectionService::injectBranches);
-//        runInjectionStep("issues", issueInjectionService::injectIssues);
-//        runInjectionStep("branchPullRequests", pullRequestInjectionService::injectBranchPullRequests);
+        runInjectionStep("issues", issueInjectionService::injectIssues);
+        runInjectionStep("branchPullRequests", pullRequestInjectionService::injectBranchPullRequests);
         runInjectionStep("releases", releaseInjectionService::injectReleases);
         runInjectionStep("obsoleteReleaseArtifacts", releaseArtifactService::deleteObsoleteReleaseArtifacts);
         log.info("Done injecting all GitHub data");
