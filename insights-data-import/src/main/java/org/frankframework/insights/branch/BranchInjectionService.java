@@ -52,21 +52,18 @@ public class BranchInjectionService {
             throw new BranchInjectionException("GitHub repository statistics are not available", null);
         }
 
-		int branchCountInGitHub = gitHubRepositoryStatisticsService
-				.getGitHubRepositoryStatisticsDTO()
-				.getGitHubBranchCount(branchProtectionRegexes);
+        int branchCountInGitHub = gitHubRepositoryStatisticsService
+                .getGitHubRepositoryStatisticsDTO()
+                .getGitHubBranchCount(branchProtectionRegexes);
 
-        if (branchCountInGitHub
-                == branchRepository.count()) {
+        if (branchCountInGitHub == branchRepository.count()) {
             log.info("Branches already found in the in database");
             return;
         }
 
         try {
             log.info("Amount of branches found in database: {}", branchRepository.count());
-            log.info(
-                    "Amount of branches found in GitHub: {}",
-                    branchCountInGitHub);
+            log.info("Amount of branches found in GitHub: {}", branchCountInGitHub);
 
             log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubGraphQLClient.getBranches();
@@ -108,12 +105,13 @@ public class BranchInjectionService {
         return branchRepository.findAll();
     }
 
-	public List<Branch> getReleaseBranches() {
-		return branchRepository.findAll().stream()
-				.filter(branch -> branchProtectionRegexes.stream()
-						.anyMatch(regex -> Pattern.compile(regex).matcher(branch.getName()).find()))
-				.toList();
-	}
+    public List<Branch> getReleaseBranches() {
+        return branchRepository.findAll().stream()
+                .filter(branch -> branchProtectionRegexes.stream()
+                        .anyMatch(regex ->
+                                Pattern.compile(regex).matcher(branch.getName()).find()))
+                .toList();
+    }
 
     /**
      * Fetches all branch pull requests by branch

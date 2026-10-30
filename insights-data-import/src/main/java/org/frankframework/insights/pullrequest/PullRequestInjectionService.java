@@ -46,7 +46,7 @@ public class PullRequestInjectionService {
     private final PullRequestLabelRepository pullRequestLabelRepository;
     private final PullRequestIssueRepository pullRequestIssueRepository;
     private final LabelInjectionService labelInjectionService;
-	private final String masterBranchName = "master";
+    private final String masterBranchName = "master";
 
     private static final Pattern NEW_BRANCH_NAME_PATTERN = Pattern.compile("release/([\\d.]+)");
 

@@ -42,8 +42,8 @@ public class ReleaseInjectionServiceTest {
     @Mock
     private ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
 
-	@Mock(answer = Answers.RETURNS_DEEP_STUBS)
-	private GitHubProperties gitHubProperties;
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private GitHubProperties gitHubProperties;
 
     private ReleaseInjectionService releaseInjectionService;
 
@@ -115,8 +115,7 @@ public class ReleaseInjectionServiceTest {
                 branchInjectionService,
                 releasePullRequestRepository,
                 releaseVulnerabilityRepository,
-				gitHubProperties
-		);
+                gitHubProperties);
     }
 
     @Test

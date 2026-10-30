@@ -2,6 +2,8 @@ package org.frankframework.insights.common.configuration;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
@@ -88,16 +90,28 @@ public class SystemDataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (!tryAcquireJobLock()) {
-            log.warn("Startup job skipped: another job is already running");
+            log.warn("Job skipped: another job is already running");
             return;
         }
 
+        List<String> commandArguments = Arrays.asList(args);
+        boolean importData = commandArguments.contains("--import");
+        boolean trivy = commandArguments.contains("--trivy");
+
         try {
-            log.info("Startup: Fetching GitHub statistics");
+            log.info("Fetching GitHub statistics");
             fetchGitHubStatistics();
-            log.info("Startup: Fetching full system data");
-            initializeSystemData();
-			doWebhookRefresh("queued after scheduled job");
+            if (importData) {
+                log.info("Fetching full system data");
+                initializeSystemData();
+                scanForDataInjection();
+            }
+
+            if (trivy) {
+                log.info("Scanning vulnerabilities for new releases");
+                scanVulnerabilitiesForNewReleases();
+            }
+            log.info("Done processing data");
         } finally {
             releaseJobLock();
             SpringApplication.exit(appContext, () -> 0);
@@ -159,18 +173,18 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
         log.info("Webhook-triggered data refresh started ({})", context);
 
-        scanForDataInjection(context);
+        scanForDataInjection();
         scanVulnerabilitiesForNewReleases();
 
         log.info("Webhook-triggered data refresh completed ({})", context);
     }
 
-    private void scanForDataInjection(String context) {
+    private void scanForDataInjection() {
         try {
             fetchGitHubStatistics();
             injectAllGitHubData();
         } catch (Exception e) {
-            log.error("Webhook-triggered data inject failed ({})", context, e);
+            log.error("Data inject failed", e);
         }
     }
 

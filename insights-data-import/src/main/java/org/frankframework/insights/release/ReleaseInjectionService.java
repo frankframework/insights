@@ -32,8 +32,8 @@ public class ReleaseInjectionService {
     private final BranchInjectionService branchInjectionService;
     private final ReleasePullRequestRepository releasePullRequestRepository;
     private final ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
-	private final List<String> branchProtectionRegexes;
-	private final String releaseNameRegex;
+    private final List<String> branchProtectionRegexes;
+    private final String releaseNameRegex;
 
     private static final String MASTER_BRANCH_NAME = "master";
     private static final String NIGHTLY_RELEASE_NAME = "nightly";
@@ -66,7 +66,7 @@ public class ReleaseInjectionService {
         this.releasePullRequestRepository = releasePullRequestRepository;
         this.releaseVulnerabilityRepository = releaseVulnerabilityRepository;
         this.branchProtectionRegexes = branchInjectionService.branchProtectionRegexes;
-		this.releaseNameRegex = gitHubProperties.getGraphql().getReleaseNameRegex();
+        this.releaseNameRegex = gitHubProperties.getGraphql().getReleaseNameRegex();
     }
 
     /**
@@ -77,16 +77,17 @@ public class ReleaseInjectionService {
      */
     public void injectReleases() throws ReleaseInjectionException {
         try {
-            Set<ReleaseDTO> releaseDTOs = gitHubGraphQLClient.getReleases().stream()
-                    .filter(releaseDto -> Pattern.compile(releaseNameRegex).matcher(releaseDto.name()).find())
-                    .collect(Collectors.toSet());
+            Set<ReleaseDTO> releaseDTOs = gitHubGraphQLClient.getReleases();
 
             List<Branch> releaseBranches = branchInjectionService.getReleaseBranches();
             Map<String, Set<BranchPullRequest>> pullRequestsByBranch =
                     branchInjectionService.getBranchPullRequestsByBranches(releaseBranches);
 
-            Map<Boolean, List<ReleaseDTO>> partitionedReleases =
-                    releaseDTOs.stream().collect(Collectors.partitioningBy(ReleaseDTO::isValid));
+            Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
+                    .filter(releaseDto -> Pattern.compile(releaseNameRegex)
+                            .matcher(releaseDto.name())
+                            .find())
+                    .collect(Collectors.partitioningBy(ReleaseDTO::isValid));
 
             List<ReleaseDTO> validReleaseDTOs = partitionedReleases.getOrDefault(true, Collections.emptyList());
             List<ReleaseDTO> invalidReleaseDTOs = partitionedReleases.getOrDefault(false, Collections.emptyList());
@@ -96,20 +97,25 @@ public class ReleaseInjectionService {
                     .collect(Collectors.toSet());
 
             if (releases.isEmpty()) {
+                log.info(
+                        "releaseDTOs: {}",
+                        releaseDTOs.stream().map(ReleaseDTO::name).toList());
+                log.info("partitionedReleases: {}", partitionedReleases.keySet().toArray());
                 log.info("No valid releases found.");
                 return;
             }
 
+            log.info(
+                    "Saving releases: {}",
+                    releases.stream().map(Release::getName).toList());
             saveAllReleases(releases);
             deleteObsoleteReleases(releases);
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
-                    .filter(
-							release -> release.getBranch() != null &&
-							branchProtectionRegexes.stream().anyMatch(regex ->
-									Pattern.compile(regex).matcher(release.getBranch().getName()).find()
-							)
-					)
+                    .filter(release -> release.getBranch() != null
+                            && branchProtectionRegexes.stream().anyMatch(regex -> Pattern.compile(regex)
+                                    .matcher(release.getBranch().getName())
+                                    .find()))
                     .collect(Collectors.groupingBy(
                             Release::getBranch, Collectors.collectingAndThen(Collectors.toList(), list -> list.stream()
                                     .sorted(Comparator.comparing(Release::getPublishedAt))
@@ -277,21 +283,22 @@ public class ReleaseInjectionService {
      */
     private List<Release> assignToReleases(
             List<Release> releases, Set<BranchPullRequest> prs, Map<String, OffsetDateTime> earliestBetaRCDates) {
-        releases.sort(getReleaseSortingComparator());
+        List<Release> sortedReleases = new ArrayList<>(releases);
+        sortedReleases.sort(getReleaseSortingComparator());
 
-        for (int i = FIRST_RELEASE_INDEX; i < releases.size(); i++) {
-            Release current = releases.get(i);
+        for (int i = FIRST_RELEASE_INDEX; i < sortedReleases.size(); i++) {
+            Release current = sortedReleases.get(i);
 
             // The first release in the sorted list does not get PRs assigned via this method.
             // It serves as the starting point for the next releases time window.
             if (i > FIRST_RELEASE_INDEX) {
-                OffsetDateTime from = releases.get(i - 1).getPublishedAt();
+                OffsetDateTime from = sortedReleases.get(i - 1).getPublishedAt();
                 // Use the earliest beta/RC date if available, otherwise use the final release date
                 OffsetDateTime to = earliestBetaRCDates.getOrDefault(current.getTagName(), current.getPublishedAt());
                 assignPullRequests(current, prs, from, to);
             }
         }
-        return releases;
+        return sortedReleases;
     }
 
     /**
