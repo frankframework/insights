@@ -95,19 +95,20 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
 
         List<String> commandArguments = Arrays.asList(args);
+		boolean all = commandArguments.isEmpty();
         boolean importData = commandArguments.contains("--import");
         boolean trivy = commandArguments.contains("--trivy");
 
         try {
             log.info("Fetching GitHub statistics");
             fetchGitHubStatistics();
-            if (importData) {
+            if (all || importData) {
                 log.info("Fetching full system data");
                 initializeSystemData();
                 scanForDataInjection();
             }
 
-            if (trivy) {
+            if (all || trivy) {
                 log.info("Scanning vulnerabilities for new releases");
                 scanVulnerabilitiesForNewReleases();
             }
