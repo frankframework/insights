@@ -12,6 +12,7 @@ import org.frankframework.insights.common.entityconnection.releasepullrequest.Re
 import org.frankframework.insights.common.entityconnection.releasepullrequest.ReleasePullRequestRepository;
 import org.frankframework.insights.common.entityconnection.releasevulnerability.ReleaseVulnerabilityRepository;
 import org.frankframework.insights.common.mapper.Mapper;
+import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.pullrequest.PullRequest;
@@ -41,6 +42,9 @@ public class ReleaseInjectionServiceTest {
     @Mock
     private ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
 
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private GitHubProperties gitHubProperties;
+
     private ReleaseInjectionService releaseInjectionService;
 
     private ReleaseDTO dto1;
@@ -61,6 +65,9 @@ public class ReleaseInjectionServiceTest {
 
     @BeforeEach
     public void setUp() {
+        when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of(".*"));
+        when(gitHubProperties.getGraphql().getReleaseNameRegex()).thenReturn(".*");
+
         masterBranch = new Branch();
         masterBranch.setId(UUID.randomUUID().toString());
         masterBranch.setName("master");
@@ -110,13 +117,14 @@ public class ReleaseInjectionServiceTest {
                 releaseRepository,
                 branchInjectionService,
                 releasePullRequestRepository,
-                releaseVulnerabilityRepository);
+                releaseVulnerabilityRepository,
+                gitHubProperties);
     }
 
     @Test
     public void injects_whenDatabaseEmpty() throws Exception {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList()))
@@ -138,7 +146,7 @@ public class ReleaseInjectionServiceTest {
     @Test
     public void deletesObsoleteReleases_andCleansUpVulnerabilities() throws Exception {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto2));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel2);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel2));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -167,7 +175,7 @@ public class ReleaseInjectionServiceTest {
         rel.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch, featureBranch, masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch, featureBranch, masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -188,7 +196,7 @@ public class ReleaseInjectionServiceTest {
         rel.setBranch(null);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch, featureBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch, featureBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -201,7 +209,7 @@ public class ReleaseInjectionServiceTest {
     @Test
     public void assignsPullRequestsToCorrectReleaseByTimeframe() throws Exception {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(dto1, Release.class)).thenReturn(rel1);
         when(mapper.toEntity(dto2, Release.class)).thenReturn(rel2);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2));
@@ -216,7 +224,7 @@ public class ReleaseInjectionServiceTest {
     @Test
     public void assignsNothing_whenNoMatchingBranches() throws Exception {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
-        when(branchInjectionService.getAllBranches()).thenReturn(Collections.emptyList());
+        when(branchInjectionService.getReleaseBranches()).thenReturn(Collections.emptyList());
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
 
@@ -236,7 +244,7 @@ public class ReleaseInjectionServiceTest {
         ReleaseDTO dto = new ReleaseDTO("id", "vX.Y", "vX.Y", new ReleaseTagCommitDTO(relWithNull.getPublishedAt()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(noNameBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(noNameBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(relWithNull);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relWithNull));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList()))
@@ -253,7 +261,7 @@ public class ReleaseInjectionServiceTest {
         branchPR1 = new BranchPullRequest(masterBranch, pr1);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(dto1, Release.class)).thenReturn(rel1);
         when(mapper.toEntity(dto2, Release.class)).thenReturn(rel2);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1, rel2));
@@ -268,7 +276,7 @@ public class ReleaseInjectionServiceTest {
     @Test
     public void masterBranchWithReleases_assignsPRsToMaster() throws Exception {
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel1);
         rel1.setBranch(masterBranch);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
@@ -289,7 +297,7 @@ public class ReleaseInjectionServiceTest {
         relMalformed.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dtoMalformed));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(relMalformed);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relMalformed));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -319,7 +327,7 @@ public class ReleaseInjectionServiceTest {
         relBad.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch, masterBranch, featureBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch, masterBranch, featureBranch));
         when(mapper.toEntity(tagGood, Release.class)).thenReturn(relGood);
         when(mapper.toEntity(tagBad, Release.class)).thenReturn(relBad);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relGood, relBad));
@@ -366,7 +374,7 @@ public class ReleaseInjectionServiceTest {
         BranchPullRequest bpr2 = new BranchPullRequest(masterBranch, pull2);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1, dto2, dto3));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenAnswer(invocation -> {
             ReleaseDTO dto = invocation.getArgument(0);
             return switch (dto.id()) {
@@ -441,7 +449,7 @@ public class ReleaseInjectionServiceTest {
                 new ReleaseDTO("id2", "v8.1.0", "v8.1.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcRelease, validRelease));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -465,7 +473,7 @@ public class ReleaseInjectionServiceTest {
                 new ReleaseDTO("id2", "v7.0.0", "v7.0.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(betaRelease, validRelease));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -490,7 +498,7 @@ public class ReleaseInjectionServiceTest {
                 new ReleaseDTO("id4", "v7.8.0", "v7.8.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rc1, rc2, beta, validRelease));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -513,7 +521,7 @@ public class ReleaseInjectionServiceTest {
         ReleaseDTO nullNameRelease = new ReleaseDTO("id1", null, null, new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(nullNameRelease));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
 
         releaseInjectionService.injectReleases();
@@ -532,7 +540,7 @@ public class ReleaseInjectionServiceTest {
                 new ReleaseDTO("id3", "v7.6.0", "v7.6.0", new ReleaseTagCommitDTO(OffsetDateTime.now()));
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(rcLowercase, betaUppercase, validRelease));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(validRelease, Release.class)).thenReturn(rel1);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel1));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -566,7 +574,7 @@ public class ReleaseInjectionServiceTest {
         newReleaseFromGitHub.setLastScanned(null);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto1));
-        when(branchInjectionService.getAllBranches()).thenReturn(List.of(masterBranch));
+        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(newReleaseFromGitHub);
         when(releaseRepository.findAll()).thenReturn(List.of(existingRelease));
         when(releaseRepository.saveAll(anySet())).thenAnswer(invocation -> {

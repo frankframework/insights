@@ -47,9 +47,9 @@ export class ReleaseCatalogusComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!sessionStorage.getItem(ReleaseCatalogusComponent.SESSION_KEY)) {
+    if (!localStorage.getItem(ReleaseCatalogusComponent.SESSION_KEY)) {
       this.modalOpen.set(true);
-      sessionStorage.setItem(ReleaseCatalogusComponent.SESSION_KEY, 'true');
+      localStorage.setItem(ReleaseCatalogusComponent.SESSION_KEY, 'true');
     }
   }
 }
