@@ -65,7 +65,7 @@ public class ReleaseInjectionService {
         this.branchInjectionService = branchInjectionService;
         this.releasePullRequestRepository = releasePullRequestRepository;
         this.releaseVulnerabilityRepository = releaseVulnerabilityRepository;
-        this.branchProtectionRegexes = branchInjectionService.branchProtectionRegexes;
+        this.branchProtectionRegexes = gitHubProperties.getGraphql().getBranchProtectionRegexes();
         this.releaseNameRegex = gitHubProperties.getGraphql().getReleaseNameRegex();
     }
 
@@ -84,9 +84,8 @@ public class ReleaseInjectionService {
                     branchInjectionService.getBranchPullRequestsByBranches(releaseBranches);
 
             Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
-                    .filter(releaseDto -> Pattern.compile(releaseNameRegex)
-                            .matcher(releaseDto.name())
-                            .find())
+                    .filter(releaseDto -> releaseDto.name() != null
+                            && Pattern.compile(releaseNameRegex).matcher(releaseDto.name()).find())
                     .collect(Collectors.partitioningBy(ReleaseDTO::isValid));
 
             List<ReleaseDTO> validReleaseDTOs = partitionedReleases.getOrDefault(true, Collections.emptyList());

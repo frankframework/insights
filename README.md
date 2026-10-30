@@ -440,10 +440,13 @@ already in the database; you only need the import service when you want to refre
 There is no default profile, so every option below has to pass one. Swap `local` for `local-seed` to
 run the webapp against the seeded in-memory database instead of Postgres.
 
+The data-import service can be run with `--trivy` to scan for vulnerabilities and `--import` to fetch
+GitHub data. Both are optional; if you don't pass them, the service will start and do both by default.
+
 **Option 1 - Run the JARs:**
 ```bash
 java -jar insights-webapp/target/insights-webapp-*.jar --spring.profiles.active=local
-java -jar insights-data-import/target/insights-data-import-*.jar --spring.profiles.active=local
+java -jar insights-data-import/target/insights-data-import-*.jar --spring.profiles.active=local [--trivy] [--import]
 ```
 
 **Option 2 - IDE:**
