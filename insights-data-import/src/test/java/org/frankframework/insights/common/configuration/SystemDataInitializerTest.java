@@ -5,7 +5,10 @@ import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.frankframework.insights.branch.BranchInjectionService;
+import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.github.graphql.GitHubRepositoryStatisticsService;
 import org.frankframework.insights.issue.IssueInjectionService;
 import org.frankframework.insights.issueprojects.IssueProjectItemsInjectionService;
@@ -17,11 +20,13 @@ import org.frankframework.insights.release.ReleaseArtifactService;
 import org.frankframework.insights.release.ReleaseInjectionService;
 import org.frankframework.insights.vulnerability.VulnerabilityScanService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.ExitCodeGenerator;
+import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
@@ -113,6 +118,7 @@ public class SystemDataInitializerTest {
         verify(labelInjectionService).injectLabels();
         verify(milestoneInjectionService).injectMilestones();
         verify(issueTypeInjectionService).injectIssueTypes();
+        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
         verify(branchInjectionService).injectBranches();
         verify(issueInjectionService).injectIssues();
         verify(pullRequestInjectionService).injectBranchPullRequests();
@@ -150,6 +156,7 @@ public class SystemDataInitializerTest {
         systemDataInitializer.triggerRefresh();
 
         verify(milestoneInjectionService).injectMilestones();
+        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
         verify(branchInjectionService).injectBranches();
         verify(releaseInjectionService).injectReleases();
         verify(releaseArtifactService).deleteObsoleteReleaseArtifacts();
@@ -223,13 +230,198 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    @Disabled("Trivy scan is disabled for now, so this test will always fail")
-    public void run_whenPendingRefreshQueued_drainsPendingRefreshAfterCompletion() {
-        systemDataInitializer.pendingRefresh.set(true);
+    public void run_withoutArguments_importsAllDataAndScansVulnerabilities() throws Exception {
+        runWithArgs();
 
-        systemDataInitializer.run();
+        verify(gitHubRepositoryStatisticsService, times(2)).fetchRepositoryStatistics();
+        verify(issueProjectItemsInjectionService, times(2)).injectIssueProjectItems();
+        verify(releaseInjectionService, times(2)).injectReleases();
+        verify(releaseArtifactService, times(2)).deleteObsoleteReleaseArtifacts();
+        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
+        assertJobLockReleased();
+    }
+
+    @Test
+    public void run_withImportArgument_importsAllDataWithoutScanningVulnerabilities() throws Exception {
+        runWithArgs("--import");
+
+        verify(issueProjectItemsInjectionService, times(2)).injectIssueProjectItems();
+        verify(releaseInjectionService, times(2)).injectReleases();
+        verify(vulnerabilityScanService, never()).scanUnscannedReleasesOnly();
+        assertJobLockReleased();
+    }
+
+    @Test
+    public void run_withTrivyArgument_scansVulnerabilitiesWithoutImportingData() throws Exception {
+        runWithArgs("--trivy");
+
+        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
+        verifyNoInteractions(
+                labelInjectionService,
+                milestoneInjectionService,
+                issueTypeInjectionService,
+                issueProjectItemsInjectionService,
+                branchInjectionService,
+                issueInjectionService,
+                pullRequestInjectionService,
+                releaseInjectionService,
+                releaseArtifactService);
+        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
+        assertJobLockReleased();
+    }
+
+    @Test
+    public void run_withUnknownArgument_onlyFetchesStatistics() throws Exception {
+        runWithArgs("--unknown");
+
+        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
+        verifyNoInteractions(
+                labelInjectionService,
+                milestoneInjectionService,
+                issueTypeInjectionService,
+                issueProjectItemsInjectionService,
+                branchInjectionService,
+                issueInjectionService,
+                pullRequestInjectionService,
+                releaseInjectionService,
+                releaseArtifactService,
+                vulnerabilityScanService);
+        assertJobLockReleased();
+    }
+
+    @Test
+    public void run_whenFetchDisabled_skipsImportsButStillRunsRequestedVulnerabilityScan() throws Exception {
+        systemDataInitializer.dataFetchEnabled = false;
+
+        runWithArgs();
+
+        verifyNoInteractions(
+                gitHubRepositoryStatisticsService,
+                labelInjectionService,
+                milestoneInjectionService,
+                issueTypeInjectionService,
+                issueProjectItemsInjectionService,
+                branchInjectionService,
+                issueInjectionService,
+                pullRequestInjectionService,
+                releaseInjectionService,
+                releaseArtifactService);
+        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
+        assertJobLockReleased();
+    }
+
+    @Test
+    public void run_whenApplicationExitFails_stillReleasesJobLock() {
+        try (MockedStatic<SpringApplication> springApplication = mockStatic(SpringApplication.class)) {
+            springApplication
+                    .when(() -> SpringApplication.exit(eq(appContext), any(ExitCodeGenerator[].class)))
+                    .thenThrow(new IllegalStateException("Application exit failed"));
+
+            assertThrows(IllegalStateException.class, () -> systemDataInitializer.run("--trivy"));
+
+            assertJobLockReleased();
+        }
+    }
+
+    @Test
+    public void run_whenWebhookRefreshQueued_drainsItAfterStartupJobCompletes() throws Exception {
+        AtomicBoolean refreshRequested = new AtomicBoolean();
+        doAnswer(invocation -> {
+                    if (refreshRequested.compareAndSet(false, true)) {
+                        systemDataInitializer.triggerRefresh();
+                    }
+                    return null;
+                })
+                .when(gitHubRepositoryStatisticsService)
+                .fetchRepositoryStatistics();
+
+        runWithArgs("--trivy");
 
         assertFalse(systemDataInitializer.pendingRefresh.get());
+        assertJobLockReleased();
+        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
+        verify(vulnerabilityScanService, times(2)).scanUnscannedReleasesOnly();
+    }
+
+    @Test
+    public void run_whenRefreshIsQueuedDuringDrain_processesItAfterCurrentRefresh() throws Exception {
+        AtomicInteger statisticsFetches = new AtomicInteger();
+        doAnswer(invocation -> {
+                    if (statisticsFetches.incrementAndGet() <= 2) {
+                        systemDataInitializer.triggerRefresh();
+                    }
+                    return null;
+                })
+                .when(gitHubRepositoryStatisticsService)
+                .fetchRepositoryStatistics();
+
+        runWithArgs("--trivy");
+
+        assertFalse(systemDataInitializer.pendingRefresh.get());
+        assertJobLockReleased();
+        verify(releaseInjectionService, times(2)).injectReleases();
+        verify(vulnerabilityScanService, times(3)).scanUnscannedReleasesOnly();
+    }
+
+    @Test
+    public void fetchGitHubStatistics_whenFetchEnabled_fetchesStatistics() throws GitHubGraphQLClientException {
+        systemDataInitializer.fetchGitHubStatistics();
+
+        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
+    }
+
+    @Test
+    public void fetchGitHubStatistics_whenFetchDisabled_skipsStatistics() {
+        systemDataInitializer.dataFetchEnabled = false;
+
+        systemDataInitializer.fetchGitHubStatistics();
+
+        verifyNoInteractions(gitHubRepositoryStatisticsService);
+    }
+
+    @Test
+    public void fetchGitHubStatistics_whenClientFails_doesNotPropagateException() throws Exception {
+        doThrow(new GitHubGraphQLClientException("GitHub unavailable", null))
+                .when(gitHubRepositoryStatisticsService)
+                .fetchRepositoryStatistics();
+
+        assertDoesNotThrow(systemDataInitializer::fetchGitHubStatistics);
+        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
+    }
+
+    @Test
+    public void initializeSystemData_whenFetchEnabled_injectsAllDataWithoutScanning() throws Exception {
+        systemDataInitializer.initializeSystemData();
+
+        verify(labelInjectionService).injectLabels();
+        verify(milestoneInjectionService).injectMilestones();
+        verify(issueTypeInjectionService).injectIssueTypes();
+        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
+        verify(branchInjectionService).injectBranches();
+        verify(issueInjectionService).injectIssues();
+        verify(pullRequestInjectionService).injectBranchPullRequests();
+        verify(releaseInjectionService).injectReleases();
+        verify(releaseArtifactService).deleteObsoleteReleaseArtifacts();
+        verifyNoInteractions(vulnerabilityScanService);
+    }
+
+    @Test
+    public void initializeSystemData_whenFetchDisabled_skipsAllInjection() {
+        systemDataInitializer.dataFetchEnabled = false;
+
+        systemDataInitializer.initializeSystemData();
+
+        verifyNoInteractions(
+                labelInjectionService,
+                milestoneInjectionService,
+                issueTypeInjectionService,
+                issueProjectItemsInjectionService,
+                branchInjectionService,
+                issueInjectionService,
+                pullRequestInjectionService,
+                releaseInjectionService,
+                releaseArtifactService,
+                vulnerabilityScanService);
     }
 
     @Test
@@ -238,7 +430,18 @@ public class SystemDataInitializerTest {
 
         systemDataInitializer.run();
 
-        verifyNoInteractions(gitHubRepositoryStatisticsService, labelInjectionService, vulnerabilityScanService);
+        verifyNoInteractions(
+                gitHubRepositoryStatisticsService,
+                labelInjectionService,
+                milestoneInjectionService,
+                issueTypeInjectionService,
+                issueProjectItemsInjectionService,
+                branchInjectionService,
+                issueInjectionService,
+                pullRequestInjectionService,
+                releaseInjectionService,
+                releaseArtifactService,
+                vulnerabilityScanService);
     }
 
     @Test
@@ -252,5 +455,20 @@ public class SystemDataInitializerTest {
 
     private void setJobRunning(boolean value) {
         systemDataInitializer.isJobRunning.set(value);
+    }
+
+    private void runWithArgs(String... args) {
+        try (MockedStatic<SpringApplication> springApplication = mockStatic(SpringApplication.class)) {
+            springApplication
+                    .when(() -> SpringApplication.exit(eq(appContext), any(ExitCodeGenerator[].class)))
+                    .thenReturn(0);
+            systemDataInitializer.run(args);
+            springApplication.verify(() -> SpringApplication.exit(eq(appContext), any(ExitCodeGenerator[].class)));
+        }
+    }
+
+    private void assertJobLockReleased() {
+        assertFalse(systemDataInitializer.isJobRunning.get());
+        assertNull(systemDataInitializer.jobStartedAt.get());
     }
 }

@@ -115,6 +115,7 @@ public class SystemDataInitializer implements CommandLineRunner {
             log.info("Done processing data");
         } finally {
             releaseJobLock();
+            drainPendingRefresh();
             SpringApplication.exit(appContext, () -> 0);
         }
     }
@@ -181,6 +182,11 @@ public class SystemDataInitializer implements CommandLineRunner {
     }
 
     private void scanForDataInjection() {
+        if (!dataFetchEnabled) {
+            log.info("Skipping data injection: data fetch is disabled.");
+            return;
+        }
+
         try {
             fetchGitHubStatistics();
             injectAllGitHubData();
