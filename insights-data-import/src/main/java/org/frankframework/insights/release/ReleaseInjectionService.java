@@ -85,7 +85,9 @@ public class ReleaseInjectionService {
 
             Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
                     .filter(releaseDto -> releaseDto.name() != null
-                            && Pattern.compile(releaseNameRegex).matcher(releaseDto.name()).find())
+                            && Pattern.compile(releaseNameRegex)
+                                    .matcher(releaseDto.name())
+                                    .find())
                     .collect(Collectors.partitioningBy(ReleaseDTO::isValid));
 
             List<ReleaseDTO> validReleaseDTOs = partitionedReleases.getOrDefault(true, Collections.emptyList());

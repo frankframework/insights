@@ -95,7 +95,7 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
 
         List<String> commandArguments = Arrays.asList(args);
-		boolean all = commandArguments.isEmpty();
+        boolean all = commandArguments.isEmpty();
         boolean importData = commandArguments.contains("--import");
         boolean trivy = commandArguments.contains("--trivy");
 

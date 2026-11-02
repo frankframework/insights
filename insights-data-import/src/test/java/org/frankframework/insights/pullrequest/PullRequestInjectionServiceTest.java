@@ -754,5 +754,4 @@ public class PullRequestInjectionServiceTest {
 
         verify(pullRequestIssueRepository, never()).saveAll(anySet());
     }
-
 }

@@ -175,7 +175,8 @@ public class ReleaseInjectionServiceTest {
         rel.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(dto));
-        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch, featureBranch, masterBranch));
+        when(branchInjectionService.getReleaseBranches())
+                .thenReturn(List.of(masterBranch, featureBranch, masterBranch));
         when(mapper.toEntity(any(ReleaseDTO.class), eq(Release.class))).thenReturn(rel);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(rel));
         when(branchInjectionService.getBranchPullRequestsByBranches(anyList())).thenReturn(Collections.emptyMap());
@@ -327,7 +328,8 @@ public class ReleaseInjectionServiceTest {
         relBad.setBranch(masterBranch);
 
         when(gitHubGraphQLClient.getReleases()).thenReturn(Set.of(tagGood, tagBad));
-        when(branchInjectionService.getReleaseBranches()).thenReturn(List.of(masterBranch, masterBranch, featureBranch));
+        when(branchInjectionService.getReleaseBranches())
+                .thenReturn(List.of(masterBranch, masterBranch, featureBranch));
         when(mapper.toEntity(tagGood, Release.class)).thenReturn(relGood);
         when(mapper.toEntity(tagBad, Release.class)).thenReturn(relBad);
         when(releaseRepository.saveAll(anySet())).thenReturn(List.of(relGood, relBad));
