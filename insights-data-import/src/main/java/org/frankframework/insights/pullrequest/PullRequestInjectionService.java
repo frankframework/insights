@@ -17,7 +17,6 @@ import org.frankframework.insights.common.entityconnection.pullrequestlabel.Pull
 import org.frankframework.insights.common.entityconnection.pullrequestlabel.PullRequestLabelRepository;
 import org.frankframework.insights.common.mapper.Mapper;
 import org.frankframework.insights.common.mapper.MappingException;
-import org.frankframework.insights.common.properties.GitHubProperties;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClient;
 import org.frankframework.insights.github.graphql.GitHubGraphQLClientException;
 import org.frankframework.insights.issue.Issue;
@@ -44,10 +43,10 @@ public class PullRequestInjectionService {
     private final BranchInjectionService branchInjectionService;
     private final MilestoneInjectionService milestoneInjectionService;
     private final IssueInjectionService issueInjectionService;
-    private final List<String> branchProtectionRegexes;
     private final PullRequestLabelRepository pullRequestLabelRepository;
     private final PullRequestIssueRepository pullRequestIssueRepository;
     private final LabelInjectionService labelInjectionService;
+    private final String masterBranchName = "master";
 
     private static final Pattern NEW_BRANCH_NAME_PATTERN = Pattern.compile("release/([\\d.]+)");
 
@@ -59,7 +58,6 @@ public class PullRequestInjectionService {
             BranchInjectionService branchInjectionService,
             MilestoneInjectionService milestoneInjectionService,
             IssueInjectionService issueInjectionService,
-            GitHubProperties gitHubProperties,
             PullRequestLabelRepository pullRequestLabelRepository,
             PullRequestIssueRepository pullRequestIssueRepository,
             LabelInjectionService labelInjectionService) {
@@ -70,7 +68,6 @@ public class PullRequestInjectionService {
         this.branchInjectionService = branchInjectionService;
         this.milestoneInjectionService = milestoneInjectionService;
         this.issueInjectionService = issueInjectionService;
-        this.branchProtectionRegexes = gitHubProperties.getGraphql().getBranchProtectionRegexes();
         this.pullRequestLabelRepository = pullRequestLabelRepository;
         this.pullRequestIssueRepository = pullRequestIssueRepository;
         this.labelInjectionService = labelInjectionService;
@@ -142,8 +139,7 @@ public class PullRequestInjectionService {
      */
     private Set<PullRequestDTO> fetchSortedMasterPullRequests() throws PullRequestInjectionException {
         try {
-            Set<PullRequestDTO> masterPullRequests = gitHubGraphQLClient.getBranchPullRequests(
-                    branchProtectionRegexes.getFirst().replaceAll("^\\^|\\$$|\\\\", ""));
+            Set<PullRequestDTO> masterPullRequests = gitHubGraphQLClient.getBranchPullRequests(masterBranchName);
             return sortPullRequestsByMergedAt(masterPullRequests);
         } catch (Exception e) {
             throw new PullRequestInjectionException("Error while injecting GitHub pull requests of branch master", e);

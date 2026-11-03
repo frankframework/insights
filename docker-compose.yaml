@@ -75,6 +75,7 @@ services:
           memory: 2G
         reservations:
           memory: 1G
+#    command: tail -f /dev/null
 
 volumes:
   postgres-data:

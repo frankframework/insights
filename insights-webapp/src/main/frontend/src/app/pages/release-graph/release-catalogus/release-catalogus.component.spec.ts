@@ -21,7 +21,7 @@ describe('ReleaseCatalogusComponent', () => {
 
   afterEach(() => {
     // eslint-disable-next-line no-undef
-    sessionStorage.clear();
+    localStorage.clear();
   });
 
   function createComponent(): void {
@@ -47,12 +47,12 @@ describe('ReleaseCatalogusComponent', () => {
       createComponent();
 
       // eslint-disable-next-line no-undef
-      expect(sessionStorage.getItem('releaseCatalogusShown')).toBe('true');
+      expect(localStorage.getItem('releaseCatalogusShown')).toBe('true');
     });
 
     it('should not open modal if session already exists', () => {
       // eslint-disable-next-line no-undef
-      sessionStorage.setItem('releaseCatalogusShown', 'true');
+      localStorage.setItem('releaseCatalogusShown', 'true');
 
       createComponent();
 
@@ -71,7 +71,7 @@ describe('ReleaseCatalogusComponent', () => {
 
     it('should toggle modal from closed to open on existing session', () => {
       // eslint-disable-next-line no-undef
-      sessionStorage.setItem('releaseCatalogusShown', 'true');
+      localStorage.setItem('releaseCatalogusShown', 'true');
 
       createComponent();
 
@@ -86,7 +86,7 @@ describe('ReleaseCatalogusComponent', () => {
   describe('Extended Support Display', () => {
     beforeEach(() => {
       // eslint-disable-next-line no-undef
-      sessionStorage.setItem('releaseCatalogusShown', 'true');
+      localStorage.setItem('releaseCatalogusShown', 'true');
       createComponent();
     });
 

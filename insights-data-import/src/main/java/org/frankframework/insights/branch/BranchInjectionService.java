@@ -21,11 +21,11 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class BranchInjectionService {
+    public final List<String> branchProtectionRegexes;
     private final GitHubRepositoryStatisticsService gitHubRepositoryStatisticsService;
     private final GitHubGraphQLClient gitHubGraphQLClient;
     private final Mapper mapper;
     private final BranchRepository branchRepository;
-    private final List<String> branchProtectionRegexes;
     private final BranchPullRequestRepository branchPullRequestRepository;
 
     public BranchInjectionService(
@@ -52,21 +52,18 @@ public class BranchInjectionService {
             throw new BranchInjectionException("GitHub repository statistics are not available", null);
         }
 
-        if (gitHubRepositoryStatisticsService
-                        .getGitHubRepositoryStatisticsDTO()
-                        .getGitHubBranchCount(branchProtectionRegexes)
-                == branchRepository.count()) {
+        int branchCountInGitHub = gitHubRepositoryStatisticsService
+                .getGitHubRepositoryStatisticsDTO()
+                .getGitHubBranchCount(branchProtectionRegexes);
+
+        if (branchCountInGitHub == branchRepository.count()) {
             log.info("Branches already found in the in database");
             return;
         }
 
         try {
             log.info("Amount of branches found in database: {}", branchRepository.count());
-            log.info(
-                    "Amount of branches found in GitHub: {}",
-                    gitHubRepositoryStatisticsService
-                            .getGitHubRepositoryStatisticsDTO()
-                            .getGitHubBranchCount(branchProtectionRegexes));
+            log.info("Amount of branches found in GitHub: {}", branchCountInGitHub);
 
             log.info("Start injecting GitHub branches");
             Set<BranchDTO> branchDTOs = gitHubGraphQLClient.getBranches();
@@ -106,6 +103,14 @@ public class BranchInjectionService {
      */
     public List<Branch> getAllBranches() {
         return branchRepository.findAll();
+    }
+
+    public List<Branch> getReleaseBranches() {
+        return branchRepository.findAll().stream()
+                .filter(branch -> branchProtectionRegexes.stream()
+                        .anyMatch(regex ->
+                                Pattern.compile(regex).matcher(branch.getName()).find()))
+                .toList();
     }
 
     /**
