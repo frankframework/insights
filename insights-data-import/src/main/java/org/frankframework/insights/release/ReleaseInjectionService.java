@@ -33,7 +33,6 @@ public class ReleaseInjectionService {
     private final ReleasePullRequestRepository releasePullRequestRepository;
     private final ReleaseVulnerabilityRepository releaseVulnerabilityRepository;
     private final List<String> branchProtectionRegexes;
-    private final String releaseNameRegex;
 
     private static final String MASTER_BRANCH_NAME = "master";
     private static final String NIGHTLY_RELEASE_NAME = "nightly";
@@ -66,7 +65,6 @@ public class ReleaseInjectionService {
         this.releasePullRequestRepository = releasePullRequestRepository;
         this.releaseVulnerabilityRepository = releaseVulnerabilityRepository;
         this.branchProtectionRegexes = gitHubProperties.getGraphql().getBranchProtectionRegexes();
-        this.releaseNameRegex = gitHubProperties.getGraphql().getReleaseNameRegex();
     }
 
     /**
@@ -84,10 +82,7 @@ public class ReleaseInjectionService {
                     branchInjectionService.getBranchPullRequestsByBranches(releaseBranches);
 
             Map<Boolean, List<ReleaseDTO>> partitionedReleases = releaseDTOs.stream()
-                    .filter(releaseDto -> releaseDto.name() != null
-                            && Pattern.compile(releaseNameRegex)
-                                    .matcher(releaseDto.name())
-                                    .find())
+                    .filter(releaseDto -> releaseDto.name() != null)
                     .collect(Collectors.partitioningBy(ReleaseDTO::isValid));
 
             List<ReleaseDTO> validReleaseDTOs = partitionedReleases.getOrDefault(true, Collections.emptyList());

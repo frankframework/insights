@@ -100,17 +100,14 @@ public class SystemDataInitializer implements CommandLineRunner {
         boolean trivy = commandArguments.contains("--trivy");
 
         try {
-            log.info("Fetching GitHub statistics");
-            fetchGitHubStatistics();
             if (all || importData) {
                 log.info("Fetching full system data");
-                initializeSystemData();
-                scanForDataInjection();
+				scanForDataInjection();
             }
 
             if (all || trivy) {
-                log.info("Scanning vulnerabilities for new releases");
-                scanVulnerabilitiesForNewReleases();
+                log.info("Scanning vulnerabilities for relevant releases");
+				scanVulnerabilitiesForRelevantReleases();
             }
             log.info("Done processing data");
         } finally {
@@ -203,6 +200,14 @@ public class SystemDataInitializer implements CommandLineRunner {
         }
     }
 
+    private void scanVulnerabilitiesForRelevantReleases() {
+        try {
+            vulnerabilityScanService.scanRelevantReleasesOnly();
+        } catch (Exception e) {
+            log.error("Error scanning vulnerabilities for relevant releases", e);
+        }
+    }
+
     /**
      * If a webhook refresh was queued while a scheduled job was running, execute it now.
      */
@@ -233,26 +238,6 @@ public class SystemDataInitializer implements CommandLineRunner {
             gitHubRepositoryStatisticsService.fetchRepositoryStatistics();
         } catch (GitHubGraphQLClientException e) {
             log.error("Error fetching data statistics", e);
-        }
-    }
-
-    /**
-     * Initializes system data by fetching labels, milestones, branches, issues, pull requests, releases, dependencies and vulnerabilities.
-     */
-    public void initializeSystemData() {
-        try {
-            if (!dataFetchEnabled) {
-                log.info("Skipping data fetch: skipping due to build/test configuration.");
-                return;
-            }
-
-            injectAllGitHubData();
-
-            log.info("Start fetching vulnerability data for all releases");
-            //            vulnerabilityScanService.scanAndSaveVulnerabilitiesForAllReleases();
-            log.info("Done fetching all vulnerability data");
-        } catch (Exception e) {
-            log.error("Error initializing system data", e);
         }
     }
 
