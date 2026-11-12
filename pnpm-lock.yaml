@@ -7,7 +7,7 @@ settings:
 overrides:
   '@hono/node-server@<2.0.5': '>=2.1.8'
   diff@>=6.0.0 <8.0.3: '>=8.0.4'
-  ip-address@<=10.3.0: '>=10.5.0'
+  ip-address@<=10.3.0: '>=10.7.6'
   js-yaml@>=4.0.0 <4.3.1: '>=4.3.1 <5.0.0'
   serialize-javascript@>=5.0.0 <7.0.5: '>=7.1.4'
   uuid@<11.1.1: '>=11.1.1'
@@ -3026,8 +3026,8 @@ packages:
     resolution: {integrity: sha512-7PnF4oN3CvZF23ADhA5wRaYEQpJ8qygSkbtTXWBeXWXmEVRXK+1ITciHWwHhsjv1TmW0MgacIv6hEi5pX5NQdA==}
     engines: {node: '>=10'}
 
-  ip-address@10.5.0:
-    resolution: {integrity: sha512-R5SnVLJmgYYvf2F2ZgwSBnelz5G4q5AxIC277GDfUaNbrZKNANcBC7RHqYYePlszf4kBolVkJauG0ZjHHFh55g==}
+  ip-address@10.7.6:
+    resolution: {integrity: sha512-00LYkM6byILa9eQIx6qoaXCM40xTLd56AZ4vyaPW3YTyb49VZYPo5xsiAq4tuQ54GH4R7gVdYScJ1B7B77PuTg==}
     engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
@@ -6841,7 +6841,7 @@ snapshots:
   express-rate-limit@8.3.2(express@5.2.1(supports-color@8.1.1)):
     dependencies:
       express: 5.2.1(supports-color@8.1.1)
-      ip-address: 10.5.0
+      ip-address: 10.7.6
 
   express@5.2.1(supports-color@8.1.1):
     dependencies:
@@ -7179,7 +7179,7 @@ snapshots:
 
   ini@2.0.0: {}
 
-  ip-address@10.5.0: {}
+  ip-address@10.7.6: {}
 
   ipaddr.js@1.9.1: {}
 
