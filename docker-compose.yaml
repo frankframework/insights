@@ -75,6 +75,7 @@ services:
         reservations:
           memory: 1G
 #    command: tail -f /dev/null
+#    command: ["java","-jar","/app/insights-data-import.jar", "--import"]
 
 volumes:
   postgres-data:

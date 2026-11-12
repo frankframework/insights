@@ -102,12 +102,12 @@ public class SystemDataInitializer implements CommandLineRunner {
         try {
             if (all || importData) {
                 log.info("Fetching full system data");
-				scanForDataInjection();
+                scanForDataInjection();
             }
 
             if (all || trivy) {
                 log.info("Scanning vulnerabilities for relevant releases");
-				scanVulnerabilitiesForRelevantReleases();
+                scanVulnerabilitiesForRelevantReleases();
             }
             log.info("Done processing data");
         } finally {
