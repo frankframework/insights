@@ -64,8 +64,6 @@ services:
     volumes:
       - release-archive-vol:/release-archive
       - trivy-cache-vol:/tmp/trivy-cache
-    tmpfs:
-      - /tmp/trivy-scan
     depends_on:
       postgres-db:
         condition: service_healthy

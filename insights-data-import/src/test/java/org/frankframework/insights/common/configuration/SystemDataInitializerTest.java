@@ -230,14 +230,15 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void run_withoutArguments_importsAllDataAndScansVulnerabilities() throws Exception {
+    public void run_withoutArguments_importsAllDataAndScansRelevantReleases() throws Exception {
         runWithArgs();
 
-        verify(gitHubRepositoryStatisticsService, times(2)).fetchRepositoryStatistics();
-        verify(issueProjectItemsInjectionService, times(2)).injectIssueProjectItems();
-        verify(releaseInjectionService, times(2)).injectReleases();
-        verify(releaseArtifactService, times(2)).deleteObsoleteReleaseArtifacts();
-        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
+        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
+        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
+        verify(releaseInjectionService).injectReleases();
+        verify(releaseArtifactService).deleteObsoleteReleaseArtifacts();
+        verify(vulnerabilityScanService).scanRelevantReleasesOnly();
+        verify(vulnerabilityScanService, never()).scanUnscannedReleasesOnly();
         assertJobLockReleased();
     }
 
@@ -245,17 +246,18 @@ public class SystemDataInitializerTest {
     public void run_withImportArgument_importsAllDataWithoutScanningVulnerabilities() throws Exception {
         runWithArgs("--import");
 
-        verify(issueProjectItemsInjectionService, times(2)).injectIssueProjectItems();
-        verify(releaseInjectionService, times(2)).injectReleases();
+        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
+        verify(releaseInjectionService).injectReleases();
         verify(vulnerabilityScanService, never()).scanUnscannedReleasesOnly();
+        verify(vulnerabilityScanService, never()).scanRelevantReleasesOnly();
         assertJobLockReleased();
     }
 
     @Test
-    public void run_withTrivyArgument_scansVulnerabilitiesWithoutImportingData() throws Exception {
+    public void run_withTrivyArgument_scansRelevantReleasesWithoutImportingData() throws Exception {
         runWithArgs("--trivy");
 
-        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
+        verifyNoInteractions(gitHubRepositoryStatisticsService);
         verifyNoInteractions(
                 labelInjectionService,
                 milestoneInjectionService,
@@ -266,16 +268,17 @@ public class SystemDataInitializerTest {
                 pullRequestInjectionService,
                 releaseInjectionService,
                 releaseArtifactService);
-        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
+        verify(vulnerabilityScanService).scanRelevantReleasesOnly();
+        verify(vulnerabilityScanService, never()).scanUnscannedReleasesOnly();
         assertJobLockReleased();
     }
 
     @Test
-    public void run_withUnknownArgument_onlyFetchesStatistics() throws Exception {
+    public void run_withUnknownArgument_doesNoWork() throws Exception {
         runWithArgs("--unknown");
 
-        verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
         verifyNoInteractions(
+                gitHubRepositoryStatisticsService,
                 labelInjectionService,
                 milestoneInjectionService,
                 issueTypeInjectionService,
@@ -290,7 +293,7 @@ public class SystemDataInitializerTest {
     }
 
     @Test
-    public void run_whenFetchDisabled_skipsImportsButStillRunsRequestedVulnerabilityScan() throws Exception {
+    public void run_whenFetchDisabled_skipsImportsButStillScansRelevantReleases() throws Exception {
         systemDataInitializer.dataFetchEnabled = false;
 
         runWithArgs();
@@ -306,7 +309,8 @@ public class SystemDataInitializerTest {
                 pullRequestInjectionService,
                 releaseInjectionService,
                 releaseArtifactService);
-        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
+        verify(vulnerabilityScanService).scanRelevantReleasesOnly();
+        verify(vulnerabilityScanService, never()).scanUnscannedReleasesOnly();
         assertJobLockReleased();
     }
 
@@ -335,12 +339,13 @@ public class SystemDataInitializerTest {
                 .when(gitHubRepositoryStatisticsService)
                 .fetchRepositoryStatistics();
 
-        runWithArgs("--trivy");
+        runWithArgs();
 
         assertFalse(systemDataInitializer.pendingRefresh.get());
         assertJobLockReleased();
-        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
-        verify(vulnerabilityScanService, times(2)).scanUnscannedReleasesOnly();
+        verify(issueProjectItemsInjectionService, times(2)).injectIssueProjectItems();
+        verify(vulnerabilityScanService).scanRelevantReleasesOnly();
+        verify(vulnerabilityScanService).scanUnscannedReleasesOnly();
     }
 
     @Test
@@ -355,12 +360,13 @@ public class SystemDataInitializerTest {
                 .when(gitHubRepositoryStatisticsService)
                 .fetchRepositoryStatistics();
 
-        runWithArgs("--trivy");
+        runWithArgs();
 
         assertFalse(systemDataInitializer.pendingRefresh.get());
         assertJobLockReleased();
-        verify(releaseInjectionService, times(2)).injectReleases();
-        verify(vulnerabilityScanService, times(3)).scanUnscannedReleasesOnly();
+        verify(releaseInjectionService, times(3)).injectReleases();
+        verify(vulnerabilityScanService).scanRelevantReleasesOnly();
+        verify(vulnerabilityScanService, times(2)).scanUnscannedReleasesOnly();
     }
 
     @Test
@@ -387,41 +393,6 @@ public class SystemDataInitializerTest {
 
         assertDoesNotThrow(systemDataInitializer::fetchGitHubStatistics);
         verify(gitHubRepositoryStatisticsService).fetchRepositoryStatistics();
-    }
-
-    @Test
-    public void initializeSystemData_whenFetchEnabled_injectsAllDataWithoutScanning() throws Exception {
-        systemDataInitializer.initializeSystemData();
-
-        verify(labelInjectionService).injectLabels();
-        verify(milestoneInjectionService).injectMilestones();
-        verify(issueTypeInjectionService).injectIssueTypes();
-        verify(issueProjectItemsInjectionService).injectIssueProjectItems();
-        verify(branchInjectionService).injectBranches();
-        verify(issueInjectionService).injectIssues();
-        verify(pullRequestInjectionService).injectBranchPullRequests();
-        verify(releaseInjectionService).injectReleases();
-        verify(releaseArtifactService).deleteObsoleteReleaseArtifacts();
-        verifyNoInteractions(vulnerabilityScanService);
-    }
-
-    @Test
-    public void initializeSystemData_whenFetchDisabled_skipsAllInjection() {
-        systemDataInitializer.dataFetchEnabled = false;
-
-        systemDataInitializer.initializeSystemData();
-
-        verifyNoInteractions(
-                labelInjectionService,
-                milestoneInjectionService,
-                issueTypeInjectionService,
-                issueProjectItemsInjectionService,
-                branchInjectionService,
-                issueInjectionService,
-                pullRequestInjectionService,
-                releaseInjectionService,
-                releaseArtifactService,
-                vulnerabilityScanService);
     }
 
     @Test

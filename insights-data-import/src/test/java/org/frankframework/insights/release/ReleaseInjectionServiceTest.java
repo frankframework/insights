@@ -66,7 +66,6 @@ public class ReleaseInjectionServiceTest {
     @BeforeEach
     public void setUp() {
         when(gitHubProperties.getGraphql().getBranchProtectionRegexes()).thenReturn(List.of(".*"));
-        when(gitHubProperties.getGraphql().getReleaseNameRegex()).thenReturn(".*");
 
         masterBranch = new Branch();
         masterBranch.setId(UUID.randomUUID().toString());
