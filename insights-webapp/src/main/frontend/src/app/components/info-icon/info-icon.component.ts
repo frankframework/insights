@@ -37,4 +37,3 @@ export class InfoIconComponent {
     this.tooltipService.hide();
   }
 }
-
