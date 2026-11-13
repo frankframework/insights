@@ -27,7 +27,7 @@
     "chart.js": "^4.6.1",
     "dompurify": "^3.4.17",
     "marked": "^18.2.0",
-    "ng2-charts": "^10.0.0",
+    "ng2-charts": "^11.0.0",
     "ngx-markdown": "^22.1.1",
     "rxjs": "~7.8.2",
     "tslib": "^2.9.1",
