@@ -1,6 +1,12 @@
 packages:
   - insights-webapp/src/main/frontend
   - insights-webapp/src/main/frontend/cypress
+allowBuilds:
+  '@parcel/watcher': false
+  cypress: true
+  esbuild: false
+  lmdb: false
+  msgpackr-extract: false
 
 overrides:
   '@hono/node-server@<2.0.5': '>=2.1.8'

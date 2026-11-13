@@ -33,7 +33,12 @@ export class StatCardComponent {
     const badge = this.badgeClass();
     const base = 'stat-card flex min-w-16 flex-col gap-0.5 rounded-lg border px-3 py-1.5';
 
-    return [base, badge ? `priority-card ${badge}` : '', this.tint().card, this.info() ? 'cursor-help outline-none' : '']
+    return [
+      base,
+      badge ? `priority-card ${badge}` : '',
+      this.tint().card,
+      this.info() ? 'cursor-help outline-none' : '',
+    ]
       .filter(Boolean)
       .join(' ');
   });
