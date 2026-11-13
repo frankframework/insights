@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
+      - ./docker/sql:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d insightsdb"]
       interval: 5s
@@ -63,8 +64,6 @@ services:
     volumes:
       - release-archive-vol:/release-archive
       - trivy-cache-vol:/tmp/trivy-cache
-    tmpfs:
-      - /tmp/trivy-scan
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -76,6 +75,7 @@ services:
         reservations:
           memory: 1G
 #    command: tail -f /dev/null
+#    command: ["java","-jar","/app/insights-data-import.jar", "--import"]
 
 volumes:
   postgres-data:
