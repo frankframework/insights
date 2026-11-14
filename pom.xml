@@ -57,7 +57,7 @@
 		<junit.bom.version>6.1.3</junit.bom.version>
 		<lombok.version>1.18.46</lombok.version>
 		<postgresql.version>42.7.13</postgresql.version>
-		<h2.version>2.4.240</h2.version>
+		<h2.version>2.5.252</h2.version>
 		<spring.shedlock>7.11.0</spring.shedlock>
 		<spotless.version>3.9.0</spotless.version>
 		<checkstyle.version>3.6.0</checkstyle.version>
