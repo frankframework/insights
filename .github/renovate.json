@@ -12,7 +12,9 @@
 	"ignoreDeps": [
 		"pnpm"
 	],
-	"dependencyDashboard": true,
+	"dependencyDashboard": {
+		"enabled": true
+	},
 	"rebaseWhen": "conflicted",
 	"rangeStrategy": "bump",
 	"commitMessageTopic": "{{depName}}",
