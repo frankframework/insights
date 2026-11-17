@@ -109,13 +109,17 @@ public class ReleaseInjectionService {
 
             Map<Branch, List<Release>> releasesByBranch = releases.stream()
                     .filter(release -> release.getBranch() != null
-                            && branchProtectionRegexes.stream().anyMatch(regex -> Pattern.compile(regex)
-                                    .matcher(release.getBranch().getName())
-                                    .find()))
+                            && branchProtectionRegexes.stream()
+                                    .anyMatch(regex -> Pattern.compile(regex)
+                                            .matcher(release.getBranch().getName())
+                                            .find()))
                     .collect(Collectors.groupingBy(
-                            Release::getBranch, Collectors.collectingAndThen(Collectors.toList(), list -> list.stream()
-                                    .sorted(Comparator.comparing(Release::getPublishedAt))
-                                    .toList())));
+                            Release::getBranch,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> list.stream()
+                                            .sorted(Comparator.comparing(Release::getPublishedAt))
+                                            .toList())));
 
             Map<String, OffsetDateTime> earliestBetaRCDates =
                     buildEarliestBetaRCDatesMap(validReleaseDTOs, invalidReleaseDTOs);

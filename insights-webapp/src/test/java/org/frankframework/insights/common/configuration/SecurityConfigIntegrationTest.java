@@ -65,9 +65,10 @@ public class SecurityConfigIntegrationTest {
     @AfterEach
     public void tearDown() {
         userRepository.deleteAll();
-        sessionRegistry.getAllPrincipals().forEach(principal -> sessionRegistry
-                .getAllSessions(principal, false)
-                .forEach(SessionInformation::expireNow));
+        sessionRegistry
+                .getAllPrincipals()
+                .forEach(principal ->
+                        sessionRegistry.getAllSessions(principal, false).forEach(SessionInformation::expireNow));
     }
 
     @Test
