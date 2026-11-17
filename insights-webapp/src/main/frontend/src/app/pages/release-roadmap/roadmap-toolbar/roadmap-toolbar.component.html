@@ -3,9 +3,8 @@
   <div class="flex gap-1 rounded-lg border border-gray-200 bg-gray-100 p-1">
     <button
       title="Quarterly view (6 months)"
-      class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md bg-transparent px-3 py-2 text-sm font-medium transition-all duration-200"
-      [class]="{
-        active: viewModeVar === ViewMode.QUARTERLY,
+      class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200"
+      [ngClass]="{
         'bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.QUARTERLY,
         'text-gray-500 hover:bg-white/50 hover:opacity-100': viewModeVar !== ViewMode.QUARTERLY,
       }"
@@ -17,8 +16,7 @@
     <button
       title="Monthly view (1 month)"
       class="toggle-button relative flex cursor-pointer items-center justify-center gap-1 rounded-md bg-transparent px-3 py-2 text-sm font-medium transition-all duration-200"
-      [class]="{
-        active: viewModeVar === ViewMode.MONTHLY,
+      [ngClass]="{
         'bg-white text-gray-800 shadow-sm': viewModeVar === ViewMode.MONTHLY,
         'text-gray-500 hover:bg-white/50 hover:opacity-100': viewModeVar !== ViewMode.MONTHLY,
       }"
@@ -27,7 +25,6 @@
       <img class="shrink-0" ngSrc="assets/icons/monthly-view.svg" alt="" width="18" height="18" />
       <span class="font-semibold">1M</span>
     </button>
-    <span>{{ viewModeVar }}</span>
   </div>
 
   <div
