@@ -67,7 +67,7 @@
 		<maven.resolver.supplier.version>1.9.24</maven.resolver.supplier.version>
 		<bucket4j.version>8.10.1</bucket4j.version>
 		<exec.plugin.version>3.7.0</exec.plugin.version>
-		<flatten.plugin.version>1.8.0</flatten.plugin.version>
+		<flatten.plugin.version>1.9.0</flatten.plugin.version>
 		<antrun.plugin.version>3.2.0</antrun.plugin.version>
 		<testcontainers.version>1.21.4</testcontainers.version>
 		<testcontainers.cypress.version>1.10.0</testcontainers.cypress.version>
