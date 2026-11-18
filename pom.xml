@@ -70,7 +70,7 @@
 		<flatten.plugin.version>1.8.0</flatten.plugin.version>
 		<antrun.plugin.version>3.2.0</antrun.plugin.version>
 		<testcontainers.version>1.21.4</testcontainers.version>
-		<testcontainers.cypress.version>1.10.0</testcontainers.cypress.version>
+		<testcontainers.cypress.version>2.0.0</testcontainers.cypress.version>
 
 		<sonar.organization>frank-framework</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
