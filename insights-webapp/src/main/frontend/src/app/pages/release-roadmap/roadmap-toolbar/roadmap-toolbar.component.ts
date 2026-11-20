@@ -1,11 +1,11 @@
-import { NgOptimizedImage } from '@angular/common';
+import { NgClass, NgOptimizedImage } from '@angular/common';
 import { Component, input, output } from '@angular/core';
 import { ViewMode } from '../roadmap.types';
 
 @Component({
   selector: 'app-roadmap-toolbar',
   standalone: true,
-  imports: [NgOptimizedImage],
+  imports: [NgOptimizedImage, NgClass],
   templateUrl: './roadmap-toolbar.component.html',
 })
 export class RoadmapToolbarComponent {
