@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25.0.5_8-jre-jammy AS base
+FROM eclipse-temurin:25.0.5.1_2-jre-jammy AS base
 ARG GID=2000
 ARG UID=2000
 
